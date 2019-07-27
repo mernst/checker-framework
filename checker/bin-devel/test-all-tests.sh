@@ -17,11 +17,12 @@ echo SYSTEM_PULLREQUEST_TARGETBRANCH=$SYSTEM_PULLREQUEST_TARGETBRANCH
 echo SYSTEM_PULLREQUEST_SOURCEBRANCH=$SYSTEM_PULLREQUEST_SOURCEBRANCH
 echo BASE_COMMIT=$BASE_COMMIT
 echo BUILD_SOURCEVERSION=$BUILD_SOURCEVERSION
-env
+env | sort
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source $SCRIPTDIR/build.sh ${BUILDJDK}
 
+exit 0
 
 
 ./gradlew allTests --console=plain --warning-mode=all --no-daemon
