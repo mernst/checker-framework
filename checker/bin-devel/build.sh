@@ -26,6 +26,8 @@ export JAVA_HOME
 
 git -C /tmp/plume-scripts pull > /dev/null 2>&1 \
     || git -C /tmp clone --depth 1 -q https://github.com/plume-lib/plume-scripts.git
+# For debugging
+/tmp/plume-scripts/ci-info typetools
 eval `/tmp/plume-scripts/ci-info typetools`
 
 
