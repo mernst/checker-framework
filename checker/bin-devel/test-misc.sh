@@ -15,7 +15,6 @@ echo "CHECKERFRAMEWORK=$CHECKERFRAMEWORK"
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source $SCRIPTDIR/build.sh ${BUILDJDK}
 
-
 # Documentation
 ./gradlew javadocPrivate --console=plain --warning-mode=all --no-daemon
 
