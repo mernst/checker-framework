@@ -10,10 +10,15 @@ import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.code.Type.ClassType;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.dataflow.cfg.node.FieldAccessNode;
@@ -88,6 +93,25 @@ public class WholeProgramInferenceScenes implements WholeProgramInference {
 
     private final WholeProgramInferenceScenesHelper helper;
 
+    /**
+     * The stub file format requires enums and classes to be output differently. This set keeps
+     * track of which AClass objects in the scenes are actually enums, to support outputting in that
+     * format.
+     */
+    private final Set<String> enumSet = new HashSet<>();
+
+    /**
+     * The stub file format requires that the correct number of type parameters be written on a
+     * class declaration. This map goes from fully-qualified names to the TypeElement representing a
+     * class declaration, and is passed to the stub file writer to facilitate using the correct type
+     * parameters in class declarations.
+     */
+    private final Map<String, TypeElement> types = new HashMap<>();
+
+    /**
+     * Create a new WholeProgramInferenceScenes. ignoreNullAssignments is useful when inferring
+     * types for the nullness checker.
+     */
     public WholeProgramInferenceScenes(boolean ignoreNullAssignments) {
         helper = new WholeProgramInferenceScenesHelper(ignoreNullAssignments);
     }
@@ -124,6 +148,7 @@ public class WholeProgramInferenceScenes implements WholeProgramInference {
             return;
         }
 
+        updateClassMetadata(classSymbol);
         String className = classSymbol.flatname.toString();
         String jaifPath = helper.getJaifPath(className);
         AClass clazz = helper.getAClass(className, jaifPath);
@@ -162,6 +187,7 @@ public class WholeProgramInferenceScenes implements WholeProgramInference {
             AnnotatedExecutableType overriddenMethod,
             AnnotatedTypeFactory atf) {
         ClassSymbol classSymbol = getEnclosingClassSymbol(methodTree);
+        updateClassMetadata(classSymbol);
         String className = classSymbol.flatname.toString();
         String jaifPath = helper.getJaifPath(className);
         AClass clazz = helper.getAClass(className, jaifPath);
@@ -231,6 +257,7 @@ public class WholeProgramInferenceScenes implements WholeProgramInference {
             return;
         }
 
+        updateClassMetadata(classSymbol);
         String className = classSymbol.flatname.toString();
         String jaifPath = helper.getJaifPath(className);
         AClass clazz = helper.getAClass(className, jaifPath);
@@ -305,6 +332,7 @@ public class WholeProgramInferenceScenes implements WholeProgramInference {
             return;
         }
 
+        updateClassMetadata(classSymbol);
         String className = classSymbol.flatname.toString();
         String jaifPath = helper.getJaifPath(className);
         AClass clazz = helper.getAClass(className, jaifPath);
@@ -362,6 +390,7 @@ public class WholeProgramInferenceScenes implements WholeProgramInference {
             AnnotatedExecutableType overriddenMethod,
             AnnotatedTypeFactory atf) {
         ClassSymbol classSymbol = getEnclosingClassSymbol(methodTree);
+        updateClassMetadata(classSymbol);
         String className = classSymbol.flatname.toString();
         String jaifPath = helper.getJaifPath(className);
         AClass clazz = helper.getAClass(className, jaifPath);
@@ -425,6 +454,7 @@ public class WholeProgramInferenceScenes implements WholeProgramInference {
             }
         }
 
+        updateClassMetadata(classSymbol);
         String className = classSymbol.flatname.toString();
         String jaifPath = helper.getJaifPath(className);
         AClass clazz = helper.getAClass(className, jaifPath);
@@ -465,6 +495,7 @@ public class WholeProgramInferenceScenes implements WholeProgramInference {
         if (classSymbol == null) { // TODO: Handle anonymous classes.
             return;
         }
+        updateClassMetadata(classSymbol);
         String className = classSymbol.flatname.toString();
 
         String jaifPath = helper.getJaifPath(className);
@@ -479,10 +510,17 @@ public class WholeProgramInferenceScenes implements WholeProgramInference {
                 method.returnType, atf, jaifPath, rhsATM, lhsATM, TypeUseLocation.RETURN);
     }
 
-    /** Write all modified scenes into .jaif files. */
+    /** Write all modified scenes into .jaif files or stub files, depending on the input. */
     @Override
-    public void saveResults() {
-        helper.writeScenesToJaif();
+    public void saveResults(OutputKind kind) {
+        switch (kind) {
+            case JAIF:
+                helper.writeScenesToJaif();
+                break;
+            case STUB:
+                helper.writeScenesToStub(enumSet, types);
+                break;
+        }
     }
 
     /**
@@ -524,5 +562,15 @@ public class WholeProgramInferenceScenes implements WholeProgramInference {
             return ((MethodSymbol) symbol).enclClass();
         }
         return null;
+    }
+
+    private void updateClassMetadata(ClassSymbol classSymbol) {
+        String qualifiedName = classSymbol.getQualifiedName().toString();
+        if (classSymbol.isEnum()) {
+            enumSet.add(qualifiedName);
+        }
+        if (!types.containsKey(qualifiedName)) {
+            types.put(qualifiedName, classSymbol);
+        }
     }
 }

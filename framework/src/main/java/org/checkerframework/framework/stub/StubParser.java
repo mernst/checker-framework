@@ -841,6 +841,7 @@ public class StubParser {
                 annotate(paramType, param.getVarArgsAnnotations());
             } else {
                 annotate(paramType, param.getType(), param.getAnnotations());
+                putNew(atypes, paramElt, paramType);
             }
         }
     }
