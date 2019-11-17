@@ -21,4 +21,8 @@ source $SCRIPTDIR/build.sh ${BUILDJDK}
 # This comes last, in case we wish to ignore it
 # if [ "$CI_IS_PR" == "true" ] ; then
 (./gradlew requireJavadocPrivate --console=plain --warning-mode=all --no-daemon > /tmp/warnings.txt 2>&1) || true
+echo "start of /tmp/warnings.txt"
+cat /tmp/warnings.txt
+echo "end of /tmp/warnings.txt"
+
 /tmp/plume-scripts/ci-lint-diff --debug /tmp/warnings.txt
