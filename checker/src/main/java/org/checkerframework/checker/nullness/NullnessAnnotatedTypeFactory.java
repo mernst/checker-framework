@@ -80,6 +80,9 @@ public class NullnessAnnotatedTypeFactory
     protected final AnnotationMirror MONOTONIC_NONNULL =
             AnnotationBuilder.fromClass(elements, MonotonicNonNull.class);
 
+    /** True if checked code may clear system properties. */
+    private final boolean permitClearProperty;
+
     /** Handles invocations of {@link java.lang.System#getProperty(String)}. */
     protected final SystemGetPropertyHandler systemGetPropertyHandler;
 
@@ -183,9 +186,18 @@ public class NullnessAnnotatedTypeFactory
                     // https://github.com/spring-projects/spring-framework/blob/master/spring-core/src/main/java/org/springframework/lang/Nullable.java
                     "org.springframework.lang.Nullable");
 
-    /** Creates NullnessAnnotatedTypeFactory. */
+    /**
+     * Creates a NullnessAnnotatedTypeFactory.
+     *
+     * @param checker the associated {@link NullnessChecker}
+     */
     public NullnessAnnotatedTypeFactory(BaseTypeChecker checker) {
         super(checker);
+
+        this.permitClearProperty =
+                checker.getLintOption(
+                        NullnessChecker.LINT_PERMITCLEARPROPERTY,
+                        NullnessChecker.LINT_DEFAULT_PERMITCLEARPROPERTY);
 
         Set<Class<? extends Annotation>> tempNullnessAnnos = new LinkedHashSet<>();
         tempNullnessAnnos.add(NonNull.class);
@@ -209,7 +221,8 @@ public class NullnessAnnotatedTypeFactory
                 "org.checkerframework.checker.nullness.compatqual.MonotonicNonNullType",
                 MONOTONIC_NONNULL);
 
-        systemGetPropertyHandler = new SystemGetPropertyHandler(processingEnv, this, checker);
+        systemGetPropertyHandler =
+                new SystemGetPropertyHandler(processingEnv, this, permitClearProperty);
 
         classGetCanonicalName =
                 TreeUtils.getMethod(
