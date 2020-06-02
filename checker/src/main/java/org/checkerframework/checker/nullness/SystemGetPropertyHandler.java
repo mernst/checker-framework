@@ -81,6 +81,8 @@ public class SystemGetPropertyHandler {
      *
      * @param env the processing environment
      * @param factory the factory for constructing and looking up types
+     * @param permitClearProperty if true, client code may clear system properties, and this object
+     *     does nothing
      */
     public SystemGetPropertyHandler(
             ProcessingEnvironment env,
