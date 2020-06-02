@@ -80,9 +80,6 @@ public class NullnessAnnotatedTypeFactory
     protected final AnnotationMirror MONOTONIC_NONNULL =
             AnnotationBuilder.fromClass(elements, MonotonicNonNull.class);
 
-    /** True if checked code may clear system properties. */
-    private final boolean permitClearProperty;
-
     /** Handles invocations of {@link java.lang.System#getProperty(String)}. */
     protected final SystemGetPropertyHandler systemGetPropertyHandler;
 
@@ -194,11 +191,6 @@ public class NullnessAnnotatedTypeFactory
     public NullnessAnnotatedTypeFactory(BaseTypeChecker checker) {
         super(checker);
 
-        this.permitClearProperty =
-                checker.getLintOption(
-                        NullnessChecker.LINT_PERMITCLEARPROPERTY,
-                        NullnessChecker.LINT_DEFAULT_PERMITCLEARPROPERTY);
-
         Set<Class<? extends Annotation>> tempNullnessAnnos = new LinkedHashSet<>();
         tempNullnessAnnos.add(NonNull.class);
         tempNullnessAnnos.add(MonotonicNonNull.class);
@@ -221,6 +213,10 @@ public class NullnessAnnotatedTypeFactory
                 "org.checkerframework.checker.nullness.compatqual.MonotonicNonNullType",
                 MONOTONIC_NONNULL);
 
+        boolean permitClearProperty =
+                checker.getLintOption(
+                        NullnessChecker.LINT_PERMITCLEARPROPERTY,
+                        NullnessChecker.LINT_DEFAULT_PERMITCLEARPROPERTY);
         systemGetPropertyHandler =
                 new SystemGetPropertyHandler(processingEnv, this, permitClearProperty);
 

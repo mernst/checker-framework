@@ -24,25 +24,19 @@ public class SystemGetPropertyHandler {
      * If true, client code may clear system properties, and this class (SystemGetPropertyHandler)
      * has no effect.
      */
-    protected final boolean permitClearProperty;
+    private final boolean permitClearProperty;
 
     /** The processing environment. */
-    protected final ProcessingEnvironment env;
+    private final ProcessingEnvironment env;
 
     /** The factory for constructing and looking up types. */
-    protected final NullnessAnnotatedTypeFactory factory;
+    private final NullnessAnnotatedTypeFactory factory;
 
     /** The System.getProperty(String) method. */
-    protected final ExecutableElement systemGetProperty;
+    private final ExecutableElement systemGetProperty;
 
     /** The System.setProperty(String) method. */
-    protected final ExecutableElement systemSetProperty;
-
-    /** The System.clearProperty(String) method. */
-    protected final ExecutableElement systemClearProperty;
-
-    /** The System.setProperties(String) method. */
-    protected final ExecutableElement systemSetProperties;
+    private final ExecutableElement systemSetProperty;
 
     /**
      * System properties that are defined at startup on every JVM.
@@ -100,10 +94,6 @@ public class SystemGetPropertyHandler {
                 TreeUtils.getMethod(java.lang.System.class.getName(), "getProperty", 1, env);
         systemSetProperty =
                 TreeUtils.getMethod(java.lang.System.class.getName(), "setProperty", 2, env);
-        systemClearProperty =
-                TreeUtils.getMethod(java.lang.System.class.getName(), "clearProperty", 1, env);
-        systemSetProperties =
-                TreeUtils.getMethod(java.lang.System.class.getName(), "setProperties", 1, env);
     }
 
     /**
