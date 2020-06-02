@@ -84,6 +84,7 @@ public class NullnessVisitor
     /** The System.setProperties(String) method. */
     private final ExecutableElement systemSetProperties;
 
+    /** True if checked code may clear system properties. */
     private final boolean permitClearProperty;
 
     /**
