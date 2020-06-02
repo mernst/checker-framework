@@ -78,12 +78,6 @@ public class NullnessVisitor
     /** The element for java.util.Collection.toArray(T). */
     private final ExecutableElement collectionToArray;
 
-    /** The System.getProperty(String) method. */
-    private final ExecutableElement systemGetProperty;
-
-    /** The System.setProperty(String) method. */
-    private final ExecutableElement systemSetProperty;
-
     /** The System.clearProperty(String) method. */
     private final ExecutableElement systemClearProperty;
 
@@ -110,10 +104,6 @@ public class NullnessVisitor
                 TreeUtils.getMethod(java.util.Collection.class.getName(), "size", 0, env);
         this.collectionToArray =
                 TreeUtils.getMethod(java.util.Collection.class.getName(), "toArray", env, "T[]");
-        systemGetProperty =
-                TreeUtils.getMethod(java.lang.System.class.getName(), "getProperty", 1, env);
-        systemSetProperty =
-                TreeUtils.getMethod(java.lang.System.class.getName(), "setProperty", 2, env);
         systemClearProperty =
                 TreeUtils.getMethod(java.lang.System.class.getName(), "clearProperty", 1, env);
         systemSetProperties =
@@ -459,16 +449,18 @@ public class NullnessVisitor
 
     @Override
     public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
-        ProcessingEnvironment env = checker.getProcessingEnvironment();
-        if (TreeUtils.isMethodInvocation(node, systemClearProperty, env)) {
-            String literal = literalFirstArgument(node);
-            if (literal == null
-                    || SystemGetPropertyHandler.predefinedSystemProperties.contains(literal)) {
+        if (!permitClearProperty) {
+            ProcessingEnvironment env = checker.getProcessingEnvironment();
+            if (TreeUtils.isMethodInvocation(node, systemClearProperty, env)) {
+                String literal = literalFirstArgument(node);
+                if (literal == null
+                        || SystemGetPropertyHandler.predefinedSystemProperties.contains(literal)) {
+                    checker.reportError(node, "clear.system.property");
+                }
+            }
+            if (TreeUtils.isMethodInvocation(node, systemSetProperties, env)) {
                 checker.reportError(node, "clear.system.property");
             }
-        }
-        if (TreeUtils.isMethodInvocation(node, systemSetProperties, env)) {
-            checker.reportError(node, "clear.system.property");
         }
         return super.visitMethodInvocation(node, p);
     }
