@@ -11,11 +11,10 @@ import org.checkerframework.framework.qual.QualifierForLiterals;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * {@link Nullable} is a type annotation that indicates that no information is known about whether
- * or when the value may be {@code null}. The Checker Framework assumes it might be {@code null} at
- * any time. If {@code null} is sometimes but not always a legal value, then using {@code @}{@link
- * NonNullWhen} or {@code @}{@link NullableWhen} will provide better documentation and may improve
- * the precision of type-checking.
+ * {@link NullableWhen} is a type annotation that indicates that the value may be {@code null} (like
+ * {@link Nullable}, but is known to be non-null when a given expression evaluates to true.
+ *
+ * <p>Currently, the Nullness Checker does not analyze the expression; in the future, it will do so.
  *
  * @see NonNull
  * @see MonotonicNonNull
@@ -25,7 +24,16 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf({})
+@SubtypeOf({Nullable.class})
 @QualifierForLiterals(LiteralKind.NULL)
 @DefaultFor(types = Void.class)
-public @interface Nullable {}
+public @interface NullableWhen {
+    /**
+     * Suppose that expression {@emph E} has type {@code @NullableWhen("C")}. When {@emph C}
+     * evaluates to true, then {@emph E} may evaluate to null; otherwise, {@emph E} must evaluate to
+     * a non-null value.
+     *
+     * @checker_framework.manual #java-expressions-as-arguments Syntax of Java expressions
+     */
+    String value() default "?";
+}

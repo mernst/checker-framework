@@ -46,6 +46,6 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE_USE)
-@SubtypeOf(Nullable.class)
+@SubtypeOf({NonNullWhen.class, NullableWhen.class})
 @MonotonicQualifier(NonNull.class)
 public @interface MonotonicNonNull {}
