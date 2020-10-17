@@ -15,7 +15,10 @@ source "$SCRIPTDIR"/build.sh
 
 ./gradlew test --console=plain --warning-mode=all --no-daemon
 
-# TODO: This is a hack, there should be a gradle command-line argument such as -PrunNullnessJspecifySamplesTest
+# TODO: Running a separate Gradle job is a hack, there should be a gradle
+# command-line argument such as -PrunNullnessJspecifySamplesTest.
+# TODO: When the tests all pass, eliminate this and remove the `exclude`
+# directive in checker/build.gradle .
 if type -p java; then
   _java=java
 elif [[ -n "$JAVA_HOME" ]] && [[ -x "$JAVA_HOME/bin/java" ]];  then
