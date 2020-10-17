@@ -20,10 +20,11 @@ if type -p java; then
   _java=java
 elif [[ -n "$JAVA_HOME" ]] && [[ -x "$JAVA_HOME/bin/java" ]];  then
   _java="$JAVA_HOME/bin/java"
+else
+  echo "Can't find java"
+  exit 1
 fi
-if [[ "$_java" ]]; then
-  version=$("$_java" -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^1\./s///' | cut -d'.' -f1)
-  if [[ "$version" -ge 9 ]]; then
-    ./gradlew NullnessJspecifySamplesTest
-  fi
+version=$("$_java" -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^1\./s///' | cut -d'.' -f1)
+if [[ "$version" -ge 9 ]]; then
+  ./gradlew NullnessJspecifySamplesTest
 fi
