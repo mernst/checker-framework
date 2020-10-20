@@ -1,9 +1,11 @@
 package org.checkerframework.checker.initialization;
 
+import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.BlockTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
@@ -22,8 +24,12 @@ import java.util.StringJoiner;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
+import org.checkerframework.checker.initialization.qual.Initialized;
+import org.checkerframework.checker.interning.qual.FindDistinct;
 import org.checkerframework.checker.nullness.NullnessChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -40,6 +46,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutab
 import org.checkerframework.framework.util.AnnotationFormatter;
 import org.checkerframework.framework.util.DefaultAnnotationFormatter;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
@@ -413,5 +420,71 @@ public class InitializationVisitor<
             }
             checker.reportError(blockNode, COMMITMENT_FIELDS_UNINITIALIZED_KEY, fieldsString);
         }
+    }
+
+    @Override
+    protected void checkAccessAllowed(
+            Element field,
+            AnnotatedTypeMirror receiverType,
+            @FindDistinct ExpressionTree accessTree) {
+        System.out.printf(
+                "IV.isAccessAllowed(%s, %s, %s [%s])%n",
+                field, receiverType, accessTree, accessTree.getKind());
+        System.out.printf("  receiverType=%s%n", receiverType);
+        if (receiverType == null) {
+            return;
+        }
+
+        Tree statement = this.enclosingStatement(accessTree);
+        if (statement != null
+                && statement.getKind() == Tree.Kind.ASSIGNMENT // TODO
+                && ((AssignmentTree) statement).getVariable() == accessTree) {
+            // This is an lvalue use.
+            return;
+        }
+
+        Element enclosing = field.getEnclosingElement();
+        System.out.printf("  field=%s, enclosing=%s [%s]%n", field, enclosing, enclosing.getKind());
+
+        switch (accessTree.getKind()) {
+            case MEMBER_SELECT:
+                MemberSelectTree mst = (MemberSelectTree) accessTree;
+                ExpressionTree receiverTree = mst.getExpression();
+                Name identifier = mst.getIdentifier();
+                System.out.printf("receiverTree=%s, identifier=%s%n", receiverTree, identifier);
+                AnnotationMirror initAnno =
+                        receiverType.getAnnotationInHierarchy(
+                                ((InitializationAnnotatedTypeFactory) atypeFactory).INITIALIZED);
+                if (atypeFactory.areSameByClass(initAnno, Initialized.class)) {
+                    break;
+                }
+                // initAnno is @UnknownInitialization or @UnderInitialization
+                DeclaredType frame =
+                        AnnotationUtils.getElementValue(
+                                initAnno, "value", DeclaredType.class, false);
+                System.out.printf("  initAnno = %s, frame = %s%n", initAnno, frame);
+
+                System.out.printf("  TODO: test frame=%s against enclosing=%s%n", frame, enclosing);
+
+                // if (! (frame is subtype of EnclosingType)) {
+                checker.reportError(
+                        accessTree,
+                        "initialization.invalid.field.access",
+                        identifier,
+                        receiverType);
+                // }
+
+                break;
+            case IDENTIFIER:
+                // TODO
+                break;
+            default:
+                throw new BugInCF(
+                        "Unexpected accessTree (%s): %s", accessTree.getKind(), accessTree);
+        }
+
+        // TODO:  super.checkAccessAllowed();
+
+        return;
     }
 }
