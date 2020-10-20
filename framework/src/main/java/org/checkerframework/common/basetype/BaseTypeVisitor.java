@@ -4165,7 +4165,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         System.out.printf("  receiverType=%s%n", receiverType);
         System.out.printf("  receiverType.getAnnotations()=%s%n", receiverType.getAnnotations());
 
-        // TODO: Don't just look at the receiver type, but at the receiver declaration.
+        // TODO: Don't just look at the receiver type, but at the receiver declaration.  (That will
+        // enable handling type annotations that are not part of the type system being checked.)
 
         if (!AnnotationUtils.containsSameByName(receiverType.getAnnotations(), when)) {
             return;
