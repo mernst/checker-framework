@@ -4132,8 +4132,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             elem = TreeUtils.elementFromUse(memberSel);
         }
 
-        System.out.printf("checkAccess(%s) %s %s %s%n", node, memberSel, tree, elem);
-
         if (elem == null || !elem.getKind().isField()) {
             return;
         }
