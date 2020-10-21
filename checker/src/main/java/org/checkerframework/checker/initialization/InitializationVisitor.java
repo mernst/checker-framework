@@ -424,6 +424,12 @@ public class InitializationVisitor<
         }
     }
 
+    // TODO: This produces false positives in both methods and constructors that set fields.  The
+    // code ought to use the Initialization Checker's logic to determine which fields are already
+    // set.  However, the Initialization Checker only tracks @NonNull fields, not all fields.  We
+    // should add a feature (controlled by a command-line option) to track all fields, not just
+    // @NonNull ones.  Method hasFieldInvariantAnnotation is relevant; it determines which fields
+    // the Initialization Checker tracks.
     @Override
     protected void checkAccessAllowed(
             Element field,
