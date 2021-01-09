@@ -737,7 +737,10 @@ public class DependentTypesHelper {
         private final JavaExpressionContext context;
         /** The local scope. */
         private final TreePath localScope;
-        /** Whether or not the expression might contain a variable declared in local scope. */
+        /**
+         * Whether or not the expression might contain a variable declared in local scope. Really,
+         * whether to use {@code localScope} to resolve identifiers.
+         */
         private final UseLocalScope useLocalScope;
         /**
          * If true, remove erroneous expressions. If false, replace them by an explanation of why
@@ -828,6 +831,8 @@ public class DependentTypesHelper {
             errorTree = ((VariableTree) errorTree).getType();
             for (AnnotationTree annoTree : modifiers.getAnnotations()) {
                 for (Class<?> annoClazz : annoToElements.keySet()) {
+                    // TODO: Simple string containment seems too simplistic.  At least check for a
+                    // word boundary.
                     if (annoTree.toString().contains(annoClazz.getSimpleName())) {
                         errorTree = annoTree;
                         break;
