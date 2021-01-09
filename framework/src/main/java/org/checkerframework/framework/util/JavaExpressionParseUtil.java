@@ -1096,6 +1096,7 @@ public class JavaExpressionParseUtil {
      * @param provider gives the context
      * @param tree the VariableTree
      * @return a JavaExpression for the given VariableTree
+     * @throws JavaExpressionParseException if the expression string cannot be parsed
      */
     public static JavaExpression fromVariableTreeDoNotUseLocalScope(
             AnnotatedTypeFactory provider, VariableTree tree) throws JavaExpressionParseException {
@@ -1120,6 +1121,7 @@ public class JavaExpressionParseUtil {
      * @param provider gives the context
      * @param tree the VariableTree
      * @return a JavaExpression for the given VariableTree
+     * @throws JavaExpressionParseException if the expression string cannot be parsed
      */
     public static JavaExpression fromVariableTreeUseMethodScope(
             AnnotatedTypeFactory provider, VariableTree tree) throws JavaExpressionParseException {
