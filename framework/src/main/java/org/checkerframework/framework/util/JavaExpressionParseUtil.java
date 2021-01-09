@@ -106,7 +106,7 @@ public class JavaExpressionParseUtil {
      */
     private static final String PARMETER_REPLACEMENT = "_param_";
 
-    /** The length of {@link PARAMETER_REPLACEMENT}. */
+    /** The length of {@link #PARAMETER_REPLACEMENT}. */
     private static final int PARAMETER_REPLACEMENT_LENGTH = PARMETER_REPLACEMENT.length();
 
     /**

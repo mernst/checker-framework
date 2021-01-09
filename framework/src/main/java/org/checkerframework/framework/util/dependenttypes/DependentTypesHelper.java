@@ -677,6 +677,8 @@ public class DependentTypesHelper {
      * @param context information about any receiver and arguments
      * @param localScope path to local scope to use
      * @param anno the annotation to be standardized
+     * @param removeErroneousExpressions if true, remove erroneous expressions rather than
+     *     converting them into an explanation of why they are illegal
      * @return the standardized annotation
      */
     public AnnotationMirror standardizeAnnotationUseMethodScope(
@@ -746,6 +748,7 @@ public class DependentTypesHelper {
         return builder.build();
     }
 
+    /** A visitor that standardizes type annotations. */
     private class StandardizeTypeAnnotator extends AnnotatedTypeScanner<Void, Void> {
         /** The context. */
         private final JavaExpressionContext context;
