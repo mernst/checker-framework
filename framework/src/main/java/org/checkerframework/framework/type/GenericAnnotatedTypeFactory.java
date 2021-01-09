@@ -98,6 +98,7 @@ import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.framework.util.ContractsFromMethod;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
+import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.framework.util.defaults.QualifierDefaults;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesHelper;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesTreeAnnotator;
@@ -871,7 +872,7 @@ public abstract class GenericAnnotatedTypeFactory<
                         JavaExpression.getParametersOfEnclosingMethod(this, currentPath),
                         this.getContext());
 
-        return JavaExpressionParseUtil.parse(expression, context, currentPath, true);
+        return JavaExpressionParseUtil.parse(expression, context, currentPath, UseLocalScope.YES);
     }
 
     /**

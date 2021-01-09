@@ -57,6 +57,7 @@ import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
+import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesError;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
@@ -1299,7 +1300,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
                                     itself.toString() + "." + remainingExpression,
                                     flowExprContext,
                                     path,
-                                    true);
+                                    UseLocalScope.YES);
                     if (!atypeFactory.isExpressionEffectivelyFinal(lockExpression.lockExpression)) {
                         checker.reportError(
                                 path.getLeaf(),
@@ -1310,7 +1311,8 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
                 }
             } else {
                 lockExpression.lockExpression =
-                        JavaExpressionParseUtil.parse(expression, flowExprContext, path, true);
+                        JavaExpressionParseUtil.parse(
+                                expression, flowExprContext, path, UseLocalScope.YES);
                 return lockExpression;
             }
         } catch (JavaExpressionParseException ex) {

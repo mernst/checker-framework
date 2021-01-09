@@ -48,6 +48,7 @@ import org.checkerframework.framework.type.visitor.SimpleAnnotatedTypeScanner;
 import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
+import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
@@ -317,7 +318,7 @@ public class DependentTypesHelper {
                         r,
                         JavaExpression.getParametersOfEnclosingMethod(factory, path),
                         factory.getContext());
-        standardizeUseLocals(context, path, type);
+        standardizeUseLocalScope(context, path, type);
     }
 
     /**
@@ -416,7 +417,7 @@ public class DependentTypesHelper {
                     // TODO: test this.
                     // TODO: use path.getParentPath to prevent a StackOverflowError, see Issue
                     // #1027.
-                    standardizeUseLocals(parameterContext, path.getParentPath(), type);
+                    standardizeUseLocalScope(parameterContext, path.getParentPath(), type);
                 }
                 break;
 
@@ -429,7 +430,7 @@ public class DependentTypesHelper {
                         JavaExpression.getParametersOfEnclosingMethod(factory, path);
                 JavaExpressionContext localContext =
                         new JavaExpressionContext(receiver, params, factory.getContext());
-                standardizeUseLocals(localContext, path, type);
+                standardizeUseLocalScope(localContext, path, type);
                 break;
 
             case FIELD:
@@ -500,7 +501,7 @@ public class DependentTypesHelper {
                         receiver,
                         JavaExpression.getParametersOfEnclosingMethod(factory, path),
                         factory.getContext());
-        standardizeUseLocals(localContext, path, annotatedType);
+        standardizeUseLocalScope(localContext, path, annotatedType);
     }
 
     public void standardizeVariable(AnnotatedTypeMirror type, Element elt) {
@@ -545,9 +546,9 @@ public class DependentTypesHelper {
      * @param localScope the local scope
      * @param type the type to standardize; is side-effected by this method
      */
-    private void standardizeUseLocals(
+    private void standardizeUseLocalScope(
             JavaExpressionContext context, TreePath localScope, AnnotatedTypeMirror type) {
-        standardizeAtm(context, localScope, type, /*useLocalScope=*/ true);
+        standardizeAtm(context, localScope, type, UseLocalScope.YES);
     }
 
     /**
@@ -564,6 +565,11 @@ public class DependentTypesHelper {
     }
 
     /**
+     * Standardize a type.
+     *
+     * @param context the context
+     * @param localScope the local scope
+     * @param type the type to standardize; is side-effected by this method
      * @param removeErroneousExpressions if true, remove erroneous expressions rather than
      *     converting them into an explanation of why they are illegal
      */
@@ -572,15 +578,14 @@ public class DependentTypesHelper {
             TreePath localScope,
             AnnotatedTypeMirror type,
             boolean removeErroneousExpressions) {
-        standardizeAtm(
-                context, localScope, type, /*useLocalScope=*/ false, removeErroneousExpressions);
+        standardizeAtm(context, localScope, type, UseLocalScope.NO, removeErroneousExpressions);
     }
 
     private void standardizeAtm(
             JavaExpressionContext context,
             TreePath localScope,
             AnnotatedTypeMirror type,
-            boolean useLocalScope) {
+            UseLocalScope useLocalScope) {
         standardizeAtm(
                 context, localScope, type, useLocalScope, /*removeErroneousExpressions=*/ false);
     }
@@ -593,7 +598,7 @@ public class DependentTypesHelper {
             JavaExpressionContext context,
             TreePath localScope,
             AnnotatedTypeMirror type,
-            boolean useLocalScope,
+            UseLocalScope useLocalScope,
             boolean removeErroneousExpressions) {
         // localScope is null in dataflow when creating synthetic trees for enhanced for loops.
         if (localScope != null) {
@@ -607,7 +612,7 @@ public class DependentTypesHelper {
             String expression,
             JavaExpressionContext context,
             TreePath localScope,
-            boolean useLocalScope) {
+            UseLocalScope useLocalScope) {
         if (DependentTypesError.isExpressionError(expression)) {
             return expression;
         }
@@ -646,7 +651,7 @@ public class DependentTypesHelper {
             JavaExpressionContext context,
             TreePath localScope,
             AnnotationMirror anno,
-            boolean useLocalScope,
+            UseLocalScope useLocalScope,
             boolean removeErroneousExpressions) {
         if (!isExpressionAnno(anno)) {
             return anno;
@@ -665,7 +670,7 @@ public class DependentTypesHelper {
             JavaExpressionContext context,
             TreePath localScope,
             AnnotationMirror anno,
-            boolean useLocalScope,
+            UseLocalScope useLocalScope,
             boolean removeErroneousExpressions) {
         if (!isExpressionAnno(anno)) {
             return null;
@@ -684,7 +689,7 @@ public class DependentTypesHelper {
             JavaExpressionContext context,
             TreePath localScope,
             AnnotationMirror anno,
-            boolean useLocalScope,
+            UseLocalScope useLocalScope,
             boolean removeErroneousExpressions) {
         AnnotationBuilder builder =
                 new AnnotationBuilder(
@@ -713,7 +718,7 @@ public class DependentTypesHelper {
         private final JavaExpressionContext context;
         private final TreePath localScope;
         /** Whether or not the expression might contain a variable declared in local scope. */
-        private final boolean useLocalScope;
+        private final UseLocalScope useLocalScope;
         /**
          * If true, remove erroneous expressions. If false, replace them by an explanation of why
          * they are illegal.
@@ -727,7 +732,7 @@ public class DependentTypesHelper {
         private StandardizeTypeAnnotator(
                 JavaExpressionContext context,
                 TreePath localScope,
-                boolean useLocalScope,
+                UseLocalScope useLocalScope,
                 boolean removeErroneousExpressions) {
             this.context = context;
             this.localScope = localScope;

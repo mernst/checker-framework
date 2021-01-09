@@ -121,7 +121,7 @@ public class JavaExpressionParseUtil {
             String expression,
             JavaExpressionContext context,
             TreePath localScope,
-            boolean useLocalScope)
+            UseLocalScope useLocalScope)
             throws JavaExpressionParseException {
 
         Expression expr;
@@ -310,7 +310,7 @@ public class JavaExpressionParseUtil {
             }
 
             // Local variable, parameter, or field.
-            if (!context.parsingMember && context.useLocalScope) {
+            if (!context.parsingMember && context.useLocalScope == UseLocalScope.YES) {
                 // Attempt to match a local variable within the scope of the
                 // given path before attempting to match a field.
                 VariableElement varElem = resolver.findLocalVariableOrParameterOrField(s, path);
@@ -728,7 +728,7 @@ public class JavaExpressionParseUtil {
          */
         public final boolean parsingMember;
         /** Whether the TreePath should be used to find identifiers. Defaults to true. */
-        public final boolean useLocalScope;
+        public final UseLocalScope useLocalScope;
 
         /**
          * Creates a context for parsing a Java expression.
@@ -752,7 +752,7 @@ public class JavaExpressionParseUtil {
                 JavaExpression outerReceiver,
                 List<JavaExpression> arguments,
                 BaseContext checkerContext) {
-            this(receiver, outerReceiver, arguments, checkerContext, false, true);
+            this(receiver, outerReceiver, arguments, checkerContext, false, UseLocalScope.YES);
         }
 
         private JavaExpressionContext(
@@ -761,7 +761,7 @@ public class JavaExpressionParseUtil {
                 List<JavaExpression> arguments,
                 BaseContext checkerContext,
                 boolean parsingMember,
-                boolean useLocalScope) {
+                UseLocalScope useLocalScope) {
             assert checkerContext != null;
             this.receiver = receiver;
             this.arguments = arguments;
@@ -989,7 +989,7 @@ public class JavaExpressionParseUtil {
          * Returns a copy of the context that differs in that useLocalScope is set to the given
          * value.
          */
-        public JavaExpressionContext copyAndSetUseLocalScope(boolean useLocalScope) {
+        public JavaExpressionContext copyAndSetUseLocalScope(UseLocalScope useLocalScope) {
             return new JavaExpressionContext(
                     receiver,
                     outerReceiver,
@@ -1064,11 +1064,7 @@ public class JavaExpressionParseUtil {
         JavaExpression je = JavaExpression.getImplicitReceiver(elt);
         JavaExpressionContext context =
                 new JavaExpressionContext(je, /*arguments=*/ null, provider.getContext());
-        return parse(
-                tree.getName().toString(),
-                context,
-                provider.getPath(tree),
-                /*useLocalScope=*/ false);
+        return parse(tree.getName().toString(), context, provider.getPath(tree), UseLocalScope.NO);
     }
 
     ///////////////////////////////////////////////////////////////////////////

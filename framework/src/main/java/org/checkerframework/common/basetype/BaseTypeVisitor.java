@@ -121,6 +121,7 @@ import org.checkerframework.framework.util.FieldInvariants;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
+import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesHelper;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
@@ -958,7 +959,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             try {
                 expr =
                         JavaExpressionParseUtil.parse(
-                                expression, flowExprContext, getCurrentPath(), false);
+                                expression, flowExprContext, getCurrentPath(), UseLocalScope.NO);
             } catch (JavaExpressionParseException e) {
                 checker.report(node, e.getDiagMessage());
             }
@@ -1011,7 +1012,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         if (dependentTypesHelper != null) {
             AnnotationMirror anno =
                     dependentTypesHelper.standardizeAnnotation(
-                            flowExprContext, path, annoFromContract, false, false);
+                            flowExprContext, path, annoFromContract, UseLocalScope.NO, false);
             dependentTypesHelper.checkAnnotation(anno, path.getLeaf());
             return anno;
         } else {
@@ -1682,7 +1683,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             try {
                 expr =
                         JavaExpressionParseUtil.parse(
-                                expression, flowExprContext, getCurrentPath(), false);
+                                expression, flowExprContext, getCurrentPath(), UseLocalScope.NO);
             } catch (JavaExpressionParseException e) {
                 // report errors here
                 checker.report(tree, e.getDiagMessage());
@@ -4160,7 +4161,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 // This could be optimized to store the result the first time.
                 // (same for other annotations)
                 JavaExpression expr =
-                        JavaExpressionParseUtil.parse(expression, flowExprContext, path, false);
+                        JavaExpressionParseUtil.parse(
+                                expression, flowExprContext, path, UseLocalScope.NO);
                 result.add(Pair.of(expr, annotation));
             } catch (JavaExpressionParseException e) {
                 // report errors here

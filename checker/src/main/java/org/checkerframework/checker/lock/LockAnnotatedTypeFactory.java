@@ -55,6 +55,7 @@ import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.QualifierKind;
+import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesError;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesHelper;
 import org.checkerframework.javacutil.AnnotationBuilder;
@@ -170,7 +171,7 @@ public class LockAnnotatedTypeFactory
                     String expression,
                     JavaExpressionContext context,
                     TreePath localScope,
-                    boolean useLocalScope) {
+                    UseLocalScope useLocalScope) {
                 if (DependentTypesError.isExpressionError(expression)) {
                     return expression;
                 }

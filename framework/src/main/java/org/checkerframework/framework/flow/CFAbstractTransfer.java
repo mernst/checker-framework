@@ -75,6 +75,7 @@ import org.checkerframework.framework.util.ContractsFromMethod;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
+import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
@@ -570,7 +571,7 @@ public abstract class CFAbstractTransfer<
                 // (same for other annotations)
                 JavaExpression expr =
                         JavaExpressionParseUtil.parse(
-                                expression, flowExprContext, localScope, false);
+                                expression, flowExprContext, localScope, UseLocalScope.NO);
                 info.insertValue(expr, annotation);
             } catch (JavaExpressionParseException e) {
                 // Errors are reported by BaseTypeVisitor.checkContractsAtMethodDeclaration().
@@ -586,7 +587,7 @@ public abstract class CFAbstractTransfer<
         // TODO: common implementation with BaseTypeVisitor.standardizeAnnotationFromContract
         if (analysis.dependentTypesHelper != null) {
             return analysis.dependentTypesHelper.standardizeAnnotation(
-                    flowExprContext, path, annoFromContract, false, false);
+                    flowExprContext, path, annoFromContract, UseLocalScope.NO, false);
             // BaseTypeVisitor checks the validity of the annotaiton. Errors are reported there
             // when called from BaseTypeVisitor.checkContractsAtMethodDeclaration().
         } else {
@@ -1174,7 +1175,7 @@ public abstract class CFAbstractTransfer<
             try {
                 JavaExpression je =
                         JavaExpressionParseUtil.parse(
-                                expression, flowExprContext, localScope, false);
+                                expression, flowExprContext, localScope, UseLocalScope.NO);
                 // "insertOrRefine" is called so that the postcondition information is added to any
                 // existing information rather than replacing it.  If the called method is not
                 // side-effect-free, then the values that might have been changed by the method call

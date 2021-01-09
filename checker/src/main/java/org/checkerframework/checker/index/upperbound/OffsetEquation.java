@@ -24,6 +24,7 @@ import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
+import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesError;
 import org.checkerframework.javacutil.AnnotationProvider;
 import org.checkerframework.javacutil.TreeUtils;
@@ -301,7 +302,7 @@ public class OffsetEquation {
             boolean subtract,
             JavaExpressionContext context,
             TreePath scope,
-            boolean useLocalScope,
+            UseLocalScope useLocalScope,
             AnnotatedTypeFactory factory)
             throws JavaExpressionParseException {
         // Standardize all terms and remove constants
@@ -337,7 +338,7 @@ public class OffsetEquation {
     public void standardizeAndViewpointAdaptExpressions(
             JavaExpressionContext context,
             TreePath scope,
-            boolean useLocalScope,
+            UseLocalScope useLocalScope,
             AnnotatedTypeFactory factory)
             throws JavaExpressionParseException {
 
@@ -357,7 +358,7 @@ public class OffsetEquation {
      *     thrown. If this happens, no string terms are changed.
      */
     public void standardizeAndViewpointAdaptExpressions(
-            JavaExpressionContext context, TreePath scope, boolean useLocalScope)
+            JavaExpressionContext context, TreePath scope, UseLocalScope useLocalScope)
             throws JavaExpressionParseException {
 
         standardizeAndViewpointAdaptExpressions(context, scope, useLocalScope, null);

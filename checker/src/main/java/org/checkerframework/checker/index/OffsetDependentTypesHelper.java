@@ -10,6 +10,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
+import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesError;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesHelper;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesTreeAnnotator;
@@ -29,7 +30,7 @@ public class OffsetDependentTypesHelper extends DependentTypesHelper {
             final String expression,
             JavaExpressionContext context,
             TreePath localScope,
-            boolean useLocalScope) {
+            UseLocalScope useLocalScope) {
         if (DependentTypesError.isExpressionError(expression)) {
             return expression;
         }
