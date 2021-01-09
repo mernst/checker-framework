@@ -609,7 +609,7 @@ public class DependentTypesHelper {
             TreePath localScope,
             AnnotatedTypeMirror type,
             boolean removeErroneousExpressions) {
-        // TODO: pass the method scope, and pass UseLocalScope.YES
+        // TODO: pass the method scope and UseLocalScope.YES
         standardizeAtm(context, localScope, type, UseLocalScope.NO, removeErroneousExpressions);
     }
 
@@ -688,7 +688,7 @@ public class DependentTypesHelper {
         if (!isExpressionAnno(anno)) {
             return anno;
         }
-        // TODO: change this to pass the method scope and UseLocalScope.YES.
+        // TODO: pass the method scope and UseLocalScope.YES
         return standardizeDependentTypeAnnotation(
                 context, localScope, anno, UseLocalScope.NO, removeErroneousExpressions);
     }
