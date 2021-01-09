@@ -951,6 +951,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             AnnotationMirror annotation = contract.annotation;
 
             annotation =
+                    // TODO: This call is already OK.
                     standardizeAnnotationFromContract(
                             annotation, flowExprContext, getCurrentPath());
 
