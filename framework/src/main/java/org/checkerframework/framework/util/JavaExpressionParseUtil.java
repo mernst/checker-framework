@@ -1090,6 +1090,13 @@ public class JavaExpressionParseUtil {
         }
     }
 
+    /**
+     * Get a JavaExpression from a VariableTree, passing {@code false} for useLocalScope.
+     *
+     * @param provider gives the context
+     * @param tree the VariableTree
+     * @return a JavaExpression for the given VariableTree
+     */
     public static JavaExpression fromVariableTreeDoNotUseLocalScope(
             AnnotatedTypeFactory provider, VariableTree tree) throws JavaExpressionParseException {
         Element elt = TreeUtils.elementFromDeclaration(tree);
@@ -1107,6 +1114,13 @@ public class JavaExpressionParseUtil {
         return parseDoNotUseLocalScope(tree.getName().toString(), context, provider.getPath(tree));
     }
 
+    /**
+     * Get a JavaExpression from a VariableTree, using method scope.
+     *
+     * @param provider gives the context
+     * @param tree the VariableTree
+     * @return a JavaExpression for the given VariableTree
+     */
     public static JavaExpression fromVariableTreeUseMethodScope(
             AnnotatedTypeFactory provider, VariableTree tree) throws JavaExpressionParseException {
         Element elt = TreeUtils.elementFromDeclaration(tree);
