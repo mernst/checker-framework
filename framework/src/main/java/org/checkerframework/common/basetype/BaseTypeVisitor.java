@@ -121,6 +121,7 @@ import org.checkerframework.framework.util.FieldInvariants;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
+import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesHelper;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
@@ -1010,8 +1011,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         DependentTypesHelper dependentTypesHelper = atypeFactory.getDependentTypesHelper();
         if (dependentTypesHelper != null) {
             AnnotationMirror anno =
-                    dependentTypesHelper.standardizeDoNotUseLocalScope(
-                            flowExprContext, path, annoFromContract, false);
+                    dependentTypesHelper.standardizeAnnotation(
+                            flowExprContext, path, annoFromContract, UseLocalScope.NO, false);
             dependentTypesHelper.checkAnnotation(anno, path.getLeaf());
             return anno;
         } else {
