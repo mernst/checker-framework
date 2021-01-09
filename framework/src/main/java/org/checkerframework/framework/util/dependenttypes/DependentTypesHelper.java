@@ -644,20 +644,18 @@ public class DependentTypesHelper {
      * @param context information about any receiver and arguments
      * @param localScope path to local scope to use
      * @param anno the annotation to be standardized
-     * @param useLocalScope whether {@code localScope} should be used to resolve identifiers
      * @return the standardized annotation
      */
-    public AnnotationMirror standardizeAnnotation(
+    public AnnotationMirror standardizeAnnotationDoNotUseLocalScope(
             JavaExpressionContext context,
             TreePath localScope,
             AnnotationMirror anno,
-            UseLocalScope useLocalScope,
             boolean removeErroneousExpressions) {
         if (!isExpressionAnno(anno)) {
             return anno;
         }
         return standardizeDependentTypeAnnotation(
-                context, localScope, anno, useLocalScope, removeErroneousExpressions);
+                context, localScope, anno, UseLocalScope.NO, removeErroneousExpressions);
     }
 
     /**

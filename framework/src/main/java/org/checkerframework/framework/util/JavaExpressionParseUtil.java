@@ -1008,7 +1008,7 @@ public class JavaExpressionParseUtil {
          * Returns a copy of the context that differs in that {@code useLocalScope} is set to the
          * given value.
          *
-         * @param useLocalScope whether the local scope should be used to look up variable names
+         * @param useLocalScope whether the local scope should be used to resolve identifiers
          * @return a copy of the context, with {@code useLocalScope} is set to the given value.
          */
         public JavaExpressionContext copyAndSetUseLocalScope(UseLocalScope useLocalScope) {
