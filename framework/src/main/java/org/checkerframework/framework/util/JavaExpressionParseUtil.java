@@ -123,7 +123,7 @@ public class JavaExpressionParseUtil {
     public static JavaExpression parseUseMethodScope(
             String expression, JavaExpressionContext context, TreePath localScope)
             throws JavaExpressionParseException {
-        // TODO: pass the method scope and UseLocalScope.YES
+        // TODO: pass the method scope and UseLocalScope.YES, or do that at clients.
         return parse(expression, context, localScope, UseLocalScope.NO);
     }
 

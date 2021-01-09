@@ -958,10 +958,10 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
             JavaExpression expr = null;
             try {
+                // The path is the path to the method declaration.
                 expr =
-                        // TODO: path is already OK here.
-                        JavaExpressionParseUtil.parseUseMethodScope(
-                                expression, flowExprContext, getCurrentPath());
+                        JavaExpressionParseUtil.parse(
+                                expression, flowExprContext, getCurrentPath(), UseLocalScope.YES);
             } catch (JavaExpressionParseException e) {
                 checker.report(node, e.getDiagMessage());
             }
@@ -1658,7 +1658,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      * Checks that all the given {@code preconditions} hold true immediately prior to the method
      * invocation or variable access at {@code tree}.
      *
-     * @param tree the Tree immediately prior to which the preconditions must hold true
+     * @param tree the method invocation; immediately prior to it, the preconditions must hold true
      * @param preconditions the preconditions to be checked
      */
     protected void checkPreconditions(MethodInvocationTree tree, Set<Precondition> preconditions) {
@@ -1667,6 +1667,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         if (preconditions.isEmpty()) {
             return;
         }
+
         JavaExpressionContext flowExprContext =
                 JavaExpressionContext.buildContextForMethodUse(tree, checker.getContext());
 
