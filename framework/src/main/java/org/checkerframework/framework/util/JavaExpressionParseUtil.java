@@ -106,6 +106,7 @@ public class JavaExpressionParseUtil {
      */
     private static final String PARMETER_REPLACEMENT = "_param_";
 
+    /** The length of {@link PARAMETER_REPLACEMENT}. */
     private static final int PARAMETER_REPLACEMENT_LENGTH = PARMETER_REPLACEMENT.length();
 
     /**
@@ -117,6 +118,8 @@ public class JavaExpressionParseUtil {
      * @param expression a Java expression to parse
      * @param context information about any receiver and arguments
      * @param localScope path to local scope to use
+     * @return the JavaExpression for the given expression string
+     * @throws JavaExpressionParseException if the expression string cannot be parsed
      */
     public static JavaExpression parseDoNotUseLocalScope(
             String expression, JavaExpressionContext context, TreePath localScope)
@@ -1002,8 +1005,11 @@ public class JavaExpressionParseUtil {
         }
 
         /**
-         * Returns a copy of the context that differs in that useLocalScope is set to the given
-         * value.
+         * Returns a copy of the context that differs in that {@code useLocalScope} is set to the
+         * given value.
+         *
+         * @param useLocalScope whether the local scope should be used to look up variable names
+         * @return a copy of the context, with {@code useLocalScope} is set to the given value.
          */
         public JavaExpressionContext copyAndSetUseLocalScope(UseLocalScope useLocalScope) {
             return new JavaExpressionContext(

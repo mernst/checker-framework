@@ -715,7 +715,9 @@ public class DependentTypesHelper {
     }
 
     private class StandardizeTypeAnnotator extends AnnotatedTypeScanner<Void, Void> {
+        /** The context. */
         private final JavaExpressionContext context;
+        /** The local scope. */
         private final TreePath localScope;
         /** Whether or not the expression might contain a variable declared in local scope. */
         private final UseLocalScope useLocalScope;
