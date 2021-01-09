@@ -720,7 +720,9 @@ public class LowerBoundTransfer extends IndexAbstractTransfer {
 
                 JavaExpression je = null;
                 try {
-                    je = JavaExpressionParseUtil.fromVariableTree(aTypeFactory, variableTree);
+                    je =
+                            JavaExpressionParseUtil.fromVariableTreeUseMethodScope(
+                                    aTypeFactory, variableTree);
                 } catch (JavaExpressionParseUtil.JavaExpressionParseException e) {
                     // do nothing
                 }

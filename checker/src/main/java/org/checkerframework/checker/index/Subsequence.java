@@ -114,6 +114,7 @@ public class Subsequence {
     private static String standardizeAndViewpointAdapt(
             String s, TreePath currentPath, JavaExpressionContext context) {
         try {
+            // TODO: Why doesn't this use the local scope?
             return JavaExpressionParseUtil.parseDoNotUseLocalScope(s, context, currentPath)
                     .toString();
         } catch (JavaExpressionParseException e) {

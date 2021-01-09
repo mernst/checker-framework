@@ -957,7 +957,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             JavaExpression expr = null;
             try {
                 expr =
-                        JavaExpressionParseUtil.parseDoNotUseLocalScope(
+                        JavaExpressionParseUtil.parseUseMethodScope(
                                 expression, flowExprContext, getCurrentPath());
             } catch (JavaExpressionParseException e) {
                 checker.report(node, e.getDiagMessage());
@@ -1010,7 +1010,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         DependentTypesHelper dependentTypesHelper = atypeFactory.getDependentTypesHelper();
         if (dependentTypesHelper != null) {
             AnnotationMirror anno =
-                    dependentTypesHelper.standardizeAnnotationDoNotUseLocalScope(
+                    // TODO: scope is method
+                    dependentTypesHelper.standardizeAnnotationUseMethodScope(
                             flowExprContext, path, annoFromContract, false);
             dependentTypesHelper.checkAnnotation(anno, path.getLeaf());
             return anno;
@@ -1681,7 +1682,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             JavaExpression expr;
             try {
                 expr =
-                        JavaExpressionParseUtil.parseDoNotUseLocalScope(
+                        JavaExpressionParseUtil.parseUseMethodScope(
                                 expression, flowExprContext, getCurrentPath());
             } catch (JavaExpressionParseException e) {
                 // report errors here
@@ -4160,7 +4161,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 // This could be optimized to store the result the first time.
                 // (same for other annotations)
                 JavaExpression expr =
-                        JavaExpressionParseUtil.parseDoNotUseLocalScope(
+                        JavaExpressionParseUtil.parseUseMethodScope(
                                 expression, flowExprContext, path);
                 result.add(Pair.of(expr, annotation));
             } catch (JavaExpressionParseException e) {

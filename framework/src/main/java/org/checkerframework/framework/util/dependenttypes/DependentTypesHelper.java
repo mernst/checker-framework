@@ -145,6 +145,7 @@ public class DependentTypesHelper {
         JavaExpression r = JavaExpression.getImplicitReceiver(classDecl);
         JavaExpressionContext context = new JavaExpressionContext(r, null, factory.getContext());
         for (AnnotatedTypeParameterBounds bound : bounds) {
+            // TODO: Why not use local scope?
             standardizeDoNotUseLocalScope(context, pathToUse, bound.getUpperBound());
             standardizeDoNotUseLocalScope(context, pathToUse, bound.getLowerBound());
         }
@@ -220,7 +221,7 @@ public class DependentTypesHelper {
         // Then copy annotations from the viewpoint adapted type to methodType, if that annotation
         // is not on a type that was substituted for a type variable.
 
-        standardizeDoNotUseLocalScope(context, currentPath, viewpointAdaptedType);
+        standardizeUseMethodScope(context, currentPath, viewpointAdaptedType);
         new ViewpointAdaptedCopier().visit(viewpointAdaptedType, methodType);
     }
 
@@ -354,7 +355,7 @@ public class DependentTypesHelper {
         JavaExpressionContext context =
                 JavaExpressionContext.buildContextForMethodDeclaration(
                         m, enclosingType, factory.getContext());
-        standardizeDoNotUseLocalScope(context, factory.getPath(m), atm, removeErroneousExpressions);
+        standardizeUseMethodScope(context, factory.getPath(m), atm, removeErroneousExpressions);
     }
 
     /**
@@ -375,6 +376,8 @@ public class DependentTypesHelper {
         JavaExpression receiverJe = JavaExpression.getImplicitReceiver(classElt);
         JavaExpressionContext classignmentContext =
                 new JavaExpressionContext(receiverJe, null, factory.getContext());
+        // TODO: why not use local scope?  the path (the local scope) is probably already a class
+        // scope.
         standardizeDoNotUseLocalScope(classignmentContext, path, type);
     }
 
@@ -565,7 +568,7 @@ public class DependentTypesHelper {
     }
 
     /**
-     * Standardize a type.
+     * Standardize a type, setting useLocalScope to false.
      *
      * @param context the context
      * @param localScope the local scope
@@ -578,6 +581,36 @@ public class DependentTypesHelper {
             TreePath localScope,
             AnnotatedTypeMirror type,
             boolean removeErroneousExpressions) {
+        standardizeAtm(context, localScope, type, UseLocalScope.NO, removeErroneousExpressions);
+    }
+
+    /**
+     * Standardize a type, using the method scope.
+     *
+     * @param context the context
+     * @param localScope the local scope
+     * @param type the type to standardize; is side-effected by this method
+     */
+    private void standardizeUseMethodScope(
+            JavaExpressionContext context, TreePath localScope, AnnotatedTypeMirror type) {
+        standardizeUseMethodScope(context, localScope, type, /*removeErroneousExpressions=*/ false);
+    }
+
+    /**
+     * Standardize a type, using the method scope.
+     *
+     * @param context the context
+     * @param localScope the local scope
+     * @param type the type to standardize; is side-effected by this method
+     * @param removeErroneousExpressions if true, remove erroneous expressions rather than
+     *     converting them into an explanation of why they are illegal
+     */
+    private void standardizeUseMethodScope(
+            JavaExpressionContext context,
+            TreePath localScope,
+            AnnotatedTypeMirror type,
+            boolean removeErroneousExpressions) {
+        // TODO: pass the method scope, and pass UseLocalScope.YES
         standardizeAtm(context, localScope, type, UseLocalScope.NO, removeErroneousExpressions);
     }
 
@@ -646,7 +679,7 @@ public class DependentTypesHelper {
      * @param anno the annotation to be standardized
      * @return the standardized annotation
      */
-    public AnnotationMirror standardizeAnnotationDoNotUseLocalScope(
+    public AnnotationMirror standardizeAnnotationUseMethodScope(
             JavaExpressionContext context,
             TreePath localScope,
             AnnotationMirror anno,
@@ -654,6 +687,7 @@ public class DependentTypesHelper {
         if (!isExpressionAnno(anno)) {
             return anno;
         }
+        // TODO: change this to pass the method scope and UseLocalScope.YES.
         return standardizeDependentTypeAnnotation(
                 context, localScope, anno, UseLocalScope.NO, removeErroneousExpressions);
     }

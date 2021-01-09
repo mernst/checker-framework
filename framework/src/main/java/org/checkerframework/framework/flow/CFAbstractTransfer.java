@@ -569,7 +569,7 @@ public abstract class CFAbstractTransfer<
                 // be optimized to store the result the first time.
                 // (same for other annotations)
                 JavaExpression expr =
-                        JavaExpressionParseUtil.parseDoNotUseLocalScope(
+                        JavaExpressionParseUtil.parseUseMethodScope(
                                 expression, flowExprContext, localScope);
                 info.insertValue(expr, annotation);
             } catch (JavaExpressionParseException e) {
@@ -585,7 +585,7 @@ public abstract class CFAbstractTransfer<
             TreePath path) {
         // TODO: common implementation with BaseTypeVisitor.standardizeAnnotationFromContract
         if (analysis.dependentTypesHelper != null) {
-            return analysis.dependentTypesHelper.standardizeAnnotationDoNotUseLocalScope(
+            return analysis.dependentTypesHelper.standardizeAnnotationUseMethodScope(
                     flowExprContext, path, annoFromContract, false);
             // BaseTypeVisitor checks the validity of the annotaiton. Errors are reported there
             // when called from BaseTypeVisitor.checkContractsAtMethodDeclaration().
@@ -1173,7 +1173,7 @@ public abstract class CFAbstractTransfer<
 
             try {
                 JavaExpression je =
-                        JavaExpressionParseUtil.parseDoNotUseLocalScope(
+                        JavaExpressionParseUtil.parseUseMethodScope(
                                 expression, flowExprContext, localScope);
                 // "insertOrRefine" is called so that the postcondition information is added to any
                 // existing information rather than replacing it.  If the called method is not

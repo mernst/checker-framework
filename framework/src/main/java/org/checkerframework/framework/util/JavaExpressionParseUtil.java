@@ -113,6 +113,23 @@ public class JavaExpressionParseUtil {
      * Parse a string and return its representation as a {@link JavaExpression}, or throw an {@link
      * JavaExpressionParseException}.
      *
+     * @param expression a Java expression to parse
+     * @param context information about any receiver and arguments
+     * @param localScope path to local scope; the containing method will be used as the local scope
+     * @return the JavaExpression for the given expression string
+     * @throws JavaExpressionParseException if the expression string cannot be parsed
+     */
+    public static JavaExpression parseUseMethodScope(
+            String expression, JavaExpressionContext context, TreePath localScope)
+            throws JavaExpressionParseException {
+        // TODO: pass the method scope and UseLocalScope.YES
+        return parse(expression, context, localScope, UseLocalScope.NO);
+    }
+
+    /**
+     * Parse a string and return its representation as a {@link JavaExpression}, or throw an {@link
+     * JavaExpressionParseException}.
+     *
      * <p>Does not use {@code localScope} to resolve identifiers.
      *
      * @param expression a Java expression to parse
@@ -1086,7 +1103,24 @@ public class JavaExpressionParseUtil {
         JavaExpression je = JavaExpression.getImplicitReceiver(elt);
         JavaExpressionContext context =
                 new JavaExpressionContext(je, /*arguments=*/ null, provider.getContext());
+        // TODO: Why doesn't this use local scope?
         return parseDoNotUseLocalScope(tree.getName().toString(), context, provider.getPath(tree));
+    }
+
+    public static JavaExpression fromVariableTreeUseMethodScope(
+            AnnotatedTypeFactory provider, VariableTree tree) throws JavaExpressionParseException {
+        Element elt = TreeUtils.elementFromDeclaration(tree);
+
+        if (elt.getKind() == ElementKind.LOCAL_VARIABLE
+                || elt.getKind() == ElementKind.RESOURCE_VARIABLE
+                || elt.getKind() == ElementKind.EXCEPTION_PARAMETER
+                || elt.getKind() == ElementKind.PARAMETER) {
+            return new LocalVariable(elt);
+        }
+        JavaExpression je = JavaExpression.getImplicitReceiver(elt);
+        JavaExpressionContext context =
+                new JavaExpressionContext(je, /*arguments=*/ null, provider.getContext());
+        return parseUseMethodScope(tree.getName().toString(), context, provider.getPath(tree));
     }
 
     ///////////////////////////////////////////////////////////////////////////
