@@ -124,7 +124,7 @@ public class UpperBoundVisitor extends BaseTypeVisitor<UpperBoundAnnotatedTypeFa
             String s, JavaExpressionContext context, Tree tree) {
         JavaExpression je;
         try {
-            // TODO: Why doesn't this use local scope??
+            // TODO: Why not use local scope??
             je = JavaExpressionParseUtil.parseDoNotUseLocalScope(s, context, getCurrentPath());
         } catch (JavaExpressionParseException e) {
             checker.report(tree, e.getDiagMessage());

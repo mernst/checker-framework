@@ -1090,8 +1090,8 @@ public class JavaExpressionParseUtil {
         }
     }
 
-    public static JavaExpression fromVariableTree(AnnotatedTypeFactory provider, VariableTree tree)
-            throws JavaExpressionParseException {
+    public static JavaExpression fromVariableTreeDoNotUseLocalScope(
+            AnnotatedTypeFactory provider, VariableTree tree) throws JavaExpressionParseException {
         Element elt = TreeUtils.elementFromDeclaration(tree);
 
         if (elt.getKind() == ElementKind.LOCAL_VARIABLE
@@ -1103,7 +1103,7 @@ public class JavaExpressionParseUtil {
         JavaExpression je = JavaExpression.getImplicitReceiver(elt);
         JavaExpressionContext context =
                 new JavaExpressionContext(je, /*arguments=*/ null, provider.getContext());
-        // TODO: Why doesn't this use local scope?
+        // TODO: Why not use local scope?
         return parseDoNotUseLocalScope(tree.getName().toString(), context, provider.getPath(tree));
     }
 

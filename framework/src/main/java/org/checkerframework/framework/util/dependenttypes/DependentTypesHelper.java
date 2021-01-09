@@ -376,8 +376,7 @@ public class DependentTypesHelper {
         JavaExpression receiverJe = JavaExpression.getImplicitReceiver(classElt);
         JavaExpressionContext classignmentContext =
                 new JavaExpressionContext(receiverJe, null, factory.getContext());
-        // TODO: why not use local scope?  the path (the local scope) is probably already a class
-        // scope.
+        // TODO: why not use local scope?  The local scope `path` is probably already a class scope.
         standardizeDoNotUseLocalScope(classignmentContext, path, type);
     }
 

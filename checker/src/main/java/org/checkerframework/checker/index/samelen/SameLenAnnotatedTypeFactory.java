@@ -121,7 +121,10 @@ public class SameLenAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
                 JavaExpression je;
                 try {
-                    je = JavaExpressionParseUtil.fromVariableTree(this, (VariableTree) tree);
+                    // TODO: Why not use local scope?
+                    je =
+                            JavaExpressionParseUtil.fromVariableTreeDoNotUseLocalScope(
+                                    this, (VariableTree) tree);
                 } catch (JavaExpressionParseException ex) {
                     je = null;
                 }
