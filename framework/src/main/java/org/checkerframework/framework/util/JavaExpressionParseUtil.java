@@ -112,6 +112,22 @@ public class JavaExpressionParseUtil {
      * Parse a string and return its representation as a {@link JavaExpression}, or throw an {@link
      * JavaExpressionParseException}.
      *
+     * <p>Does not use {@code localScope} to resolve identifiers.
+     *
+     * @param expression a Java expression to parse
+     * @param context information about any receiver and arguments
+     * @param localScope path to local scope to use
+     */
+    public static JavaExpression parseDoNotUseLocalScope(
+            String expression, JavaExpressionContext context, TreePath localScope)
+            throws JavaExpressionParseException {
+        return parse(expression, context, localScope, UseLocalScope.NO);
+    }
+
+    /**
+     * Parse a string and return its representation as a {@link JavaExpression}, or throw an {@link
+     * JavaExpressionParseException}.
+     *
      * @param expression a Java expression to parse
      * @param context information about any receiver and arguments
      * @param localScope path to local scope to use
@@ -1064,7 +1080,7 @@ public class JavaExpressionParseUtil {
         JavaExpression je = JavaExpression.getImplicitReceiver(elt);
         JavaExpressionContext context =
                 new JavaExpressionContext(je, /*arguments=*/ null, provider.getContext());
-        return parse(tree.getName().toString(), context, provider.getPath(tree), UseLocalScope.NO);
+        return parseDoNotUseLocalScope(tree.getName().toString(), context, provider.getPath(tree));
     }
 
     ///////////////////////////////////////////////////////////////////////////
