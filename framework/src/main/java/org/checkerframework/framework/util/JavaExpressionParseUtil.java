@@ -55,6 +55,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic.Kind;
 import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.cfg.node.ClassNameNode;
 import org.checkerframework.dataflow.cfg.node.ImplicitThisNode;
@@ -226,6 +227,8 @@ public class JavaExpressionParseUtil {
         private final TreePath path;
         /** The processing environment. */
         private final ProcessingEnvironment env;
+        /** The resolver. Computed from the environment, but lazily initialized. */
+        private @MonotonicNonNull Resolver resolver = null;
         /** The type utilities. */
         private final Types types;
 
@@ -239,6 +242,13 @@ public class JavaExpressionParseUtil {
             this.path = path;
             this.env = env;
             this.types = env.getTypeUtils();
+        }
+
+        /** Sets the {@code resolver} field if necessary. */
+        private void setResolverField() {
+            if (resolver == null) {
+                resolver = new Resolver(env);
+            }
         }
 
         /** If the expression is not supported, throw a {@link ParseRuntimeException} by default. */
@@ -337,7 +347,7 @@ public class JavaExpressionParseUtil {
         @Override
         public JavaExpression visit(NameExpr expr, JavaExpressionContext context) {
             String s = expr.getNameAsString();
-            Resolver resolver = new Resolver(env);
+            setResolverField();
 
             // Formal parameter, using "#2" syntax.
             if (!context.parsingMember && s.startsWith(PARMETER_REPLACEMENT)) {
@@ -425,7 +435,7 @@ public class JavaExpressionParseUtil {
 
         @Override
         public JavaExpression visit(MethodCallExpr expr, JavaExpressionContext context) {
-            Resolver resolver = new Resolver(env);
+            setResolverField();
 
             // Methods with scope (receiver expression) need to change the parsing context so that
             // identifiers are resolved with respect to the receiver.
@@ -544,7 +554,7 @@ public class JavaExpressionParseUtil {
          */
         @Override
         public JavaExpression visit(FieldAccessExpr expr, JavaExpressionContext context) {
-            Resolver resolver = new Resolver(env);
+            setResolverField();
 
             Symbol.PackageSymbol packageSymbol =
                     resolver.findPackage(expr.getScope().toString(), path);
