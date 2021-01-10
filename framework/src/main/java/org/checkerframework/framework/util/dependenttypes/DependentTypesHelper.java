@@ -450,7 +450,7 @@ public class DependentTypesHelper {
                 }
                 JavaExpressionContext fieldContext =
                         new JavaExpressionContext(receiverJe, null, factory.getContext());
-                standardizeDoNotUseLocalScope(fieldContext, path, type);
+                standardizeUseLocalScope(fieldContext, path, type);
                 break;
 
             default:
