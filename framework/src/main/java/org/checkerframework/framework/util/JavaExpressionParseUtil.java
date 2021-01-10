@@ -479,7 +479,7 @@ public class JavaExpressionParseUtil {
 
                 methodElement = (ExecutableElement) element;
 
-                // Add valueOf around any arguments that require boxing.
+                // Box any arguments that require it.
                 for (int i = 0; i < arguments.size(); i++) {
                     VariableElement parameter = methodElement.getParameters().get(i);
                     TypeMirror parameterType = parameter.asType();
@@ -503,7 +503,7 @@ public class JavaExpressionParseUtil {
                 }
             } catch (Throwable t) {
                 if (t.getMessage() == null) {
-                    throw new Error("no detail message in " + t.getClass(), t);
+                    throw new BugInCF("no detail message in " + t.getClass(), t);
                 }
                 throw new ParseRuntimeException(
                         constructParserException(expr.toString(), t.getMessage()));
@@ -539,10 +539,8 @@ public class JavaExpressionParseUtil {
             }
         }
 
-        /**
-         * @param expr a field access, a fully qualified class name, or class name qualified with
-         *     another class name (e.g. {@code OuterClass.InnerClass})
-         */
+        // expr is a field access, a fully qualified class name, or a class name qualified with
+        // another class name (e.g. {@code OuterClass.InnerClass})
         @Override
         public JavaExpression visit(FieldAccessExpr expr, JavaExpressionContext context) {
             Resolver resolver = new Resolver(env);
@@ -655,8 +653,9 @@ public class JavaExpressionParseUtil {
             return null;
         }
 
+        // TODO: `context` needs better documentation.
         /**
-         * Returns a JavaExpression for the given field name.
+         * Returns a JavaExpression for the given field.
          *
          * @param s a String representing an identifier (name expression, no dots in it)
          * @param context the context
@@ -704,7 +703,7 @@ public class JavaExpressionParseUtil {
         private static JavaExpression getParameterJavaExpression(
                 String s, JavaExpressionContext context) {
             if (context.arguments == null) {
-                throw new ParseRuntimeException(constructParserException(s, "no parameter found"));
+                throw new ParseRuntimeException(constructParserException(s, "no parameters found"));
             }
             int idx = Integer.parseInt(s.substring(PARAMETER_REPLACEMENT_LENGTH));
 
@@ -726,8 +725,8 @@ public class JavaExpressionParseUtil {
     /**
      * Returns a list of 1-based indices of all formal parameters that occur in {@code s}. Each
      * formal parameter occurs in s as a string like "#1" or "#4". This routine does not do proper
-     * parsing; for instance, if "#2" appears within a string in s, then 2 would be in the result
-     * list.
+     * parsing; for instance, if "#2" appears within a string in s, then 2 is in the result list.
+     * The result may contain duplicates.
      *
      * @param s a Java expression
      * @return a list of 1-based indices of all formal parameters that occur in {@code s}
