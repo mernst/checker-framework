@@ -1137,6 +1137,30 @@ public class JavaExpressionParseUtil {
     }
 
     /**
+     * Get a JavaExpression from a VariableTree, passing {@code true} for useLocalScope.
+     *
+     * @param provider gives the context
+     * @param tree the VariableTree
+     * @return a JavaExpression for the given VariableTree
+     * @throws JavaExpressionParseException if the expression string cannot be parsed
+     */
+    public static JavaExpression fromVariableTreeUseLocalScope(
+            AnnotatedTypeFactory provider, VariableTree tree) throws JavaExpressionParseException {
+        Element elt = TreeUtils.elementFromDeclaration(tree);
+
+        if (elt.getKind() == ElementKind.LOCAL_VARIABLE
+                || elt.getKind() == ElementKind.RESOURCE_VARIABLE
+                || elt.getKind() == ElementKind.EXCEPTION_PARAMETER
+                || elt.getKind() == ElementKind.PARAMETER) {
+            return new LocalVariable(elt);
+        }
+        JavaExpression je = JavaExpression.getImplicitReceiver(elt);
+        JavaExpressionContext context =
+                new JavaExpressionContext(je, /*arguments=*/ null, provider.getContext());
+        return parse(tree.getName().toString(), context, provider.getPath(tree), UseLocalScope.YES);
+    }
+
+    /**
      * Get a JavaExpression from a VariableTree, passing {@code false} for useLocalScope.
      *
      * @param provider gives the context
@@ -1157,7 +1181,8 @@ public class JavaExpressionParseUtil {
         JavaExpression je = JavaExpression.getImplicitReceiver(elt);
         JavaExpressionContext context =
                 new JavaExpressionContext(je, /*arguments=*/ null, provider.getContext());
-        // TODO: Why not use local scope?
+        // TODO: Why not use local scope?  (Really: Why was fromVariableTreeDoNotUseLocalScope
+        // called at all?)
         return parseDoNotUseLocalScope(tree.getName().toString(), context, provider.getPath(tree));
     }
 
