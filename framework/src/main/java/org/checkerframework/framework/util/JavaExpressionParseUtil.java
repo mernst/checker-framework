@@ -753,7 +753,7 @@ public class JavaExpressionParseUtil {
         public final JavaExpression receiver;
         /**
          * In a context for a method declaration or lambda, the formals. In a context for a method
-         * invocation, the actuals. In other contexts, an empty list.
+         * invocation, the actuals. In other contexts, null.
          */
         public final List<JavaExpression> arguments;
 
@@ -873,9 +873,7 @@ public class JavaExpressionParseUtil {
                                 checkerContext.getAnnotationProvider(),
                                 new LocalVariableNode(arg, receiver)));
             }
-            JavaExpressionContext flowExprContext =
-                    new JavaExpressionContext(receiverJe, argumentsJe, checkerContext);
-            return flowExprContext;
+            return new JavaExpressionContext(receiverJe, argumentsJe, checkerContext);
         }
 
         /**
@@ -899,9 +897,7 @@ public class JavaExpressionParseUtil {
                                 checkerContext.getAnnotationProvider(),
                                 new LocalVariableNode(arg, receiver)));
             }
-            JavaExpressionContext flowExprContext =
-                    new JavaExpressionContext(receiverJe, argumentsJe, checkerContext);
-            return flowExprContext;
+            return new JavaExpressionContext(receiverJe, argumentsJe, checkerContext);
         }
 
         /**
@@ -917,9 +913,7 @@ public class JavaExpressionParseUtil {
 
             JavaExpression receiverJe =
                     JavaExpression.fromNode(checkerContext.getAnnotationProvider(), receiver);
-            JavaExpressionContext flowExprContext =
-                    new JavaExpressionContext(receiverJe, Collections.emptyList(), checkerContext);
-            return flowExprContext;
+            return new JavaExpressionContext(receiverJe, Collections.emptyList(), checkerContext);
         }
 
         /**
@@ -938,9 +932,7 @@ public class JavaExpressionParseUtil {
                 argumentsJe.add(
                         JavaExpression.fromNode(checkerContext.getAnnotationProvider(), arg));
             }
-            JavaExpressionContext flowExprContext =
-                    new JavaExpressionContext(receiverJe, argumentsJe, checkerContext);
-            return flowExprContext;
+            return new JavaExpressionContext(receiverJe, argumentsJe, checkerContext);
         }
 
         /**
@@ -988,9 +980,7 @@ public class JavaExpressionParseUtil {
                         JavaExpression.fromNode(checkerContext.getAnnotationProvider(), arg));
             }
 
-            JavaExpressionContext flowExprContext =
-                    new JavaExpressionContext(receiverJe, argumentsJe, checkerContext);
-            return flowExprContext;
+            return new JavaExpressionContext(receiverJe, argumentsJe, checkerContext);
         }
 
         /**
