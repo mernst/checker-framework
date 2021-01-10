@@ -82,7 +82,7 @@ import org.checkerframework.javacutil.TypesUtils;
 import org.checkerframework.javacutil.trees.TreeBuilder;
 
 /**
- * A collection of helper methods to parse a string that represents a restricted Java expression.
+ * Helper methods to parse a string that represents a restricted Java expression.
  *
  * @checker_framework.manual #java-expressions-as-arguments Writing Java expressions as annotation
  *     arguments
@@ -105,44 +105,47 @@ public class JavaExpressionParseUtil {
      * Parsable replacement for parameter references. It is parseable because it is a Java
      * identifier.
      */
-    private static final String PARMETER_REPLACEMENT = "_param_";
+    private static final String PARAMETER_REPLACEMENT = "_param_";
 
-    /** The length of {@code PARAMETER_REPLACEMENT}. */
-    private static final int PARAMETER_REPLACEMENT_LENGTH = PARMETER_REPLACEMENT.length();
+    /** The length of {@link #PARAMETER_REPLACEMENT}. */
+    private static final int PARAMETER_REPLACEMENT_LENGTH = PARAMETER_REPLACEMENT.length();
 
     /**
-     * Parse a string and return its representation as a {@link JavaExpression}, or throw an {@link
+     * Parse a string and return its representation as a {@link JavaExpression}, or throw a {@link
      * JavaExpressionParseException}.
      *
      * @param expression a Java expression to parse
      * @param context information about any receiver and arguments
-     * @param localScope path to local scope; the containing method will be used as the local scope
+     * @param annotatedConstruct path to local scope; the containing method will be used as the
+     *     local scope
      * @return the JavaExpression for the given expression string
      * @throws JavaExpressionParseException if the expression string cannot be parsed
      */
+    // TODO: This is called at places that I think need to use method scope.  Maybe eventually
+    // eliminate this method.
     public static JavaExpression parseUseMethodScope(
-            String expression, JavaExpressionContext context, TreePath localScope)
+            String expression, JavaExpressionContext context, TreePath annotatedConstruct)
             throws JavaExpressionParseException {
         // TODO: pass the method scope and UseLocalScope.YES, or do that at clients.
-        return parse(expression, context, localScope, UseLocalScope.NO);
+        return parse(expression, context, annotatedConstruct, UseLocalScope.NO);
     }
 
     /**
-     * Parse a string and return its representation as a {@link JavaExpression}, or throw an {@link
+     * Parse a string and return its representation as a {@link JavaExpression}, or throw a {@link
      * JavaExpressionParseException}.
      *
-     * <p>Does not use {@code localScope} to resolve identifiers.
+     * <p>Does not use {@code annotatedConstruct} to resolve identifiers.
      *
      * @param expression a Java expression to parse
      * @param context information about any receiver and arguments
-     * @param localScope path to local scope to use
+     * @param annotatedConstruct path to local scope to use
      * @return the JavaExpression for the given expression string
      * @throws JavaExpressionParseException if the expression string cannot be parsed
      */
     public static JavaExpression parseDoNotUseLocalScope(
-            String expression, JavaExpressionContext context, TreePath localScope)
+            String expression, JavaExpressionContext context, TreePath annotatedConstruct)
             throws JavaExpressionParseException {
-        return parse(expression, context, localScope, UseLocalScope.NO);
+        return parse(expression, context, annotatedConstruct, UseLocalScope.NO);
     }
 
     /**
@@ -151,13 +154,14 @@ public class JavaExpressionParseUtil {
      *
      * @param expression a Java expression to parse
      * @param context information about any receiver and arguments
-     * @param localScope path to local scope to use
-     * @param useLocalScope whether {@code localScope} should be used to resolve identifiers
+     * @param annotatedConstruct a program element annotated with an annotation that contains {@code
+     *     expression}
+     * @param useLocalScope whether {@code annotatedConstruct} should be used to resolve identifiers
      */
     public static JavaExpression parse(
             String expression,
             JavaExpressionContext context,
-            TreePath localScope,
+            TreePath annotatedConstruct,
             UseLocalScope useLocalScope)
             throws JavaExpressionParseException {
 
@@ -172,10 +176,14 @@ public class JavaExpressionParseUtil {
         try {
             context = context.copyAndSetUseLocalScope(useLocalScope);
             ProcessingEnvironment env = context.checkerContext.getProcessingEnvironment();
-            result = expr.accept(new ExpressionToJavaExpressionVisitor(localScope, env), context);
+            result =
+                    expr.accept(
+                            new ExpressionToJavaExpressionVisitor(annotatedConstruct, env),
+                            context);
         } catch (ParseRuntimeException e) {
-            // The visitors can't throw exceptions because they need to override the methods in the
-            // superclass.
+            // Convert unchecked to checked exception. Visitor methods can't throw checked
+            // exceptions. They override the methods in the superclass, and a checked exception
+            // would change the method signature.
             throw e.getCheckedException();
         }
         if (result instanceof ClassName
@@ -207,7 +215,7 @@ public class JavaExpressionParseUtil {
 
         for (Integer integer : parameterIndices(expression)) {
             updatedExpression =
-                    updatedExpression.replaceAll("#" + integer, PARMETER_REPLACEMENT + integer);
+                    updatedExpression.replaceAll("#" + integer, PARAMETER_REPLACEMENT + integer);
         }
 
         return updatedExpression;
@@ -220,10 +228,10 @@ public class JavaExpressionParseUtil {
             extends GenericVisitorWithDefaults<JavaExpression, JavaExpressionContext> {
 
         /**
-         * The path to the expression. This is called "localScope" elsewhere (when this class is
-         * instantiated).
+         * The Java program element that is annotated by an annotation that contains the expression
+         * that is being translated.
          */
-        private final TreePath path;
+        private final TreePath annotatedConstruct;
         /** The processing environment. */
         private final ProcessingEnvironment env;
         /** The type utilities. */
@@ -232,11 +240,11 @@ public class JavaExpressionParseUtil {
         /**
          * Create a new ExpressionToJavaExpressionVisitor.
          *
-         * @param path path to the expression
+         * @param annotatedConstruct path to the expression
          * @param env the processing environment
          */
-        ExpressionToJavaExpressionVisitor(TreePath path, ProcessingEnvironment env) {
-            this.path = path;
+        ExpressionToJavaExpressionVisitor(TreePath annotatedConstruct, ProcessingEnvironment env) {
+            this.annotatedConstruct = annotatedConstruct;
             this.env = env;
             this.types = env.getTypeUtils();
         }
@@ -340,7 +348,7 @@ public class JavaExpressionParseUtil {
             Resolver resolver = new Resolver(env);
 
             // Formal parameter, using "#2" syntax.
-            if (!context.parsingMember && s.startsWith(PARMETER_REPLACEMENT)) {
+            if (!context.parsingMember && s.startsWith(PARAMETER_REPLACEMENT)) {
                 // A parameter is a local variable, but it can be referenced outside of local scope
                 // using the special #NN syntax.
                 return getParameterJavaExpression(s, context);
@@ -350,7 +358,8 @@ public class JavaExpressionParseUtil {
             if (!context.parsingMember && context.useLocalScope == UseLocalScope.YES) {
                 // Attempt to match a local variable within the scope of the
                 // given path before attempting to match a field.
-                VariableElement varElem = resolver.findLocalVariableOrParameterOrField(s, path);
+                VariableElement varElem =
+                        resolver.findLocalVariableOrParameterOrField(s, annotatedConstruct);
                 if (varElem != null) {
                     if (varElem.getKind() == ElementKind.FIELD) {
                         boolean isOriginalReceiver = context.receiver instanceof ThisReference;
@@ -367,12 +376,12 @@ public class JavaExpressionParseUtil {
             boolean originalReceiver = true;
             VariableElement fieldElem = null;
             if (receiverType.getKind() == TypeKind.ARRAY && s.equals("length")) {
-                fieldElem = resolver.findField(s, receiverType, path);
+                fieldElem = resolver.findField(s, receiverType, annotatedConstruct);
             }
             if (fieldElem == null) {
                 // Search for field in each enclosing class.
                 while (receiverType.getKind() == TypeKind.DECLARED) {
-                    fieldElem = resolver.findField(s, receiverType, path);
+                    fieldElem = resolver.findField(s, receiverType, annotatedConstruct);
                     if (fieldElem != null) {
                         break;
                     }
@@ -398,14 +407,14 @@ public class JavaExpressionParseUtil {
             }
 
             // Class name
-            Element classElem = resolver.findClass(s, path);
+            Element classElem = resolver.findClass(s, annotatedConstruct);
             TypeMirror classType = ElementUtils.getType(classElem);
             if (classType != null) {
                 return new ClassName(classType);
             }
 
             // Err if a formal parameter name is used, instead of the "#2" syntax.
-            MethodTree enclMethod = TreePathUtil.enclosingMethod(path);
+            MethodTree enclMethod = TreePathUtil.enclosingMethod(annotatedConstruct);
             if (enclMethod != null) {
                 List<? extends VariableTree> params = enclMethod.getParameters();
                 for (int i = 0; i < params.size(); i++) {
@@ -457,12 +466,16 @@ public class JavaExpressionParseUtil {
                 TypeMirror receiverType = context.receiver.getType();
 
                 if (receiverType.getKind() == TypeKind.ARRAY) {
-                    element = resolver.findMethod(methodName, receiverType, path, argumentTypes);
+                    element =
+                            resolver.findMethod(
+                                    methodName, receiverType, annotatedConstruct, argumentTypes);
                 }
 
                 // Search for method in each enclosing class.
                 while (receiverType.getKind() == TypeKind.DECLARED) {
-                    element = resolver.findMethod(methodName, receiverType, path, argumentTypes);
+                    element =
+                            resolver.findMethod(
+                                    methodName, receiverType, annotatedConstruct, argumentTypes);
                     if (element.getKind() == ElementKind.METHOD) {
                         break;
                     }
@@ -548,10 +561,11 @@ public class JavaExpressionParseUtil {
             Resolver resolver = new Resolver(env);
 
             Symbol.PackageSymbol packageSymbol =
-                    resolver.findPackage(expr.getScope().toString(), path);
+                    resolver.findPackage(expr.getScope().toString(), annotatedConstruct);
             if (packageSymbol != null) {
                 ClassSymbol classSymbol =
-                        resolver.findClassInPackage(expr.getNameAsString(), packageSymbol, path);
+                        resolver.findClassInPackage(
+                                expr.getNameAsString(), packageSymbol, annotatedConstruct);
                 if (classSymbol != null) {
                     return new ClassName(classSymbol.asType());
                 }
