@@ -674,36 +674,12 @@ public class DependentTypesHelper {
     }
 
     /**
-     * Standardizes Java expressions in an annotation. If the annotation is not a dependent type
-     * annotation, returns the same annotation unchanged.
-     *
-     * @param context information about any receiver and arguments
-     * @param localScope path to local scope to use
-     * @param anno the annotation to be standardized
-     * @param removeErroneousExpressions if true, remove erroneous expressions rather than
-     *     converting them into an explanation of why they are illegal
-     * @return the standardized annotation
-     */
-    public AnnotationMirror standardizeAnnotationUseMethodScope(
-            JavaExpressionContext context,
-            TreePath localScope,
-            AnnotationMirror anno,
-            boolean removeErroneousExpressions) {
-        if (!isExpressionAnno(anno)) {
-            return anno;
-        }
-        // TODO: pass the method scope and UseLocalScope.YES
-        return standardizeDependentTypeAnnotation(
-                context, localScope, anno, UseLocalScope.NO, removeErroneousExpressions);
-    }
-
-    /**
      * Standardizes an annotation. If it is not a dependent type annotation, returns null.
      *
      * @param removeErroneousExpressions if true, remove erroneous expressions rather than
      *     converting them into an explanation of why they are illegal
      */
-    private AnnotationMirror standardizeAnnotationIfDependentType(
+    public AnnotationMirror standardizeAnnotationIfDependentType(
             JavaExpressionContext context,
             TreePath localScope,
             AnnotationMirror anno,
@@ -719,6 +695,7 @@ public class DependentTypesHelper {
     /**
      * Standardizes a dependent type annotation. Returns a new annotation.
      *
+     * @param anno a dependent type annotation
      * @param removeErroneousExpressions if true, remove erroneous expressions rather than
      *     converting them into an explanation of why they are illegal
      */

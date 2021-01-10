@@ -75,6 +75,7 @@ import org.checkerframework.framework.util.ContractsFromMethod;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
+import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreePathUtil;
@@ -586,13 +587,17 @@ public abstract class CFAbstractTransfer<
             TreePath path) {
         // TODO: common implementation with BaseTypeVisitor.standardizeAnnotationFromContract
         if (analysis.dependentTypesHelper != null) {
-            return analysis.dependentTypesHelper.standardizeAnnotationUseMethodScope(
-                    flowExprContext, path, annoFromContract, false);
-            // BaseTypeVisitor checks the validity of the annotaiton. Errors are reported there
-            // when called from BaseTypeVisitor.checkContractsAtMethodDeclaration().
-        } else {
-            return annoFromContract;
+            // TODO: Use method scope?
+            AnnotationMirror anno =
+                    analysis.dependentTypesHelper.standardizeAnnotationIfDependentType(
+                            flowExprContext, path, annoFromContract, UseLocalScope.NO, false);
+            if (anno != null) {
+                // BaseTypeVisitor checks the validity of the annotaiton. Errors are reported there
+                // when called from BaseTypeVisitor.checkContractsAtMethodDeclaration().
+                return anno;
+            }
         }
+        return annoFromContract;
     }
 
     /**
