@@ -157,6 +157,8 @@ public class JavaExpressionParseUtil {
      * @param annotatedConstruct a program element annotated with an annotation that contains {@code
      *     expression}
      * @param useLocalScope whether {@code annotatedConstruct} should be used to resolve identifiers
+     * @return the JavaExpression for the given string
+     * @throws JavaExpressionParseException if the string cannot be parsed
      */
     public static JavaExpression parse(
             String expression,
@@ -375,7 +377,7 @@ public class JavaExpressionParseUtil {
             // originalReceiver is true if receiverType has not been reassigned.
             boolean originalReceiver = true;
             VariableElement fieldElem = null;
-            if (receiverType.getKind() == TypeKind.ARRAY && s.equals("length")) {
+            if (s.equals("length") && receiverType.getKind() == TypeKind.ARRAY) {
                 fieldElem = resolver.findField(s, receiverType, annotatedConstruct);
             }
             if (fieldElem == null) {
@@ -437,8 +439,13 @@ public class JavaExpressionParseUtil {
         public JavaExpression visit(MethodCallExpr expr, JavaExpressionContext context) {
             Resolver resolver = new Resolver(env);
 
-            // Methods with scope (receiver expression) need to change the parsing context so that
-            // identifiers are resolved with respect to the receiver.
+            /// TODO: ***** Should only the method name use the changed scope?  I don't see why
+            /// arguments should use a different parsing context, and this might be buggy if
+            /// arguments coincidentally had the same name as a formal parameter.  A Java expression
+            /// can be with respect to its local scope.
+
+            // `expr` is a method call.  If it has scope (a receiver expression), change the parsing
+            // context so that identifiers are resolved with respect to the receiver.
             if (expr.getScope().isPresent()) {
                 JavaExpression receiver = expr.getScope().get().accept(this, context);
                 context = context.copyChangeToParsingMemberOfReceiver(receiver);
@@ -449,8 +456,11 @@ public class JavaExpressionParseUtil {
 
             // parse argument list
             List<JavaExpression> arguments = new ArrayList<>();
-            for (Expression argument : expr.getArguments()) {
-                arguments.add(argument.accept(this, context.copyAndUseOuterReceiver()));
+            if (!arguments.isEmpty()) {
+                JavaExpressionContext newContext = context.copyAndUseOuterReceiver();
+                for (Expression argument : expr.getArguments()) {
+                    arguments.add(argument.accept(this, newContext));
+                }
             }
 
             // get types for arguments
