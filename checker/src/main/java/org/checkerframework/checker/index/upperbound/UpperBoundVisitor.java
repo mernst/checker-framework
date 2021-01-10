@@ -33,6 +33,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayTyp
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
+import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
@@ -125,7 +126,7 @@ public class UpperBoundVisitor extends BaseTypeVisitor<UpperBoundAnnotatedTypeFa
             String s, JavaExpressionContext context, Tree tree) {
         JavaExpression je;
         try {
-            je = JavaExpressionParseUtil.parse(s, context, getCurrentPath());
+            je = JavaExpressionParseUtil.parse(s, context, getCurrentPath(), UseLocalScope.YES);
         } catch (JavaExpressionParseException e) {
             checker.report(tree, e.getDiagMessage());
             return;
