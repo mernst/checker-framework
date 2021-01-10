@@ -920,6 +920,8 @@ public class JavaExpressionParseUtil {
          * Returns a {@link JavaExpressionContext} for the method called by {@code
          * methodInvocation}, as seen at the method use (i.e., at the call site).
          *
+         * @param methodInvocation a method invocation
+         * @param checkerContext the javac components to use
          * @return a {@link JavaExpressionContext} for the method {@code methodInvocation}
          */
         public static JavaExpressionContext buildContextForMethodUse(
@@ -945,7 +947,7 @@ public class JavaExpressionParseUtil {
          */
         public static JavaExpressionContext buildContextForMethodUse(
                 MethodInvocationTree methodInvocation, BaseContext checkerContext) {
-            JavaExpression receiver =
+            JavaExpression receiverJe =
                     JavaExpression.getReceiver(
                             methodInvocation, checkerContext.getAnnotationProvider());
 
@@ -956,15 +958,15 @@ public class JavaExpressionParseUtil {
                         JavaExpression.fromTree(checkerContext.getAnnotationProvider(), argTree));
             }
 
-            return new JavaExpressionContext(receiver, argumentsJe, checkerContext);
+            return new JavaExpressionContext(receiverJe, argumentsJe, checkerContext);
         }
 
         /**
          * Returns a {@link JavaExpressionContext} for the constructor {@code n} (represented as a
-         * {@link Node} as seen at the method use (i.e., at a method call site).
+         * {@link Node} as seen at the constructor use (i.e., at a "new" expression).
          *
          * @return a {@link JavaExpressionContext} for the constructor {@code n} (represented as a
-         *     {@link Node} as seen at the method use (i.e., at a method call site)
+         *     {@link Node} as seen at the constructor use (i.e., at a "new" expression)
          */
         public static JavaExpressionContext buildContextForNewClassUse(
                 ObjectCreationNode n, BaseContext checkerContext) {
@@ -1098,9 +1100,9 @@ public class JavaExpressionParseUtil {
                 || elt.getKind() == ElementKind.PARAMETER) {
             return new LocalVariable(elt);
         }
-        JavaExpression je = JavaExpression.getImplicitReceiver(elt);
+        JavaExpression receiverJe = JavaExpression.getImplicitReceiver(elt);
         JavaExpressionContext context =
-                new JavaExpressionContext(je, /*arguments=*/ null, provider.getContext());
+                new JavaExpressionContext(receiverJe, /*arguments=*/ null, provider.getContext());
         // TODO: Why not use local scope?
         return parseDoNotUseLocalScope(tree.getName().toString(), context, provider.getPath(tree));
     }
@@ -1113,6 +1115,8 @@ public class JavaExpressionParseUtil {
      * @return a JavaExpression for the given VariableTree
      * @throws JavaExpressionParseException if the expression string cannot be parsed
      */
+    // TODO: This method is used at places that I guessed should use method scope.  Those guesses
+    // need to be validated.
     public static JavaExpression fromVariableTreeUseMethodScope(
             AnnotatedTypeFactory provider, VariableTree tree) throws JavaExpressionParseException {
         Element elt = TreeUtils.elementFromDeclaration(tree);
@@ -1123,9 +1127,9 @@ public class JavaExpressionParseUtil {
                 || elt.getKind() == ElementKind.PARAMETER) {
             return new LocalVariable(elt);
         }
-        JavaExpression je = JavaExpression.getImplicitReceiver(elt);
+        JavaExpression receiverJe = JavaExpression.getImplicitReceiver(elt);
         JavaExpressionContext context =
-                new JavaExpressionContext(je, /*arguments=*/ null, provider.getContext());
+                new JavaExpressionContext(receiverJe, /*arguments=*/ null, provider.getContext());
         return parseUseMethodScope(tree.getName().toString(), context, provider.getPath(tree));
     }
 
