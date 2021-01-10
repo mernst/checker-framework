@@ -959,10 +959,14 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
             JavaExpression expr = null;
             try {
-                // The path is the path to the method declaration.
+                // This DOES NOT work
+                // expr =
+                //         JavaExpressionParseUtil.parse(
+                //                 expression, flowExprContext, getCurrentPath(),
+                // UseLocalScope.YES);
                 expr =
-                        JavaExpressionParseUtil.parse(
-                                expression, flowExprContext, getCurrentPath(), UseLocalScope.YES);
+                        JavaExpressionParseUtil.parseUseMethodScope(
+                                expression, flowExprContext, getCurrentPath());
             } catch (JavaExpressionParseException e) {
                 checker.report(node, e.getDiagMessage());
             }
