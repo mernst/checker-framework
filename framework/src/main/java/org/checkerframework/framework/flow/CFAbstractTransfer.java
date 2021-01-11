@@ -587,11 +587,9 @@ public abstract class CFAbstractTransfer<
             TreePath path) {
         // TODO: common implementation with BaseTypeVisitor.standardizeAnnotationFromContract
         if (analysis.dependentTypesHelper != null) {
-            // TODO: Use method scope?
             AnnotationMirror standardized =
-                    // TODO: pass the method scope and UseLocalScope.YES
                     analysis.dependentTypesHelper.standardizeAnnotationIfDependentType(
-                            flowExprContext, path, annoFromContract, UseLocalScope.NO, false);
+                            flowExprContext, path, annoFromContract, UseLocalScope.YES, false);
             if (standardized != null) {
                 // BaseTypeVisitor checks the validity of the annotaiton. Errors are reported there
                 // when called from BaseTypeVisitor.checkContractsAtMethodDeclaration().
