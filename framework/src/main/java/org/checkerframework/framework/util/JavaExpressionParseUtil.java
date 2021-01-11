@@ -149,7 +149,7 @@ public class JavaExpressionParseUtil {
     }
 
     /**
-     * Parse a string and return its representation as a {@link JavaExpression}, or throw an {@link
+     * Parse a string and return its representation as a {@link JavaExpression}, or throw a {@link
      * JavaExpressionParseException}.
      *
      * @param expression a Java expression to parse
@@ -360,7 +360,7 @@ public class JavaExpressionParseUtil {
             // Formal parameter, using "#2" syntax.
             if (!context.parsingMember && s.startsWith(PARAMETER_REPLACEMENT)) {
                 // A parameter is a local variable, but it can be referenced outside of local scope
-                // using the special #NN syntax.
+                // (at the method scope) using the special #NN syntax.
                 return getParameterJavaExpression(s, context);
             }
 
@@ -814,6 +814,7 @@ public class JavaExpressionParseUtil {
         public final BaseContext checkerContext;
         /**
          * Whether or not the FlowExpressionParser is parsing the "member" part of a member select.
+         * If so, certain constructs like "#2" and local variables cannot occur.
          */
         public final boolean parsingMember;
         /** Whether the TreePath should be used to find identifiers. Defaults to true. */
@@ -1157,9 +1158,9 @@ public class JavaExpressionParseUtil {
                 || elt.getKind() == ElementKind.PARAMETER) {
             return new LocalVariable(elt);
         }
-        JavaExpression je = JavaExpression.getImplicitReceiver(elt);
+        JavaExpression receiverJe = JavaExpression.getImplicitReceiver(elt);
         JavaExpressionContext context =
-                new JavaExpressionContext(je, /*arguments=*/ null, provider.getContext());
+                new JavaExpressionContext(receiverJe, /*arguments=*/ null, provider.getContext());
         return parse(tree.getName().toString(), context, provider.getPath(tree), UseLocalScope.YES);
     }
 
