@@ -1075,7 +1075,7 @@ public class JavaExpressionParseUtil {
          * given value.
          *
          * @param useLocalScope whether the local scope should be used to resolve identifiers
-         * @return a copy of the context, with {@code useLocalScope} is set to the given value.
+         * @return a copy of the context, with {@code useLocalScope} is set to the given value
          */
         public JavaExpressionContext copyAndSetUseLocalScope(UseLocalScope useLocalScope) {
             return new JavaExpressionContext(
