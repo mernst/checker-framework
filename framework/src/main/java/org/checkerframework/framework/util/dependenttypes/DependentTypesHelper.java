@@ -149,9 +149,8 @@ public class DependentTypesHelper {
         JavaExpression r = JavaExpression.getImplicitReceiver(classDecl);
         JavaExpressionContext context = new JavaExpressionContext(r, null, factory.getContext());
         for (AnnotatedTypeParameterBounds bound : bounds) {
-            // TODO: Why not use local scope?
-            standardizeDoNotUseLocalScope(context, pathToUse, bound.getUpperBound());
-            standardizeDoNotUseLocalScope(context, pathToUse, bound.getLowerBound());
+            standardizeUseLocalScope(context, pathToUse, bound.getUpperBound());
+            standardizeUseLocalScope(context, pathToUse, bound.getLowerBound());
         }
     }
 
