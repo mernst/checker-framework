@@ -12,6 +12,7 @@ import org.checkerframework.framework.util.BaseContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
+import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
@@ -114,8 +115,7 @@ public class Subsequence {
     private static String standardizeAndViewpointAdapt(
             String s, TreePath currentPath, JavaExpressionContext context) {
         try {
-            // TODO: Why doesn't this use the local scope?
-            return JavaExpressionParseUtil.parseDoNotUseLocalScope(s, context, currentPath)
+            return JavaExpressionParseUtil.parse(s, context, currentPath, UseLocalScope.YES)
                     .toString();
         } catch (JavaExpressionParseException e) {
             return s;

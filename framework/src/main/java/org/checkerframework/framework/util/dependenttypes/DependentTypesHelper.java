@@ -65,7 +65,8 @@ import org.plumelib.util.StringsPlume;
  *   <li>Standardizes/canonicalizes the expressions in the annotations such that two expression
  *       strings that are equivalent are made to be equal. For example, an instance field f may
  *       appear in an expression string as "f" or "this.f"; this class standardizes both strings to
- *       "this.f".
+ *       "this.f". It also standardizes formal parameter references such as "#2" to the formal
+ *       parameter name.
  *   <li>Viewpoint-adapts annotations on field or method declarations at field accesses or method
  *       invocations.
  *   <li>Changes invalid expression strings to an error string that includes the reason why the
@@ -314,10 +315,10 @@ public class DependentTypesHelper {
     }
 
     /**
-     * Standardizes new class declarations in Java expressions.
+     * Standardizes the Java expressions in annotations on a constructor invocation.
      *
-     * @param tree the new class declaration
-     * @param type the type representing the class
+     * @param tree the constructor invocation
+     * @param type the type of the expression; is side-effected by this method
      */
     public void standardizeNewClassTree(NewClassTree tree, AnnotatedDeclaredType type) {
         if (!hasDependentType(type)) {
@@ -337,7 +338,9 @@ public class DependentTypesHelper {
     }
 
     /**
-     * Standardizes a method return in a Java expression.
+     * Standardizes the Java expressions in annotations for a method return type. {@code atm} might
+     * come from the method declaration or from the type of the expression in a {@code return}
+     * statement.
      *
      * @param m a method
      * @param atm the method return type; is side-effected by this method
@@ -347,9 +350,11 @@ public class DependentTypesHelper {
     }
 
     /**
-     * Standardizes a method return in a Java expression.
+     * Standardizes the Java expressions in annotations for a method return type. {@code atm} might
+     * come from the method declaration or from the type of the expression in a {@code return}
+     * statement.
      *
-     * @param m the method to be standardized
+     * @param m a method
      * @param atm the method return type; is side-effected by this method
      * @param removeErroneousExpressions if true, remove erroneous expressions rather than
      *     converting them into an explanation of why they are illegal
@@ -550,6 +555,8 @@ public class DependentTypesHelper {
         }
     }
 
+    // TODO: Eventually rename without "UseLocalScope", once all "DoNotUseLocalScope" variants have
+    // been eliminated.
     /**
      * Standardize a type, setting useLocalScope to true.
      *
