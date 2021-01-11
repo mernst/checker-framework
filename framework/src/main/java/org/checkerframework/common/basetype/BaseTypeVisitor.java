@@ -953,7 +953,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             AnnotationMirror annotation = contract.annotation;
 
             annotation =
-                    // TODO: This call is already OK.
                     standardizeAnnotationFromContract(
                             annotation, flowExprContext, getCurrentPath());
 
@@ -1689,6 +1688,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             String expression = p.expression;
             AnnotationMirror anno = p.annotation;
 
+            // TODO: This should probably be the path to the method declaration.
             anno = standardizeAnnotationFromContract(anno, flowExprContext, getCurrentPath());
 
             JavaExpression expr;
