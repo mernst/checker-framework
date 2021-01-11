@@ -1017,11 +1017,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         DependentTypesHelper dependentTypesHelper = atypeFactory.getDependentTypesHelper();
         if (dependentTypesHelper != null) {
             AnnotationMirror standardized =
-                    // TODO: Try just passing , UseLocalScope.YES.
-                    // TODO: scope is method.  Use method scope??
-                    // TODO: pass the method scope and UseLocalScope.YES
                     dependentTypesHelper.standardizeAnnotationIfDependentType(
-                            flowExprContext, path, annoFromContract, UseLocalScope.NO, false);
+                            flowExprContext, path, annoFromContract, UseLocalScope.YES, false);
             if (standardized != null) {
                 dependentTypesHelper.checkAnnotation(standardized, path.getLeaf());
                 return standardized;
