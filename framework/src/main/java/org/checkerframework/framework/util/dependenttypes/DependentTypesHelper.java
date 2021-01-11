@@ -420,7 +420,7 @@ public class DependentTypesHelper {
                     JavaExpressionContext parameterContext =
                             JavaExpressionContext.buildContextForMethodDeclaration(
                                     methodTree, enclosingType, factory.getContext());
-                    standardizeDoNotUseLocalScope(parameterContext, path, type);
+                    standardizeUseLocalScope(parameterContext, path, type);
                 } else {
                     LambdaExpressionTree lambdaTree = (LambdaExpressionTree) enclTree;
                     JavaExpressionContext parameterContext =
