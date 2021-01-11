@@ -459,7 +459,9 @@ public class DependentTypesHelper {
                 }
                 JavaExpressionContext fieldContext =
                         new JavaExpressionContext(receiverJe, null, factory.getContext());
-                standardizeUseLocalScope(fieldContext, path, type);
+                // TODO: Using local scope here DOES NOT WORK!  Investigate why, and fix.
+                // standardizeUseLocalScope(fieldContext, path, type);
+                standardizeDoNotUseLocalScope(fieldContext, path, type);
                 break;
 
             default:
