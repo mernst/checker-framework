@@ -326,9 +326,6 @@ public class DependentTypesHelper {
 
         TreePath path = factory.getPath(tree);
         Tree enclosingClass = TreePathUtil.enclosingClass(path);
-        if (enclosingClass == null) {
-            return;
-        }
         TypeMirror enclosingType = TreeUtils.typeOf(enclosingClass);
         JavaExpression r = JavaExpression.getPseudoReceiver(path, enclosingType);
         JavaExpressionContext context =
@@ -460,6 +457,8 @@ public class DependentTypesHelper {
                 }
                 JavaExpressionContext fieldContext =
                         new JavaExpressionContext(receiverJe, null, factory.getContext());
+                // TODO: Using local scope here DOES NOT WORK!  Investigate why, and fix.
+                // standardizeUseLocalScope(fieldContext, path, type);
                 standardizeDoNotUseLocalScope(fieldContext, path, type);
                 break;
 
@@ -469,7 +468,12 @@ public class DependentTypesHelper {
         }
     }
 
-    /** Standardize the Java expressions in annotations in a field access. */
+    /**
+     * Standardize the Java expressions in annotations in a field access.
+     *
+     * @param node a field accoss
+     * @param type its type; is side-effected by this method
+     */
     public void standardizeFieldAccess(MemberSelectTree node, AnnotatedTypeMirror type) {
         if (!hasDependentType(type)) {
             return;
@@ -499,9 +503,6 @@ public class DependentTypesHelper {
             return;
         }
         Tree enclosingClass = TreePathUtil.enclosingClass(path);
-        if (enclosingClass == null) {
-            return;
-        }
         TypeMirror enclosingType = TreeUtils.typeOf(enclosingClass);
 
         JavaExpression receiver = JavaExpression.getPseudoReceiver(path, enclosingType);
@@ -650,6 +651,15 @@ public class DependentTypesHelper {
                 .visit(type);
     }
 
+    /**
+     * Standardizes a Java expression.
+     *
+     * @param expression a Java expression
+     * @param context the context
+     * @param localScope the local scope
+     * @param useLocalScope whether {@code localScope} should be used to resolve identifiers
+     * @return the standardized version of the Java expression
+     */
     protected String standardizeString(
             String expression,
             JavaExpressionContext context,
