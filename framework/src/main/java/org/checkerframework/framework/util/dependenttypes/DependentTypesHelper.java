@@ -490,8 +490,7 @@ public class DependentTypesHelper {
         JavaExpression receiver = JavaExpression.fromTree(factory, node.getExpression());
         JavaExpressionContext context =
                 new JavaExpressionContext(receiver, null, factory.getContext());
-        // TODO: Why not use local scope?  it's a field but might be related to locals.
-        standardizeDoNotUseLocalScope(context, factory.getPath(node), type);
+        standardizeUseLocalScope(context, factory.getPath(node), type);
     }
 
     public void standardizeExpression(ExpressionTree tree, AnnotatedTypeMirror annotatedType) {
