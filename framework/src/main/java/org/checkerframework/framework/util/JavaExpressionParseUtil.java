@@ -119,33 +119,36 @@ public class JavaExpressionParseUtil {
      *
      * @param expression a Java expression to parse
      * @param context information about any receiver and arguments
-     * @param localScope path to local scope; the containing method will be used as the local scope
+     * @param annotatedConstruct path to local scope; the containing method will be used as the
+     *     local scope
      * @return the JavaExpression for the given expression string
      * @throws JavaExpressionParseException if the expression string cannot be parsed
      */
+    // TODO: This is called at places that I think need to use method scope.  Maybe eventually
+    // eliminate this method.
     public static JavaExpression parseUseMethodScope(
-            String expression, JavaExpressionContext context, TreePath localScope)
+            String expression, JavaExpressionContext context, TreePath annotatedConstruct)
             throws JavaExpressionParseException {
         // TODO: pass the method scope and UseLocalScope.YES, or do that at clients.
-        return parse(expression, context, localScope, UseLocalScope.NO);
+        return parse(expression, context, annotatedConstruct, UseLocalScope.NO);
     }
 
     /**
-     * Parse a string and return its representation as a {@link JavaExpression}, or throw an {@link
+     * Parse a string and return its representation as a {@link JavaExpression}, or throw a {@link
      * JavaExpressionParseException}.
      *
-     * <p>Does not use {@code localScope} to resolve identifiers.
+     * <p>Does not use {@code annotatedConstruct} to resolve identifiers.
      *
      * @param expression a Java expression to parse
      * @param context information about any receiver and arguments
-     * @param localScope path to local scope to use
+     * @param annotatedConstruct path to local scope to use
      * @return the JavaExpression for the given expression string
      * @throws JavaExpressionParseException if the expression string cannot be parsed
      */
     public static JavaExpression parseDoNotUseLocalScope(
-            String expression, JavaExpressionContext context, TreePath localScope)
+            String expression, JavaExpressionContext context, TreePath annotatedConstruct)
             throws JavaExpressionParseException {
-        return parse(expression, context, localScope, UseLocalScope.NO);
+        return parse(expression, context, annotatedConstruct, UseLocalScope.NO);
     }
 
     /**
@@ -154,13 +157,16 @@ public class JavaExpressionParseUtil {
      *
      * @param expression a Java expression to parse
      * @param context information about any receiver and arguments
-     * @param localScope path to local scope to use
-     * @param useLocalScope whether {@code localScope} should be used to resolve identifiers
+     * @param annotatedConstruct a program element annotated with an annotation that contains {@code
+     *     expression}
+     * @param useLocalScope whether {@code annotatedConstruct} should be used to resolve identifiers
+     * @return the JavaExpression for the given string
+     * @throws JavaExpressionParseException if the string cannot be parsed
      */
     public static JavaExpression parse(
             String expression,
             JavaExpressionContext context,
-            TreePath localScope,
+            TreePath annotatedConstruct,
             UseLocalScope useLocalScope)
             throws JavaExpressionParseException {
 
@@ -175,7 +181,10 @@ public class JavaExpressionParseUtil {
         try {
             context = context.copyAndSetUseLocalScope(useLocalScope);
             ProcessingEnvironment env = context.checkerContext.getProcessingEnvironment();
-            result = expr.accept(new ExpressionToJavaExpressionVisitor(localScope, env), context);
+            result =
+                    expr.accept(
+                            new ExpressionToJavaExpressionVisitor(annotatedConstruct, env),
+                            context);
         } catch (ParseRuntimeException e) {
             // Convert unchecked to checked exception. Visitor methods can't throw checked
             // exceptions. They override the methods in the superclass, and a checked exception
