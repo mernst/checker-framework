@@ -153,10 +153,6 @@ public abstract class Contract {
         if ((ensuresQualifierIf != null) != (kind == Kind.CONDITIONALPOSTCONDITION)) {
             throw new BugInCF("Mismatch: ensuresQualifierIf=%s, kind=%s", ensuresQualifierIf, kind);
         }
-        System.out.printf(
-                "Contract.create(kind=%s, expression=%s, annotation=%s, contractAnnotation=%s, ensuresQualifierIf=%s)%n",
-                kind, expression, annotation, contractAnnotation, ensuresQualifierIf);
-
         switch (kind) {
             case PRECONDITION:
                 return new Precondition(expression, annotation, contractAnnotation);

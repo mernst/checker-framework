@@ -1155,9 +1155,11 @@ public abstract class CFAbstractTransfer<
             S store,
             ExecutableElement methodElement,
             Tree invocationTree) {
-        System.out.printf(
-                "processPostconditions(%s, %s, %s)%n",
-                invocationNode, methodElement, invocationTree);
+        if (false) {
+            System.out.printf(
+                    "processPostconditions(%s, %s, %s)%n",
+                    invocationNode, methodElement, invocationTree);
+        }
         ContractsFromMethod contractsUtils = analysis.atypeFactory.getContractsFromMethod();
         Set<Postcondition> postconditions = contractsUtils.getPostconditions(methodElement);
         processPostconditionsAndConditionalPostconditions(
@@ -1258,14 +1260,16 @@ public abstract class CFAbstractTransfer<
 
             // Standardize with respect to the method use (the call site).
             TreePath pathToInvocation = atypeFactory.getPath(invocationTree);
-            System.out.printf(
-                    "About to call standardizeAnnotationFromContract(%s)%n context=%s%n pathToInvocation.getLeaf()=%s [%s]%n        parent=%s [%s]%n",
-                    standardizedContract,
-                    methodUseContext.toStringDebug(),
-                    pathToInvocation.getLeaf(),
-                    pathToInvocation.getLeaf().getClass(),
-                    pathToInvocation.getParentPath().getLeaf(),
-                    pathToInvocation.getParentPath().getLeaf().getClass());
+            if (false) {
+                System.out.printf(
+                        "About to call standardizeAnnotationFromContract(%s)%n context=%s%n pathToInvocation.getLeaf()=%s [%s]%n        parent=%s [%s]%n",
+                        standardizedContract,
+                        methodUseContext.toStringDebug(),
+                        pathToInvocation.getLeaf(),
+                        pathToInvocation.getLeaf().getClass(),
+                        pathToInvocation.getParentPath().getLeaf(),
+                        pathToInvocation.getParentPath().getLeaf().getClass());
+            }
             AnnotationMirror standardizedUse =
                     standardizeAnnotationFromContract(
                             standardizedContract,
@@ -1273,7 +1277,9 @@ public abstract class CFAbstractTransfer<
                             // This leaf is a method call, but the annotations apply to its
                             // postcondition, which is a sibling scope to the method call.
                             pathToInvocation.getParentPath());
-            System.out.printf("standardizeAnnotationFromContract() => %s%n", standardizedUse);
+            if (false) {
+                System.out.printf("standardizeAnnotationFromContract() => %s%n", standardizedUse);
+            }
 
             anno = standardizedUse;
 
