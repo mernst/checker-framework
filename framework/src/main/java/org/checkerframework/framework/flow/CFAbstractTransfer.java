@@ -67,6 +67,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclared
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
 import org.checkerframework.framework.util.AnnotatedTypes;
+import org.checkerframework.framework.util.BaseContext;
 import org.checkerframework.framework.util.Contract;
 import org.checkerframework.framework.util.Contract.ConditionalPostcondition;
 import org.checkerframework.framework.util.Contract.Postcondition;
@@ -1202,7 +1203,14 @@ public abstract class CFAbstractTransfer<
             S thenStore,
             S elseStore,
             Set<? extends Contract> postconditions) {
-        JavaExpressionContext flowExprContext = null; // lazily initialized
+
+        GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory = analysis.getTypeFactory();
+
+        // pathToMethodDecl and methodDeclContext are null if the method is not defined in source
+        // code.
+        TreePath pathToMethodDecl = null; // lazily initialized; may be null
+        JavaExpressionContext methodDeclContext = null; // lazily initialized; may be null
+        JavaExpressionContext methodUseContext = null; // lazily initialized, then non-null
 
         for (Contract p : postconditions) {
             String expression = p.expression;
@@ -1210,35 +1218,48 @@ public abstract class CFAbstractTransfer<
             // standardized version of the annotation.
             AnnotationMirror anno = p.annotation;
 
-            if (flowExprContext == null) {
-                flowExprContext =
-                        JavaExpressionContext.buildContextForMethodUse(
-                                invocationNode, analysis.checker.getContext());
+            if (methodUseContext == null) {
+                BaseContext baseContext = analysis.checker.getContext();
+                ExecutableElement methodElt = invocationNode.getTarget().getMethod();
+                MethodTree methodDecl = (MethodTree) atypeFactory.declarationFromElement(methodElt);
+
+                // Set the lazily initialized variables.
+                pathToMethodDecl = atypeFactory.getPath(methodDecl);
+                if (pathToMethodDecl == null) {
+                    methodDeclContext = null;
+                } else {
+                    TypeMirror enclosingType = ElementUtils.enclosingClass(methodElt).asType();
+                    methodDeclContext =
+                            JavaExpressionContext.buildContextForMethodDeclaration(
+                                    methodDecl, enclosingType, baseContext);
+                }
+                methodUseContext =
+                        JavaExpressionContext.buildContextForMethodUse(invocationNode, baseContext);
             }
 
-            /*
             // Need to standardize twice: first with respect to the method definition, then with
             // respect to the method use.  See test case Issue2619.java.
+            //
             // It would save work to standardize annotations when contracts are created, so that
             // any annotation in a Contract is already standardized with respect to the method
             // definition. That does not work because the visitor may visit a method use (call site)
             // before visiting the class that defines the method.  See test case Issue578.java.
-            @SuppressWarnings("UnusedVariable") // TODO
-            TreePath pathToDeclaration = null; // TODO
-            @SuppressWarnings("UnusedVariable") // TODO
+            //
+            // It is a bug that this does not standardardize for methods not defined in source code.
+
+            // Standardize with respect to the method definition.
             AnnotationMirror standardizedContract =
-                    // TODO: standardizeAnnotationFromContract(anno, flowExprContext,
-                    // pathToDeclaration);
-                    anno;
-            */
+                    methodDeclContext == null
+                            ? anno
+                            : standardizeAnnotationFromContract(
+                                    anno, methodDeclContext, pathToMethodDecl);
 
-            AnnotationMirror standardizedContract = anno;
-
-            TreePath pathToInvocation = analysis.atypeFactory.getPath(invocationTree);
+            // Standardize with respect to the method use (the call site).
+            TreePath pathToInvocation = atypeFactory.getPath(invocationTree);
             System.out.printf(
                     "About to call standardizeAnnotationFromContract(%s)%n context=%s%n pathToInvocation.getLeaf()=%s [%s]%n        parent=%s [%s]%n",
                     standardizedContract,
-                    flowExprContext.toStringDebug(),
+                    methodUseContext.toStringDebug(),
                     pathToInvocation.getLeaf(),
                     pathToInvocation.getLeaf().getClass(),
                     pathToInvocation.getParentPath().getLeaf(),
@@ -1246,7 +1267,7 @@ public abstract class CFAbstractTransfer<
             AnnotationMirror standardizedUse =
                     standardizeAnnotationFromContract(
                             standardizedContract,
-                            flowExprContext,
+                            methodUseContext,
                             // This leaf is a method call, but the annotations apply to its
                             // postcondition, which is a sibling scope to the method call.
                             pathToInvocation.getParentPath());
@@ -1257,7 +1278,7 @@ public abstract class CFAbstractTransfer<
             try {
                 JavaExpression je =
                         JavaExpressionParseUtil.parseUseMethodScope(
-                                expression, flowExprContext, pathToInvocation);
+                                expression, methodUseContext, pathToInvocation);
                 // "insertOrRefine" is called so that the postcondition information is added to any
                 // existing information rather than replacing it.  If the called method is not
                 // side-effect-free, then the values that might have been changed by the method call
