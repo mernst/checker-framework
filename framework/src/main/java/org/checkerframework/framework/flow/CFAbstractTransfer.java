@@ -67,6 +67,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclared
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
 import org.checkerframework.framework.util.AnnotatedTypes;
+import org.checkerframework.framework.util.BaseContext;
 import org.checkerframework.framework.util.Contract;
 import org.checkerframework.framework.util.Contract.ConditionalPostcondition;
 import org.checkerframework.framework.util.Contract.Postcondition;
@@ -1201,26 +1202,30 @@ public abstract class CFAbstractTransfer<
             S thenStore,
             S elseStore,
             Set<? extends Contract> postconditions) {
-        JavaExpressionContext flowExprContext = null; // lazily initialized
+
+        GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory = analysis.getTypeFactory();
+
+        JavaExpressionContext methodUseContext = null; // lazily initialized, then non-null
 
         for (Contract p : postconditions) {
             String expression = p.expression;
             AnnotationMirror anno = p.annotation;
 
-            if (flowExprContext == null) {
-                flowExprContext =
-                        JavaExpressionContext.buildContextForMethodUse(
-                                invocationNode, analysis.checker.getContext());
+            if (methodUseContext == null) {
+                // Set the lazily initialized variables.
+                BaseContext baseContext = analysis.checker.getContext();
+                methodUseContext =
+                        JavaExpressionContext.buildContextForMethodUse(invocationNode, baseContext);
             }
 
-            TreePath pathToInvocation = analysis.atypeFactory.getPath(invocationTree);
+            TreePath pathToInvocation = atypeFactory.getPath(invocationTree);
 
-            anno = standardizeAnnotationFromContract(anno, flowExprContext, pathToInvocation);
+            anno = standardizeAnnotationFromContract(anno, methodUseContext, pathToInvocation);
 
             try {
                 JavaExpression je =
                         JavaExpressionParseUtil.parseUseMethodScope(
-                                expression, flowExprContext, pathToInvocation);
+                                expression, methodUseContext, pathToInvocation);
                 // "insertOrRefine" is called so that the postcondition information is added to any
                 // existing information rather than replacing it.  If the called method is not
                 // side-effect-free, then the values that might have been changed by the method call
