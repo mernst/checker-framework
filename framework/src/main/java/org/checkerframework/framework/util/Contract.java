@@ -31,7 +31,14 @@ public abstract class Contract {
      */
     public final String expression;
 
-    /** The annotation on the type of expression, according to this contract. */
+    // It is not possible to standardize this annotation when creating the contract.  Trees.typeOf
+    // may return null if a call to a method textually precede the definition of the method and its
+    // type.  That can happen when a single compilation unit (= file) defines multiple types at its
+    // top level.
+    /**
+     * The annotation on the type of expression, according to this contract. It is not necessarily
+     * standardized.
+     */
     public final AnnotationMirror annotation;
 
     /** The annotation that expressed this contract; used for diagnostic messages. */
@@ -137,8 +144,7 @@ public abstract class Contract {
      * @param ensuresQualifierIf the ensuresQualifierIf field, for a conditional postcondition
      * @return a new contract
      */
-    // TODO: This needs to return STANDARDIZED annotations.
-    public static Contract create(
+    protected static Contract create(
             Kind kind,
             String expression,
             AnnotationMirror annotation,
@@ -150,23 +156,6 @@ public abstract class Contract {
         System.out.printf(
                 "Contract.create(kind=%s, expression=%s, annotation=%s, contractAnnotation=%s, ensuresQualifierIf=%s)%n",
                 kind, expression, annotation, contractAnnotation, ensuresQualifierIf);
-
-        // TODO: This needs to standardize the annotation.
-        // I cannot use standardizeForMethodSignature because it works on an AnnotatedTypeMirror and
-        // all I have here is an AnnotationMirror.
-        // So use standardizeAnnotationIfDependentType directly.
-
-        TypeMirror enclosingType = ElementUtils.enclosingClass(elt).asType();
-        JavaExpressionContext context =
-                JavaExpressionContext.buildContextForMethodDeclaration(
-                        methodDecl, enclosingType, factory.getContext());
-        TypePath pathToMethodDecl = null; // TODO
-        AnnotationMirror standardized =
-                standardizeAnnotationIfDependentType(
-                        context, pathToMethodDecl, annotation, true, false);
-        if (standardized != null) {
-            annotation = standardized;
-        }
 
         switch (kind) {
             case PRECONDITION:
@@ -220,7 +209,8 @@ public abstract class Contract {
          * Create a precondition contract.
          *
          * @param expression the Java expression that should have a type qualifier
-         * @param annotation the type qualifier that {@code expression} should have
+         * @param annotation the type qualifier that {@code expression} should have. It is not
+         *     necessarily standardized.
          * @param contractAnnotation the precondition annotation that the programmer wrote; used for
          *     diagnostic messages
          */
@@ -238,7 +228,8 @@ public abstract class Contract {
          * Create a postcondition contract.
          *
          * @param expression the Java expression that should have a type qualifier
-         * @param annotation the type qualifier that {@code expression} should have
+         * @param annotation the type qualifier that {@code expression} should have. It is not
+         *     necessarily standardized.
          * @param contractAnnotation the postcondition annotation that the programmer wrote; used
          *     for diagnostic messages
          */
@@ -274,7 +265,8 @@ public abstract class Contract {
          * Create a new conditional postcondition.
          *
          * @param expression the Java expression that should have a type qualifier
-         * @param annotation the type qualifier that {@code expression} should have
+         * @param annotation the type qualifier that {@code expression} should have. It is not
+         *     necessarily standardized.
          * @param contractAnnotation the postcondition annotation that the programmer wrote; used
          *     for diagnostic messages
          * @param resultValue whether the condition is the method returning true or false

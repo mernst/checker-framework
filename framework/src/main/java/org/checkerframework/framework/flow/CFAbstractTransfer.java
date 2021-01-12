@@ -1154,6 +1154,9 @@ public abstract class CFAbstractTransfer<
             S store,
             ExecutableElement methodElement,
             Tree invocationTree) {
+        System.out.printf(
+                "processPostconditions(%s, %s, %s)%n",
+                invocationNode, methodElement, invocationTree);
         ContractsFromMethod contractsUtils = analysis.atypeFactory.getContractsFromMethod();
         Set<Postcondition> postconditions = contractsUtils.getPostconditions(methodElement);
         processPostconditionsAndConditionalPostconditions(
@@ -1203,6 +1206,8 @@ public abstract class CFAbstractTransfer<
 
         for (Contract p : postconditions) {
             String expression = p.expression;
+            // The annotation as written in the contract.  Will later be reassigned to the
+            // standardized version of the annotation.
             AnnotationMirror anno = p.annotation;
 
             if (flowExprContext == null) {
@@ -1211,43 +1216,43 @@ public abstract class CFAbstractTransfer<
                                 invocationNode, analysis.checker.getContext());
             }
 
-            TreePath pathToInvocation = analysis.atypeFactory.getPath(invocationTree);
-            System.out.printf(
-                    "About to call standardizeAnnotationFromContract(%s)%n context=%s%n pathToInvocation.getLeaf()=%s [%s]%n        parent=%s [%s]%n",
-                    anno,
-                    flowExprContext.toStringDebug(),
-                    pathToInvocation.getLeaf(),
-                    pathToInvocation.getLeaf().getClass(),
-                    pathToInvocation.getParentPath().getLeaf(),
-                    pathToInvocation.getParentPath().getLeaf().getClass());
-            anno =
-                    standardizeAnnotationFromContract(
-                            anno,
-                            flowExprContext,
-                            // This leaf is a method call, but the annotations apply to its
-                            // postcondition, which is a sibling scope to the method call.
-                            pathToInvocation.getParentPath());
-            System.out.printf("standardizeAnnotationFromContract() => %s%n", anno);
-
             /*
-            // Need to standardize twice.  See test case Issue2619.java.
+            // Need to standardize twice: first with respect to the method definition, then with
+            // respect to the method use.  See test case Issue2619.java.
+            // It would save work to standardize annotations when contracts are created, so that
+            // any annotation in a Contract is already standardized with respect to the method
+            // definition. That does not work because the visitor may visit a method use (call site)
+            // before visiting the class that defines the method.  See test case Issue578.java.
             @SuppressWarnings("UnusedVariable") // TODO
-            TreePath pathToDeclaration =  null; // TODO
+            TreePath pathToDeclaration = null; // TODO
             @SuppressWarnings("UnusedVariable") // TODO
             AnnotationMirror standardizedContract =
                     // TODO: standardizeAnnotationFromContract(anno, flowExprContext,
                     // pathToDeclaration);
                     anno;
+            */
+
+            AnnotationMirror standardizedContract = anno;
+
             TreePath pathToInvocation = analysis.atypeFactory.getPath(invocationTree);
-            @SuppressWarnings("UnusedVariable") // TODO
+            System.out.printf(
+                    "About to call standardizeAnnotationFromContract(%s)%n context=%s%n pathToInvocation.getLeaf()=%s [%s]%n        parent=%s [%s]%n",
+                    standardizedContract,
+                    flowExprContext.toStringDebug(),
+                    pathToInvocation.getLeaf(),
+                    pathToInvocation.getLeaf().getClass(),
+                    pathToInvocation.getParentPath().getLeaf(),
+                    pathToInvocation.getParentPath().getLeaf().getClass());
             AnnotationMirror standardizedUse =
                     standardizeAnnotationFromContract(
-                            anno,
+                            standardizedContract,
                             flowExprContext,
                             // This leaf is a method call, but the annotations apply to its
                             // postcondition, which is a sibling scope to the method call.
                             pathToInvocation.getParentPath());
-            */
+            System.out.printf("standardizeAnnotationFromContract() => %s%n", standardizedUse);
+
+            anno = standardizedUse;
 
             try {
                 JavaExpression je =
