@@ -338,6 +338,27 @@ public class DependentTypesHelper {
     }
 
     /**
+     * Standardize the Java expressions in annotations in a class declaration.
+     *
+     * @param node the class declaration
+     * @param type the type of the class declaration; is side-effected by this method
+     * @param classElt the element of the class declaration
+     */
+    public void standardizeClass(ClassTree node, AnnotatedTypeMirror type, Element classElt) {
+        if (!hasDependentType(type)) {
+            return;
+        }
+        TreePath path = factory.getPath(node);
+        if (path == null) {
+            return;
+        }
+        JavaExpression receiverJe = JavaExpression.getImplicitReceiver(classElt);
+        JavaExpressionContext classignmentContext =
+                new JavaExpressionContext(receiverJe, null, factory.getContext());
+        standardizeUseLocalScope(classignmentContext, path, type);
+    }
+
+    /**
      * Standardizes the Java expressions in annotations for a method return type. {@code atm} might
      * come from the method declaration or from the type of the expression in a {@code return}
      * statement.
@@ -364,39 +385,43 @@ public class DependentTypesHelper {
         if (!hasDependentType(atm)) {
             return;
         }
-        TreePath path = factory.getPath(methodDecl);
-        if (path == null) {
+        TreePath pathToMethodDecl = factory.getPath(methodDecl);
+        if (pathToMethodDecl == null) {
             return;
         }
 
         ExecutableElement methodElt = TreeUtils.elementFromDeclaration(methodDecl);
-        TypeMirror enclosingType = ElementUtils.enclosingClass(methodElt).asType();
 
-        JavaExpressionContext context =
-                JavaExpressionContext.buildContextForMethodDeclaration(
-                        methodDecl, enclosingType, factory.getContext());
-        standardizeUseMethodScope(context, path, atm, removeErroneousExpressions);
+        standardizeForMethodSignature(
+                methodDecl, pathToMethodDecl, methodElt, atm, removeErroneousExpressions);
     }
 
     /**
-     * Standardize the Java expressions in annotations in a class declaration.
+     * Standardizes the Java expressions in annotations for a method signature location. This
+     * includes type annotations on a return type, formal parameter type, or excetion type. It also
+     * includes declaration annotations on a method (such as a pre- or post-condition contract
+     * annotation) or formal parameter.
      *
-     * @param node the class declaration
-     * @param type the type of the class declaration; is side-effected by this method
-     * @param classElt the element of the class declaration
+     * @param methodDecl a method declaration
+     * @param pathToMethodDecl the path to the method declaration
+     * @param elt the element for the method or a formal parameter; used for obtaining the enclosing
+     *     class
+     * @param atm a type that has a dependent type annotation; is side-effected by this method
+     * @param removeErroneousExpressions if true, remove erroneous expressions rather than
+     *     converting them into an explanation of why they are illegal
      */
-    public void standardizeClass(ClassTree node, AnnotatedTypeMirror type, Element classElt) {
-        if (!hasDependentType(type)) {
-            return;
-        }
-        TreePath path = factory.getPath(node);
-        if (path == null) {
-            return;
-        }
-        JavaExpression receiverJe = JavaExpression.getImplicitReceiver(classElt);
-        JavaExpressionContext classignmentContext =
-                new JavaExpressionContext(receiverJe, null, factory.getContext());
-        standardizeUseLocalScope(classignmentContext, path, type);
+    public void standardizeForMethodSignature(
+            MethodTree methodDecl,
+            TreePath pathToMethodDecl,
+            Element elt,
+            AnnotatedTypeMirror atm,
+            boolean removeErroneousExpressions) {
+
+        TypeMirror enclosingType = ElementUtils.enclosingClass(elt).asType();
+        JavaExpressionContext context =
+                JavaExpressionContext.buildContextForMethodDeclaration(
+                        methodDecl, enclosingType, factory.getContext());
+        standardizeUseMethodScope(context, pathToMethodDecl, atm, removeErroneousExpressions);
     }
 
     /** A set containing {@link Tree.Kind#METHOD} and {@link Tree.Kind#LAMBDA_EXPRESSION}. */
@@ -421,16 +446,20 @@ public class DependentTypesHelper {
         }
         switch (variableElt.getKind()) {
             case PARAMETER:
-                Tree enclTree = TreePathUtil.enclosingOfKind(path, METHOD_OR_LAMBDA);
+                TreePath pathTillEnclTree = TreePathUtil.pathTillOfKind(path, METHOD_OR_LAMBDA);
+                if (pathTillEnclTree == null) {
+                    throw new BugInCF("no enclosing method or lambda found");
+                }
+                Tree enclTree = pathTillEnclTree.getLeaf();
 
                 if (enclTree.getKind() == Kind.METHOD) {
-                    // Same logic as standardizeReturnType
                     MethodTree methodDecl = (MethodTree) enclTree;
-                    TypeMirror enclosingType = ElementUtils.enclosingClass(variableElt).asType();
-                    JavaExpressionContext parameterContext =
-                            JavaExpressionContext.buildContextForMethodDeclaration(
-                                    methodDecl, enclosingType, factory.getContext());
-                    standardizeDoNotUseLocalScope(parameterContext, path, type);
+                    standardizeForMethodSignature(
+                            methodDecl,
+                            pathTillEnclTree,
+                            variableElt,
+                            type,
+                            /*removeErroneousExpressions=*/ false);
                 } else {
                     LambdaExpressionTree lambdaTree = (LambdaExpressionTree) enclTree;
                     JavaExpressionContext parameterContext =
