@@ -137,6 +137,7 @@ public abstract class Contract {
      * @param ensuresQualifierIf the ensuresQualifierIf field, for a conditional postcondition
      * @return a new contract
      */
+    // TODO: This needs to return STANDARDIZED annotations.
     public static Contract create(
             Kind kind,
             String expression,
@@ -151,6 +152,22 @@ public abstract class Contract {
                 kind, expression, annotation, contractAnnotation, ensuresQualifierIf);
 
         // TODO: This needs to standardize the annotation.
+        // I cannot use standardizeForMethodSignature because it works on an AnnotatedTypeMirror and
+        // all I have here is an AnnotationMirror.
+        // So use standardizeAnnotationIfDependentType directly.
+
+        TypeMirror enclosingType = ElementUtils.enclosingClass(elt).asType();
+        JavaExpressionContext context =
+                JavaExpressionContext.buildContextForMethodDeclaration(
+                        methodDecl, enclosingType, factory.getContext());
+        TypePath pathToMethodDecl = null; // TODO
+        AnnotationMirror standardized =
+                standardizeAnnotationIfDependentType(
+                        context, pathToMethodDecl, annotation, true, false);
+        if (standardized != null) {
+            annotation = standardized;
+        }
+
         switch (kind) {
             case PRECONDITION:
                 return new Precondition(expression, annotation, contractAnnotation);
