@@ -297,16 +297,16 @@ public abstract class CFAbstractTransfer<
 
             // add properties known through precondition
             CFGMethod method = (CFGMethod) underlyingAST;
-            MethodTree methodTree = method.getMethod();
-            ExecutableElement methodElem = TreeUtils.elementFromDeclaration(methodTree);
-            addInformationFromPreconditions(info, factory, method, methodTree, methodElem);
+            MethodTree methodDecl = method.getMethod();
+            ExecutableElement methodElem = TreeUtils.elementFromDeclaration(methodDecl);
+            addInformationFromPreconditions(info, factory, method, methodDecl, methodElem);
 
             final ClassTree classTree = method.getClassTree();
-            addFieldValues(info, factory, classTree, methodTree);
+            addFieldValues(info, factory, classTree, methodDecl);
 
             addFinalLocalValues(info, methodElem);
 
-            if (shouldPerformWholeProgramInference(methodTree, methodElem)) {
+            if (shouldPerformWholeProgramInference(methodDecl, methodElem)) {
                 Map<AnnotatedDeclaredType, ExecutableElement> overriddenMethods =
                         AnnotatedTypes.overriddenMethods(
                                 analysis.atypeFactory.getElementUtils(),
@@ -325,7 +325,7 @@ public abstract class CFAbstractTransfer<
                     // on the overridden method.
                     analysis.atypeFactory
                             .getWholeProgramInference()
-                            .updateFromOverride(methodTree, methodElem, overriddenMethod);
+                            .updateFromOverride(methodDecl, methodElem, overriddenMethod);
                 }
             }
 
@@ -415,7 +415,7 @@ public abstract class CFAbstractTransfer<
     }
 
     private void addFieldValues(
-            S info, AnnotatedTypeFactory factory, ClassTree classTree, MethodTree methodTree) {
+            S info, AnnotatedTypeFactory factory, ClassTree classTree, MethodTree methodDecl) {
 
         // Add knowledge about final fields, or values of non-final fields
         // if we are inside a constructor (information about initializers)
@@ -424,7 +424,7 @@ public abstract class CFAbstractTransfer<
         for (Pair<VariableElement, V> p : fieldValues) {
             VariableElement element = p.first;
             V value = p.second;
-            if (ElementUtils.isFinal(element) || TreeUtils.isConstructor(methodTree)) {
+            if (ElementUtils.isFinal(element) || TreeUtils.isConstructor(methodDecl)) {
                 JavaExpression receiver;
                 if (ElementUtils.isStatic(element)) {
                     receiver = new ClassName(classType);
@@ -438,8 +438,8 @@ public abstract class CFAbstractTransfer<
         }
 
         // add properties about fields (static information from type)
-        boolean isNotFullyInitializedReceiver = isNotFullyInitializedReceiver(methodTree);
-        if (isNotFullyInitializedReceiver && !TreeUtils.isConstructor(methodTree)) {
+        boolean isNotFullyInitializedReceiver = isNotFullyInitializedReceiver(methodDecl);
+        if (isNotFullyInitializedReceiver && !TreeUtils.isConstructor(methodDecl)) {
             // cannot add information about fields if the receiver isn't initialized
             // and the method isn't a constructor
             return;
@@ -461,7 +461,7 @@ public abstract class CFAbstractTransfer<
                 if (value == null) {
                     continue;
                 }
-                if (TreeUtils.isConstructor(methodTree)) {
+                if (TreeUtils.isConstructor(methodDecl)) {
                     // if we are in a constructor,
                     // then we can still use the static type, but only
                     // if there is also an initializer that already does
@@ -533,8 +533,8 @@ public abstract class CFAbstractTransfer<
     }
 
     /** Returns true if the receiver of a method might not yet be fully initialized. */
-    protected boolean isNotFullyInitializedReceiver(MethodTree methodTree) {
-        return TreeUtils.isConstructor(methodTree);
+    protected boolean isNotFullyInitializedReceiver(MethodTree methodDecl) {
+        return TreeUtils.isConstructor(methodDecl);
     }
 
     /**
@@ -544,14 +544,14 @@ public abstract class CFAbstractTransfer<
      * @param initialStore the initial store for the method body
      * @param factory the type factory
      * @param methodAst the AST for a method declaration
-     * @param methodTree the declaration of the method; is a field of {@code methodAst}
+     * @param methodDecl the declaration of the method; is a field of {@code methodAst}
      * @param methodElement the element for the method
      */
     protected void addInformationFromPreconditions(
             S initialStore,
             AnnotatedTypeFactory factory,
             CFGMethod methodAst,
-            MethodTree methodTree,
+            MethodTree methodDecl,
             ExecutableElement methodElement) {
         ContractsFromMethod contractsUtils = analysis.atypeFactory.getContractsFromMethod();
         JavaExpressionContext flowExprContext = null;
@@ -564,13 +564,12 @@ public abstract class CFAbstractTransfer<
             if (flowExprContext == null) {
                 flowExprContext =
                         JavaExpressionContext.buildContextForMethodDeclaration(
-                                methodTree,
+                                methodDecl,
                                 methodAst.getClassTree(),
                                 analysis.checker.getContext());
             }
 
-            // This is the path to the method declaration.
-            TreePath localScope = analysis.atypeFactory.getPath(methodTree);
+            TreePath localScope = analysis.atypeFactory.getPath(methodDecl);
 
             annotation = standardizeAnnotationFromContract(annotation, flowExprContext, localScope);
 
@@ -1207,14 +1206,48 @@ public abstract class CFAbstractTransfer<
                                 invocationNode, analysis.checker.getContext());
             }
 
-            TreePath localScope = analysis.atypeFactory.getPath(invocationTree);
+            TreePath pathToInvocation = analysis.atypeFactory.getPath(invocationTree);
+            System.out.printf(
+                    "About to call standardizeAnnotationFromContract(%s)%n context=%s%n pathToInvocation.getLeaf()=%s [%s]%n        parent=%s [%s]%n",
+                    anno,
+                    flowExprContext.toStringDebug(),
+                    pathToInvocation.getLeaf(),
+                    pathToInvocation.getLeaf().getClass(),
+                    pathToInvocation.getParentPath().getLeaf(),
+                    pathToInvocation.getParentPath().getLeaf().getClass());
+            anno =
+                    standardizeAnnotationFromContract(
+                            anno,
+                            flowExprContext,
+                            // This leaf is a method call, but the annotations apply to its
+                            // postcondition, which is a sibling scope to the method call.
+                            pathToInvocation.getParentPath());
+            System.out.printf("standardizeAnnotationFromContract() => %s%n", anno);
 
-            anno = standardizeAnnotationFromContract(anno, flowExprContext, localScope);
+            /*
+            // Need to standardize twice.  See test case Issue2619.java.
+            @SuppressWarnings("UnusedVariable") // TODO
+            TreePath pathToDeclaration =  null; // TODO
+            @SuppressWarnings("UnusedVariable") // TODO
+            AnnotationMirror standardizedContract =
+                    // TODO: standardizeAnnotationFromContract(anno, flowExprContext,
+                    // pathToDeclaration);
+                    anno;
+            TreePath pathToInvocation = analysis.atypeFactory.getPath(invocationTree);
+            @SuppressWarnings("UnusedVariable") // TODO
+            AnnotationMirror standardizedUse =
+                    standardizeAnnotationFromContract(
+                            anno,
+                            flowExprContext,
+                            // This leaf is a method call, but the annotations apply to its
+                            // postcondition, which is a sibling scope to the method call.
+                            pathToInvocation.getParentPath());
+            */
 
             try {
                 JavaExpression je =
                         JavaExpressionParseUtil.parseUseMethodScope(
-                                expression, flowExprContext, localScope);
+                                expression, flowExprContext, pathToInvocation);
                 // "insertOrRefine" is called so that the postcondition information is added to any
                 // existing information rather than replacing it.  If the called method is not
                 // side-effect-free, then the values that might have been changed by the method call
