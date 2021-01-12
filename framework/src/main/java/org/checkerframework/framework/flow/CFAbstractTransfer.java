@@ -298,16 +298,16 @@ public abstract class CFAbstractTransfer<
 
             // add properties known through precondition
             CFGMethod method = (CFGMethod) underlyingAST;
-            MethodTree methodDecl = method.getMethod();
-            ExecutableElement methodElem = TreeUtils.elementFromDeclaration(methodDecl);
-            addInformationFromPreconditions(info, factory, method, methodDecl, methodElem);
+            MethodTree methodDeclTree = method.getMethod();
+            ExecutableElement methodElem = TreeUtils.elementFromDeclaration(methodDeclTree);
+            addInformationFromPreconditions(info, factory, method, methodDeclTree, methodElem);
 
             final ClassTree classTree = method.getClassTree();
-            addFieldValues(info, factory, classTree, methodDecl);
+            addFieldValues(info, factory, classTree, methodDeclTree);
 
             addFinalLocalValues(info, methodElem);
 
-            if (shouldPerformWholeProgramInference(methodDecl, methodElem)) {
+            if (shouldPerformWholeProgramInference(methodDeclTree, methodElem)) {
                 Map<AnnotatedDeclaredType, ExecutableElement> overriddenMethods =
                         AnnotatedTypes.overriddenMethods(
                                 analysis.atypeFactory.getElementUtils(),
@@ -326,7 +326,7 @@ public abstract class CFAbstractTransfer<
                     // on the overridden method.
                     analysis.atypeFactory
                             .getWholeProgramInference()
-                            .updateFromOverride(methodDecl, methodElem, overriddenMethod);
+                            .updateFromOverride(methodDeclTree, methodElem, overriddenMethod);
                 }
             }
 
@@ -536,11 +536,11 @@ public abstract class CFAbstractTransfer<
     /**
      * Returns true if the receiver of a method or constructor might not yet be fully initialized.
      *
-     * @param methodDecl the declaration of the method or constructor
+     * @param methodDeclTree the declaration of the method or constructor
      * @return true if the receiver of a method or constructormight not yet be fully initialized
      */
-    protected boolean isNotFullyInitializedReceiver(MethodTree methodDecl) {
-        return TreeUtils.isConstructor(methodDecl);
+    protected boolean isNotFullyInitializedReceiver(MethodTree methodDeclTree) {
+        return TreeUtils.isConstructor(methodDeclTree);
     }
 
     /**
@@ -550,34 +550,35 @@ public abstract class CFAbstractTransfer<
      * @param initialStore the initial store for the method body
      * @param factory the type factory
      * @param methodAst the AST for a method declaration
-     * @param methodDecl the declaration of the method; is a field of {@code methodAst}
+     * @param methodDeclTree the declaration of the method; is a field of {@code methodAst}
      * @param methodElement the element for the method
      */
     protected void addInformationFromPreconditions(
             S initialStore,
             AnnotatedTypeFactory factory,
             CFGMethod methodAst,
-            MethodTree methodDecl,
+            MethodTree methodDeclTree,
             ExecutableElement methodElement) {
         ContractsFromMethod contractsUtils = analysis.atypeFactory.getContractsFromMethod();
-        JavaExpressionContext flowExprContext = null;
+        JavaExpressionContext methodUseContext = null;
         Set<Precondition> preconditions = contractsUtils.getPreconditions(methodElement);
 
         for (Precondition p : preconditions) {
             String expression = p.expression;
             AnnotationMirror annotation = p.annotation;
 
-            if (flowExprContext == null) {
-                flowExprContext =
+            if (methodUseContext == null) {
+                methodUseContext =
                         JavaExpressionContext.buildContextForMethodDeclaration(
-                                methodDecl,
+                                methodDeclTree,
                                 methodAst.getClassTree(),
                                 analysis.checker.getContext());
             }
 
-            TreePath localScope = analysis.atypeFactory.getPath(methodDecl);
+            TreePath localScope = analysis.atypeFactory.getPath(methodDeclTree);
 
-            annotation = standardizeAnnotationFromContract(annotation, flowExprContext, localScope);
+            annotation =
+                    standardizeAnnotationFromContract(annotation, methodUseContext, localScope);
 
             try {
                 // TODO: currently, these expressions are parsed at the
@@ -585,8 +586,10 @@ public abstract class CFAbstractTransfer<
                 // be optimized to store the result the first time.
                 // (same for other annotations)
                 JavaExpression expr =
+                        // JavaExpressionParseUtil.parse(
+                        //         expression, methodUseContext, localScope, false);
                         JavaExpressionParseUtil.parseUseMethodScope(
-                                expression, flowExprContext, localScope);
+                                expression, methodUseContext, localScope);
                 initialStore.insertValue(expr, annotation);
             } catch (JavaExpressionParseException e) {
                 // Errors are reported by BaseTypeVisitor.checkContractsAtMethodDeclaration().
@@ -1224,6 +1227,8 @@ public abstract class CFAbstractTransfer<
 
             try {
                 JavaExpression je =
+                        // JavaExpressionParseUtil.parse(
+                        //         expression, methodUseContext, pathToInvocation, false);
                         JavaExpressionParseUtil.parseUseMethodScope(
                                 expression, methodUseContext, pathToInvocation);
                 // "insertOrRefine" is called so that the postcondition information is added to any
