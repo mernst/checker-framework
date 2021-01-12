@@ -67,6 +67,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclared
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
 import org.checkerframework.framework.util.AnnotatedTypes;
+import org.checkerframework.framework.util.BaseContext;
 import org.checkerframework.framework.util.Contract;
 import org.checkerframework.framework.util.Contract.ConditionalPostcondition;
 import org.checkerframework.framework.util.Contract.Postcondition;
@@ -297,16 +298,16 @@ public abstract class CFAbstractTransfer<
 
             // add properties known through precondition
             CFGMethod method = (CFGMethod) underlyingAST;
-            MethodTree methodDecl = method.getMethod();
-            ExecutableElement methodElem = TreeUtils.elementFromDeclaration(methodDecl);
-            addInformationFromPreconditions(info, factory, method, methodDecl, methodElem);
+            MethodTree methodDeclTree = method.getMethod();
+            ExecutableElement methodElem = TreeUtils.elementFromDeclaration(methodDeclTree);
+            addInformationFromPreconditions(info, factory, method, methodDeclTree, methodElem);
 
             final ClassTree classTree = method.getClassTree();
-            addFieldValues(info, factory, classTree, methodDecl);
+            addFieldValues(info, factory, classTree, methodDeclTree);
 
             addFinalLocalValues(info, methodElem);
 
-            if (shouldPerformWholeProgramInference(methodDecl, methodElem)) {
+            if (shouldPerformWholeProgramInference(methodDeclTree, methodElem)) {
                 Map<AnnotatedDeclaredType, ExecutableElement> overriddenMethods =
                         AnnotatedTypes.overriddenMethods(
                                 analysis.atypeFactory.getElementUtils(),
@@ -325,7 +326,7 @@ public abstract class CFAbstractTransfer<
                     // on the overridden method.
                     analysis.atypeFactory
                             .getWholeProgramInference()
-                            .updateFromOverride(methodDecl, methodElem, overriddenMethod);
+                            .updateFromOverride(methodDeclTree, methodElem, overriddenMethod);
                 }
             }
 
@@ -535,11 +536,11 @@ public abstract class CFAbstractTransfer<
     /**
      * Returns true if the receiver of a method or constructor might not yet be fully initialized.
      *
-     * @param methodDecl the declaration of the method or constructor
+     * @param methodDeclTree the declaration of the method or constructor
      * @return true if the receiver of a method or constructormight not yet be fully initialized
      */
-    protected boolean isNotFullyInitializedReceiver(MethodTree methodDecl) {
-        return TreeUtils.isConstructor(methodDecl);
+    protected boolean isNotFullyInitializedReceiver(MethodTree methodDeclTree) {
+        return TreeUtils.isConstructor(methodDeclTree);
     }
 
     /**
@@ -549,34 +550,35 @@ public abstract class CFAbstractTransfer<
      * @param initialStore the initial store for the method body
      * @param factory the type factory
      * @param methodAst the AST for a method declaration
-     * @param methodDecl the declaration of the method; is a field of {@code methodAst}
+     * @param methodDeclTree the declaration of the method; is a field of {@code methodAst}
      * @param methodElement the element for the method
      */
     protected void addInformationFromPreconditions(
             S initialStore,
             AnnotatedTypeFactory factory,
             CFGMethod methodAst,
-            MethodTree methodDecl,
+            MethodTree methodDeclTree,
             ExecutableElement methodElement) {
         ContractsFromMethod contractsUtils = analysis.atypeFactory.getContractsFromMethod();
-        JavaExpressionContext flowExprContext = null;
+        JavaExpressionContext methodUseContext = null;
         Set<Precondition> preconditions = contractsUtils.getPreconditions(methodElement);
 
         for (Precondition p : preconditions) {
             String expression = p.expression;
             AnnotationMirror annotation = p.annotation;
 
-            if (flowExprContext == null) {
-                flowExprContext =
+            if (methodUseContext == null) {
+                methodUseContext =
                         JavaExpressionContext.buildContextForMethodDeclaration(
-                                methodDecl,
+                                methodDeclTree,
                                 methodAst.getClassTree(),
                                 analysis.checker.getContext());
             }
 
-            TreePath localScope = analysis.atypeFactory.getPath(methodDecl);
+            TreePath localScope = analysis.atypeFactory.getPath(methodDeclTree);
 
-            annotation = standardizeAnnotationFromContract(annotation, flowExprContext, localScope);
+            annotation =
+                    standardizeAnnotationFromContract(annotation, methodUseContext, localScope);
 
             try {
                 // TODO: currently, these expressions are parsed at the
@@ -584,8 +586,10 @@ public abstract class CFAbstractTransfer<
                 // be optimized to store the result the first time.
                 // (same for other annotations)
                 JavaExpression expr =
+                        // JavaExpressionParseUtil.parse(
+                        //         expression, methodUseContext, localScope, false);
                         JavaExpressionParseUtil.parseUseMethodScope(
-                                expression, flowExprContext, localScope);
+                                expression, methodUseContext, localScope);
                 initialStore.insertValue(expr, annotation);
             } catch (JavaExpressionParseException e) {
                 // Errors are reported by BaseTypeVisitor.checkContractsAtMethodDeclaration().
@@ -607,11 +611,9 @@ public abstract class CFAbstractTransfer<
             TreePath path) {
         // TODO: common implementation with BaseTypeVisitor.standardizeAnnotationFromContract
         if (analysis.dependentTypesHelper != null) {
-            // TODO: Use method scope?
             AnnotationMirror standardized =
-                    // TODO: pass the method scope and UseLocalScope.YES
                     analysis.dependentTypesHelper.standardizeAnnotationIfDependentType(
-                            flowExprContext, path, annoFromContract, UseLocalScope.NO, false);
+                            flowExprContext, path, annoFromContract, UseLocalScope.YES, false);
             if (standardized != null) {
                 // BaseTypeVisitor checks the validity of the annotaiton. Errors are reported there
                 // when called from BaseTypeVisitor.checkContractsAtMethodDeclaration().
@@ -1156,6 +1158,11 @@ public abstract class CFAbstractTransfer<
             S store,
             ExecutableElement methodElement,
             Tree invocationTree) {
+        if (false) {
+            System.out.printf(
+                    "processPostconditions(%s, %s, %s)%n",
+                    invocationNode, methodElement, invocationTree);
+        }
         ContractsFromMethod contractsUtils = analysis.atypeFactory.getContractsFromMethod();
         Set<Postcondition> postconditions = contractsUtils.getPostconditions(methodElement);
         processPostconditionsAndConditionalPostconditions(
@@ -1201,26 +1208,90 @@ public abstract class CFAbstractTransfer<
             S thenStore,
             S elseStore,
             Set<? extends Contract> postconditions) {
-        JavaExpressionContext flowExprContext = null; // lazily initialized
+
+        GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory = analysis.getTypeFactory();
+
+        // These lazily initialized variables are needed only if the method has any contracts.
+        // `pathToMethodDecl` and `methodDeclContext` are null if the method is not defined in
+        // source code.
+        TreePath pathToMethodDecl = null; // lazily initialized; may be null
+        JavaExpressionContext methodDeclContext = null; // lazily initialized; may be null
+        JavaExpressionContext methodUseContext = null; // lazily initialized, then non-null
 
         for (Contract p : postconditions) {
             String expression = p.expression;
+            // The annotation as written in the contract.  Will later be reassigned to the
+            // standardized version of the annotation.
             AnnotationMirror anno = p.annotation;
 
-            if (flowExprContext == null) {
-                flowExprContext =
-                        JavaExpressionContext.buildContextForMethodUse(
-                                invocationNode, analysis.checker.getContext());
+            if (methodUseContext == null) {
+                // Set the lazily initialized variables.
+                BaseContext baseContext = analysis.checker.getContext();
+                ExecutableElement methodElt = invocationNode.getTarget().getMethod();
+                MethodTree methodDecl = (MethodTree) atypeFactory.declarationFromElement(methodElt);
+
+                pathToMethodDecl = atypeFactory.getPath(methodDecl);
+                if (pathToMethodDecl == null) {
+                    methodDeclContext = null;
+                } else {
+                    TypeMirror enclosingType = ElementUtils.enclosingClass(methodElt).asType();
+                    methodDeclContext =
+                            JavaExpressionContext.buildContextForMethodDeclaration(
+                                    methodDecl, enclosingType, baseContext);
+                }
+                methodUseContext =
+                        JavaExpressionContext.buildContextForMethodUse(invocationNode, baseContext);
             }
 
-            TreePath pathToInvocation = analysis.atypeFactory.getPath(invocationTree);
+            // Need to standardize twice: first with respect to the method definition, then with
+            // respect to the method use.  See test case Issue2619.java.
+            //
+            // It would be more efficient to standardize annotations when contracts are created, so
+            // that any annotation in a Contract is already standardized with respect to the method
+            // definition. That is not possible because the visitor may visit a method use (call
+            // site) before visiting the class that defines the method.  See test case
+            // Issue578.java.
+            //
+            // It is a bug that this does not standardardize for methods not defined in source code.
 
-            anno = standardizeAnnotationFromContract(anno, flowExprContext, pathToInvocation);
+            // Standardize with respect to the method definition.
+            AnnotationMirror standardizedContract =
+                    methodDeclContext == null
+                            ? anno
+                            : standardizeAnnotationFromContract(
+                                    anno, methodDeclContext, pathToMethodDecl);
+
+            // Standardize with respect to the method use (the call site).
+            TreePath pathToInvocation = atypeFactory.getPath(invocationTree);
+            if (false) {
+                System.out.printf(
+                        "About to call standardizeAnnotationFromContract(%s)%n context=%s%n pathToInvocation.getLeaf()=%s [%s]%n        parent=%s [%s]%n",
+                        standardizedContract,
+                        methodUseContext.toStringDebug(),
+                        pathToInvocation.getLeaf(),
+                        pathToInvocation.getLeaf().getClass(),
+                        pathToInvocation.getParentPath().getLeaf(),
+                        pathToInvocation.getParentPath().getLeaf().getClass());
+            }
+            AnnotationMirror standardizedUse =
+                    standardizeAnnotationFromContract(
+                            standardizedContract,
+                            methodUseContext,
+                            // This leaf is a method call, but the annotations apply to its
+                            // postcondition, which is a sibling scope to the method call.
+                            pathToInvocation.getParentPath());
+            if (false) {
+                System.out.printf("standardizeAnnotationFromContract() => %s%n", standardizedUse);
+            }
+
+            anno = standardizedUse;
 
             try {
                 JavaExpression je =
+                        // JavaExpressionParseUtil.parse(
+                        //         expression, methodUseContext, pathToInvocation, false);
                         JavaExpressionParseUtil.parseUseMethodScope(
-                                expression, flowExprContext, pathToInvocation);
+                                expression, methodUseContext, pathToInvocation);
                 // "insertOrRefine" is called so that the postcondition information is added to any
                 // existing information rather than replacing it.  If the called method is not
                 // side-effect-free, then the values that might have been changed by the method call
