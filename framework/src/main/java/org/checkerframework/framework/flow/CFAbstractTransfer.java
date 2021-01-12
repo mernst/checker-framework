@@ -1206,8 +1206,9 @@ public abstract class CFAbstractTransfer<
 
         GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory = analysis.getTypeFactory();
 
-        // pathToMethodDecl and methodDeclContext are null if the method is not defined in source
-        // code.
+        // These lazily initialized variables are needed only if the method has any contracts.
+        // `pathToMethodDecl` and `methodDeclContext` are null if the method is not defined in
+        // source code.
         TreePath pathToMethodDecl = null; // lazily initialized; may be null
         JavaExpressionContext methodDeclContext = null; // lazily initialized; may be null
         JavaExpressionContext methodUseContext = null; // lazily initialized, then non-null
