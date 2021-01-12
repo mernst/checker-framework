@@ -148,7 +148,6 @@ public class ContractsFromMethod {
             Collections.sort(expressions);
             Boolean annoResult =
                     AnnotationUtils.getElementValueOrNull(anno, "result", Boolean.class, false);
-            // TODO: This needs to return STANDARDIZED annotations.
             for (String expr : expressions) {
                 T contract =
                         clazz.cast(
@@ -170,7 +169,6 @@ public class ContractsFromMethod {
      * @return the contracts expressed by the given annotation, or the empty set if the argument is
      *     null
      */
-    // TODO: This needs to return STANDARDIZED annotations.
     private <T extends Contract> Set<T> getContract(
             Contract.Kind kind, AnnotationMirror contractAnnotation, Class<T> clazz) {
         if (contractAnnotation == null) {

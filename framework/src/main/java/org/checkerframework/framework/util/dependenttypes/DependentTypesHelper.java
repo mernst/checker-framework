@@ -397,10 +397,13 @@ public class DependentTypesHelper {
     }
 
     /**
-     * Standardizes the Java expressions in annotations for a method signature location. This
-     * includes type annotations on a return type, formal parameter type, or excetion type. It also
-     * includes declaration annotations on a method (such as a pre- or post-condition contract
-     * annotation) or formal parameter.
+     * Standardizes the Java expressions in annotations for a method signature location, including:
+     *
+     * <ul>
+     *   <li>type annotations on a return type, formal parameter type, or exception type, and
+     *   <li>declaration annotations on a method (such as a pre- or post-condition contract
+     *       annotation) or formal parameter.
+     * </ul>
      *
      * @param methodDecl a method declaration
      * @param pathToMethodDecl the path to the method declaration
@@ -453,7 +456,6 @@ public class DependentTypesHelper {
                 Tree enclTree = pathTillEnclTree.getLeaf();
 
                 if (enclTree.getKind() == Kind.METHOD) {
-                    // Same logic as standardizeReturnType
                     MethodTree methodDecl = (MethodTree) enclTree;
                     standardizeForMethodSignature(
                             methodDecl,
