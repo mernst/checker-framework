@@ -532,7 +532,12 @@ public abstract class CFAbstractTransfer<
         }
     }
 
-    /** Returns true if the receiver of a method might not yet be fully initialized. */
+    /**
+     * Returns true if the receiver of a method or constructor might not yet be fully initialized.
+     *
+     * @param methodDecl the declaration of the method or constructor
+     * @return true if the receiver of a method or constructormight not yet be fully initialized
+     */
     protected boolean isNotFullyInitializedReceiver(MethodTree methodDecl) {
         return TreeUtils.isConstructor(methodDecl);
     }
