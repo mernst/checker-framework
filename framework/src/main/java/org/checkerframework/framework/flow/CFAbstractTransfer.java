@@ -1219,11 +1219,11 @@ public abstract class CFAbstractTransfer<
             AnnotationMirror anno = p.annotation;
 
             if (methodUseContext == null) {
+                // Set the lazily initialized variables.
                 BaseContext baseContext = analysis.checker.getContext();
                 ExecutableElement methodElt = invocationNode.getTarget().getMethod();
                 MethodTree methodDecl = (MethodTree) atypeFactory.declarationFromElement(methodElt);
 
-                // Set the lazily initialized variables.
                 pathToMethodDecl = atypeFactory.getPath(methodDecl);
                 if (pathToMethodDecl == null) {
                     methodDeclContext = null;
@@ -1240,10 +1240,11 @@ public abstract class CFAbstractTransfer<
             // Need to standardize twice: first with respect to the method definition, then with
             // respect to the method use.  See test case Issue2619.java.
             //
-            // It would save work to standardize annotations when contracts are created, so that
-            // any annotation in a Contract is already standardized with respect to the method
-            // definition. That does not work because the visitor may visit a method use (call site)
-            // before visiting the class that defines the method.  See test case Issue578.java.
+            // It would be more efficient to standardize annotations when contracts are created, so
+            // that any annotation in a Contract is already standardized with respect to the method
+            // definition. That is not possible because the visitor may visit a method use (call
+            // site) before visiting the class that defines the method.  See test case
+            // Issue578.java.
             //
             // It is a bug that this does not standardardize for methods not defined in source code.
 
