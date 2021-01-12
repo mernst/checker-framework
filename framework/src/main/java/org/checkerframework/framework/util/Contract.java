@@ -137,7 +137,7 @@ public abstract class Contract {
      * @param ensuresQualifierIf the ensuresQualifierIf field, for a conditional postcondition
      * @return a new contract
      */
-    public static Contract create(
+    protected static Contract create(
             Kind kind,
             String expression,
             AnnotationMirror annotation,
