@@ -415,7 +415,7 @@ public abstract class CFAbstractTransfer<
     }
 
     private void addFieldValues(
-            S info, AnnotatedTypeFactory factory, ClassTree classTree, MethodTree methodDecl) {
+            S info, AnnotatedTypeFactory factory, ClassTree classTree, MethodTree methodTree) {
 
         // Add knowledge about final fields, or values of non-final fields
         // if we are inside a constructor (information about initializers)
@@ -424,7 +424,7 @@ public abstract class CFAbstractTransfer<
         for (Pair<VariableElement, V> p : fieldValues) {
             VariableElement element = p.first;
             V value = p.second;
-            if (ElementUtils.isFinal(element) || TreeUtils.isConstructor(methodDecl)) {
+            if (ElementUtils.isFinal(element) || TreeUtils.isConstructor(methodTree)) {
                 JavaExpression receiver;
                 if (ElementUtils.isStatic(element)) {
                     receiver = new ClassName(classType);
@@ -438,8 +438,8 @@ public abstract class CFAbstractTransfer<
         }
 
         // add properties about fields (static information from type)
-        boolean isNotFullyInitializedReceiver = isNotFullyInitializedReceiver(methodDecl);
-        if (isNotFullyInitializedReceiver && !TreeUtils.isConstructor(methodDecl)) {
+        boolean isNotFullyInitializedReceiver = isNotFullyInitializedReceiver(methodTree);
+        if (isNotFullyInitializedReceiver && !TreeUtils.isConstructor(methodTree)) {
             // cannot add information about fields if the receiver isn't initialized
             // and the method isn't a constructor
             return;
@@ -461,7 +461,7 @@ public abstract class CFAbstractTransfer<
                 if (value == null) {
                     continue;
                 }
-                if (TreeUtils.isConstructor(methodDecl)) {
+                if (TreeUtils.isConstructor(methodTree)) {
                     // if we are in a constructor,
                     // then we can still use the static type, but only
                     // if there is also an initializer that already does
