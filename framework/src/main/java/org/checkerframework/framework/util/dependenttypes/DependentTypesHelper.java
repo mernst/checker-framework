@@ -508,7 +508,7 @@ public class DependentTypesHelper {
      * Standardize the Java expressions in annotations in the type of an expression.
      *
      * @param tree an expression
-     * @param type its type; is side-effected by this method
+     * @param annotatedType its type; is side-effected by this method
      */
     public void standardizeExpression(ExpressionTree tree, AnnotatedTypeMirror annotatedType) {
         if (!hasDependentType(annotatedType)) {
