@@ -944,9 +944,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             return;
         }
 
+        TreePath pathToMethodDecl = getCurrentPath();
+        System.out.printf("pathToMethodDecl.getLeaf() = %s%n", pathToMethodDecl.getLeaf());
+
         JavaExpressionContext flowExprContext =
                 JavaExpressionContext.buildContextForMethodDeclaration(
-                        node, getCurrentPath(), checker.getContext());
+                        node, pathToMethodDecl, checker.getContext());
 
         for (Contract contract : contracts) {
             String expression = contract.expression;
@@ -954,13 +957,14 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
             annotation =
                     standardizeAnnotationFromContract(
-                            annotation, flowExprContext, getCurrentPath());
+                            annotation, flowExprContext, pathToMethodDecl);
 
             JavaExpression expr = null;
             try {
                 expr =
                         JavaExpressionParseUtil.parse(
-                                expression, flowExprContext, getCurrentPath(), UseLocalScope.YES);
+                                // TODO: I guess I need to adjust the path here.
+                                expression, flowExprContext, pathToMethodDecl, UseLocalScope.YES);
             } catch (JavaExpressionParseException e) {
                 checker.report(node, e.getDiagMessage());
             }
