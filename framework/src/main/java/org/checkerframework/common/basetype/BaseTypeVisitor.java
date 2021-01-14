@@ -1398,6 +1398,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      */
     @Override
     public Void visitAssignment(AssignmentTree node, Void p) {
+        System.out.printf("visitAssignment(%s)%n", node);
         Pair<Tree, AnnotatedTypeMirror> preAssignmentContext = visitorState.getAssignmentContext();
         visitorState.setAssignmentContext(
                 Pair.of(
@@ -2626,6 +2627,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             ExpressionTree valueExp,
             @CompilerMessageKey String errorKey,
             Object... extraArgs) {
+        System.out.printf("commonAssignmentCheck#1(%s, %s, %s)%n", varTree, valueExp, errorKey);
+
         AnnotatedTypeMirror varType = atypeFactory.getAnnotatedTypeLhs(varTree);
         assert varType != null : "no variable found for tree: " + varTree;
 
@@ -2650,6 +2653,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             ExpressionTree valueExp,
             @CompilerMessageKey String errorKey,
             Object... extraArgs) {
+        System.out.printf("commonAssignmentCheck#2(%s, %s, %s)%n", varType, valueExp, errorKey);
         if (shouldSkipUses(valueExp)) {
             return;
         }
@@ -2692,6 +2696,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Tree valueTree,
             @CompilerMessageKey String errorKey,
             Object... extraArgs) {
+
+        System.out.printf("commonAssignmentCheck#1(%s, %s, %s)%n", varType, valueType, errorKey);
 
         commonAssignmentCheckStartDiagnostic(varType, valueType, valueTree);
 

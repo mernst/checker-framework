@@ -534,7 +534,12 @@ public class DependentTypesHelper {
         JavaExpression receiver = JavaExpression.fromTree(factory, node.getExpression());
         JavaExpressionContext context =
                 new JavaExpressionContext(receiver, null, factory.getContext());
-        standardizeUseLocalScope(context, factory.getPath(node), type);
+        TreePath pathToFieldAccess = factory.getPath(node);
+        System.out.printf(
+                "About to call standardizeUseLocalScope(%s) for %s%ncontext=%s%n",
+                type, pathToFieldAccess.getLeaf(), context.toStringDebug());
+        standardizeUseLocalScope(context, pathToFieldAccess, type);
+        System.out.printf("standardizeUseLocalScope => %s%n", type);
     }
 
     /**
