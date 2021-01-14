@@ -538,8 +538,9 @@ public class DependentTypesHelper {
         JavaExpression receiver = JavaExpression.fromTree(factory, node.getExpression());
         JavaExpressionContext context =
                 new JavaExpressionContext(receiver, null, factory.getContext());
+        TreePath pathToFieldAccess = factory.getPath(node);
         // TODO: Why not use local scope?  it's a field but might be related to locals.
-        standardizeDoNotUseLocalScope(context, factory.getPath(node), type);
+        standardizeDoNotUseLocalScope(context, pathToFieldAccess, type);
     }
 
     /**
