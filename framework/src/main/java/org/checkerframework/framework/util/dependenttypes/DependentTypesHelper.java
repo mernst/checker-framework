@@ -387,6 +387,7 @@ public class DependentTypesHelper {
         if (!hasDependentType(atm)) {
             return;
         }
+
         TreePath pathToMethodDecl = factory.getPath(methodDeclTree);
         if (pathToMethodDecl == null) {
             return;
