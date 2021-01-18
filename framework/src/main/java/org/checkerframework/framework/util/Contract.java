@@ -31,7 +31,14 @@ public abstract class Contract {
      */
     public final String expression;
 
-    /** The annotation on the type of expression, according to this contract. */
+    // It is not possible to standardize this annotation when creating the contract.  Trees.typeOf
+    // may return null if a call to a method textually precede the definition of the method and its
+    // type.  That can happen when a single compilation unit (= file) defines multiple types at its
+    // top level.
+    /**
+     * The annotation on the type of expression, according to this contract. It is not necessarily
+     * standardized.
+     */
     public final AnnotationMirror annotation;
 
     /** The annotation that expressed this contract; used for diagnostic messages. */
@@ -198,7 +205,8 @@ public abstract class Contract {
          * Create a precondition contract.
          *
          * @param expression the Java expression that should have a type qualifier
-         * @param annotation the type qualifier that {@code expression} should have
+         * @param annotation the type qualifier that {@code expression} should have. It is not
+         *     necessarily standardized.
          * @param contractAnnotation the precondition annotation that the programmer wrote; used for
          *     diagnostic messages
          */
@@ -216,7 +224,8 @@ public abstract class Contract {
          * Create a postcondition contract.
          *
          * @param expression the Java expression that should have a type qualifier
-         * @param annotation the type qualifier that {@code expression} should have
+         * @param annotation the type qualifier that {@code expression} should have. It is not
+         *     necessarily standardized.
          * @param contractAnnotation the postcondition annotation that the programmer wrote; used
          *     for diagnostic messages
          */
@@ -252,7 +261,8 @@ public abstract class Contract {
          * Create a new conditional postcondition.
          *
          * @param expression the Java expression that should have a type qualifier
-         * @param annotation the type qualifier that {@code expression} should have
+         * @param annotation the type qualifier that {@code expression} should have. It is not
+         *     necessarily standardized.
          * @param contractAnnotation the postcondition annotation that the programmer wrote; used
          *     for diagnostic messages
          * @param resultValue whether the condition is the method returning true or false

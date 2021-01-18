@@ -363,11 +363,11 @@ public class DependentTypesHelper {
      * come from the method declaration or from the type of the expression in a {@code return}
      * statement.
      *
-     * @param methodDecl a method declaration
+     * @param methodDeclTree a method declaration
      * @param atm the method return type; is side-effected by this method
      */
-    public final void standardizeReturnType(MethodTree methodDecl, AnnotatedTypeMirror atm) {
-        standardizeReturnType(methodDecl, atm, /*removeErroneousExpressions=*/ false);
+    public final void standardizeReturnType(MethodTree methodDeclTree, AnnotatedTypeMirror atm) {
+        standardizeReturnType(methodDeclTree, atm, /*removeErroneousExpressions=*/ false);
     }
 
     /**
@@ -375,25 +375,27 @@ public class DependentTypesHelper {
      * come from the method declaration or from the type of the expression in a {@code return}
      * statement.
      *
-     * @param methodDecl a method declaration
+     * @param methodDeclTree a method declaration
      * @param atm the method return type; is side-effected by this method
      * @param removeErroneousExpressions if true, remove erroneous expressions rather than
      *     converting them into an explanation of why they are illegal
      */
     public void standardizeReturnType(
-            MethodTree methodDecl, AnnotatedTypeMirror atm, boolean removeErroneousExpressions) {
+            MethodTree methodDeclTree,
+            AnnotatedTypeMirror atm,
+            boolean removeErroneousExpressions) {
         if (!hasDependentType(atm)) {
             return;
         }
-        TreePath pathToMethodDecl = factory.getPath(methodDecl);
+        TreePath pathToMethodDecl = factory.getPath(methodDeclTree);
         if (pathToMethodDecl == null) {
             return;
         }
 
-        ExecutableElement methodElt = TreeUtils.elementFromDeclaration(methodDecl);
+        ExecutableElement methodElt = TreeUtils.elementFromDeclaration(methodDeclTree);
 
         standardizeForMethodSignature(
-                methodDecl, pathToMethodDecl, methodElt, atm, removeErroneousExpressions);
+                methodDeclTree, pathToMethodDecl, methodElt, atm, removeErroneousExpressions);
     }
 
     /**
@@ -405,7 +407,7 @@ public class DependentTypesHelper {
      *       annotation) or formal parameter.
      * </ul>
      *
-     * @param methodDecl a method declaration
+     * @param methodDeclTree a method declaration
      * @param pathToMethodDecl the path to the method declaration
      * @param elt the element for the method or a formal parameter; used for obtaining the enclosing
      *     class
@@ -414,7 +416,7 @@ public class DependentTypesHelper {
      *     converting them into an explanation of why they are illegal
      */
     public void standardizeForMethodSignature(
-            MethodTree methodDecl,
+            MethodTree methodDeclTree,
             TreePath pathToMethodDecl,
             Element elt,
             AnnotatedTypeMirror atm,
@@ -423,7 +425,7 @@ public class DependentTypesHelper {
         TypeMirror enclosingType = ElementUtils.enclosingClass(elt).asType();
         JavaExpressionContext context =
                 JavaExpressionContext.buildContextForMethodDeclaration(
-                        methodDecl, enclosingType, factory.getContext());
+                        methodDeclTree, enclosingType, factory.getContext());
         standardizeAtm(
                 context, pathToMethodDecl, atm, UseLocalScope.YES, removeErroneousExpressions);
     }
@@ -457,9 +459,9 @@ public class DependentTypesHelper {
                 Tree enclTree = pathTillEnclTree.getLeaf();
 
                 if (enclTree.getKind() == Kind.METHOD) {
-                    MethodTree methodDecl = (MethodTree) enclTree;
+                    MethodTree methodDeclTree = (MethodTree) enclTree;
                     standardizeForMethodSignature(
-                            methodDecl,
+                            methodDeclTree,
                             pathTillEnclTree,
                             variableElt,
                             type,
@@ -977,19 +979,21 @@ public class DependentTypesHelper {
      * expression string is an error string as specified by DependentTypesError#isExpressionError.
      * If the annotated type has any errors, a flowexpr.parse.error is issued.
      *
-     * @param methodDecl method to check
+     * @param methodDeclTree method to check
      * @param type annotated type of the method
      */
-    public void checkMethod(MethodTree methodDecl, AnnotatedExecutableType type) {
+    public void checkMethod(MethodTree methodDeclTree, AnnotatedExecutableType type) {
         // Parameters and receivers are checked by visitVariable
         // So only type parameters and return type need to be checked here.
-        checkTypeVariables(methodDecl, type);
+        checkTypeVariables(methodDeclTree, type);
 
         // Check return type
         if (type.getReturnType().getKind() != TypeKind.VOID) {
-            AnnotatedTypeMirror returnType = factory.getMethodReturnType(methodDecl);
+            AnnotatedTypeMirror returnType = factory.getMethodReturnType(methodDeclTree);
             Tree treeForError =
-                    TreeUtils.isConstructor(methodDecl) ? methodDecl : methodDecl.getReturnType();
+                    TreeUtils.isConstructor(methodDeclTree)
+                            ? methodDeclTree
+                            : methodDeclTree.getReturnType();
             checkType(returnType, treeForError);
         }
     }
