@@ -1212,10 +1212,6 @@ public abstract class CFAbstractTransfer<
         GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory = analysis.getTypeFactory();
 
         // These lazily initialized variables are needed only if the method has any contracts.
-        // `pathToMethodDecl` and `methodDeclContext` are null if the method is not defined in
-        // source code.
-        TreePath pathToMethodDecl = null; // lazily initialized; may be null
-        JavaExpressionContext methodDeclContext = null; // lazily initialized; may be null
         JavaExpressionContext methodUseContext = null; // lazily initialized, then non-null
 
         for (Contract p : postconditions) {
@@ -1227,47 +1223,17 @@ public abstract class CFAbstractTransfer<
             if (methodUseContext == null) {
                 // Set the lazily initialized variables.
                 BaseContext baseContext = analysis.checker.getContext();
-                ExecutableElement methodElt = invocationNode.getTarget().getMethod();
-                MethodTree methodDecl = (MethodTree) atypeFactory.declarationFromElement(methodElt);
 
-                pathToMethodDecl = atypeFactory.getPath(methodDecl);
-                if (pathToMethodDecl == null) {
-                    methodDeclContext = null;
-                } else {
-                    TypeMirror enclosingType =
-                            ElementUtils.enclosingTypeElement(methodElt).asType();
-                    methodDeclContext =
-                            JavaExpressionContext.buildContextForMethodDeclaration(
-                                    methodDecl, enclosingType, baseContext);
-                }
                 methodUseContext =
                         JavaExpressionContext.buildContextForMethodUse(invocationNode, baseContext);
             }
-
-            // Need to standardize twice: first with respect to the method definition, then with
-            // respect to the method use.  See test case Issue2619.java.
-            //
-            // It would be more efficient to standardize annotations when contracts are created, so
-            // that any annotation in a Contract is already standardized with respect to the method
-            // definition. That is not possible because the visitor may visit a method use (call
-            // site) before visiting the class that defines the method.  See test case
-            // Issue578.java.
-            //
-            // It is a bug that this does not standardardize for methods not defined in source code.
-
-            // Standardize with respect to the method definition.
-            AnnotationMirror standardizedContract =
-                    methodDeclContext == null
-                            ? anno
-                            : standardizeAnnotationFromContract(
-                                    anno, methodDeclContext, pathToMethodDecl);
 
             // Standardize with respect to the method use (the call site).
             TreePath pathToInvocation = atypeFactory.getPath(invocationTree);
             if (false) {
                 System.out.printf(
                         "About to call standardizeAnnotationFromContract(%s)%n context=%s%n pathToInvocation.getLeaf()=%s [%s]%n        parent=%s [%s]%n",
-                        standardizedContract,
+                        anno,
                         methodUseContext.toStringDebug(),
                         pathToInvocation.getLeaf(),
                         pathToInvocation.getLeaf().getClass(),
@@ -1276,7 +1242,7 @@ public abstract class CFAbstractTransfer<
             }
             AnnotationMirror standardizedUse =
                     standardizeAnnotationFromContract(
-                            standardizedContract,
+                            anno,
                             methodUseContext,
                             // This leaf is a method call, but the annotations apply to its
                             // postcondition, which is a sibling scope to the method call.
