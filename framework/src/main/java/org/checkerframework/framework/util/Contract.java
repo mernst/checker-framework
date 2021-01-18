@@ -179,6 +179,9 @@ public abstract class Contract {
                         dth.standardizeAnnotationIfDependentType(
                                 context, pathToMethodDecl, annotation, UseLocalScope.YES, false);
                 if (standardized != null) {
+                    System.out.printf(
+                            "Contract.create:%n  annotation = %s%n  standardized = %s%n",
+                            annotation, standardized);
                     annotation = standardized;
                 }
             }
