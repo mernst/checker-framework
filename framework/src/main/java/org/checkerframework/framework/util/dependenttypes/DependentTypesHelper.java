@@ -427,6 +427,8 @@ public class DependentTypesHelper {
         JavaExpressionContext context =
                 JavaExpressionContext.buildContextForMethodDeclaration(
                         methodDeclTree, enclosingType, factory.getContext());
+        // TOOD: Remove this comment.
+        // This is the change in remove8.
         standardizeAtm(
                 context, pathToMethodDecl, atm, UseLocalScope.YES, removeErroneousExpressions);
     }
