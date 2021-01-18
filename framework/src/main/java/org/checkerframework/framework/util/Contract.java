@@ -143,9 +143,6 @@ public abstract class Contract {
      * @param contractAnnotation the pre- or post-condition annotation that the programmer wrote;
      *     used for diagnostic messages
      * @param ensuresQualifierIf the ensuresQualifierIf field, for a conditional postcondition
-     * @param atypeFactory used for standardizing {@code annotation}
-     * @param context used for standardizing {@code annotation}
-     * @param pathToMethodDecl used for standardizing {@code annotation}
      * @return a new contract
      */
     protected static Contract create(
