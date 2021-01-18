@@ -387,6 +387,7 @@ public class DependentTypesHelper {
         if (!hasDependentType(atm)) {
             return;
         }
+
         TreePath pathToMethodDecl = factory.getPath(methodDeclTree);
         if (pathToMethodDecl == null) {
             return;
@@ -422,7 +423,7 @@ public class DependentTypesHelper {
             AnnotatedTypeMirror atm,
             boolean removeErroneousExpressions) {
 
-        TypeMirror enclosingType = ElementUtils.enclosingClass(elt).asType();
+        TypeMirror enclosingType = ElementUtils.enclosingTypeElement(elt).asType();
         JavaExpressionContext context =
                 JavaExpressionContext.buildContextForMethodDeclaration(
                         methodDeclTree, enclosingType, factory.getContext());
@@ -446,13 +447,14 @@ public class DependentTypesHelper {
             return;
         }
 
-        TreePath path = factory.getPath(node);
-        if (path == null) {
+        TreePath pathToVariableDecl = factory.getPath(node);
+        if (pathToVariableDecl == null) {
             return;
         }
         switch (variableElt.getKind()) {
             case PARAMETER:
-                TreePath pathTillEnclTree = TreePathUtil.pathTillOfKind(path, METHOD_OR_LAMBDA);
+                TreePath pathTillEnclTree =
+                        TreePathUtil.pathTillOfKind(pathToVariableDecl, METHOD_OR_LAMBDA);
                 if (pathTillEnclTree == null) {
                     throw new BugInCF("no enclosing method or lambda found");
                 }
@@ -470,22 +472,24 @@ public class DependentTypesHelper {
                     LambdaExpressionTree lambdaTree = (LambdaExpressionTree) enclTree;
                     JavaExpressionContext parameterContext =
                             JavaExpressionContext.buildContextForLambda(
-                                    lambdaTree, path, factory.getContext());
+                                    lambdaTree, pathToVariableDecl, factory.getContext());
                     // Uses paths.getParentPath to prevent a StackOverflowError, see Issue #1027.
-                    standardizeUseLocalScope(parameterContext, path.getParentPath(), type);
+                    standardizeUseLocalScope(
+                            parameterContext, pathToVariableDecl.getParentPath(), type);
                 }
                 break;
 
             case LOCAL_VARIABLE:
             case RESOURCE_VARIABLE:
             case EXCEPTION_PARAMETER:
-                TypeMirror enclosingType = ElementUtils.enclosingClass(variableElt).asType();
-                JavaExpression receiver = JavaExpression.getPseudoReceiver(path, enclosingType);
+                TypeMirror enclosingType = ElementUtils.enclosingTypeElement(variableElt).asType();
+                JavaExpression receiver =
+                        JavaExpression.getPseudoReceiver(pathToVariableDecl, enclosingType);
                 List<JavaExpression> params =
-                        JavaExpression.getParametersOfEnclosingMethod(factory, path);
+                        JavaExpression.getParametersOfEnclosingMethod(factory, pathToVariableDecl);
                 JavaExpressionContext localContext =
                         new JavaExpressionContext(receiver, params, factory.getContext());
-                standardizeUseLocalScope(localContext, path, type);
+                standardizeUseLocalScope(localContext, pathToVariableDecl, type);
                 break;
 
             case FIELD:
@@ -503,8 +507,8 @@ public class DependentTypesHelper {
                 JavaExpressionContext fieldContext =
                         new JavaExpressionContext(receiverJe, null, factory.getContext());
                 // TODO: Using local scope here DOES NOT WORK!  Investigate why, and fix.
-                // standardizeUseLocalScope(fieldContext, path, type);
-                standardizeDoNotUseLocalScope(fieldContext, path, type);
+                // standardizeUseLocalScope(fieldContext, pathToVariableDecl, type);
+                standardizeDoNotUseLocalScope(fieldContext, pathToVariableDecl, type);
                 break;
 
             default:
@@ -535,8 +539,9 @@ public class DependentTypesHelper {
         JavaExpression receiver = JavaExpression.fromTree(factory, node.getExpression());
         JavaExpressionContext context =
                 new JavaExpressionContext(receiver, null, factory.getContext());
+        TreePath pathToFieldAccess = factory.getPath(node);
         // TODO: Why not use local scope?  it's a field but might be related to locals.
-        standardizeDoNotUseLocalScope(context, factory.getPath(node), type);
+        standardizeDoNotUseLocalScope(context, pathToFieldAccess, type);
     }
 
     /**
@@ -998,9 +1003,17 @@ public class DependentTypesHelper {
         }
     }
 
+    /**
+     * Checks all Java expressions in the type variables to see if the expression string is an error
+     * string as specified by DependentTypesError#isExpressionError. If the annotated type has any
+     * errors, a flowexpr.parse.error is issued.
+     *
+     * @param node a method declaration
+     * @param methodType annotated type of the method
+     */
     private void checkTypeVariables(MethodTree node, AnnotatedExecutableType methodType) {
         Element ele = TreeUtils.elementFromDeclaration(node);
-        TypeMirror enclosingType = ElementUtils.enclosingClass(ele).asType();
+        TypeMirror enclosingType = ElementUtils.enclosingTypeElement(ele).asType();
 
         JavaExpressionContext context =
                 JavaExpressionContext.buildContextForMethodDeclaration(

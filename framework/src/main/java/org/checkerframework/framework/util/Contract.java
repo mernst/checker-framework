@@ -67,11 +67,12 @@ public abstract class Contract {
                 "value"),
         /** A conditional postcondition. */
         CONDITIONALPOSTCONDITION(
-                "conditional.postcondition",
+                "conditional postcondition",
                 ConditionalPostconditionAnnotation.class,
                 EnsuresQualifierIf.class,
                 EnsuresQualifierIf.List.class,
                 "expression");
+
         /** Used for constructing error messages. */
         public final String errorKey;
 
@@ -142,6 +143,9 @@ public abstract class Contract {
      * @param contractAnnotation the pre- or post-condition annotation that the programmer wrote;
      *     used for diagnostic messages
      * @param ensuresQualifierIf the ensuresQualifierIf field, for a conditional postcondition
+     * @param atypeFactory used for standardizing {@code annotation}
+     * @param context used for standardizing {@code annotation}
+     * @param pathToMethodDecl used for standardizing {@code annotation}
      * @return a new contract
      */
     protected static Contract create(
