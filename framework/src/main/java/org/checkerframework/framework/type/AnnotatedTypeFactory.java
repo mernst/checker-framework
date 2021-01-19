@@ -1275,8 +1275,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
      * @param tree MethodTree or VariableTree
      * @return AnnotatedTypeMirror with explicit annotations from {@code tree}.
      */
-    // TODO: This returns a non-standardized type.  Should it be standardized?  Or should all
-    // clients standardize it?
     private final AnnotatedTypeMirror fromMember(Tree tree) {
         if (!(tree instanceof MethodTree || tree instanceof VariableTree)) {
             throw new BugInCF(
