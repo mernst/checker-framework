@@ -926,7 +926,7 @@ public class JavaExpressionParseUtil {
 
             Node receiver;
             if (methodDeclaration.getModifiers().getFlags().contains(Modifier.STATIC)) {
-                Element classElt = ElementUtils.enclosingClass(methodElt);
+                Element classElt = ElementUtils.enclosingTypeElement(methodElt);
                 receiver = new ClassNameNode(enclosingType, classElt);
             } else {
                 receiver = new ImplicitThisNode(enclosingType);
