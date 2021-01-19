@@ -1028,11 +1028,28 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
      * @return the annotated type of {@code tree}
      */
     public AnnotatedTypeMirror getAnnotatedType(Tree tree) {
+        boolean debug =
+                // tree.getKind() != Tree.Kind.METHOD
+                //         && tree.getKind() != Tree.Kind.NEW_CLASS
+                //         && tree.getKind() != Tree.Kind.CLASS;
+                false;
+        if (debug) {
+            System.out.printf(
+                    "getAnnotatedType(%s [%s])%n",
+                    TreeUtils.toStringTruncated(tree, 65), tree.getKind());
+        }
 
         if (tree == null) {
             throw new BugInCF("AnnotatedTypeFactory.getAnnotatedType: null tree");
         }
         if (shouldCache && classAndMethodTreeCache.containsKey(tree)) {
+            if (debug) {
+                System.out.printf(
+                        "getAnnotatedType(%s [%s]) cached => %s%n",
+                        TreeUtils.toStringTruncated(tree, 65),
+                        tree.getKind(),
+                        classAndMethodTreeCache.get(tree));
+            }
             return classAndMethodTreeCache.get(tree).deepCopy();
         }
 
@@ -1050,7 +1067,17 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
                             + tree.getKind());
         }
 
+        if (debug) {
+            System.out.printf(
+                    "Before addComputedTypeAnnotations: tree=%s%n  type=%s%n",
+                    TreeUtils.toStringTruncated(tree, 65), type);
+        }
         addComputedTypeAnnotations(tree, type);
+        if (debug) {
+            System.out.printf(
+                    "After  addComputedTypeAnnotations: tree=%s%n  type=%s%n",
+                    TreeUtils.toStringTruncated(tree, 65), type);
+        }
 
         if (TreeUtils.isClassTree(tree) || tree.getKind() == Tree.Kind.METHOD) {
             // Don't cache VARIABLE
@@ -1062,7 +1089,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         }
 
         // For debugging
-        if (false) {
+        if (debug) {
             System.out.printf(
                     "AnnotatedTypeFactory::getAnnotatedType(%s) => %s%n",
                     TreeUtils.toStringTruncated(tree, 65), type);
@@ -1248,16 +1275,30 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
      * @param tree MethodTree or VariableTree
      * @return AnnotatedTypeMirror with explicit annotations from {@code tree}.
      */
+    // TODO: This returns a non-standardized type.  Should it be standardized?  Or should all
+    // clients standardize it?
     private final AnnotatedTypeMirror fromMember(Tree tree) {
         if (!(tree instanceof MethodTree || tree instanceof VariableTree)) {
             throw new BugInCF(
                     "AnnotatedTypeFactory.fromMember: not a method or variable declaration: "
                             + tree);
         }
+        boolean debug =
+                // tree.getKind() != Tree.Kind.METHOD
+                //         && tree.getKind() != Tree.Kind.NEW_CLASS
+                //         && tree.getKind() != Tree.Kind.CLASS;
+                false;
+        if (debug) {
+            System.out.printf("fromMember(%s)%n", TreeUtils.toStringTruncated(tree, 65));
+        }
         if (shouldCache && fromMemberTreeCache.containsKey(tree)) {
             return fromMemberTreeCache.get(tree).deepCopy();
         }
         AnnotatedTypeMirror result = TypeFromTree.fromMember(this, tree);
+        if (debug) {
+            System.out.printf(
+                    "fromMember(%s): %s%n", TreeUtils.toStringTruncated(tree, 65), result);
+        }
 
         if (checker.hasOption("mergeStubsWithSource")) {
             if (debugStubParser) {
@@ -1271,6 +1312,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
         if (shouldCache) {
             fromMemberTreeCache.put(tree, result.deepCopy());
+        }
+        if (debug) {
+            System.out.printf(
+                    "fromMember(%s) => %s%n", TreeUtils.toStringTruncated(tree, 65), result);
         }
 
         return result;

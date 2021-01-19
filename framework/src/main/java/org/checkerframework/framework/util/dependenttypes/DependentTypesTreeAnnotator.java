@@ -12,6 +12,7 @@ import javax.lang.model.element.ElementKind;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
+import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -63,7 +64,15 @@ public class DependentTypesTreeAnnotator extends TreeAnnotator {
     public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror annotatedTypeMirror) {
         Element ele = TreeUtils.elementFromUse(node);
         if (ele.getKind() == ElementKind.FIELD || ele.getKind() == ElementKind.ENUM_CONSTANT) {
-            helper.standardizeVariable(annotatedTypeMirror, ele);
+            try {
+                helper.standardizeVariable(annotatedTypeMirror, ele);
+            } catch (Throwable t) {
+                throw new BugInCF(
+                        String.format(
+                                "visitIdentifier(%s, %s)",
+                                TreeUtils.toStringTruncated(node, 65), annotatedTypeMirror),
+                        t);
+            }
         }
         return super.visitIdentifier(node, annotatedTypeMirror);
     }

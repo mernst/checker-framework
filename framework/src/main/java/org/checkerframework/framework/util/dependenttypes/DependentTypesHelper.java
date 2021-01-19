@@ -442,6 +442,12 @@ public class DependentTypesHelper {
      * @param variableElt the element of the variable declaration
      */
     public void standardizeVariable(Tree node, AnnotatedTypeMirror type, Element variableElt) {
+        if (node.getKind() != Tree.Kind.VARIABLE) {
+            throw new BugInCF(
+                    "What node? standardizeVariable(%s [%s], %s, %s)",
+                    node, node.getKind(), type, variableElt);
+        }
+
         if (!hasDependentType(type)) {
             return;
         }
@@ -591,34 +597,21 @@ public class DependentTypesHelper {
             return;
         }
 
-        switch (elt.getKind()) {
-            case PARAMETER:
-            case LOCAL_VARIABLE:
-            case RESOURCE_VARIABLE:
-            case EXCEPTION_PARAMETER:
-                Tree tree = factory.declarationFromElement(elt);
-                if (tree == null) {
-                    if (elt.getKind() == ElementKind.PARAMETER) {
-                        // The tree might be null when
-                        // org.checkerframework.framework.flow.CFAbstractTransfer.getValueFromFactory()
-                        // gets the assignment context for a pseudo assignment of an argument to
-                        // a method parameter.
-                        return;
-                    }
-                    throw new BugInCF(this.getClass() + ": tree not found");
-                } else if (TreeUtils.typeOf(tree) == null) {
-                    // org.checkerframework.framework.flow.CFAbstractTransfer.getValueFromFactory()
-                    // gets the assignment context for a pseudo assignment of an argument to
-                    // a method parameter.
-                    return;
-                }
-
-                standardizeVariable(tree, type, elt);
-                return;
-
-            default:
-                // Nothing to do.
+        Tree tree = factory.declarationFromElement(elt);
+        if (tree == null) {
+            // It is not possible to standardize if the element was not defined in source
+            // code.
+            // TODO: It is still necessary, even though our current code does not handle it.
+            return;
+        } else if (TreeUtils.typeOf(tree) == null) {
+            // org.checkerframework.framework.flow.CFAbstractTransfer.getValueFromFactory()
+            // gets the assignment context for a pseudo assignment of an argument to
+            // a method parameter.
+            return;
         }
+
+        standardizeVariable(tree, type, elt);
+        return;
     }
 
     // TODO: Eventually rename without "UseLocalScope", once all "DoNotUseLocalScope" variants have
