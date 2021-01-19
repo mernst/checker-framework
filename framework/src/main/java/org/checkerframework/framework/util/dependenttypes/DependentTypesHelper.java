@@ -597,21 +597,32 @@ public class DependentTypesHelper {
             return;
         }
 
-        Tree tree = factory.declarationFromElement(elt);
-        if (tree == null) {
-            // It is not possible to standardize if the element was not defined in source
-            // code.
-            // TODO: It is still necessary, even though our current code does not handle it.
-            return;
-        } else if (TreeUtils.typeOf(tree) == null) {
-            // org.checkerframework.framework.flow.CFAbstractTransfer.getValueFromFactory()
-            // gets the assignment context for a pseudo assignment of an argument to
-            // a method parameter.
-            return;
-        }
+        switch (elt.getKind()) {
+            case PARAMETER:
+            case LOCAL_VARIABLE:
+            case RESOURCE_VARIABLE:
+            case EXCEPTION_PARAMETER:
+            case FIELD:
+                Tree tree = factory.declarationFromElement(elt);
+                if (tree == null) {
+                    // It is not possible to standardize if the element was not defined in source
+                    // code.
+                    // TODO: It is still necessary, even though our current code does not handle it.
+                    return;
+                } else if (TreeUtils.typeOf(tree) == null) {
+                    // org.checkerframework.framework.flow.CFAbstractTransfer.getValueFromFactory()
+                    // gets the assignment context for a pseudo assignment of an argument to
+                    // a method parameter.
+                    return;
+                }
 
-        standardizeVariable(tree, type, elt);
-        return;
+                standardizeVariable(tree, type, elt);
+                return;
+
+            default:
+                // It's not a variable (it might be CLASS, for example), so there is nothing to do.
+                break;
+        }
     }
 
     // TODO: Eventually rename without "UseLocalScope", once all "DoNotUseLocalScope" variants have
