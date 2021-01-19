@@ -106,8 +106,10 @@ public class ArrayCreation extends JavaExpression {
         StringBuilder sb = new StringBuilder();
         System.out.printf(
                 "type=%s, dimensions=%s initializers=%s%n", type, dimensions, initializers);
-        sb.append("new " + TypesUtils.getArrayBaseType((ArrayType) type));
-        if (!dimensions.isEmpty()) {
+        if (dimensions.isEmpty()) {
+            sb.append("new " + type);
+        } else {
+            sb.append("new " + TypesUtils.getArrayBaseType((ArrayType) type));
             for (JavaExpression dim : dimensions) {
                 sb.append("[");
                 sb.append(dim == null ? "" : dim);
