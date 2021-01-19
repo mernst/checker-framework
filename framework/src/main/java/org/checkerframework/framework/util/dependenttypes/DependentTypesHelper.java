@@ -505,6 +505,12 @@ public class DependentTypesHelper {
                 }
                 JavaExpressionContext fieldContext =
                         new JavaExpressionContext(receiverJe, null, factory.getContext());
+                if (false) {
+                    System.out.printf("standardizeVariable(%s, %s, %s)%n", node, type, variableElt);
+                    System.out.printf(
+                            "About to call standardize.  pathToVariableDecl.getLeaf()=%s%n",
+                            pathToVariableDecl.getLeaf());
+                }
                 standardizeUseLocalScope(fieldContext, pathToVariableDecl, type);
                 break;
 
