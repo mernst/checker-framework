@@ -613,6 +613,7 @@ public class DependentTypesHelper {
             case RESOURCE_VARIABLE:
             case EXCEPTION_PARAMETER:
             case FIELD:
+            case ENUM_CONSTANT:
                 Tree tree = factory.declarationFromElement(elt);
                 if (tree == null) {
                     // It is not possible to standardize if the element was not defined in source
