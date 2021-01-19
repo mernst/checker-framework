@@ -526,7 +526,7 @@ public class DependentTypesHelper {
                 }
                 JavaExpressionContext fieldContext =
                         new JavaExpressionContext(receiverJe, null, factory.getContext());
-                if (debug) {
+                if (true) {
                     System.out.printf(
                             "standardizeVariable(%s, %s, %s)%n",
                             TreeUtils.toStringTruncated(node, 65), type, variableElt);
@@ -537,7 +537,7 @@ public class DependentTypesHelper {
                                     pathToVariableDecl.getParentPath().getLeaf(), 65));
                 }
                 standardizeUseLocalScope(fieldContext, pathToVariableDecl, type);
-                if (debug) {
+                if (true) {
                     System.out.printf("standardize => %s%n", type);
                 }
                 break;
@@ -614,20 +614,24 @@ public class DependentTypesHelper {
             case EXCEPTION_PARAMETER:
             case FIELD:
             case ENUM_CONSTANT:
-                Tree tree = factory.declarationFromElement(elt);
-                if (tree == null) {
+                Tree declarationTree = factory.declarationFromElement(elt);
+                if (declarationTree == null) {
                     // It is not possible to standardize if the element was not defined in source
                     // code.
                     // TODO: It is still necessary, even though our current code does not handle it.
                     return;
-                } else if (TreeUtils.typeOf(tree) == null) {
+                } else if (TreeUtils.typeOf(declarationTree) == null) {
                     // org.checkerframework.framework.flow.CFAbstractTransfer.getValueFromFactory()
                     // gets the assignment context for a pseudo assignment of an argument to
                     // a method parameter.
                     return;
                 }
 
-                standardizeVariable(tree, type, elt);
+                System.out.printf(
+                        "About to call standardizeVariable(%s, %s, %s)%n",
+                        declarationTree, type, elt);
+                standardizeVariable(declarationTree, type, elt);
+                System.out.printf("standardizeVariable => %s%n", type);
                 return;
 
             default:
@@ -762,6 +766,7 @@ public class DependentTypesHelper {
             if (result == null) {
                 return new DependentTypesError(expression, /*error message=*/ " ").toString();
             }
+            System.out.printf("standardizeString(%s) => %s%n", expression, result.toStringDebug());
             return result.toString();
         } catch (JavaExpressionParseUtil.JavaExpressionParseException e) {
             return new DependentTypesError(expression, e).toString();
@@ -887,6 +892,7 @@ public class DependentTypesHelper {
 
         @Override
         protected Void scan(AnnotatedTypeMirror type, Void aVoid) {
+            boolean debug = true;
             for (AnnotationMirror anno :
                     AnnotationUtils.createAnnotationSet(type.getAnnotations())) {
                 AnnotationMirror newAnno =
@@ -903,6 +909,10 @@ public class DependentTypesHelper {
                     // both the nonstandard annotation and the standard annotation are equal with
                     // respect to Object#equals, so only one new annotation will be added to the
                     // type.
+                    if (debug) {
+                        System.out.printf(
+                                "scan(%s)%n  replacing %s%n         by %s%n", type, anno, newAnno);
+                    }
                     type.removeAnnotation(anno);
                     type.addAnnotation(newAnno);
                 }
