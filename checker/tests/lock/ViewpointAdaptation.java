@@ -17,7 +17,8 @@ public class ViewpointAdaptation {
         synchronized (a) {
             // The expression "a" from the @GuardedBy annotation
             // on f is not valid at the declaration site of f.
-            // :: error: (expression.unparsable.type.invalid)
+            // That error was issued above and is not repeated here.
+            // // :: error: (expression.unparsable.type.invalid)
             f.counter++;
         }
     }
