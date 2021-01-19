@@ -509,8 +509,8 @@ public class DependentTypesHelper {
                 // standardizeUseLocalScope(fieldContext, pathToVariableDecl, type);
                 System.out.printf("standardizeVariable(%s, %s, %s)%n", node, type, variableElt);
                 System.out.printf(
-                        "About to call standardize.  pathToVariableDecl.leaf()=%s%n",
-                        pathToVariableDecl.leaf());
+                        "About to call standardize.  pathToVariableDecl.getLeaf()=%s%n",
+                        pathToVariableDecl.getLeaf());
                 standardizeDoNotUseLocalScope(fieldContext, pathToVariableDecl, type);
                 break;
 
