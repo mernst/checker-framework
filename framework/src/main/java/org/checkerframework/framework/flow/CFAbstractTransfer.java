@@ -1234,7 +1234,8 @@ public abstract class CFAbstractTransfer<
                 if (pathToMethodDecl == null) {
                     methodDeclContext = null;
                 } else {
-                    TypeMirror enclosingType = ElementUtils.enclosingClass(methodElt).asType();
+                    TypeMirror enclosingType =
+                            ElementUtils.enclosingTypeElement(methodElt).asType();
                     methodDeclContext =
                             JavaExpressionContext.buildContextForMethodDeclaration(
                                     methodDecl, enclosingType, baseContext);
