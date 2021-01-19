@@ -526,7 +526,7 @@ public class DependentTypesHelper {
                 }
                 JavaExpressionContext fieldContext =
                         new JavaExpressionContext(receiverJe, null, factory.getContext());
-                if (true) {
+                if (debug) {
                     System.out.printf(
                             "standardizeVariable(%s, %s, %s)%n",
                             TreeUtils.toStringTruncated(node, 65), type, variableElt);
@@ -537,7 +537,7 @@ public class DependentTypesHelper {
                                     pathToVariableDecl.getParentPath().getLeaf(), 65));
                 }
                 standardizeUseLocalScope(fieldContext, pathToVariableDecl, type);
-                if (true) {
+                if (debug) {
                     System.out.printf("standardize => %s%n", type);
                 }
                 break;
@@ -627,11 +627,15 @@ public class DependentTypesHelper {
                     return;
                 }
 
-                System.out.printf(
-                        "About to call standardizeVariable(%s, %s, %s)%n",
-                        declarationTree, type, elt);
+                if (false) {
+                    System.out.printf(
+                            "About to call standardizeVariable(%s, %s, %s)%n",
+                            declarationTree, type, elt);
+                }
                 standardizeVariable(declarationTree, type, elt);
-                System.out.printf("standardizeVariable => %s%n", type);
+                if (false) {
+                    System.out.printf("standardizeVariable => %s%n", type);
+                }
                 return;
 
             default:
@@ -766,7 +770,10 @@ public class DependentTypesHelper {
             if (result == null) {
                 return new DependentTypesError(expression, /*error message=*/ " ").toString();
             }
-            System.out.printf("standardizeString(%s) => %s%n", expression, result.toStringDebug());
+            if (false) {
+                System.out.printf(
+                        "standardizeString(%s) => %s%n", expression, result.toStringDebug());
+            }
             return result.toString();
         } catch (JavaExpressionParseUtil.JavaExpressionParseException e) {
             return new DependentTypesError(expression, e).toString();
@@ -892,7 +899,7 @@ public class DependentTypesHelper {
 
         @Override
         protected Void scan(AnnotatedTypeMirror type, Void aVoid) {
-            boolean debug = true;
+            boolean debug = false;
             for (AnnotationMirror anno :
                     AnnotationUtils.createAnnotationSet(type.getAnnotations())) {
                 AnnotationMirror newAnno =
