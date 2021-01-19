@@ -507,6 +507,10 @@ public class DependentTypesHelper {
                         new JavaExpressionContext(receiverJe, null, factory.getContext());
                 // TODO: Using local scope here DOES NOT WORK!  Investigate why, and fix.
                 // standardizeUseLocalScope(fieldContext, pathToVariableDecl, type);
+                System.out.printf("standardizeVariable(%s, %s, %s)%n", node, type, variableElt);
+                System.out.printf(
+                        "About to call standardize.  pathToVariableDecl.leaf()=%s%n",
+                        pathToVariableDecl.leaf());
                 standardizeDoNotUseLocalScope(fieldContext, pathToVariableDecl, type);
                 break;
 
