@@ -448,6 +448,8 @@ public class DependentTypesHelper {
                     node, node.getKind(), type, variableElt);
         }
 
+        boolean debug = false;
+
         if (!hasDependentType(type)) {
             return;
         }
@@ -494,16 +496,20 @@ public class DependentTypesHelper {
                         JavaExpression.getParametersOfEnclosingMethod(factory, pathToVariableDecl);
                 JavaExpressionContext localContext =
                         new JavaExpressionContext(receiver, params, factory.getContext());
-                System.out.printf(
-                        "standardizeVariable(%s, %s, %s)%n",
-                        TreeUtils.toStringTruncated(node, 65), type, variableElt);
-                System.out.printf(
-                        "About to call standardize for local, resource, or exception parameter.%n  pathToVariableDecl.getLeaf()=%s%n  parent=%s%n",
-                        TreeUtils.toStringTruncated(pathToVariableDecl.getLeaf(), 65),
-                        TreeUtils.toStringTruncated(
-                                pathToVariableDecl.getParentPath().getLeaf(), 65));
+                if (debug) {
+                    System.out.printf(
+                            "standardizeVariable(%s, %s, %s)%n",
+                            TreeUtils.toStringTruncated(node, 65), type, variableElt);
+                    System.out.printf(
+                            "About to call standardize for local, resource, or exception parameter.%n  pathToVariableDecl.getLeaf()=%s%n  parent=%s%n",
+                            TreeUtils.toStringTruncated(pathToVariableDecl.getLeaf(), 65),
+                            TreeUtils.toStringTruncated(
+                                    pathToVariableDecl.getParentPath().getLeaf(), 65));
+                }
                 standardizeUseLocalScope(localContext, pathToVariableDecl, type);
-                System.out.printf("standardize => %s%n", type);
+                if (debug) {
+                    System.out.printf("standardize => %s%n", type);
+                }
                 break;
 
             case FIELD:
@@ -520,16 +526,20 @@ public class DependentTypesHelper {
                 }
                 JavaExpressionContext fieldContext =
                         new JavaExpressionContext(receiverJe, null, factory.getContext());
-                System.out.printf(
-                        "standardizeVariable(%s, %s, %s)%n",
-                        TreeUtils.toStringTruncated(node, 65), type, variableElt);
-                System.out.printf(
-                        "About to call standardize for field or enum constant.%n  pathToVariableDecl.getLeaf()=%s%n  parent=%s%n",
-                        TreeUtils.toStringTruncated(pathToVariableDecl.getLeaf(), 65),
-                        TreeUtils.toStringTruncated(
-                                pathToVariableDecl.getParentPath().getLeaf(), 65));
+                if (debug) {
+                    System.out.printf(
+                            "standardizeVariable(%s, %s, %s)%n",
+                            TreeUtils.toStringTruncated(node, 65), type, variableElt);
+                    System.out.printf(
+                            "About to call standardize for field or enum constant.%n  pathToVariableDecl.getLeaf()=%s%n  parent=%s%n",
+                            TreeUtils.toStringTruncated(pathToVariableDecl.getLeaf(), 65),
+                            TreeUtils.toStringTruncated(
+                                    pathToVariableDecl.getParentPath().getLeaf(), 65));
+                }
                 standardizeUseLocalScope(fieldContext, pathToVariableDecl, type);
-                System.out.printf("standardize => %s%n", type);
+                if (debug) {
+                    System.out.printf("standardize => %s%n", type);
+                }
                 break;
 
             default:

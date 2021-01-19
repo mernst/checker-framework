@@ -2647,11 +2647,13 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Object... extraArgs) {
         AnnotatedTypeMirror varType = atypeFactory.getAnnotatedTypeLhs(varTree);
         assert varType != null : "no variable found for tree: " + varTree;
-        System.out.printf(
-                "commonAssignmentCheck(%s [type=%s], %s)%n",
-                TreeUtils.toStringTruncated(varTree, 65),
-                varType,
-                TreeUtils.toStringTruncated(valueExp, 65));
+        if (false) {
+            System.out.printf(
+                    "commonAssignmentCheck(%s [type=%s], %s)%n",
+                    TreeUtils.toStringTruncated(varTree, 65),
+                    varType,
+                    TreeUtils.toStringTruncated(valueExp, 65));
+        }
 
         if (!validateType(varTree, varType)) {
             return;
@@ -2698,9 +2700,11 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         AnnotatedTypeMirror valueType = atypeFactory.getAnnotatedType(valueExp);
         // TODO: PROBLEM: Here the type of `m` is @GuardedBy("lock") instead of
         // @GuardedBy("this.lock").
-        System.out.printf(
-                "commonAssignmentCheck(%s, %s [type=%s])%n",
-                varType, TreeUtils.toStringTruncated(valueExp, 65), valueType);
+        if (false) {
+            System.out.printf(
+                    "commonAssignmentCheck(%s, %s [type=%s])%n",
+                    varType, TreeUtils.toStringTruncated(valueExp, 65), valueType);
+        }
         assert valueType != null : "null type for expression: " + valueExp;
         commonAssignmentCheck(varType, valueType, valueExp, errorKey, extraArgs);
     }
