@@ -945,7 +945,11 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         }
 
         TreePath pathToMethodDecl = getCurrentPath();
-        System.out.printf("pathToMethodDecl.getLeaf() = %s%n", pathToMethodDecl.getLeaf());
+        if (false) {
+            System.out.printf(
+                    "pathToMethodDecl.getLeaf() = %s%n",
+                    TreeUtils.toStringTruncated(pathToMethodDecl.getLeaf(), 65));
+        }
 
         JavaExpressionContext flowExprContext =
                 JavaExpressionContext.buildContextForMethodDeclaration(
