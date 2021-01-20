@@ -1242,7 +1242,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
         JavaExpression pseudoReceiver =
                 JavaExpression.getPseudoReceiver(currentPath, enclosingType);
         JavaExpressionContext exprContext =
-                new JavaExpressionContext(pseudoReceiver, params, atypeFactory.getContext());
+                new JavaExpressionContext(pseudoReceiver, params, atypeFactory.getChecker());
         JavaExpression self;
         if (implicitThis) {
             self = pseudoReceiver;
