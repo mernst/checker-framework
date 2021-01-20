@@ -3164,7 +3164,20 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         // TODO: handle type parameter declarations?
         Tree fromElt;
         // Prevent calling declarationFor on elements we know we don't have
-        // the tree for
+        // the tree for.
+
+        if (elt.getKind() == ElementKind.FIELD) {
+            Tree declarationFor =
+                    com.sun.tools.javac.tree.TreeInfo.declarationFor(
+                            (com.sun.tools.javac.code.Symbol) elt,
+                            (com.sun.tools.javac.tree.JCTree) root);
+            System.out.printf(
+                    "declarationFromElement(FIELD %s): declarationFor=%s%n",
+                    elt,
+                    declarationFor == null
+                            ? null
+                            : TreeUtils.toStringTruncated(declarationFor, 65));
+        }
 
         switch (elt.getKind()) {
             case CLASS:
@@ -3184,6 +3197,12 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
                                 (com.sun.tools.javac.tree.JCTree) root);
                 break;
         }
+        System.out.printf(
+                "declarationFromElement(%s [%s]) => %s%n",
+                elt,
+                elt.getKind(),
+                fromElt == null ? null : TreeUtils.toStringTruncated(fromElt, 65));
+
         if (shouldCache) {
             elementToTreeCache.put(elt, fromElt);
         }

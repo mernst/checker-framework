@@ -437,15 +437,17 @@ public class DependentTypesHelper {
     /**
      * Standardize the Java expressions in annotations in a variable declaration.
      *
-     * @param node the variable declaration
+     * @param declarationTree the variable declaration
      * @param type the type of the variable declaration
      * @param variableElt the element of the variable declaration
      */
-    public void standardizeVariable(Tree node, AnnotatedTypeMirror type, Element variableElt) {
-        if (node.getKind() != Tree.Kind.VARIABLE) {
+    public void standardizeVariable(
+            Tree declarationTree, AnnotatedTypeMirror type, Element variableElt) {
+
+        if (declarationTree.getKind() != Tree.Kind.VARIABLE) {
             throw new BugInCF(
                     "What node? standardizeVariable(%s [%s], %s, %s)",
-                    node, node.getKind(), type, variableElt);
+                    declarationTree, declarationTree.getKind(), type, variableElt);
         }
 
         boolean debug = false;
@@ -454,8 +456,11 @@ public class DependentTypesHelper {
             return;
         }
 
-        TreePath pathToVariableDecl = factory.getPath(node);
+        TreePath pathToVariableDecl = factory.getPath(declarationTree);
         if (pathToVariableDecl == null) {
+            System.out.printf(
+                    "pathToVariableDecl=null for %s, %s, %s%n",
+                    TreeUtils.toStringTruncated(declarationTree, 65), type, variableElt);
             return;
         }
         switch (variableElt.getKind()) {
@@ -499,7 +504,7 @@ public class DependentTypesHelper {
                 if (debug) {
                     System.out.printf(
                             "standardizeVariable(%s, %s, %s)%n",
-                            TreeUtils.toStringTruncated(node, 65), type, variableElt);
+                            TreeUtils.toStringTruncated(declarationTree, 65), type, variableElt);
                     System.out.printf(
                             "About to call standardize for local, resource, or exception parameter.%n  pathToVariableDecl.getLeaf()=%s%n  parent=%s%n",
                             TreeUtils.toStringTruncated(pathToVariableDecl.getLeaf(), 65),
@@ -515,8 +520,9 @@ public class DependentTypesHelper {
             case FIELD:
             case ENUM_CONSTANT:
                 JavaExpression receiverJe;
-                if (node.getKind() == Tree.Kind.IDENTIFIER) {
-                    JavaExpression nodeJe = JavaExpression.fromTree(factory, (IdentifierTree) node);
+                if (declarationTree.getKind() == Tree.Kind.IDENTIFIER) {
+                    JavaExpression nodeJe =
+                            JavaExpression.fromTree(factory, (IdentifierTree) declarationTree);
                     receiverJe =
                             nodeJe instanceof FieldAccess
                                     ? ((FieldAccess) nodeJe).getReceiver()
@@ -529,7 +535,7 @@ public class DependentTypesHelper {
                 if (debug) {
                     System.out.printf(
                             "standardizeVariable(%s, %s, %s)%n",
-                            TreeUtils.toStringTruncated(node, 65), type, variableElt);
+                            TreeUtils.toStringTruncated(declarationTree, 65), type, variableElt);
                     System.out.printf(
                             "About to call standardize for field or enum constant.%n  pathToVariableDecl.getLeaf()=%s%n  parent=%s%n",
                             TreeUtils.toStringTruncated(pathToVariableDecl.getLeaf(), 65),
@@ -607,6 +613,8 @@ public class DependentTypesHelper {
             return;
         }
 
+        // TODO: if it's the FIELD for `this`, get the receiver declaration.
+
         switch (elt.getKind()) {
             case PARAMETER:
             case LOCAL_VARIABLE:
@@ -619,6 +627,10 @@ public class DependentTypesHelper {
                     // It is not possible to standardize if the element was not defined in source
                     // code.
                     // TODO: It is still necessary, even though our current code does not handle it.
+                    System.out.printf(
+                            "standardizeVariable(%s, %s [%s %s]): no declaration tree%n",
+                            type, elt, elt.getKind(), elt.getClass());
+                    new Error("backtrace").printStackTrace();
                     return;
                 } else if (TreeUtils.typeOf(declarationTree) == null) {
                     // org.checkerframework.framework.flow.CFAbstractTransfer.getValueFromFactory()
@@ -640,6 +652,8 @@ public class DependentTypesHelper {
 
             default:
                 // It's not a variable (it might be CLASS, for example), so there is nothing to do.
+                System.out.printf(
+                        "standardizeVariable skipping %s %s %s%n", elt.getKind(), type, elt);
                 break;
         }
     }

@@ -3,20 +3,23 @@ package org.checkerframework.framework.util.dependenttypes;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.MemberSelectTree;
+import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewArrayTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.TypeCastTree;
 import com.sun.source.tree.VariableTree;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.VariableElement;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
+import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
- * Standardizes Java expressions in annotations and also view points adapts field accesses. (Other
- * viewpoint adaption is handled in {@link DependentTypesHelper}
+ * Standardizes Java expressions in annotations and also viewpoint-adapts field accesses. Other
+ * viewpoint adaption is handled in {@link DependentTypesHelper}.
  */
 public class DependentTypesTreeAnnotator extends TreeAnnotator {
     private final DependentTypesHelper helper;
@@ -62,8 +65,20 @@ public class DependentTypesTreeAnnotator extends TreeAnnotator {
     @Override
     public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror annotatedTypeMirror) {
         Element ele = TreeUtils.elementFromUse(node);
-        if (ele.getKind() == ElementKind.FIELD || ele.getKind() == ElementKind.ENUM_CONSTANT) {
+        System.out.printf(
+                "visitIdentifier(%s, %s) ele=%s [%s]%n",
+                node, annotatedTypeMirror, ele, ele.getKind());
+        if (ele.getKind() == ElementKind.FIELD
+                && ((VariableElement) ele).getSimpleName().contentEquals("this")) {
+            MethodTree methodTree = TreePathUtil.enclosingMethod(node);
+            VariableTree receiverDeclTree = methodTree.getReceiverParameter();
+            helper.standardizeVariable(receiverDeclTree, annotatedTypeMirror, ele);
+        } else if (ele.getKind() == ElementKind.FIELD
+                || ele.getKind() == ElementKind.ENUM_CONSTANT) {
             helper.standardizeVariable(annotatedTypeMirror, ele);
+        } else {
+            System.out.printf(
+                    "Skipping identifier %s %s %s%n", ele.getKind(), node, annotatedTypeMirror);
         }
         return super.visitIdentifier(node, annotatedTypeMirror);
     }
