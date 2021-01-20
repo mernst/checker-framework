@@ -6,6 +6,7 @@ import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewArrayTree;
 import com.sun.source.tree.NewClassTree;
+import com.sun.source.tree.Tree;
 import com.sun.source.tree.TypeCastTree;
 import com.sun.source.tree.VariableTree;
 import javax.lang.model.element.Element;
@@ -14,7 +15,6 @@ import javax.lang.model.element.VariableElement;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
-import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -70,7 +70,11 @@ public class DependentTypesTreeAnnotator extends TreeAnnotator {
                 node, annotatedTypeMirror, ele, ele.getKind());
         if (ele.getKind() == ElementKind.FIELD
                 && ((VariableElement) ele).getSimpleName().contentEquals("this")) {
-            MethodTree methodTree = TreePathUtil.enclosingMethod(node);
+            Tree enclosing = node;
+            while (enclosing != null && enclosing.getKind() != Tree.Kind.METHOD) {
+                enclosing = atypeFactory.getEnclosingClassOrMethod(enclosing);
+            }
+            MethodTree methodTree = (MethodTree) enclosing;
             VariableTree receiverDeclTree = methodTree.getReceiverParameter();
             helper.standardizeVariable(receiverDeclTree, annotatedTypeMirror, ele);
         } else if (ele.getKind() == ElementKind.FIELD

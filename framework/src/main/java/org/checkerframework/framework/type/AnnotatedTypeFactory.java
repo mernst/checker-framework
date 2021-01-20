@@ -1793,9 +1793,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     }
 
     /**
-     * Returns the type of {@code this} at the location of {@code tree}. If {@code tree} is in a
-     * location where {@code this} has no meaning, such as the body of a static method, then {@code
-     * null} is returned.
+     * Returns the type of {@code this} at the location of {@code tree}. Returns {@code null} if
+     * {@code tree} is in a location where {@code this} has no meaning, such as the body of a static
+     * method.
      *
      * <p>The parameter is an arbitrary tree and does not have to mention "this", neither explicitly
      * nor implicitly. This method can be overridden for type-system specific behavior.
@@ -1825,15 +1825,16 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         return null;
     }
 
-    /** A set of class, method, and annotation tree kinds. */
-    private final Set<Tree.Kind> classMethodAnnotationKinds =
+    /** A set containing class, method, and annotation tree kinds. */
+    private static final Set<Tree.Kind> classMethodAnnotationKinds =
             EnumSet.copyOf(TreeUtils.classTreeKinds());
 
-    {
+    static {
         classMethodAnnotationKinds.add(Kind.METHOD);
         classMethodAnnotationKinds.add(Kind.TYPE_ANNOTATION);
         classMethodAnnotationKinds.add(Kind.ANNOTATION);
     }
+
     /**
      * Returns the inner most enclosing method or class tree of {@code tree}. If {@code tree} is
      * artificial (that is, created by dataflow), then {@link #artificialTreeToEnclosingElementMap}
@@ -1845,7 +1846,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
      * @return the innermost enclosing method or class tree of {@code tree} or {@code null} if
      *     {@code tree} is inside an annotation
      */
-    protected @Nullable Tree getEnclosingClassOrMethod(Tree tree) {
+    public @Nullable Tree getEnclosingClassOrMethod(Tree tree) {
         TreePath path = getPath(tree);
         Tree enclosing = TreePathUtil.enclosingOfKind(path, classMethodAnnotationKinds);
         if (enclosing != null) {
