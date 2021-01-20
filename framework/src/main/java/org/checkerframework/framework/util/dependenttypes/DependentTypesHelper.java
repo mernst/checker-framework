@@ -430,7 +430,11 @@ public class DependentTypesHelper {
         // TOOD: Remove this comment.
         // This is the change in remove8.
         standardizeAtm(
-                context, pathToMethodDecl, atm, UseLocalScope.YES, removeErroneousExpressions);
+                context,
+                pathToMethodDecl.getParentPath(),
+                atm,
+                UseLocalScope.YES,
+                removeErroneousExpressions);
     }
 
     /** A set containing {@link Tree.Kind#METHOD} and {@link Tree.Kind#LAMBDA_EXPRESSION}. */

@@ -449,6 +449,12 @@ public class JavaExpressionParseUtil {
                 }
             }
 
+            if (false) {
+                System.out.printf("visit(%s, %s)%n", expr, context.toStringDebug());
+                System.out.printf("enclMethod=%s%n", enclMethod);
+                new ParseRuntimeException(constructFlowexprParseError(s, "identifier not found"))
+                        .printStackTrace();
+            }
             throw new ParseRuntimeException(constructFlowexprParseError(s, "identifier not found"));
         }
 
