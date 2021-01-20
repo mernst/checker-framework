@@ -952,7 +952,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
         JavaExpressionContext flowExprContext =
                 JavaExpressionContext.buildContextForMethodDeclaration(
-                        node, pathToMethodDecl, checker.getContext());
+                        node, pathToMethodDecl, checker);
 
         for (Contract contract : contracts) {
             String expression = contract.expression;
@@ -1673,7 +1673,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         }
 
         JavaExpressionContext flowExprContext =
-                JavaExpressionContext.buildContextForMethodUse(tree, checker.getContext());
+                JavaExpressionContext.buildContextForMethodUse(tree, checker);
 
         if (flowExprContext == null) {
             checker.reportError(tree, "flowexpr.parse.context.not.determined", tree);
@@ -4173,9 +4173,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             if (flowExprContext == null) {
                 flowExprContext =
                         JavaExpressionContext.buildContextForMethodDeclaration(
-                                methodTree,
-                                method.getReceiverType().getUnderlyingType(),
-                                checker.getContext());
+                                methodTree, method.getReceiverType().getUnderlyingType(), checker);
             }
 
             annotation =
