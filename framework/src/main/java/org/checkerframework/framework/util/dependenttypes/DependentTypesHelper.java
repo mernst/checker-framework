@@ -1102,7 +1102,7 @@ public class DependentTypesHelper {
                         node, enclosingType, factory.getChecker());
         for (int i = 0; i < methodType.getTypeVariables().size(); i++) {
             AnnotatedTypeMirror atm = methodType.getTypeVariables().get(i);
-            standardizeDoNotUseLocalScope(context, factory.getPath(node), atm);
+            standardizeUseLocalScope(context, factory.getPath(node).getParentPath(), atm);
             checkType(atm, node.getTypeParameters().get(i));
         }
     }
