@@ -698,6 +698,14 @@ public class DependentTypesHelper {
         standardizeAtm(context, localScope, type, UseLocalScope.YES);
     }
 
+    /**
+     * Standardize a type, setting useLocalScope to true.
+     *
+     * @param context the context
+     * @param localScope the local scope
+     * @param type the type to standardize; is side-effected by this method
+     * @param useLocalScope whether {@code localScope} should be used to resolve identifiers
+     */
     private void standardizeAtm(
             JavaExpressionContext context,
             TreePath localScope,
@@ -1045,12 +1053,7 @@ public class DependentTypesHelper {
                         node, enclosingType, factory.getChecker());
         for (int i = 0; i < methodType.getTypeVariables().size(); i++) {
             AnnotatedTypeMirror atm = methodType.getTypeVariables().get(i);
-            standardizeAtm(
-                    context,
-                    factory.getPath(node),
-                    atm,
-                    UseLocalScope.NO,
-                    /*removeErroneousExpressions=*/ false);
+            standardizeUseLocalScope(context, factory.getPath(node).getParentPath(), atm);
             checkType(atm, node.getTypeParameters().get(i));
         }
     }
