@@ -1847,8 +1847,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
      *
      * <p>If the tree is inside an annotation, then {@code null} is returned.
      *
-     * @param tree tree to whose innermost enclosing method or class is returned
-     * @return the innermost enclosing method or class tree of {@code tree} or {@code null} if
+     * @param tree tree to whose innermost enclosing method or class to return
+     * @return the innermost enclosing method or class tree of {@code tree}, or {@code null} if
      *     {@code tree} is inside an annotation
      */
     public @Nullable Tree getEnclosingClassOrMethod(Tree tree) {
@@ -1873,6 +1873,17 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
             return declarationFromElement(enclosingMethodOrClass);
         }
         return getCurrentClassTree(tree);
+    }
+
+    /**
+     * Returns the innermost enclosing method tree of {@code tree}, or null if none.
+     *
+     * @param tree tree to whose innermost enclosing method to return
+     * @return the innermost enclosing method tree of {@code tree}, or {@code null} if none
+     */
+    public @Nullable MethodTree getEnclosingMethod(Tree tree) {
+        TreePath path = getPath(tree);
+        return (MethodTree) TreePathUtil.enclosingOfKind(path, Kind.METHOD);
     }
 
     /**

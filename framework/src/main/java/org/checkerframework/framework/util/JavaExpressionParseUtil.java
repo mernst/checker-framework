@@ -1153,7 +1153,7 @@ public class JavaExpressionParseUtil {
         }
         JavaExpression receiverJe = JavaExpression.getImplicitReceiver(elt);
         JavaExpressionContext context =
-                new JavaExpressionContext(receiverJe, /*arguments=*/ null, provider.getContext());
+                new JavaExpressionContext(receiverJe, /*arguments=*/ null, provider.getChecker());
         return parse(tree.getName().toString(), context, provider.getPath(tree), UseLocalScope.YES);
     }
 
@@ -1177,7 +1177,7 @@ public class JavaExpressionParseUtil {
         }
         JavaExpression receiverJe = JavaExpression.getImplicitReceiver(elt);
         JavaExpressionContext context =
-                new JavaExpressionContext(receiverJe, /*arguments=*/ null, provider.getContext());
+                new JavaExpressionContext(receiverJe, /*arguments=*/ null, provider.getChecker());
         // TODO: Why not use local scope?  (Really: Why was fromVariableTreeDoNotUseLocalScope
         // called at all?)
         return parseDoNotUseLocalScope(tree.getName().toString(), context, provider.getPath(tree));
