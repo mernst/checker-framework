@@ -111,7 +111,7 @@ public class ArrayCreation extends JavaExpression {
         if (dimensions.isEmpty()) {
             sb.append("new " + type);
         } else {
-            sb.append("new " + TypesUtils.getArrayBaseType((ArrayType) type));
+            sb.append("new " + TypesUtils.getInnermostComponentType((ArrayType) type));
             for (JavaExpression dim : dimensions) {
                 sb.append("[");
                 sb.append(dim == null ? "" : dim);
@@ -131,7 +131,9 @@ public class ArrayCreation extends JavaExpression {
 
     @Override
     public String toStringDebug() {
-        return super.toStringDebug()
+        return "\""
+                + super.toStringDebug()
+                + "\""
                 + " type="
                 + type
                 + " dimensions="

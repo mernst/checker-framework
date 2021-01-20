@@ -1225,7 +1225,7 @@ public abstract class CFAbstractTransfer<
 
             if (methodUseContext == null) {
                 // Set the lazily initialized variables.
-                SourceChecker baseContext = analysis.checker;
+                SourceChecker checker = analysis.checker;
                 ExecutableElement methodElt = invocationNode.getTarget().getMethod();
                 MethodTree methodDecl = (MethodTree) atypeFactory.declarationFromElement(methodElt);
 
@@ -1237,10 +1237,10 @@ public abstract class CFAbstractTransfer<
                             ElementUtils.enclosingTypeElement(methodElt).asType();
                     methodDeclContext =
                             JavaExpressionContext.buildContextForMethodDeclaration(
-                                    methodDecl, enclosingType, baseContext);
+                                    methodDecl, enclosingType, checker);
                 }
                 methodUseContext =
-                        JavaExpressionContext.buildContextForMethodUse(invocationNode, baseContext);
+                        JavaExpressionContext.buildContextForMethodUse(invocationNode, checker);
             }
 
             // Need to standardize twice: first with respect to the method definition, then with
