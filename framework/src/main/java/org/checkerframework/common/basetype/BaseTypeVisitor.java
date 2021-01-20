@@ -122,7 +122,6 @@ import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
 import org.checkerframework.framework.util.UseLocalScope;
-import org.checkerframework.framework.util.dependenttypes.DependentTypesHelper;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
@@ -944,28 +943,31 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             return;
         }
 
+        TreePath pathToMethodDecl = getCurrentPath();
+        if (false) {
+            System.out.printf(
+                    "pathToMethodDecl.getLeaf() = %s%n",
+                    TreeUtils.toStringTruncated(pathToMethodDecl.getLeaf(), 65));
+        }
+
         JavaExpressionContext flowExprContext =
                 JavaExpressionContext.buildContextForMethodDeclaration(
-                        node, getCurrentPath(), checker.getContext());
+                        node, pathToMethodDecl, checker.getContext());
 
         for (Contract contract : contracts) {
             String expression = contract.expression;
             AnnotationMirror annotation = contract.annotation;
 
             annotation =
-                    standardizeAnnotationFromContract(
-                            annotation, flowExprContext, getCurrentPath());
+                    atypeFactory.standardizeAnnotationFromContract(
+                            annotation, flowExprContext, pathToMethodDecl);
 
             JavaExpression expr = null;
             try {
-                // This DOES NOT work
-                // expr =
-                //         JavaExpressionParseUtil.parse(
-                //                 expression, flowExprContext, getCurrentPath(),
-                // UseLocalScope.YES);
                 expr =
-                        JavaExpressionParseUtil.parseUseMethodScope(
-                                expression, flowExprContext, getCurrentPath());
+                        JavaExpressionParseUtil.parse(
+                                // TODO: I guess I need to adjust the path here.
+                                expression, flowExprContext, pathToMethodDecl, UseLocalScope.YES);
             } catch (JavaExpressionParseException e) {
                 checker.report(node, e.getDiagMessage());
             }
@@ -993,38 +995,36 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             }
 
             if (formalParamNames != null && formalParamNames.contains(expression)) {
-                @SuppressWarnings("compilermessages")
-                @CompilerMessageKey String key = "contracts." + contract.kind.errorKey + ".expression.parameter.name";
-                checker.reportWarning(
-                        node,
-                        key,
-                        contract.contractAnnotation.getAnnotationType().asElement().getSimpleName(),
-                        node.getName().toString(),
-                        expression,
-                        formalParamNames.indexOf(expression) + 1,
-                        expression);
+                String locationOfExpression =
+                        contract.kind.errorKey
+                                + " "
+                                + contract.contractAnnotation
+                                        .getAnnotationType()
+                                        .asElement()
+                                        .getSimpleName()
+                                + " on the declaration";
+                if (expr == null) {
+                    checker.reportWarning(
+                            node,
+                            "expression.parameter.name.invalid",
+                            locationOfExpression,
+                            node.getName().toString(),
+                            expression,
+                            formalParamNames.indexOf(expression) + 1);
+                } else {
+                    checker.reportWarning(
+                            node,
+                            "expression.parameter.name.shadows.field",
+                            locationOfExpression,
+                            node.getName().toString(),
+                            expression,
+                            expression,
+                            formalParamNames.indexOf(expression) + 1);
+                }
             }
 
             checkParametersAreEffectivelyFinal(node, methodElement, expression);
         }
-    }
-
-    /** Standardize a type qualifier annotation obtained from a contract. */
-    private AnnotationMirror standardizeAnnotationFromContract(
-            AnnotationMirror annoFromContract,
-            JavaExpressionContext flowExprContext,
-            TreePath path) {
-        DependentTypesHelper dependentTypesHelper = atypeFactory.getDependentTypesHelper();
-        if (dependentTypesHelper != null) {
-            AnnotationMirror standardized =
-                    dependentTypesHelper.standardizeAnnotationIfDependentType(
-                            flowExprContext, path, annoFromContract, UseLocalScope.YES, false);
-            if (standardized != null) {
-                dependentTypesHelper.checkAnnotation(standardized, path.getLeaf());
-                return standardized;
-            }
-        }
-        return annoFromContract;
     }
 
     /**
@@ -1686,8 +1686,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             String expression = p.expression;
             AnnotationMirror anno = p.annotation;
 
-            // TODO: This should probably be the path to the method declaration.
-            anno = standardizeAnnotationFromContract(anno, flowExprContext, getCurrentPath());
+            anno =
+                    atypeFactory.standardizeAnnotationFromContract(
+                            anno, flowExprContext, getCurrentPath());
 
             JavaExpression expr;
             try {
@@ -4169,7 +4170,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                                 checker.getContext());
             }
 
-            annotation = standardizeAnnotationFromContract(annotation, flowExprContext, path);
+            annotation =
+                    atypeFactory.standardizeAnnotationFromContract(
+                            annotation, flowExprContext, path);
 
             try {
                 // TODO: currently, these expressions are parsed many times.

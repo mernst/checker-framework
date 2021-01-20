@@ -609,7 +609,8 @@ public abstract class CFAbstractTransfer<
             AnnotationMirror annoFromContract,
             JavaExpressionContext flowExprContext,
             TreePath path) {
-        // TODO: common implementation with BaseTypeVisitor.standardizeAnnotationFromContract
+        // TODO: common implementation with
+        // GenericAnnotatedTypeFactory.standardizeAnnotationFromContract.
         if (analysis.dependentTypesHelper != null) {
             AnnotationMirror standardized =
                     analysis.dependentTypesHelper.standardizeAnnotationIfDependentType(
@@ -1234,7 +1235,8 @@ public abstract class CFAbstractTransfer<
                 if (pathToMethodDecl == null) {
                     methodDeclContext = null;
                 } else {
-                    TypeMirror enclosingType = ElementUtils.enclosingClass(methodElt).asType();
+                    TypeMirror enclosingType =
+                            ElementUtils.enclosingTypeElement(methodElt).asType();
                     methodDeclContext =
                             JavaExpressionContext.buildContextForMethodDeclaration(
                                     methodDecl, enclosingType, baseContext);
