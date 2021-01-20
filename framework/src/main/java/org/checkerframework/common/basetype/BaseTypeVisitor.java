@@ -1025,8 +1025,10 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         }
     }
 
+    // `path` is the path to the method call site or to the method declaration.
+
     /** Standardize a type qualifier annotation obtained from a contract. */
-    private AnnotationMirror standardizeAnnotationFromContract(
+    public AnnotationMirror standardizeAnnotationFromContract(
             AnnotationMirror annoFromContract,
             JavaExpressionContext flowExprContext,
             TreePath path) {
