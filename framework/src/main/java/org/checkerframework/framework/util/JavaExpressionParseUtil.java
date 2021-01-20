@@ -138,24 +138,6 @@ public class JavaExpressionParseUtil {
      * Parse a string and return its representation as a {@link JavaExpression}, or throw a {@link
      * JavaExpressionParseException}.
      *
-     * <p>Does not use {@code annotatedConstruct} to resolve identifiers.
-     *
-     * @param expression a Java expression to parse
-     * @param context information about any receiver and arguments
-     * @param annotatedConstruct path to local scope to use
-     * @return the JavaExpression for the given expression string
-     * @throws JavaExpressionParseException if the expression string cannot be parsed
-     */
-    public static JavaExpression parseDoNotUseLocalScope(
-            String expression, JavaExpressionContext context, TreePath annotatedConstruct)
-            throws JavaExpressionParseException {
-        return parse(expression, context, annotatedConstruct, UseLocalScope.NO);
-    }
-
-    /**
-     * Parse a string and return its representation as a {@link JavaExpression}, or throw a {@link
-     * JavaExpressionParseException}.
-     *
      * @param expression a Java expression to parse
      * @param context information about any receiver and arguments
      * @param annotatedConstruct a program element annotated with an annotation that contains {@code
@@ -1186,7 +1168,7 @@ public class JavaExpressionParseUtil {
                 new JavaExpressionContext(receiverJe, /*arguments=*/ null, provider.getChecker());
         // TODO: Why not use local scope?  (Really: Why was fromVariableTreeDoNotUseLocalScope
         // called at all?)
-        return parseDoNotUseLocalScope(tree.getName().toString(), context, provider.getPath(tree));
+        return parse(tree.getName().toString(), context, provider.getPath(tree), UseLocalScope.NO);
     }
 
     /**
