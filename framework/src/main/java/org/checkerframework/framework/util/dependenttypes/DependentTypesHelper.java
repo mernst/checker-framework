@@ -579,11 +579,15 @@ public class DependentTypesHelper {
         JavaExpressionContext context =
                 new JavaExpressionContext(receiver, null, factory.getChecker());
         TreePath pathToFieldAccess = factory.getPath(node);
-        System.out.printf(
-                "About to call standardizeUseLocalScope(%s) for %s%ncontext=%s%n",
-                type, pathToFieldAccess.getLeaf(), context.toStringDebug());
+        if (false) {
+            System.out.printf(
+                    "About to call standardizeUseLocalScope(%s) for %s%ncontext=%s%n",
+                    type, pathToFieldAccess.getLeaf(), context.toStringDebug());
+        }
         standardizeUseLocalScope(context, pathToFieldAccess, type);
-        System.out.printf("standardizeUseLocalScope => %s%n", type);
+        if (false) {
+            System.out.printf("standardizeUseLocalScope => %s%n", type);
+        }
     }
 
     /**
