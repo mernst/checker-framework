@@ -149,7 +149,7 @@ public class DependentTypesHelper {
     public void viewpointAdaptTypeVariableBounds(
             TypeElement classDecl, List<AnnotatedTypeParameterBounds> bounds, TreePath pathToUse) {
         JavaExpression r = JavaExpression.getImplicitReceiver(classDecl);
-        JavaExpressionContext context = new JavaExpressionContext(r, null, factory.getContext());
+        JavaExpressionContext context = new JavaExpressionContext(r, null, factory.getChecker());
         for (AnnotatedTypeParameterBounds bound : bounds) {
             standardizeUseLocalScope(context, pathToUse, bound.getUpperBound());
             standardizeUseLocalScope(context, pathToUse, bound.getLowerBound());
@@ -208,7 +208,7 @@ public class DependentTypesHelper {
         TreePath currentPath = factory.getPath(tree);
 
         JavaExpressionContext context =
-                new JavaExpressionContext(receiver, argsJe, factory.getContext());
+                new JavaExpressionContext(receiver, argsJe, factory.getChecker());
 
         // methodType cannot be viewpoint adapted directly because it is the type post type variable
         // substitution.  Dependent type annotations on type arguments cannot be
@@ -333,7 +333,7 @@ public class DependentTypesHelper {
                 new JavaExpressionContext(
                         r,
                         JavaExpression.getParametersOfEnclosingMethod(factory, path),
-                        factory.getContext());
+                        factory.getChecker());
         standardizeUseLocalScope(context, path, type);
     }
 
@@ -354,7 +354,7 @@ public class DependentTypesHelper {
         }
         JavaExpression receiverJe = JavaExpression.getImplicitReceiver(classElt);
         JavaExpressionContext classignmentContext =
-                new JavaExpressionContext(receiverJe, null, factory.getContext());
+                new JavaExpressionContext(receiverJe, null, factory.getChecker());
         standardizeUseLocalScope(classignmentContext, path, type);
     }
 
@@ -426,7 +426,7 @@ public class DependentTypesHelper {
         TypeMirror enclosingType = ElementUtils.enclosingTypeElement(elt).asType();
         JavaExpressionContext context =
                 JavaExpressionContext.buildContextForMethodDeclaration(
-                        methodDeclTree, enclosingType, factory.getContext());
+                        methodDeclTree, enclosingType, factory.getChecker());
         // TOOD: Remove this comment.
         // This is the change in remove8.
         standardizeAtm(
@@ -440,17 +440,32 @@ public class DependentTypesHelper {
     /**
      * Standardize the Java expressions in annotations in a variable declaration.
      *
-     * @param node the variable declaration
+     * @param declarationTree the variable declaration
      * @param type the type of the variable declaration
      * @param variableElt the element of the variable declaration
      */
-    public void standardizeVariable(Tree node, AnnotatedTypeMirror type, Element variableElt) {
+    public void standardizeVariable(
+            Tree declarationTree, AnnotatedTypeMirror type, Element variableElt) {
+
+        if (declarationTree.getKind() != Tree.Kind.VARIABLE) {
+            throw new BugInCF(
+                    "What node? standardizeVariable(%s [%s], %s, %s)",
+                    declarationTree, declarationTree.getKind(), type, variableElt);
+        }
+
+        boolean debug = false;
+
         if (!hasDependentType(type)) {
             return;
         }
 
-        TreePath pathToVariableDecl = factory.getPath(node);
+        TreePath pathToVariableDecl = factory.getPath(declarationTree);
         if (pathToVariableDecl == null) {
+            if (false) {
+                System.out.printf(
+                        "pathToVariableDecl=null for %s, %s, %s%n",
+                        TreeUtils.toStringTruncated(declarationTree, 65), type, variableElt);
+            }
             return;
         }
         switch (variableElt.getKind()) {
@@ -474,7 +489,7 @@ public class DependentTypesHelper {
                     LambdaExpressionTree lambdaTree = (LambdaExpressionTree) enclTree;
                     JavaExpressionContext parameterContext =
                             JavaExpressionContext.buildContextForLambda(
-                                    lambdaTree, pathToVariableDecl, factory.getContext());
+                                    lambdaTree, pathToVariableDecl, factory.getChecker());
                     // Uses paths.getParentPath to prevent a StackOverflowError, see Issue #1027.
                     standardizeUseLocalScope(
                             parameterContext, pathToVariableDecl.getParentPath(), type);
@@ -490,15 +505,29 @@ public class DependentTypesHelper {
                 List<JavaExpression> params =
                         JavaExpression.getParametersOfEnclosingMethod(factory, pathToVariableDecl);
                 JavaExpressionContext localContext =
-                        new JavaExpressionContext(receiver, params, factory.getContext());
+                        new JavaExpressionContext(receiver, params, factory.getChecker());
+                if (debug) {
+                    System.out.printf(
+                            "standardizeVariable(%s, %s, %s)%n",
+                            TreeUtils.toStringTruncated(declarationTree, 65), type, variableElt);
+                    System.out.printf(
+                            "About to call standardize for local, resource, or exception parameter.%n  pathToVariableDecl.getLeaf()=%s%n  parent=%s%n",
+                            TreeUtils.toStringTruncated(pathToVariableDecl.getLeaf(), 65),
+                            TreeUtils.toStringTruncated(
+                                    pathToVariableDecl.getParentPath().getLeaf(), 65));
+                }
                 standardizeUseLocalScope(localContext, pathToVariableDecl, type);
+                if (debug) {
+                    System.out.printf("standardize => %s%n", type);
+                }
                 break;
 
             case FIELD:
             case ENUM_CONSTANT:
                 JavaExpression receiverJe;
-                if (node.getKind() == Tree.Kind.IDENTIFIER) {
-                    JavaExpression nodeJe = JavaExpression.fromTree(factory, (IdentifierTree) node);
+                if (declarationTree.getKind() == Tree.Kind.IDENTIFIER) {
+                    JavaExpression nodeJe =
+                            JavaExpression.fromTree(factory, (IdentifierTree) declarationTree);
                     receiverJe =
                             nodeJe instanceof FieldAccess
                                     ? ((FieldAccess) nodeJe).getReceiver()
@@ -507,16 +536,21 @@ public class DependentTypesHelper {
                     receiverJe = JavaExpression.getImplicitReceiver(variableElt);
                 }
                 JavaExpressionContext fieldContext =
-                        new JavaExpressionContext(receiverJe, null, factory.getContext());
-                // TODO: Using local scope here DOES NOT WORK!  Investigate why, and fix.
-                // standardizeUseLocalScope(fieldContext, pathToVariableDecl, type);
-                if (false) {
-                    System.out.printf("standardizeVariable(%s, %s, %s)%n", node, type, variableElt);
+                        new JavaExpressionContext(receiverJe, null, factory.getChecker());
+                if (debug) {
                     System.out.printf(
-                            "About to call standardize.  pathToVariableDecl.getLeaf()=%s%n",
-                            pathToVariableDecl.getLeaf());
+                            "standardizeVariable(%s, %s, %s)%n",
+                            TreeUtils.toStringTruncated(declarationTree, 65), type, variableElt);
+                    System.out.printf(
+                            "About to call standardize for field or enum constant.%n  pathToVariableDecl.getLeaf()=%s%n  parent=%s%n",
+                            TreeUtils.toStringTruncated(pathToVariableDecl.getLeaf(), 65),
+                            TreeUtils.toStringTruncated(
+                                    pathToVariableDecl.getParentPath().getLeaf(), 65));
                 }
-                standardizeDoNotUseLocalScope(fieldContext, pathToVariableDecl, type);
+                standardizeUseLocalScope(fieldContext, pathToVariableDecl, type);
+                if (debug) {
+                    System.out.printf("standardize => %s%n", type);
+                }
                 break;
 
             default:
@@ -546,7 +580,7 @@ public class DependentTypesHelper {
 
         JavaExpression receiver = JavaExpression.fromTree(factory, node.getExpression());
         JavaExpressionContext context =
-                new JavaExpressionContext(receiver, null, factory.getContext());
+                new JavaExpressionContext(receiver, null, factory.getChecker());
         TreePath pathToFieldAccess = factory.getPath(node);
         // TODO: Why not use local scope?  it's a field but might be related to locals.
         standardizeDoNotUseLocalScope(context, pathToFieldAccess, type);
@@ -575,7 +609,7 @@ public class DependentTypesHelper {
                 new JavaExpressionContext(
                         receiver,
                         JavaExpression.getParametersOfEnclosingMethod(factory, path),
-                        factory.getContext());
+                        factory.getChecker());
         standardizeUseLocalScope(localContext, path, annotatedType);
     }
 
@@ -584,33 +618,53 @@ public class DependentTypesHelper {
             return;
         }
 
+        // TODO: if it's the FIELD for `this`, get the receiver declaration.
+
         switch (elt.getKind()) {
             case PARAMETER:
             case LOCAL_VARIABLE:
             case RESOURCE_VARIABLE:
             case EXCEPTION_PARAMETER:
-                Tree tree = factory.declarationFromElement(elt);
-                if (tree == null) {
-                    if (elt.getKind() == ElementKind.PARAMETER) {
-                        // The tree might be null when
-                        // org.checkerframework.framework.flow.CFAbstractTransfer.getValueFromFactory()
-                        // gets the assignment context for a pseudo assignment of an argument to
-                        // a method parameter.
-                        return;
+            case FIELD:
+            case ENUM_CONSTANT:
+                Tree declarationTree = factory.declarationFromElement(elt);
+                if (declarationTree == null) {
+                    // It is not possible to standardize if the element was not defined in source
+                    // code.
+                    // TODO: It is still necessary, even though our current code does not handle it.
+                    if (false) {
+                        System.out.printf(
+                                "standardizeVariable(%s, %s [%s %s]): no declaration tree%n",
+                                type, elt, elt.getKind(), elt.getClass());
+                        new Error("backtrace").printStackTrace();
                     }
-                    throw new BugInCF(this.getClass() + ": tree not found");
-                } else if (TreeUtils.typeOf(tree) == null) {
+                    return;
+                } else if (TreeUtils.typeOf(declarationTree) == null) {
                     // org.checkerframework.framework.flow.CFAbstractTransfer.getValueFromFactory()
                     // gets the assignment context for a pseudo assignment of an argument to
                     // a method parameter.
                     return;
                 }
 
-                standardizeVariable(tree, type, elt);
+                if (false) {
+                    System.out.printf(
+                            "About to call standardizeVariable(%s, %s, %s)%n",
+                            declarationTree, type, elt);
+                }
+                standardizeVariable(declarationTree, type, elt);
+                if (false) {
+                    System.out.printf("standardizeVariable => %s%n", type);
+                }
                 return;
 
             default:
-                // Nothing to do.
+                // It's not a variable (it might be METHOD, CONSTRUCTOR, CLASS, or INTERFACE, for
+                // example), so there is nothing to do.
+                if (false) {
+                    System.out.printf(
+                            "standardizeVariable skipping %s %s %s%n", elt.getKind(), type, elt);
+                }
+                break;
         }
     }
 
@@ -740,6 +794,10 @@ public class DependentTypesHelper {
             if (result == null) {
                 return new DependentTypesError(expression, /*error message=*/ " ").toString();
             }
+            if (false) {
+                System.out.printf(
+                        "standardizeString(%s) => %s%n", expression, result.toStringDebug());
+            }
             return result.toString();
         } catch (JavaExpressionParseUtil.JavaExpressionParseException e) {
             return new DependentTypesError(expression, e).toString();
@@ -865,6 +923,7 @@ public class DependentTypesHelper {
 
         @Override
         protected Void scan(AnnotatedTypeMirror type, Void aVoid) {
+            boolean debug = false;
             for (AnnotationMirror anno :
                     AnnotationUtils.createAnnotationSet(type.getAnnotations())) {
                 AnnotationMirror newAnno =
@@ -881,6 +940,10 @@ public class DependentTypesHelper {
                     // both the nonstandard annotation and the standard annotation are equal with
                     // respect to Object#equals, so only one new annotation will be added to the
                     // type.
+                    if (debug) {
+                        System.out.printf(
+                                "scan(%s)%n  replacing %s%n         by %s%n", type, anno, newAnno);
+                    }
                     type.removeAnnotation(anno);
                     type.addAnnotation(newAnno);
                 }
@@ -926,7 +989,7 @@ public class DependentTypesHelper {
      * @param errors the errors to report
      */
     protected void reportErrors(Tree errorTree, List<DependentTypesError> errors) {
-        SourceChecker checker = factory.getContext().getChecker();
+        SourceChecker checker = factory.getChecker();
         for (DependentTypesError dte : errors) {
             checker.reportError(errorTree, "expression.unparsable.type.invalid", dte.format());
         }
@@ -967,7 +1030,7 @@ public class DependentTypesHelper {
         if (errors.isEmpty()) {
             return;
         }
-        SourceChecker checker = factory.getContext().getChecker();
+        SourceChecker checker = factory.getChecker();
         String error = StringsPlume.joinLines(errors);
         checker.reportError(errorTree, "flowexpr.parse.error", error);
     }
@@ -1025,7 +1088,7 @@ public class DependentTypesHelper {
 
         JavaExpressionContext context =
                 JavaExpressionContext.buildContextForMethodDeclaration(
-                        node, enclosingType, factory.getContext());
+                        node, enclosingType, factory.getChecker());
         for (int i = 0; i < methodType.getTypeVariables().size(); i++) {
             AnnotatedTypeMirror atm = methodType.getTypeVariables().get(i);
             standardizeDoNotUseLocalScope(context, factory.getPath(node), atm);

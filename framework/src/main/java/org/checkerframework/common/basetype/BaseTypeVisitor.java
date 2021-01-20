@@ -952,7 +952,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
         JavaExpressionContext flowExprContext =
                 JavaExpressionContext.buildContextForMethodDeclaration(
-                        node, pathToMethodDecl, checker.getContext());
+                        node, pathToMethodDecl, checker);
 
         for (Contract contract : contracts) {
             String expression = contract.expression;
@@ -1673,7 +1673,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         }
 
         JavaExpressionContext flowExprContext =
-                JavaExpressionContext.buildContextForMethodUse(tree, checker.getContext());
+                JavaExpressionContext.buildContextForMethodUse(tree, checker);
 
         if (flowExprContext == null) {
             checker.reportError(tree, "flowexpr.parse.context.not.determined", tree);
@@ -2629,6 +2629,13 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Object... extraArgs) {
         AnnotatedTypeMirror varType = atypeFactory.getAnnotatedTypeLhs(varTree);
         assert varType != null : "no variable found for tree: " + varTree;
+        if (false) {
+            System.out.printf(
+                    "commonAssignmentCheck(%s [type=%s], %s)%n",
+                    TreeUtils.toStringTruncated(varTree, 65),
+                    varType,
+                    TreeUtils.toStringTruncated(valueExp, 65));
+        }
 
         if (!validateType(varTree, varType)) {
             return;
@@ -2673,6 +2680,13 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             return;
         }
         AnnotatedTypeMirror valueType = atypeFactory.getAnnotatedType(valueExp);
+        // TODO: PROBLEM: Here the type of `m` is @GuardedBy("lock") instead of
+        // @GuardedBy("this.lock").
+        if (false) {
+            System.out.printf(
+                    "commonAssignmentCheck(%s, %s [type=%s])%n",
+                    varType, TreeUtils.toStringTruncated(valueExp, 65), valueType);
+        }
         assert valueType != null : "null type for expression: " + valueExp;
         commonAssignmentCheck(varType, valueType, valueExp, errorKey, extraArgs);
     }
@@ -4159,9 +4173,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             if (flowExprContext == null) {
                 flowExprContext =
                         JavaExpressionContext.buildContextForMethodDeclaration(
-                                methodTree,
-                                method.getReceiverType().getUnderlyingType(),
-                                checker.getContext());
+                                methodTree, method.getReceiverType().getUnderlyingType(), checker);
             }
 
             annotation =
@@ -4406,6 +4418,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      *
      * @param tree the type tree supplied by the user
      * @param type the type corresponding to tree
+     * @return true if the type is valid
      */
     protected boolean validateType(Tree tree, AnnotatedTypeMirror type) {
         return typeValidator.isValid(type, tree);
