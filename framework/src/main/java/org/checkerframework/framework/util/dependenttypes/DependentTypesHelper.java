@@ -693,38 +693,6 @@ public class DependentTypesHelper {
         standardizeAtm(context, localScope, type, UseLocalScope.YES);
     }
 
-    // TODO: Eliminate all uses of this.
-    /**
-     * Standardize a type, setting useLocalScope to false.
-     *
-     * @param context the context
-     * @param localScope the local scope
-     * @param type the type to standardize; is side-effected by this method
-     */
-    private void standardizeDoNotUseLocalScope(
-            JavaExpressionContext context, TreePath localScope, AnnotatedTypeMirror type) {
-        standardizeDoNotUseLocalScope(
-                context, localScope, type, /*removeErroneousExpressions=*/ false);
-    }
-
-    // TODO: Eliminate all uses of this.
-    /**
-     * Standardize a type, setting useLocalScope to false.
-     *
-     * @param context the context
-     * @param localScope the local scope
-     * @param type the type to standardize; is side-effected by this method
-     * @param removeErroneousExpressions if true, remove erroneous expressions rather than
-     *     converting them into an explanation of why they are illegal
-     */
-    private void standardizeDoNotUseLocalScope(
-            JavaExpressionContext context,
-            TreePath localScope,
-            AnnotatedTypeMirror type,
-            boolean removeErroneousExpressions) {
-        standardizeAtm(context, localScope, type, UseLocalScope.NO, removeErroneousExpressions);
-    }
-
     /**
      * Standardize a type, using the method scope.
      *
@@ -1102,7 +1070,12 @@ public class DependentTypesHelper {
                         node, enclosingType, factory.getChecker());
         for (int i = 0; i < methodType.getTypeVariables().size(); i++) {
             AnnotatedTypeMirror atm = methodType.getTypeVariables().get(i);
-            standardizeDoNotUseLocalScope(context, factory.getPath(node), atm);
+            standardizeAtm(
+                    context,
+                    factory.getPath(node),
+                    atm,
+                    UseLocalScope.NO,
+                    /*removeErroneousExpressions=*/ false);
             checkType(atm, node.getTypeParameters().get(i));
         }
     }
