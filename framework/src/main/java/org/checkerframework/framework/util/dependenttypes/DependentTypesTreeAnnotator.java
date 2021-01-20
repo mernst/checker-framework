@@ -6,7 +6,6 @@ import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewArrayTree;
 import com.sun.source.tree.NewClassTree;
-import com.sun.source.tree.Tree;
 import com.sun.source.tree.TypeCastTree;
 import com.sun.source.tree.VariableTree;
 import javax.lang.model.element.Element;
@@ -65,24 +64,30 @@ public class DependentTypesTreeAnnotator extends TreeAnnotator {
     @Override
     public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror annotatedTypeMirror) {
         Element ele = TreeUtils.elementFromUse(node);
-        System.out.printf(
-                "visitIdentifier(%s, %s) ele=%s [%s]%n",
-                node, annotatedTypeMirror, ele, ele.getKind());
+        if (false) {
+            System.out.printf(
+                    "visitIdentifier(%s, %s) ele=%s [%s]%n",
+                    node, annotatedTypeMirror, ele, ele.getKind());
+        }
         if (ele.getKind() == ElementKind.FIELD
                 && ((VariableElement) ele).getSimpleName().contentEquals("this")) {
-            Tree enclosing = node;
-            while (enclosing != null && enclosing.getKind() != Tree.Kind.METHOD) {
-                enclosing = atypeFactory.getEnclosingClassOrMethod(enclosing);
+            MethodTree methodTree = atypeFactory.getEnclosingMethod(node);
+            if (methodTree != null) {
+                VariableTree receiverDeclTree = methodTree.getReceiverParameter();
+                if (receiverDeclTree != null) {
+                    helper.standardizeVariable(receiverDeclTree, annotatedTypeMirror, ele);
+                }
             }
-            MethodTree methodTree = (MethodTree) enclosing;
-            VariableTree receiverDeclTree = methodTree.getReceiverParameter();
-            helper.standardizeVariable(receiverDeclTree, annotatedTypeMirror, ele);
         } else if (ele.getKind() == ElementKind.FIELD
                 || ele.getKind() == ElementKind.ENUM_CONSTANT) {
             helper.standardizeVariable(annotatedTypeMirror, ele);
         } else {
-            System.out.printf(
-                    "Skipping identifier %s %s %s%n", ele.getKind(), node, annotatedTypeMirror);
+            // This does nothing for PARAMETER and LOCAL_VARIABLE.  Should it?
+            if (false) {
+                System.out.printf(
+                        "visitIdentifier(%s, %s) skipping unrecognized kind %s%n",
+                        node, annotatedTypeMirror, ele.getKind());
+            }
         }
         return super.visitIdentifier(node, annotatedTypeMirror);
     }

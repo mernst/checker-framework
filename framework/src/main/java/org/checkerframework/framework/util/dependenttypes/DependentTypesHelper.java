@@ -458,9 +458,11 @@ public class DependentTypesHelper {
 
         TreePath pathToVariableDecl = factory.getPath(declarationTree);
         if (pathToVariableDecl == null) {
-            System.out.printf(
-                    "pathToVariableDecl=null for %s, %s, %s%n",
-                    TreeUtils.toStringTruncated(declarationTree, 65), type, variableElt);
+            if (false) {
+                System.out.printf(
+                        "pathToVariableDecl=null for %s, %s, %s%n",
+                        TreeUtils.toStringTruncated(declarationTree, 65), type, variableElt);
+            }
             return;
         }
         switch (variableElt.getKind()) {
@@ -627,10 +629,12 @@ public class DependentTypesHelper {
                     // It is not possible to standardize if the element was not defined in source
                     // code.
                     // TODO: It is still necessary, even though our current code does not handle it.
-                    System.out.printf(
-                            "standardizeVariable(%s, %s [%s %s]): no declaration tree%n",
-                            type, elt, elt.getKind(), elt.getClass());
-                    new Error("backtrace").printStackTrace();
+                    if (false) {
+                        System.out.printf(
+                                "standardizeVariable(%s, %s [%s %s]): no declaration tree%n",
+                                type, elt, elt.getKind(), elt.getClass());
+                        new Error("backtrace").printStackTrace();
+                    }
                     return;
                 } else if (TreeUtils.typeOf(declarationTree) == null) {
                     // org.checkerframework.framework.flow.CFAbstractTransfer.getValueFromFactory()
@@ -651,9 +655,12 @@ public class DependentTypesHelper {
                 return;
 
             default:
-                // It's not a variable (it might be CLASS, for example), so there is nothing to do.
-                System.out.printf(
-                        "standardizeVariable skipping %s %s %s%n", elt.getKind(), type, elt);
+                // It's not a variable (it might be METHOD, CONSTRUCTOR, CLASS, or INTERFACE, for
+                // example), so there is nothing to do.
+                if (false) {
+                    System.out.printf(
+                            "standardizeVariable skipping %s %s %s%n", elt.getKind(), type, elt);
+                }
                 break;
         }
     }
