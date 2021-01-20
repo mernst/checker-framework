@@ -1390,6 +1390,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         return false;
     }
 
+    /** Debugging for the removemore7 branch. */
     static boolean debug7 = false;
 
     /**
