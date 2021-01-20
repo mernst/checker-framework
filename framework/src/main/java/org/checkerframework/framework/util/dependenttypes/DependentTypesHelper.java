@@ -427,7 +427,14 @@ public class DependentTypesHelper {
         JavaExpressionContext context =
                 JavaExpressionContext.buildContextForMethodDeclaration(
                         methodDeclTree, enclosingType, factory.getChecker());
-        standardizeUseMethodScope(context, pathToMethodDecl, atm, removeErroneousExpressions);
+        // TOOD: Remove this comment.
+        // This is the change in remove8.
+        standardizeAtm(
+                context,
+                pathToMethodDecl.getParentPath(),
+                atm,
+                UseLocalScope.YES,
+                removeErroneousExpressions);
     }
 
     /** A set containing {@link Tree.Kind#METHOD} and {@link Tree.Kind#LAMBDA_EXPRESSION}. */
