@@ -225,7 +225,12 @@ public class DependentTypesHelper {
         // Then copy annotations from the viewpoint adapted type to methodType, if that annotation
         // is not on a type that was substituted for a type variable.
 
-        standardizeUseMethodScope(context, currentPath, viewpointAdaptedType);
+        standardizeAtm(
+                context,
+                currentPath,
+                viewpointAdaptedType,
+                UseLocalScope.NO,
+                /*removeErroneousExpressions=*/ false);
         new ViewpointAdaptedCopier().visit(viewpointAdaptedType, methodType);
     }
 
@@ -680,7 +685,7 @@ public class DependentTypesHelper {
     }
 
     // TODO: Eventually rename without "UseLocalScope", once all "DoNotUseLocalScope" variants have
-    // been eliminated.
+    // been eliminated.  Then, some calls to standardizeAtm can be simplified into calls to this.
     /**
      * Standardize a type, setting useLocalScope to true.
      *
@@ -694,35 +699,13 @@ public class DependentTypesHelper {
     }
 
     /**
-     * Standardize a type, using the method scope.
+     * Standardize a type, setting useLocalScope to true.
      *
      * @param context the context
      * @param localScope the local scope
      * @param type the type to standardize; is side-effected by this method
+     * @param useLocalScope whether {@code localScope} should be used to resolve identifiers
      */
-    private void standardizeUseMethodScope(
-            JavaExpressionContext context, TreePath localScope, AnnotatedTypeMirror type) {
-        standardizeUseMethodScope(context, localScope, type, /*removeErroneousExpressions=*/ false);
-    }
-
-    /**
-     * Standardize a type, using the method scope.
-     *
-     * @param context the context
-     * @param localScope the local scope
-     * @param type the type to standardize; is side-effected by this method
-     * @param removeErroneousExpressions if true, remove erroneous expressions rather than
-     *     converting them into an explanation of why they are illegal
-     */
-    private void standardizeUseMethodScope(
-            JavaExpressionContext context,
-            TreePath localScope,
-            AnnotatedTypeMirror type,
-            boolean removeErroneousExpressions) {
-        // TODO: pass the method scope and UseLocalScope.YES
-        standardizeAtm(context, localScope, type, UseLocalScope.NO, removeErroneousExpressions);
-    }
-
     private void standardizeAtm(
             JavaExpressionContext context,
             TreePath localScope,
