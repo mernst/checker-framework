@@ -77,6 +77,7 @@ import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
 import org.checkerframework.framework.util.UseLocalScope;
+import org.checkerframework.framework.util.dependenttypes.DependentTypesHelper;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreePathUtil;
@@ -598,10 +599,10 @@ public abstract class CFAbstractTransfer<
     /**
      * Standardize a type qualifier annotation obtained from a contract.
      *
-     * @param annoFromContract a controct annotation that was written on a method declaration
-     * @param flowExprContext context
+     * @param annoFromContract a contract annotation that was written on a method declaration
+     * @param flowExprContext the context to use for standardization
      * @param path the program element that will be annotated by the returned annotation
-     * @return a type qualifier annotation obtained from the given contract
+     * @return the standardized annotation, or the argument if it does not need standardization
      */
     private AnnotationMirror standardizeAnnotationFromContract(
             AnnotationMirror annoFromContract,
@@ -609,9 +610,10 @@ public abstract class CFAbstractTransfer<
             TreePath path) {
         // TODO: common implementation with
         // GenericAnnotatedTypeFactory.standardizeAnnotationFromContract.
-        if (analysis.dependentTypesHelper != null) {
+        DependentTypesHelper dependentTypesHelper = analysis.dependentTypesHelper;
+        if (dependentTypesHelper != null) {
             AnnotationMirror standardized =
-                    analysis.dependentTypesHelper.standardizeAnnotationIfDependentType(
+                    dependentTypesHelper.standardizeAnnotationIfDependentType(
                             flowExprContext, path, annoFromContract, UseLocalScope.YES, false);
             if (standardized != null) {
                 // BaseTypeVisitor checks the validity of the annotaiton. Errors are reported there
