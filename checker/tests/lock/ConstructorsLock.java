@@ -25,8 +25,9 @@ public @GuardedBy({}) class ConstructorsLock {
     Object initializedObject2 = guardedThis.field;
     // :: error: (lock.not.held)
     Object initializedObject3 = guardedOther.field;
-    // :: error: (expression.unparsable.type.invalid)
-    Object initializedObject4 = staticGuardedByNonStatic.field;
+    // An error was issued at the declaration of staticGuardedByNonStatic.
+    // // :: error: (expression.unparsable.type.invalid)
+    // Object initializedObject4 = staticGuardedByNonStatic.field;
     // :: error: (lock.not.held)
     Object initializedObject5 = nonstaticGuardedByStatic.field;
     // :: error: (lock.not.held)
@@ -37,8 +38,9 @@ public @GuardedBy({}) class ConstructorsLock {
         guardedThis.field.toString();
         // :: error: (lock.not.held)
         guardedOther.field.toString();
-        // :: error: (expression.unparsable.type.invalid)
-        staticGuardedByNonStatic.field.toString();
+        // An error was issued at the declaration of staticGuardedByNonStatic.
+        // // :: error: (expression.unparsable.type.invalid)
+        // staticGuardedByNonStatic.field.toString();
         // :: error: (lock.not.held)
         nonstaticGuardedByStatic.field.toString();
         // :: error: (lock.not.held)
