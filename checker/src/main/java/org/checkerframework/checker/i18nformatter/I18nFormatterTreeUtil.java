@@ -305,8 +305,7 @@ public class I18nFormatterTreeUtil {
                         return;
                     }
                     JavaExpressionContext flowExprContext =
-                            JavaExpressionContext.buildContextForMethodUse(
-                                    node, checker.getContext());
+                            JavaExpressionContext.buildContextForMethodUse(node, checker);
                     String formatforArg =
                             AnnotationUtils.getElementValue(
                                     paramType.getAnnotation(I18nFormatFor.class),

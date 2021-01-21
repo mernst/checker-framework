@@ -61,6 +61,7 @@ import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
+import javax.tools.Diagnostic;
 import org.checkerframework.checker.interning.qual.FindDistinct;
 import org.checkerframework.checker.interning.qual.InternedDistinct;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -94,7 +95,6 @@ import org.checkerframework.framework.type.visitor.AnnotatedTypeCombiner;
 import org.checkerframework.framework.type.visitor.SimpleAnnotatedTypeScanner;
 import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.framework.util.AnnotationFormatter;
-import org.checkerframework.framework.util.CFContext;
 import org.checkerframework.framework.util.CheckerMain;
 import org.checkerframework.framework.util.DefaultAnnotationFormatter;
 import org.checkerframework.framework.util.FieldInvariants;
@@ -487,6 +487,11 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
                                     + " should be one of: -Ainfer=jaifs, -Ainfer=stubs");
             }
             wholeProgramInference = new WholeProgramInferenceScenes(this);
+            if (!checker.hasOption("warns")) {
+                // Without -Awarns, the inference output may be incomplete, because javac halts
+                // after issuing an error.
+                checker.message(Diagnostic.Kind.ERROR, "Do not supply -Ainfer without -Awarns");
+            }
         } else {
             wholeProgramInference = null;
         }
@@ -1028,11 +1033,28 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
      * @return the annotated type of {@code tree}
      */
     public AnnotatedTypeMirror getAnnotatedType(Tree tree) {
+        boolean debug =
+                // tree.getKind() != Tree.Kind.METHOD
+                //         && tree.getKind() != Tree.Kind.NEW_CLASS
+                //         && tree.getKind() != Tree.Kind.CLASS;
+                false;
+        if (debug) {
+            System.out.printf(
+                    "getAnnotatedType(%s [%s])%n",
+                    TreeUtils.toStringTruncated(tree, 65), tree.getKind());
+        }
 
         if (tree == null) {
             throw new BugInCF("AnnotatedTypeFactory.getAnnotatedType: null tree");
         }
         if (shouldCache && classAndMethodTreeCache.containsKey(tree)) {
+            if (debug) {
+                System.out.printf(
+                        "getAnnotatedType(%s [%s]) cached => %s%n",
+                        TreeUtils.toStringTruncated(tree, 65),
+                        tree.getKind(),
+                        classAndMethodTreeCache.get(tree));
+            }
             return classAndMethodTreeCache.get(tree).deepCopy();
         }
 
@@ -1050,7 +1072,17 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
                             + tree.getKind());
         }
 
+        if (debug) {
+            System.out.printf(
+                    "Before addComputedTypeAnnotations: tree=%s%n  type=%s%n",
+                    TreeUtils.toStringTruncated(tree, 65), type);
+        }
         addComputedTypeAnnotations(tree, type);
+        if (debug) {
+            System.out.printf(
+                    "After  addComputedTypeAnnotations: tree=%s%n  type=%s%n",
+                    TreeUtils.toStringTruncated(tree, 65), type);
+        }
 
         if (TreeUtils.isClassTree(tree) || tree.getKind() == Tree.Kind.METHOD) {
             // Don't cache VARIABLE
@@ -1062,7 +1094,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         }
 
         // For debugging
-        if (false) {
+        if (debug) {
             System.out.printf(
                     "AnnotatedTypeFactory::getAnnotatedType(%s) => %s%n",
                     TreeUtils.toStringTruncated(tree, 65), type);
@@ -1254,10 +1286,22 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
                     "AnnotatedTypeFactory.fromMember: not a method or variable declaration: "
                             + tree);
         }
+        boolean debug =
+                // tree.getKind() != Tree.Kind.METHOD
+                //         && tree.getKind() != Tree.Kind.NEW_CLASS
+                //         && tree.getKind() != Tree.Kind.CLASS;
+                false;
+        if (debug) {
+            System.out.printf("fromMember(%s)%n", TreeUtils.toStringTruncated(tree, 65));
+        }
         if (shouldCache && fromMemberTreeCache.containsKey(tree)) {
             return fromMemberTreeCache.get(tree).deepCopy();
         }
         AnnotatedTypeMirror result = TypeFromTree.fromMember(this, tree);
+        if (debug) {
+            System.out.printf(
+                    "fromMember(%s): %s%n", TreeUtils.toStringTruncated(tree, 65), result);
+        }
 
         if (checker.hasOption("mergeStubsWithSource")) {
             if (debugStubParser) {
@@ -1271,6 +1315,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
         if (shouldCache) {
             fromMemberTreeCache.put(tree, result.deepCopy());
+        }
+        if (debug) {
+            System.out.printf(
+                    "fromMember(%s) => %s%n", TreeUtils.toStringTruncated(tree, 65), result);
         }
 
         return result;
@@ -1750,9 +1798,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     }
 
     /**
-     * Returns the type of {@code this} at the location of {@code tree}. If {@code tree} is in a
-     * location where {@code this} has no meaning, such as the body of a static method, then {@code
-     * null} is returned.
+     * Returns the type of {@code this} at the location of {@code tree}. Returns {@code null} if
+     * {@code tree} is in a location where {@code this} has no meaning, such as the body of a static
+     * method.
      *
      * <p>The parameter is an arbitrary tree and does not have to mention "this", neither explicitly
      * nor implicitly. This method can be overridden for type-system specific behavior.
@@ -1782,24 +1830,25 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         return null;
     }
 
-    /** A set of class, method, and annotation tree kinds. */
-    private final Set<Tree.Kind> classMethodAnnotationKinds =
+    /** A set containing class, method, and annotation tree kinds. */
+    private static final Set<Tree.Kind> classMethodAnnotationKinds =
             EnumSet.copyOf(TreeUtils.classTreeKinds());
 
-    {
+    static {
         classMethodAnnotationKinds.add(Kind.METHOD);
         classMethodAnnotationKinds.add(Kind.TYPE_ANNOTATION);
         classMethodAnnotationKinds.add(Kind.ANNOTATION);
     }
+
     /**
-     * Returns the inner most enclosing method or class tree of {@code tree}. If {@code tree} is
+     * Returns the innermost enclosing method or class tree of {@code tree}. If {@code tree} is
      * artificial (that is, created by dataflow), then {@link #artificialTreeToEnclosingElementMap}
      * is used to find the enclosing tree.
      *
      * <p>If the tree is inside an annotation, then {@code null} is returned.
      *
-     * @param tree tree to whose innermost enclosing method or class is returned
-     * @return the innermost enclosing method or class tree of {@code tree} or {@code null} if
+     * @param tree tree to whose innermost enclosing method or class to return
+     * @return the innermost enclosing method or class tree of {@code tree}, or {@code null} if
      *     {@code tree} is inside an annotation
      */
     protected @Nullable Tree getEnclosingClassOrMethod(Tree tree) {
@@ -1824,6 +1873,17 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
             return declarationFromElement(enclosingMethodOrClass);
         }
         return getCurrentClassTree(tree);
+    }
+
+    /**
+     * Returns the innermost enclosing method tree of {@code tree}, or null if none.
+     *
+     * @param tree tree to whose innermost enclosing method to return
+     * @return the innermost enclosing method tree of {@code tree}, or {@code null} if none
+     */
+    public @Nullable MethodTree getEnclosingMethod(Tree tree) {
+        TreePath path = getPath(tree);
+        return (MethodTree) TreePathUtil.enclosingOfKind(path, Kind.METHOD);
     }
 
     /**
@@ -3121,7 +3181,22 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         // TODO: handle type parameter declarations?
         Tree fromElt;
         // Prevent calling declarationFor on elements we know we don't have
-        // the tree for
+        // the tree for.
+
+        if (elt.getKind() == ElementKind.FIELD) {
+            Tree declarationFor =
+                    com.sun.tools.javac.tree.TreeInfo.declarationFor(
+                            (com.sun.tools.javac.code.Symbol) elt,
+                            (com.sun.tools.javac.tree.JCTree) root);
+            if (false) {
+                System.out.printf(
+                        "declarationFromElement(FIELD %s): declarationFor=%s%n",
+                        elt,
+                        declarationFor == null
+                                ? null
+                                : TreeUtils.toStringTruncated(declarationFor, 65));
+            }
+        }
 
         switch (elt.getKind()) {
             case CLASS:
@@ -3141,6 +3216,14 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
                                 (com.sun.tools.javac.tree.JCTree) root);
                 break;
         }
+        if (false) {
+            System.out.printf(
+                    "declarationFromElement(%s [%s]) => %s%n",
+                    elt,
+                    elt.getKind(),
+                    fromElt == null ? null : TreeUtils.toStringTruncated(fromElt, 65));
+        }
+
         if (shouldCache) {
             elementToTreeCache.put(elt, fromElt);
         }
@@ -4455,12 +4538,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         return this.processingEnv;
     }
 
-    /** Accessor for the {@link CFContext}. */
-    public CFContext getContext() {
-        return checker;
-    }
-
+    /** Matches addition of a constant. */
     static final Pattern plusConstant = Pattern.compile(" *\\+ *(-?[0-9]+)$");
+    /** Matches subtraction of a constant. */
     static final Pattern minusConstant = Pattern.compile(" *- *(-?[0-9]+)$");
 
     /**

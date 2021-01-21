@@ -129,7 +129,7 @@ public class ContractsFromMethod {
                     ElementUtils.enclosingTypeElement(executableElement).asType();
             context =
                     JavaExpressionContext.buildContextForMethodDeclaration(
-                            methodDecl, enclosingType, factory.getContext());
+                            methodDecl, enclosingType, factory.getChecker());
         }
 
         Set<T> result = new LinkedHashSet<>();

@@ -61,13 +61,13 @@ import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.dataflow.expression.ThisReference;
 import org.checkerframework.dataflow.util.NodeUtils;
+import org.checkerframework.framework.source.SourceChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
 import org.checkerframework.framework.util.AnnotatedTypes;
-import org.checkerframework.framework.util.BaseContext;
 import org.checkerframework.framework.util.Contract;
 import org.checkerframework.framework.util.Contract.ConditionalPostcondition;
 import org.checkerframework.framework.util.Contract.Postcondition;
@@ -570,9 +570,7 @@ public abstract class CFAbstractTransfer<
             if (methodUseContext == null) {
                 methodUseContext =
                         JavaExpressionContext.buildContextForMethodDeclaration(
-                                methodDeclTree,
-                                methodAst.getClassTree(),
-                                analysis.checker.getContext());
+                                methodDeclTree, methodAst.getClassTree(), analysis.checker);
             }
 
             TreePath localScope = analysis.atypeFactory.getPath(methodDeclTree);
@@ -609,7 +607,8 @@ public abstract class CFAbstractTransfer<
             AnnotationMirror annoFromContract,
             JavaExpressionContext flowExprContext,
             TreePath path) {
-        // TODO: common implementation with BaseTypeVisitor.standardizeAnnotationFromContract
+        // TODO: common implementation with
+        // GenericAnnotatedTypeFactory.standardizeAnnotationFromContract.
         if (analysis.dependentTypesHelper != null) {
             AnnotationMirror standardized =
                     analysis.dependentTypesHelper.standardizeAnnotationIfDependentType(
@@ -1222,10 +1221,10 @@ public abstract class CFAbstractTransfer<
 
             if (methodUseContext == null) {
                 // Set the lazily initialized variables.
-                BaseContext baseContext = analysis.checker.getContext();
+                SourceChecker checker = analysis.checker;
 
                 methodUseContext =
-                        JavaExpressionContext.buildContextForMethodUse(invocationNode, baseContext);
+                        JavaExpressionContext.buildContextForMethodUse(invocationNode, checker);
             }
 
             // Standardize with respect to the method use (the call site).
