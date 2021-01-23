@@ -13,19 +13,19 @@ public class UnaryOperation extends JavaExpression {
     /** The unary operation kind. */
     protected final Tree.Kind operationKind;
     /** The operand. */
-    protected final JavaExpression expr;
+    protected final JavaExpression operand;
 
     /**
      * Create a unary operation.
      *
      * @param type the type of the result
      * @param operationKind the operator
-     * @param expr the operand
+     * @param operand the operand
      */
-    public UnaryOperation(TypeMirror type, Tree.Kind operationKind, JavaExpression expr) {
-        super(expr.type);
+    public UnaryOperation(TypeMirror type, Tree.Kind operationKind, JavaExpression operand) {
+        super(operand.type);
         this.operationKind = operationKind;
-        this.expr = expr;
+        this.operand = operand;
     }
 
     /**
@@ -42,8 +42,8 @@ public class UnaryOperation extends JavaExpression {
      *
      * @return the operand
      */
-    public JavaExpression getExpr() {
-        return expr;
+    public JavaExpression getOperand() {
+        return operand;
     }
 
     @Override
@@ -51,17 +51,17 @@ public class UnaryOperation extends JavaExpression {
         if (getClass() == clazz) {
             return true;
         }
-        return expr.containsOfClass(clazz);
+        return operand.containsOfClass(clazz);
     }
 
     @Override
     public boolean isUnassignableByOtherCode() {
-        return expr.isUnassignableByOtherCode();
+        return operand.isUnassignableByOtherCode();
     }
 
     @Override
     public boolean isUnmodifiableByOtherCode() {
-        return expr.isUnmodifiableByOtherCode();
+        return operand.isUnmodifiableByOtherCode();
     }
 
     @Override
@@ -70,20 +70,17 @@ public class UnaryOperation extends JavaExpression {
             return false;
         }
         UnaryOperation unOp = (UnaryOperation) other;
-        if (!(operationKind == unOp.getOperationKind())) {
-            return false;
-        }
-        return expr.equals(unOp.expr);
+        return operationKind == unOp.getOperationKind() && operand.equals(unOp.operand);
     }
 
     @Override
     public boolean containsModifiableAliasOf(Store<?> store, JavaExpression other) {
-        return expr.containsModifiableAliasOf(store, other);
+        return operand.containsModifiableAliasOf(store, other);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(operationKind, expr);
+        return Objects.hash(operationKind, operand);
     }
 
     @Override
@@ -92,10 +89,7 @@ public class UnaryOperation extends JavaExpression {
             return false;
         }
         UnaryOperation unOp = (UnaryOperation) other;
-        if (!(operationKind == unOp.getOperationKind())) {
-            return false;
-        }
-        return expr.equals(unOp.expr);
+        return operationKind == unOp.getOperationKind() && operand.equals(unOp.operand);
     }
 
     /**
@@ -115,6 +109,6 @@ public class UnaryOperation extends JavaExpression {
 
     @Override
     public String toString(@Nullable List<JavaExpression> parameterIndex) {
-        return operationKindToString(operationKind) + expr.toString(parameterIndex);
+        return operationKindToString(operationKind) + operand.toString(parameterIndex);
     }
 }
