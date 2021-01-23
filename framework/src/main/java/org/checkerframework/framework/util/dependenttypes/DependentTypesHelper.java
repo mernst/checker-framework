@@ -750,20 +750,19 @@ public class DependentTypesHelper {
         if (DependentTypesError.isExpressionError(expression)) {
             return expression;
         }
+        JavaExpression result;
         try {
-            JavaExpression result =
-                    JavaExpressionParseUtil.parse(expression, context, localScope, useLocalScope);
-            if (result == null) {
-                return new DependentTypesError(expression, /*error message=*/ " ").toString();
-            }
-            if (false) {
-                System.out.printf(
-                        "standardizeString(%s) => %s%n", expression, result.toStringDebug());
-            }
-            return result.toString();
+            result = JavaExpressionParseUtil.parse(expression, context, localScope, useLocalScope);
         } catch (JavaExpressionParseUtil.JavaExpressionParseException e) {
             return new DependentTypesError(expression, e).toString();
         }
+        if (false) {
+            System.out.printf("standardizeString(%s) => %s%n", expression, result.toStringDebug());
+        }
+        if (result == null) {
+            return new DependentTypesError(expression, /*error message=*/ " ").toString();
+        }
+        return result.toString();
     }
 
     /**
