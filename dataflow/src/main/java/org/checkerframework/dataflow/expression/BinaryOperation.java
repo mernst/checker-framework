@@ -3,6 +3,7 @@ package org.checkerframework.dataflow.expression;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.Pretty;
+import java.util.List;
 import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.analysis.Store;
@@ -142,12 +143,12 @@ public class BinaryOperation extends JavaExpression {
     }
 
     @Override
-    public String toString() {
+    public String toString(@Nullable List<JavaExpression> parameterIndex) {
         final Pretty pretty = new Pretty(null, true);
         StringBuilder result = new StringBuilder();
-        result.append(left.toString());
+        result.append(left.toString(parameterIndex));
         result.append(pretty.operatorName(tag));
-        result.append(right.toString());
+        result.append(right.toString(parameterIndex));
         return result.toString();
     }
 }

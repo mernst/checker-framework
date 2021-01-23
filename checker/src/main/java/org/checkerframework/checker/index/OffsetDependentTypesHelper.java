@@ -30,12 +30,16 @@ public class OffsetDependentTypesHelper extends DependentTypesHelper {
             final String expression,
             JavaExpressionContext context,
             TreePath localScope,
-            UseLocalScope useLocalScope) {
+            UseLocalScope useLocalScope,
+            // TODO: use this
+            boolean delocalize) {
         if (DependentTypesError.isExpressionError(expression)) {
             return expression;
         }
         if (expression.indexOf('-') == -1 && expression.indexOf('+') == -1) {
             // The expression contains no "-" or "+", so it can be standardized directly.
+            // This code is like DependentTypesError.standardizeString, except that it substitutes
+            // in the values of final fields.
             JavaExpression result;
             try {
                 result =
@@ -45,7 +49,7 @@ public class OffsetDependentTypesHelper extends DependentTypesHelper {
                 return new DependentTypesError(expression, e).toString();
             }
             if (result == null) {
-                return new DependentTypesError(expression, " ").toString();
+                return new DependentTypesError(expression, /*error message=*/ " ").toString();
             }
             if (result instanceof FieldAccess && ((FieldAccess) result).isFinal()) {
                 Object constant = ((FieldAccess) result).getField().getConstantValue();
@@ -53,7 +57,7 @@ public class OffsetDependentTypesHelper extends DependentTypesHelper {
                     return constant.toString();
                 }
             }
-            return result.toString();
+            return result.toString(delocalize ? context.arguments : null);
         }
 
         // The expression is a sum of several terms. Split it into individual terms and standardize

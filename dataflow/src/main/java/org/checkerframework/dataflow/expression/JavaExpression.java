@@ -143,7 +143,22 @@ public abstract class JavaExpression {
     }
 
     /**
-     * Print this verbosely, for debugging.
+     * Format this, using "#2" syntax for formal parameters.
+     *
+     * @param parameterIndex map from formal parameter name to 1-based index; null means do no
+     *     substitution
+     * @return a string representation of this, using "#2" syntax for formal parameters
+     */
+    // TODO: Alternately, parameterIndex could map from Element to Integer.
+    public abstract String toString(@Nullable List<JavaExpression> parameterIndex);
+
+    @Override
+    public final String toString() {
+        return toString(null);
+    }
+
+    /**
+     * Format this verbosely, for debugging.
      *
      * @return a verbose string representation of this
      */

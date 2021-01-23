@@ -2443,6 +2443,8 @@ public abstract class GenericAnnotatedTypeFactory<
     /**
      * Standardize a type qualifier annotation obtained from a contract.
      *
+     * <p>This converts all instances of "#2" into the corresponding formal parameter.
+     *
      * @param annoFromContract the annotation to be standardized
      * @param flowExprContext the context to use for standardization
      * @param path the path to a use of the contract (a method call) or to the method declaration
@@ -2459,7 +2461,18 @@ public abstract class GenericAnnotatedTypeFactory<
                             flowExprContext, path, annoFromContract, UseLocalScope.NO, false);
             if (standardized != null) {
                 dependentTypesHelper.checkAnnotation(standardized, path.getLeaf());
-                return standardized;
+                System.out.printf(
+                        "standardizeAnnotationFromContract%n  annoFromContract=%s%n  standardized    =%s%n",
+                        annoFromContract, standardized);
+                if (path.getLeaf().getKind() == Tree.Kind.METHOD) {
+                    // TODO: delocalize
+                    System.out.printf(
+                            "standardizeAnnotationFromContract  TODO: delocalize%n  annoFromContract=%s%n  standardized    =%s%n",
+                            annoFromContract, standardized);
+                    return standardized;
+                } else {
+                    return standardized;
+                }
             }
         }
         return annoFromContract;
