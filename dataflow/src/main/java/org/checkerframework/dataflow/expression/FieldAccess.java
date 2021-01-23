@@ -1,5 +1,6 @@
 package org.checkerframework.dataflow.expression;
 
+import java.util.List;
 import java.util.Objects;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
@@ -78,7 +79,7 @@ public class FieldAccess extends JavaExpression {
     }
 
     @Override
-    public String toString() {
+    public String toString(@Nullable List<JavaExpression> parameterIndex) {
         if (receiver instanceof ClassName) {
             return receiver.getType() + "." + field;
         } else {

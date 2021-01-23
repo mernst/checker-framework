@@ -1,5 +1,6 @@
 package org.checkerframework.dataflow.expression;
 
+import java.util.List;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.interning.qual.UsesObjectEquals;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -29,7 +30,7 @@ public class Unknown extends JavaExpression {
     }
 
     @Override
-    public String toString() {
+    public String toString(@Nullable List<JavaExpression> parameterIndex) {
         return "?";
     }
 

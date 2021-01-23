@@ -171,7 +171,8 @@ public class LockAnnotatedTypeFactory
                     String expression,
                     JavaExpressionContext context,
                     TreePath localScope,
-                    UseLocalScope useLocalScope) {
+                    UseLocalScope useLocalScope,
+                    boolean delocalize) {
                 if (DependentTypesError.isExpressionError(expression)) {
                     return expression;
                 }
@@ -186,7 +187,8 @@ public class LockAnnotatedTypeFactory
                             JavaExpressionParseUtil.parse(
                                     expression, context, localScope, useLocalScope);
                     if (result == null) {
-                        return new DependentTypesError(expression, " ").toString();
+                        return new DependentTypesError(expression, /*error message=*/ " ")
+                                .toString();
                     }
                     if (!isExpressionEffectivelyFinal(result)) {
                         // If the expression isn't effectively final, then return the
@@ -194,7 +196,7 @@ public class LockAnnotatedTypeFactory
                         return new DependentTypesError(expression, NOT_EFFECTIVELY_FINAL)
                                 .toString();
                     }
-                    return result.toString();
+                    return result.toString(delocalize ? context.arguments : null);
                 } catch (JavaExpressionParseUtil.JavaExpressionParseException e) {
                     return new DependentTypesError(expression, e).toString();
                 }

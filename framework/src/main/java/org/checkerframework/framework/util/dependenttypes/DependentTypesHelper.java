@@ -746,24 +746,36 @@ public class DependentTypesHelper {
             String expression,
             JavaExpressionContext context,
             TreePath localScope,
-            UseLocalScope useLocalScope) {
+            UseLocalScope useLocalScope,
+            boolean delocalize) {
         if (DependentTypesError.isExpressionError(expression)) {
             return expression;
         }
+        JavaExpression result;
         try {
-            JavaExpression result =
-                    JavaExpressionParseUtil.parse(expression, context, localScope, useLocalScope);
-            if (result == null) {
-                return new DependentTypesError(expression, /*error message=*/ " ").toString();
-            }
-            if (false) {
-                System.out.printf(
-                        "standardizeString(%s) => %s%n", expression, result.toStringDebug());
-            }
-            return result.toString();
+            result = JavaExpressionParseUtil.parse(expression, context, localScope, useLocalScope);
         } catch (JavaExpressionParseUtil.JavaExpressionParseException e) {
             return new DependentTypesError(expression, e).toString();
         }
+        if (result == null) {
+            return new DependentTypesError(expression, /*error message=*/ " ").toString();
+        }
+        // TODO: Substitute in values of final fields?  The Index Checker does this.
+        /*
+        if (result instanceof FieldAccess && ((FieldAccess) result).isFinal()) {
+            Object constant = ((FieldAccess) result).getField().getConstantValue();
+            if (constant != null && !(constant instanceof String)) {
+                return constant.toString();
+            }
+        }
+        */
+        if (true) {
+            System.out.printf("standardizeString(%s) => %s%n", expression, result.toStringDebug());
+        }
+        System.out.printf(
+                "args to toString: %s [%s] %s%n",
+                result, result.getClass(), delocalize ? context.arguments : null);
+        return result.toString(delocalize ? context.arguments : null);
     }
 
     /**
@@ -808,13 +820,21 @@ public class DependentTypesHelper {
                 new AnnotationBuilder(
                         factory.getProcessingEnv(), AnnotationUtils.annotationName(anno));
 
+        boolean delocalize = localScope.getLeaf().getKind() == Tree.Kind.METHOD;
+        System.out.printf(
+                "standardizeDependentTypeAnnotation: anno=%s delocalize=%s%n", anno, delocalize);
+        if (delocalize == true) {
+            System.out.printf("  context.arguments = %s%n", context.arguments);
+        }
+
         for (String value : getListOfExpressionElements(anno)) {
             List<String> expressionStrings =
                     AnnotationUtils.getElementValueArray(anno, value, String.class, true);
             List<String> standardizedStrings = new ArrayList<>();
             for (String expression : expressionStrings) {
                 String standardized =
-                        standardizeString(expression, context, localScope, useLocalScope);
+                        standardizeString(
+                                expression, context, localScope, useLocalScope, delocalize);
                 if (removeErroneousExpressions
                         && DependentTypesError.isExpressionError(standardized)) {
                     // nothing to do
@@ -824,7 +844,8 @@ public class DependentTypesHelper {
             }
             builder.setValue(value, standardizedStrings);
         }
-        return builder.build();
+        AnnotationMirror result = builder.build();
+        return result;
     }
 
     /** A visitor that standardizes Java expression strings in dependent type annotations. */

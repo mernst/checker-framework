@@ -1,5 +1,6 @@
 package org.checkerframework.dataflow.expression;
 
+import java.util.List;
 import java.util.Objects;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -88,11 +89,11 @@ public class ArrayAccess extends JavaExpression {
     }
 
     @Override
-    public String toString() {
+    public String toString(@Nullable List<JavaExpression> parameterIndex) {
         StringBuilder result = new StringBuilder();
-        result.append(receiver.toString());
+        result.append(receiver.toString(parameterIndex));
         result.append("[");
-        result.append(index.toString());
+        result.append(index.toString(parameterIndex));
         result.append("]");
         return result.toString();
     }

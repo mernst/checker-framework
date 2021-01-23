@@ -1,5 +1,6 @@
 package org.checkerframework.dataflow.expression;
 
+import java.util.List;
 import java.util.Objects;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -64,7 +65,7 @@ public class ValueLiteral extends JavaExpression {
     }
 
     @Override
-    public String toString() {
+    public String toString(@Nullable List<JavaExpression> parameterIndex) {
         if (TypesUtils.isString(type)) {
             return "\"" + value + "\"";
         } else if (type.getKind() == TypeKind.LONG) {
