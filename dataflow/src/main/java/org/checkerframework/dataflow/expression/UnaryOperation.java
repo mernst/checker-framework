@@ -1,6 +1,7 @@
 package org.checkerframework.dataflow.expression;
 
 import com.sun.source.tree.Tree;
+import java.util.List;
 import java.util.Objects;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -113,7 +114,7 @@ public class UnaryOperation extends JavaExpression {
     }
 
     @Override
-    public String toString() {
-        return operationKindToString(operationKind) + expr.toString();
+    public String toString(@Nullable List<JavaExpression> parameterIndex) {
+        return operationKindToString(operationKind) + expr.toString(parameterIndex);
     }
 }

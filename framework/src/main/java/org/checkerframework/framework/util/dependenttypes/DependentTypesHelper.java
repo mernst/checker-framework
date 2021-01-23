@@ -757,6 +757,10 @@ public class DependentTypesHelper {
         } catch (JavaExpressionParseUtil.JavaExpressionParseException e) {
             return new DependentTypesError(expression, e).toString();
         }
+        if (true) {
+            System.out.printf(
+                    "standardizeString(%s) (1) => %s%n", expression, result.toStringDebug());
+        }
         if (result == null) {
             return new DependentTypesError(expression, /*error message=*/ " ").toString();
         }
@@ -769,9 +773,6 @@ public class DependentTypesHelper {
             }
         }
         */
-        if (true) {
-            System.out.printf("standardizeString(%s) => %s%n", expression, result.toStringDebug());
-        }
         System.out.printf(
                 "args to toString: %s [%s] %s%n",
                 result, result.getClass(), delocalize ? context.arguments : null);
