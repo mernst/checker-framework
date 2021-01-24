@@ -774,6 +774,9 @@ public class DependentTypesHelper {
             }
         }
         if (false) {
+            System.out.printf("standardizeString(%s) => %s%n", expression, result.toStringDebug());
+        }
+        if (false) {
             System.out.printf(
                     "args to toString: %s [%s] %s%n",
                     result, result.getClass(), delocalize ? context.arguments : null);
