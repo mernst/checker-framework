@@ -180,19 +180,24 @@ public abstract class Contract {
                 AnnotationMirror standardized =
                         atypeFactory.standardizeAnnotationFromContract(
                                 annotation, context, pathToMethodDecl);
-                /*
-                        dth.standardizeAnnotationIfDependentType(
-                                context, pathToMethodDecl, annotation, UseLocalScope.YES, false);
-                if (standardized != null) {
-                */
                 if (false) {
                     System.out.printf(
                             "Contract.create:%n  annotation   = %s%n  standardized = %s%n",
                             annotation, standardized);
-                    annotation = standardized;
                 }
+                annotation = standardized;
                 /*
+                  // ALTERNATE CODE:
+                AnnotationMirror standardized =
+                        dth.standardizeAnnotationIfDependentType(
+                                context, pathToMethodDecl, annotation, UseLocalScope.YES, false);
+                if (standardized != null) {
+                if (false) {
+                    System.out.printf(
+                            "Contract.create:%n  annotation   = %s%n  standardized = %s%n",
+                            annotation, standardized);
                 }
+                annotation = standardized;
                 */
             }
         }

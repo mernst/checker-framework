@@ -180,6 +180,9 @@ public class ContractsFromMethod {
                                         factory,
                                         context,
                                         pathToMethodDecl));
+                if (false) {
+                    System.out.printf("Created contract: %s%n", contract);
+                }
                 result.add(contract);
             }
         }

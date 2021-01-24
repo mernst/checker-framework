@@ -82,6 +82,7 @@ import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
+import org.plumelib.util.SystemPlume;
 
 /**
  * The default analysis transfer function for the Checker Framework propagates information through
@@ -1077,8 +1078,16 @@ public abstract class CFAbstractTransfer<
         // add new information based on conditional postcondition
         processConditionalPostconditions(n, method, invocationTree, thenStore, elseStore);
 
-        return new ConditionalTransferResult<>(
-                finishValue(resValue, thenStore, elseStore), thenStore, elseStore);
+        TransferResult<V, S> result =
+                new ConditionalTransferResult<>(
+                        finishValue(resValue, thenStore, elseStore), thenStore, elseStore);
+        if (false) {
+            System.out.printf("visitMethodInvocation(%s, %s) => %s%n", n, in, result);
+            SystemPlume.sleep(100);
+            new Error("backtrace").printStackTrace();
+            SystemPlume.sleep(100);
+        }
+        return result;
     }
 
     @Override
@@ -1190,6 +1199,9 @@ public abstract class CFAbstractTransfer<
         ContractsFromMethod contractsUtils = analysis.atypeFactory.getContractsFromMethod();
         Set<ConditionalPostcondition> conditionalPostconditions =
                 contractsUtils.getConditionalPostconditions(methodElement);
+        if (false) {
+            System.out.printf("conditionalPostconditions = %s%n", conditionalPostconditions);
+        }
         processPostconditionsAndConditionalPostconditions(
                 invocationNode, invocationTree, thenStore, elseStore, conditionalPostconditions);
     }
@@ -1246,9 +1258,12 @@ public abstract class CFAbstractTransfer<
                     standardizeAnnotationFromContract(
                             anno,
                             methodUseContext,
+                            // TODO: Which is the right context?  do we need the invocation itself
+                            // to handle standardizing "this" and "#2" in contracts?
                             // This leaf is a method call, but the annotations apply to its
                             // postcondition, which is a sibling scope to the method call.
-                            pathToInvocation.getParentPath());
+                            // pathToInvocation.getParentPath()
+                            pathToInvocation);
             if (false) {
                 System.out.printf("standardizeAnnotationFromContract() => %s%n", standardizedUse);
             }
