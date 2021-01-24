@@ -932,6 +932,15 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         }
     }
 
+    /**
+     * Check the contracts written on a method declaration. Ensures that the postconditions hold on
+     * exit, and that the contracts are well-formed.
+     *
+     * @param methodTree the method declaration
+     * @param methodElement the method element
+     * @param formalParamNames the formal parameter names
+     * @param abstractMethod whether the method is abstract
+     */
     private void checkContractsAtMethodDeclaration(
             MethodTree methodTree,
             ExecutableElement methodElement,
