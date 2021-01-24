@@ -1748,9 +1748,11 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             AnnotationMirror necessaryAnnotation,
             AnnotationMirror inferredAnnotation,
             CFAbstractStore<?, ?> store) {
-        System.out.printf(
-                "checkContract:%n  %s%n  %s%n  %s%n",
-                expr, necessaryAnnotation, inferredAnnotation);
+        if (false) {
+            System.out.printf(
+                    "checkContract:%n  %s%n  %s%n  %s%n",
+                    expr, necessaryAnnotation, inferredAnnotation);
+        }
         return inferredAnnotation != null
                 && atypeFactory
                         .getQualifierHierarchy()

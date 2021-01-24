@@ -2454,11 +2454,13 @@ public abstract class GenericAnnotatedTypeFactory<
             AnnotationMirror annoFromContract,
             JavaExpressionContext flowExprContext,
             TreePath path) {
-        System.out.printf(
-                "standardizeAnnotationFromContract%n  annoFromContract=%s%n  path.getLeaf()=%s %s%n",
-                annoFromContract,
-                path.getLeaf().getKind(),
-                TreeUtils.toStringTruncated(path.getLeaf(), 65));
+        if (false) {
+            System.out.printf(
+                    "standardizeAnnotationFromContract%n  annoFromContract=%s%n  path.getLeaf()=%s %s%n",
+                    annoFromContract,
+                    path.getLeaf().getKind(),
+                    TreeUtils.toStringTruncated(path.getLeaf(), 65));
+        }
         DependentTypesHelper dependentTypesHelper = getDependentTypesHelper();
         if (dependentTypesHelper != null) {
             AnnotationMirror standardized =
@@ -2467,18 +2469,12 @@ public abstract class GenericAnnotatedTypeFactory<
                             flowExprContext, path, annoFromContract, UseLocalScope.NO, false);
             if (standardized != null) {
                 dependentTypesHelper.checkAnnotation(standardized, path.getLeaf());
-                System.out.printf(
-                        "standardizeAnnotationFromContract%n  annoFromContract=%s%n  standardized    =%s%n",
-                        annoFromContract, standardized);
-                if (path.getLeaf().getKind() == Tree.Kind.METHOD) {
-                    // TODO: delocalize
+                if (false) {
                     System.out.printf(
-                            "standardizeAnnotationFromContract  TODO: delocalize%n  annoFromContract=%s%n  => standardized =%s%n",
+                            "standardizeAnnotationFromContract%n  annoFromContract=%s%n  => standardized =%s%n",
                             annoFromContract, standardized);
-                    return standardized;
-                } else {
-                    return standardized;
                 }
+                return standardized;
             }
         }
         return annoFromContract;

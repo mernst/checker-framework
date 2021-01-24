@@ -773,9 +773,11 @@ public class DependentTypesHelper {
                 return constant.toString();
             }
         }
-        System.out.printf(
-                "args to toString: %s [%s] %s%n",
-                result, result.getClass(), delocalize ? context.arguments : null);
+        if (false) {
+            System.out.printf(
+                    "args to toString: %s [%s] %s%n",
+                    result, result.getClass(), delocalize ? context.arguments : null);
+        }
         return result.toString(delocalize ? context.arguments : null);
     }
 
@@ -847,9 +849,11 @@ public class DependentTypesHelper {
         }
 
         AnnotationMirror result = builder.build();
-        System.out.printf(
-                "standardizeDependentTypeAnnotation: anno=%s delocalize=%s%n  => %s%n",
-                anno, delocalize, result);
+        if (false) {
+            System.out.printf(
+                    "standardizeDependentTypeAnnotation: anno=%s delocalize=%s%n  => %s%n",
+                    anno, delocalize, result);
+        }
         return result;
     }
 
