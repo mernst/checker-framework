@@ -757,7 +757,7 @@ public class DependentTypesHelper {
         } catch (JavaExpressionParseUtil.JavaExpressionParseException e) {
             return new DependentTypesError(expression, e).toString();
         }
-        if (true) {
+        if (false) {
             System.out.printf(
                     "standardizeString(%s) (1) => %s%n", expression, result.toStringDebug());
         }
@@ -824,10 +824,13 @@ public class DependentTypesHelper {
                         factory.getProcessingEnv(), AnnotationUtils.annotationName(anno));
 
         boolean delocalize = localScope.getLeaf().getKind() == Tree.Kind.METHOD;
-        System.out.printf(
-                "standardizeDependentTypeAnnotation: anno=%s delocalize=%s%n", anno, delocalize);
-        if (delocalize == true) {
-            System.out.printf("  context.arguments = %s%n", context.arguments);
+        if (false) {
+            System.out.printf(
+                    "standardizeDependentTypeAnnotation: anno=%s delocalize=%s%n",
+                    anno, delocalize);
+            if (delocalize == true) {
+                System.out.printf("  context.arguments = %s%n", context.arguments);
+            }
         }
 
         for (String value : getListOfExpressionElements(anno)) {

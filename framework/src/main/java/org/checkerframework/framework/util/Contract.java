@@ -165,9 +165,11 @@ public abstract class Contract {
         if ((ensuresQualifierIf != null) != (kind == Kind.CONDITIONALPOSTCONDITION)) {
             throw new BugInCF("Mismatch: ensuresQualifierIf=%s, kind=%s", ensuresQualifierIf, kind);
         }
-        System.out.printf(
-                "Contract.create(kind=%s, expression=%s, ensuresQualifierIf=%s)%n  annotation=%s%n  contractAnnotation=%s%n",
-                kind, expression, ensuresQualifierIf, annotation, contractAnnotation);
+        if (false) {
+            System.out.printf(
+                    "Contract.create(kind=%s, expression=%s, ensuresQualifierIf=%s)%n  annotation=%s%n  contractAnnotation=%s%n",
+                    kind, expression, ensuresQualifierIf, annotation, contractAnnotation);
+        }
 
         // pathToMethodDecl is null if the method is not declared in source code.
         // TODO: The annotations still need to be standardized in that case.  We don't currently
@@ -183,10 +185,12 @@ public abstract class Contract {
                                 context, pathToMethodDecl, annotation, UseLocalScope.YES, false);
                 if (standardized != null) {
                 */
-                System.out.printf(
-                        "Contract.create:%n  annotation   = %s%n  standardized = %s%n",
-                        annotation, standardized);
-                annotation = standardized;
+                if (false) {
+                    System.out.printf(
+                            "Contract.create:%n  annotation   = %s%n  standardized = %s%n",
+                            annotation, standardized);
+                    annotation = standardized;
+                }
                 /*
                 }
                 */
