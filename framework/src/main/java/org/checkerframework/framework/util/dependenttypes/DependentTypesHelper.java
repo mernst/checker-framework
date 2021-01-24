@@ -771,6 +771,9 @@ public class DependentTypesHelper {
                 return constant.toString();
             }
         }
+        if (false) {
+            System.out.printf("standardizeString(%s) => %s%n", expression, result.toStringDebug());
+        }
         return result.toString();
     }
 
