@@ -2468,7 +2468,8 @@ public abstract class GenericAnnotatedTypeFactory<
                             // TODO: UseLocalScope.YES ought to work here, maybe is even necessary.
                             flowExprContext, path, annoFromContract, UseLocalScope.NO, false);
             if (standardized != null) {
-                dependentTypesHelper.checkAnnotation(standardized, path.getLeaf());
+                dependentTypesHelper.checkAnnotation(
+                        standardized, path == null ? null : path.getLeaf());
                 if (false) {
                     System.out.printf(
                             "standardizeAnnotationFromContract%n  annoFromContract=%s%n  => standardized =%s%n",

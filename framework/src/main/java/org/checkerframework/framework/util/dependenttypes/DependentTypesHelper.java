@@ -823,7 +823,16 @@ public class DependentTypesHelper {
                 new AnnotationBuilder(
                         factory.getProcessingEnv(), AnnotationUtils.annotationName(anno));
 
-        boolean delocalize = localScope.getLeaf().getKind() == Tree.Kind.METHOD;
+        if (false) {
+            if (localScope == null || localScope.getLeaf() == null) {
+                throw new BugInCF(
+                        "standardizeDependentTypeAnnotation%n  context: %s%n  localScope: %s%n  anno: %s%n  useLocalScope: %s%n  removeErroneousExpressions: %s",
+                        context, localScope, anno, useLocalScope, removeErroneousExpressions);
+            }
+        }
+        // localScope can be null if the method is not from source code
+        boolean delocalize =
+                localScope != null && localScope.getLeaf().getKind() == Tree.Kind.METHOD;
         if (false) {
             System.out.printf(
                     "standardizeDependentTypeAnnotation: anno=%s delocalize=%s%n",
@@ -1084,9 +1093,11 @@ public class DependentTypesHelper {
         JavaExpressionContext context =
                 JavaExpressionContext.buildContextForMethodDeclaration(
                         node, enclosingType, factory.getChecker());
+        TreePath methodDeclPath = factory.getPath(node);
+        TreePath path = methodDeclPath == null ? null : methodDeclPath.getParentPath();
         for (int i = 0; i < methodType.getTypeVariables().size(); i++) {
             AnnotatedTypeMirror atm = methodType.getTypeVariables().get(i);
-            standardizeUseLocalScope(context, factory.getPath(node).getParentPath(), atm);
+            standardizeUseLocalScope(context, path, atm);
             checkType(atm, node.getTypeParameters().get(i));
         }
     }
