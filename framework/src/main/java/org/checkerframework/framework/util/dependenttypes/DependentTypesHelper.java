@@ -845,7 +845,11 @@ public class DependentTypesHelper {
             }
             builder.setValue(value, standardizedStrings);
         }
+
         AnnotationMirror result = builder.build();
+        System.out.printf(
+                "standardizeDependentTypeAnnotation: anno=%s delocalize=%s%n  => %s%n",
+                anno, delocalize, result);
         return result;
     }
 

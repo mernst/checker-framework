@@ -565,7 +565,7 @@ public abstract class CFAbstractTransfer<
         Set<Precondition> preconditions = contractsUtils.getPreconditions(methodElement);
 
         for (Precondition p : preconditions) {
-            String expression = p.expression;
+            String exprString = p.expression;
             AnnotationMirror annotation = p.annotation;
 
             if (methodUseContext == null) {
@@ -574,22 +574,23 @@ public abstract class CFAbstractTransfer<
                                 methodDeclTree, methodAst.getClassTree(), analysis.checker);
             }
 
-            TreePath localScope = analysis.atypeFactory.getPath(methodDeclTree);
+            TreePath methodDeclPath = analysis.atypeFactory.getPath(methodDeclTree);
+            TreePath methodBodyPath = new TreePath(methodDeclPath, methodDeclTree.getBody());
 
             annotation =
-                    standardizeAnnotationFromContract(annotation, methodUseContext, localScope);
+                    standardizeAnnotationFromContract(annotation, methodUseContext, methodBodyPath);
 
             try {
                 // TODO: currently, these expressions are parsed at the
                 // declaration (i.e. here) and for every use. this could
                 // be optimized to store the result the first time.
                 // (same for other annotations)
-                JavaExpression expr =
+                JavaExpression exprJe =
                         // JavaExpressionParseUtil.parse(
-                        //         expression, methodUseContext, localScope, false);
+                        //         exprString, methodUseContext, methodDeclPath, false);
                         JavaExpressionParseUtil.parseUseMethodScope(
-                                expression, methodUseContext, localScope);
-                initialStore.insertValue(expr, annotation);
+                                exprString, methodUseContext, methodDeclPath);
+                initialStore.insertValue(exprJe, annotation);
             } catch (JavaExpressionParseException e) {
                 // Errors are reported by BaseTypeVisitor.checkContractsAtMethodDeclaration().
             }

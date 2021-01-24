@@ -2454,10 +2454,16 @@ public abstract class GenericAnnotatedTypeFactory<
             AnnotationMirror annoFromContract,
             JavaExpressionContext flowExprContext,
             TreePath path) {
+        System.out.printf(
+                "standardizeAnnotationFromContract%n  annoFromContract=%s%n  path.getLeaf()=%s %s%n",
+                annoFromContract,
+                path.getLeaf().getKind(),
+                TreeUtils.toStringTruncated(path.getLeaf(), 65));
         DependentTypesHelper dependentTypesHelper = getDependentTypesHelper();
         if (dependentTypesHelper != null) {
             AnnotationMirror standardized =
                     dependentTypesHelper.standardizeAnnotationIfDependentType(
+                            // TODO: UseLocalScope.YES ought to work here, maybe is even necessary.
                             flowExprContext, path, annoFromContract, UseLocalScope.NO, false);
             if (standardized != null) {
                 dependentTypesHelper.checkAnnotation(standardized, path.getLeaf());
@@ -2467,7 +2473,7 @@ public abstract class GenericAnnotatedTypeFactory<
                 if (path.getLeaf().getKind() == Tree.Kind.METHOD) {
                     // TODO: delocalize
                     System.out.printf(
-                            "standardizeAnnotationFromContract  TODO: delocalize%n  annoFromContract=%s%n  standardized    =%s%n",
+                            "standardizeAnnotationFromContract  TODO: delocalize%n  annoFromContract=%s%n  => standardized =%s%n",
                             annoFromContract, standardized);
                     return standardized;
                 } else {

@@ -62,7 +62,7 @@ public class OffsetDependentTypesHelper extends DependentTypesHelper {
             result = ValueCheckerUtils.optimize(result, vatf);
         }
 
-        return result.toString();
+        return result.toString(delocalize ? context.arguments : null);
     }
 
     @Override

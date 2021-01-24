@@ -58,11 +58,13 @@ public class LocalVariable extends JavaExpression {
     public String toString(@Nullable List<JavaExpression> parameterIndex) {
         String result = element.toString();
         if (parameterIndex != null) {
-            System.out.printf(
-                    "LocalVariable.toString: %s [%s] %d%n",
-                    this.toString(null), this.getClass(), parameterIndex.size());
-            for (JavaExpression je : parameterIndex) {
-                System.out.printf("  %s [%s]%n", je.toString(null), je.getClass());
+            if (false) {
+                System.out.printf(
+                        "LocalVariable.toString: %s [%s] %d%n",
+                        this.toString(null), this.getClass(), parameterIndex.size());
+                for (JavaExpression je : parameterIndex) {
+                    System.out.printf("  %s [%s]%n", je.toString(null), je.getClass());
+                }
             }
             int zeroBased = parameterIndex.indexOf(this);
             if (zeroBased != -1) {
