@@ -2465,8 +2465,7 @@ public abstract class GenericAnnotatedTypeFactory<
         if (dependentTypesHelper != null) {
             AnnotationMirror standardized =
                     dependentTypesHelper.standardizeAnnotationIfDependentType(
-                            // TODO: UseLocalScope.YES ought to work here, maybe is even necessary.
-                            flowExprContext, path, annoFromContract, UseLocalScope.NO, false);
+                            flowExprContext, path, annoFromContract, UseLocalScope.YES, false);
             if (standardized != null) {
                 dependentTypesHelper.checkAnnotation(
                         standardized, path == null ? null : path.getLeaf());
