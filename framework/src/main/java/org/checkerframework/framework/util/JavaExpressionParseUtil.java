@@ -1304,7 +1304,7 @@ public class JavaExpressionParseUtil {
                 new JavaExpressionContext(receiverJe, /*arguments=*/ null, provider.getChecker());
         // TODO: Why not use local scope?  (Really: Why was fromVariableTreeDoNotUseLocalScope
         // called at all?)
-        return parse(tree.getName().toString(), context, provider.getPath(tree), UseLocalScope.NO);
+        return parse(tree.getName().toString(), context, provider.getPath(tree), UseLocalScope.YES);
     }
 
     /**
