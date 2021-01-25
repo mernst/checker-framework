@@ -964,6 +964,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                         methodTree, pathToMethodDecl, checker);
 
         for (Contract contract : contracts) {
+            if (false) {
+                System.out.printf("contract: %s%n", contract);
+            }
             String exprString = contract.expression;
 
             JavaExpression exprJe = null;
@@ -3728,6 +3731,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         }
 
         private void checkPreAndPostConditions() {
+            if (false) {
+                System.out.printf("checkPreAndPostConditions%n");
+            }
             String msgKey = methodReference ? "methodref" : "override";
             if (methodReference) {
                 // TODO: Support postconditions and method references.
@@ -3766,6 +3772,17 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     resolveContracts(subPre, overrider);
             @SuppressWarnings("compilermessages")
             @CompilerMessageKey String premsg = "contracts.precondition." + msgKey + ".invalid";
+            if (false) {
+                System.out.printf(
+                        "About to call checkContractsSubset(%s, %s,%n %s, %s,%n %s,%n %s,%n %s)%n",
+                        overriderMeth,
+                        overriderTyp,
+                        overriddenMeth,
+                        overriddenTyp,
+                        subPre2,
+                        superPre2,
+                        premsg);
+            }
             checkContractsSubset(
                     overriderMeth,
                     overriderTyp,
@@ -4201,10 +4218,13 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      */
     private Set<Pair<JavaExpression, AnnotationMirror>> resolveContracts(
             Set<? extends Contract> contractSet, AnnotatedExecutableType method) {
+        if (false) {
+            System.out.printf("resolveContracts(%s, %s)%n", method, contractSet);
+        }
         Set<Pair<JavaExpression, AnnotationMirror>> result = new HashSet<>();
         MethodTree methodTree = visitorState.getMethodTree();
         TreePath path = atypeFactory.getPath(methodTree);
-        JavaExpressionContext flowExprContext = null;
+        JavaExpressionContext flowExprContext = null; // lazily initialized, for efficiency
         for (Contract p : contractSet) {
             String expression = p.expression;
             AnnotationMirror annotation = p.annotation;
@@ -4222,14 +4242,20 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 // TODO: currently, these expressions are parsed many times.
                 // This could be optimized to store the result the first time.
                 // (same for other annotations)
-                JavaExpression expr =
+                JavaExpression expressionJe =
                         JavaExpressionParseUtil.parseUseMethodScope(
                                 expression, flowExprContext, path);
-                result.add(Pair.of(expr, annotation));
+                result.add(Pair.of(expressionJe, annotation));
             } catch (JavaExpressionParseException e) {
+                if (false) {
+                    System.out.printf("e = %s%n", e);
+                }
                 // report errors here
                 checker.report(methodTree, e.getDiagMessage());
             }
+        }
+        if (false) {
+            System.out.printf("resolveContracts(%s, %s) => %s%n", method, contractSet, result);
         }
         return result;
     }

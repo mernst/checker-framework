@@ -133,12 +133,12 @@ public class ContractsFromMethod {
         }
 
         Set<T> result = new LinkedHashSet<>();
-        // Check for a single contract annotation.
+        // Check for a single framework-defined contract annotation.
         AnnotationMirror frameworkContractAnno =
                 factory.getDeclAnnotation(executableElement, kind.frameworkContractClass);
         result.addAll(getContract(kind, frameworkContractAnno, clazz, context, pathToMethodDecl));
 
-        // Check for a wrapper around contract annotations.
+        // Check for a framework-defined wrapper around contract annotations.
         AnnotationMirror frameworkContractAnnos =
                 factory.getDeclAnnotation(executableElement, kind.frameworkContractsClass);
         if (frameworkContractAnnos != null) {
@@ -154,6 +154,9 @@ public class ContractsFromMethod {
         List<Pair<AnnotationMirror, AnnotationMirror>> declAnnotations =
                 factory.getDeclAnnotationWithMetaAnnotation(executableElement, kind.metaAnnotation);
         for (Pair<AnnotationMirror, AnnotationMirror> r : declAnnotations) {
+            if (false) {
+                System.out.printf("r = %s%n", r);
+            }
             AnnotationMirror anno = r.first;
             // contractAnno is the meta-annotation on anno.
             AnnotationMirror contractAnno = r.second;
