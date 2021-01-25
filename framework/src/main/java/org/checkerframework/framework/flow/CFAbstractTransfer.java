@@ -848,6 +848,10 @@ public abstract class CFAbstractTransfer<
      * #splitAssignments} should be called, and the new type should be inserted into the store for
      * each of the resulting nodes.
      *
+     * @param firstNode the node that might be more precise
+     * @param secondNode the node whose type to possibly refine
+     * @param firstValue the abstract value that might be more precise
+     * @param secondValue the abstract value that might be less precise
      * @param res the previous result
      * @param notEqualTo if true, indicates that the logic is flipped (i.e., the information is
      *     added to the {@code elseStore} instead of the {@code thenStore}) for a not-equal
