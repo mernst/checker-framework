@@ -4218,7 +4218,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      * them to the correct {@link JavaExpression} and {@link AnnotationMirror}.
      *
      * @param contractSet a set of contracts
-     * @param the method that the contracts are for
+     * @param the method method that the contracts are for
      * @return pairs of (expression, AnnotationMirror), which are resolved contracts
      */
     private Set<Pair<JavaExpression, AnnotationMirror>> resolveContracts(
