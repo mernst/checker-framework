@@ -3731,15 +3731,16 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         }
 
         private void checkPreAndPostConditions() {
-            if (false) {
-                System.out.printf("checkPreAndPostConditions%n");
-            }
             String msgKey = methodReference ? "methodref" : "override";
             if (methodReference) {
                 // TODO: Support postconditions and method references.
                 // The parse context always expects instance methods, but method references can be
                 // static.
                 return;
+            }
+
+            if (false) {
+                System.out.printf("checkPreAndPostConditions%n");
             }
 
             ContractsFromMethod contractsUtils = atypeFactory.getContractsFromMethod();
@@ -4215,6 +4216,10 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     /**
      * Takes a set of contracts identified by their expression and annotation strings and resolves
      * them to the correct {@link JavaExpression} and {@link AnnotationMirror}.
+     *
+     * @param contractSet a set of contracts
+     * @param the method that the contracts are for
+     * @return pairs of (expression, AnnotationMirror), which are resolved contracts
      */
     private Set<Pair<JavaExpression, AnnotationMirror>> resolveContracts(
             Set<? extends Contract> contractSet, AnnotatedExecutableType method) {
