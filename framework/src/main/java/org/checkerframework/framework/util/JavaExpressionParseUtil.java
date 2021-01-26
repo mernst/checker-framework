@@ -643,7 +643,8 @@ public class JavaExpressionParseUtil {
             // Parse the rest, with a new receiver.
             JavaExpressionContext newContext =
                     context.copyChangeToParsingMemberOfReceiver(receiver);
-            return visit(expr.getNameAsExpression(), newContext);
+            JavaExpression result = visit(expr.getNameAsExpression(), newContext);
+            return result;
         }
 
         // expr is a Class literal
