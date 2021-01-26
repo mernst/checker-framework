@@ -176,7 +176,7 @@ public abstract class Contract {
         // TODO: The annotations still need to be standardized in that case.  We don't currently
         // have a way to standardize such annotations.
         if (pathToMethodDecl != null) {
-            DependentTypesHelper dth = atypeFactory.getDependentTypesHelper();
+            DependentTypesHelper dth = atypeFactory.getDependentTypesHelperForQualifiers();
             if (dth != null) {
                 AnnotationMirror standardized =
                         atypeFactory.standardizeAnnotationFromContract(

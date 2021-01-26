@@ -612,7 +612,7 @@ public abstract class CFAbstractTransfer<
             TreePath path) {
         // TODO: common implementation with
         // GenericAnnotatedTypeFactory.standardizeAnnotationFromContract.
-        DependentTypesHelper dependentTypesHelper = analysis.dependentTypesHelper;
+        DependentTypesHelper dependentTypesHelper = analysis.dependentTypesHelperForContracts;
         if (dependentTypesHelper != null) {
             AnnotationMirror standardized =
                     dependentTypesHelper.standardizeAnnotationIfDependentType(
