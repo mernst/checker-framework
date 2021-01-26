@@ -148,7 +148,7 @@ public class LockAnnotatedTypeFactory
     }
 
     @Override
-    protected DependentTypesHelper createDependentTypesHelper() {
+    protected DependentTypesHelper createDependentTypesHelperForContracts() {
         return new DependentTypesHelper(this) {
             @Override
             protected void reportErrors(Tree errorTree, List<DependentTypesError> errors) {

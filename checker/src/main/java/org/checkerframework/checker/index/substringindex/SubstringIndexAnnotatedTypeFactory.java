@@ -66,7 +66,7 @@ public class SubstringIndexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
      * Substring Index Checker annotations.
      */
     @Override
-    protected DependentTypesHelper createDependentTypesHelper() {
+    protected DependentTypesHelper createDependentTypesHelperForContracts() {
         return new OffsetDependentTypesHelper(this);
     }
 

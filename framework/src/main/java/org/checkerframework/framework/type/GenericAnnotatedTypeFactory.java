@@ -333,7 +333,7 @@ public abstract class GenericAnnotatedTypeFactory<
     protected void postInit() {
         super.postInit();
 
-        this.dependentTypesHelper = createDependentTypesHelper();
+        this.dependentTypesHelper = createDependentTypesHelperForContracts();
         this.defaults = createAndInitQualifierDefaults();
         this.treeAnnotator = createTreeAnnotator();
         this.typeAnnotator = createTypeAnnotator();
@@ -572,7 +572,7 @@ public abstract class GenericAnnotatedTypeFactory<
      *
      * @return a new {@link DependentTypesHelper}
      */
-    protected DependentTypesHelper createDependentTypesHelper() {
+    protected DependentTypesHelper createDependentTypesHelperForContracts() {
         DependentTypesHelper helper = new DependentTypesHelper(this);
         if (helper.hasDependentAnnotations()) {
             return helper;

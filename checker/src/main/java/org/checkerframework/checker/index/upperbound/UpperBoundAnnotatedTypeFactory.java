@@ -273,7 +273,7 @@ public class UpperBoundAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
 
     @Override
-    protected DependentTypesHelper createDependentTypesHelper() {
+    protected DependentTypesHelper createDependentTypesHelperForContracts() {
         return new OffsetDependentTypesHelper(this);
     }
 
