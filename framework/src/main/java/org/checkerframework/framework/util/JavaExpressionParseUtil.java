@@ -88,6 +88,7 @@ import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 import org.checkerframework.javacutil.trees.TreeBuilder;
 import org.plumelib.util.CollectionsPlume;
+import org.plumelib.util.SystemPlume;
 
 /**
  * Helper methods to parse a string that represents a restricted Java expression.
