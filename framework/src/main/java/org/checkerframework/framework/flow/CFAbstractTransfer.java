@@ -566,7 +566,7 @@ public abstract class CFAbstractTransfer<
         Set<Precondition> preconditions = contractsUtils.getPreconditions(methodElement);
 
         for (Precondition p : preconditions) {
-            String exprString = p.expression;
+            String expressionString = p.expressionString;
             AnnotationMirror annotation = p.annotation;
 
             if (methodUseContext == null) {
@@ -588,9 +588,9 @@ public abstract class CFAbstractTransfer<
                 // (same for other annotations)
                 JavaExpression exprJe =
                         // JavaExpressionParseUtil.parse(
-                        //         exprString, methodUseContext, methodDeclPath, false);
+                        //         expressionString, methodUseContext, methodDeclPath, false);
                         JavaExpressionParseUtil.parseUseMethodScope(
-                                exprString, methodUseContext, methodDeclPath);
+                                expressionString, methodUseContext, methodDeclPath);
                 initialStore.insertValue(exprJe, annotation);
             } catch (JavaExpressionParseException e) {
                 // Errors are reported by BaseTypeVisitor.checkContractsAtMethodDeclaration().
@@ -1233,7 +1233,7 @@ public abstract class CFAbstractTransfer<
         JavaExpressionContext methodUseContext = null; // lazily initialized, then non-null
 
         for (Contract p : postconditions) {
-            String expression = p.expression;
+            String expressionString = p.expressionString;
             // The annotation as written in the contract.  Will later be reassigned to the
             // standardized version of the annotation.
             AnnotationMirror anno = p.annotation;
@@ -1279,7 +1279,7 @@ public abstract class CFAbstractTransfer<
                         // JavaExpressionParseUtil.parse(
                         //         expression, methodUseContext, pathToInvocation, false);
                         JavaExpressionParseUtil.parseUseMethodScope(
-                                expression, methodUseContext, pathToInvocation);
+                                expressionString, methodUseContext, pathToInvocation);
                 // "insertOrRefine" is called so that the postcondition information is added to any
                 // existing information rather than replacing it.  If the called method is not
                 // side-effect-free, then the values that might have been changed by the method call
