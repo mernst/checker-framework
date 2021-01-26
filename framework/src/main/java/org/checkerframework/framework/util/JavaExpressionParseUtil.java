@@ -166,6 +166,9 @@ public class JavaExpressionParseUtil {
 
         JavaExpression result;
         try {
+            if (false) {
+                System.out.printf("context=%s%n", context);
+            }
             context = context.copyAndSetUseLocalScope(useLocalScope);
             ProcessingEnvironment env = context.checker.getProcessingEnvironment();
             result =
@@ -183,6 +186,11 @@ public class JavaExpressionParseUtil {
                 // At a call site, "#1" may be transformed to "Something.class", so don't throw an
                 // exception in that case.
                 && !ANCHORED_PARAMETER_PATTERN.matcher(expression).matches()) {
+            if (false) {
+                SystemPlume.sleep(100);
+                new Error("backtrace").printStackTrace();
+                SystemPlume.sleep(100);
+            }
             throw constructFlowexprParseError(
                     expression,
                     String.format(

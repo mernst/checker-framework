@@ -165,7 +165,8 @@ public abstract class Contract {
         if ((ensuresQualifierIf != null) != (kind == Kind.CONDITIONALPOSTCONDITION)) {
             throw new BugInCF("Mismatch: ensuresQualifierIf=%s, kind=%s", ensuresQualifierIf, kind);
         }
-        if (false) {
+        boolean debug = false;
+        if (debug) {
             System.out.printf(
                     "Contract.create(kind=%s, expressionString=%s, ensuresQualifierIf=%s)%n  annotation=%s%n  contractAnnotation=%s%n",
                     kind, expressionString, ensuresQualifierIf, annotation, contractAnnotation);
@@ -180,7 +181,7 @@ public abstract class Contract {
                 AnnotationMirror standardized =
                         atypeFactory.standardizeAnnotationFromContract(
                                 annotation, context, pathToMethodDecl);
-                if (false) {
+                if (debug) {
                     System.out.printf(
                             "Contract.create:%n  annotation   = %s%n  standardized = %s%n",
                             annotation, standardized);

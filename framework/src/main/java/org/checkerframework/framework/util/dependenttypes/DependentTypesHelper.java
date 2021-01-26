@@ -749,13 +749,17 @@ public class DependentTypesHelper {
         if (DependentTypesError.isExpressionError(expression)) {
             return expression;
         }
+        boolean debug = false;
         JavaExpression result;
         try {
             result = JavaExpressionParseUtil.parse(expression, context, localScope, useLocalScope);
         } catch (JavaExpressionParseUtil.JavaExpressionParseException e) {
+            if (debug) {
+                System.out.printf("standardizeString(%s) => %s%n", expression, e);
+            }
             return new DependentTypesError(expression, e).toString();
         }
-        if (false) {
+        if (debug) {
             System.out.printf(
                     "standardizeString(%s) (1) => %s%n", expression, result.toStringDebug());
         }
@@ -771,10 +775,10 @@ public class DependentTypesHelper {
                 return constant.toString();
             }
         }
-        if (false) {
+        if (debug) {
             System.out.printf("standardizeString(%s) => %s%n", expression, result.toStringDebug());
         }
-        if (false) {
+        if (debug) {
             System.out.printf(
                     "args to toString: %s [%s] %s%n",
                     result, result.getClass(), delocalize ? context.arguments : null);

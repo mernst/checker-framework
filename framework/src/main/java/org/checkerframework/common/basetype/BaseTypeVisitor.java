@@ -1050,9 +1050,13 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     /**
      * Check that the parameters used in {@code stringExpr} are effectively final for method {@code
      * method}.
+     *
+     * @param methodDeclTree a method declaration
+     * @param method the method
+     * @param stringExpr a Java expression
      */
     private void checkParametersAreEffectivelyFinal(
-            MethodTree node, ExecutableElement method, String stringExpr) {
+            MethodTree methodDeclTree, ExecutableElement method, String stringExpr) {
         // check that all parameters used in the expression are
         // effectively final, so that they cannot be modified
         List<Integer> parameterIndices = JavaExpressionParseUtil.parameterIndices(stringExpr);
@@ -1064,7 +1068,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             }
             VariableElement parameter = method.getParameters().get(idx - 1);
             if (!ElementUtils.isEffectivelyFinal(parameter)) {
-                checker.reportError(node, "flowexpr.parameter.not.final", "#" + idx, stringExpr);
+                checker.reportError(
+                        methodDeclTree, "flowexpr.parameter.not.final", "#" + idx, stringExpr);
             }
         }
     }
