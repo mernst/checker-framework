@@ -29,7 +29,7 @@ public class OffsetDependentTypesHelper extends DependentTypesHelper {
     }
 
     @Override
-    protected String standardizeString(
+    public String standardizeString(
             final String expression,
             JavaExpressionContext context,
             TreePath localScope,
