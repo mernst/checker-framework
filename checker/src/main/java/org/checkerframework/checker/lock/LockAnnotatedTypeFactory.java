@@ -167,7 +167,7 @@ public class LockAnnotatedTypeFactory
             }
 
             @Override
-            protected String standardizeString(
+            public String standardizeString(
                     String expression,
                     JavaExpressionContext context,
                     TreePath localScope,

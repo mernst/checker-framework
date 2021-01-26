@@ -738,9 +738,10 @@ public class DependentTypesHelper {
      * @param context the context
      * @param localScope the local scope
      * @param useLocalScope whether {@code localScope} should be used to resolve identifiers
+     * @param delocalize if true, use "#2" instead of names for formal parameters
      * @return the standardized version of the Java expression
      */
-    protected String standardizeString(
+    public String standardizeString(
             String expression,
             JavaExpressionContext context,
             TreePath localScope,

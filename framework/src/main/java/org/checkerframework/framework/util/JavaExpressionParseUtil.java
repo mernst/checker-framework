@@ -383,6 +383,9 @@ public class JavaExpressionParseUtil {
                         boolean isOriginalReceiver = context.receiver instanceof ThisReference;
                         return getFieldJavaExpression(varElem, context, isOriginalReceiver);
                     } else {
+                        if (false) {
+                            System.out.printf("A local variable: %s%n", varElem);
+                        }
                         return new LocalVariable(varElem);
                     }
                 }
