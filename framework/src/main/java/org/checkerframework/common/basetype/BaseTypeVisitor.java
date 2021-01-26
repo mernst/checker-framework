@@ -967,26 +967,30 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             if (false) {
                 System.out.printf("contract: %s%n", contract);
             }
-            String exprString = contract.expression;
+            String expressionString = contract.expressionString;
 
             JavaExpression exprJe = null;
             try {
                 exprJe =
                         JavaExpressionParseUtil.parse(
                                 // TODO: I guess I need to adjust the path here.
-                                exprString, flowExprContext, pathToMethodDecl, UseLocalScope.YES);
+                                expressionString,
+                                flowExprContext,
+                                pathToMethodDecl,
+                                UseLocalScope.YES);
             } catch (JavaExpressionParseException e) {
                 checker.report(methodTree, e.getDiagMessage());
             }
             // If exprJe is null, then an error was issued above.
             if (exprJe != null && !CFAbstractStore.canInsertJavaExpression(exprJe)) {
-                checker.reportError(methodTree, "flowexpr.parse.error", exprString);
+                checker.reportError(methodTree, "flowexpr.parse.error", expressionString);
                 exprJe = null;
             }
             if (exprJe != null && !abstractMethod && contract.kind != Contract.Kind.PRECONDITION) {
                 // Check the contract, which is a postcondition.
                 // Preconditions are checked at method invocations, not declarations.
 
+                // Undo delocalization
                 AnnotationMirror annotation =
                         atypeFactory.standardizeAnnotationFromContract(
                                 contract.annotation,
@@ -1010,7 +1014,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 }
             }
 
-            if (formalParamNames != null && formalParamNames.contains(exprString)) {
+            if (formalParamNames != null && formalParamNames.contains(expressionString)) {
                 String locationOfExpression =
                         contract.kind.errorKey
                                 + " "
@@ -1025,21 +1029,21 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                             "expression.parameter.name.invalid",
                             locationOfExpression,
                             methodTree.getName().toString(),
-                            exprString,
-                            formalParamNames.indexOf(exprString) + 1);
+                            expressionString,
+                            formalParamNames.indexOf(expressionString) + 1);
                 } else {
                     checker.reportWarning(
                             methodTree,
                             "expression.parameter.name.shadows.field",
                             locationOfExpression,
                             methodTree.getName().toString(),
-                            exprString,
-                            exprString,
-                            formalParamNames.indexOf(exprString) + 1);
+                            expressionString,
+                            expressionString,
+                            formalParamNames.indexOf(expressionString) + 1);
                 }
             }
 
-            checkParametersAreEffectivelyFinal(methodTree, methodElement, exprString);
+            checkParametersAreEffectivelyFinal(methodTree, methodElement, expressionString);
         }
     }
 
@@ -1704,7 +1708,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
         for (Contract c : preconditions) {
             Precondition p = (Precondition) c;
-            String exprString = p.expression;
+            String expressionString = p.expressionString;
             AnnotationMirror anno = p.annotation;
 
             anno =
@@ -1715,7 +1719,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             try {
                 exprJe =
                         JavaExpressionParseUtil.parseUseMethodScope(
-                                exprString, flowExprContext, getCurrentPath());
+                                expressionString, flowExprContext, getCurrentPath());
             } catch (JavaExpressionParseException e) {
                 // report errors here
                 checker.report(tree, e.getDiagMessage());
@@ -1734,10 +1738,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 inferredAnno = hierarchy.findAnnotationInSameHierarchy(annos, anno);
             }
             if (!checkContract(exprJe, anno, inferredAnno, store)) {
-                String expressionString =
-                        (exprJe == null || exprJe.containsUnknown())
-                                ? exprString
-                                : exprJe.toString();
+                if (exprJe != null && !exprJe.containsUnknown()) {
+                    expressionString = exprJe.toString();
+                }
                 checker.reportError(
                         tree,
                         "contracts.precondition.not.satisfied",
@@ -4164,7 +4167,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         for (Contract c : conditionalPostconditions) {
             ConditionalPostcondition p = (ConditionalPostcondition) c;
             if (p.resultValue == b) {
-                result.add(new Postcondition(p.expression, p.annotation, p.contractAnnotation));
+                result.add(
+                        new Postcondition(p.expressionString, p.annotation, p.contractAnnotation));
             }
         }
         return result;
@@ -4231,7 +4235,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         TreePath path = atypeFactory.getPath(methodTree);
         JavaExpressionContext flowExprContext = null; // lazily initialized, for efficiency
         for (Contract p : contractSet) {
-            String expression = p.expression;
+            String expressionString = p.expressionString;
             AnnotationMirror annotation = p.annotation;
             if (flowExprContext == null) {
                 flowExprContext =
@@ -4249,7 +4253,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 // (same for other annotations)
                 JavaExpression expressionJe =
                         JavaExpressionParseUtil.parseUseMethodScope(
-                                expression, flowExprContext, path);
+                                expressionString, flowExprContext, path);
                 result.add(Pair.of(expressionJe, annotation));
             } catch (JavaExpressionParseException e) {
                 if (false) {
