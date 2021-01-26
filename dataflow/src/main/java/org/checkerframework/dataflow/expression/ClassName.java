@@ -11,8 +11,14 @@ import org.checkerframework.dataflow.analysis.Store;
  * invocation.
  */
 public class ClassName extends JavaExpression {
+    /** The string representation of the type of this. */
     private final String typeString;
 
+    /**
+     * Creates a new ClassName object for the given type.
+     *
+     * @param type the type for this ClassName
+     */
     public ClassName(TypeMirror type) {
         super(type);
         typeString = type.toString();
@@ -34,6 +40,9 @@ public class ClassName extends JavaExpression {
 
     @Override
     public String toString(@Nullable List<JavaExpression> parameterIndex) {
+        if (typeString.endsWith(">")) {
+            return typeString.substring(0, typeString.indexOf("<")) + ".class";
+        }
         return typeString + ".class";
     }
 
