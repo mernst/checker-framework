@@ -32,6 +32,7 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.type.AnnotatedTypeFactory.ParameterizedExecutableType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.javacutil.AnnotationBuilder;
@@ -142,17 +143,21 @@ public class GuiEffectVisitor extends BaseTypeVisitor<GuiEffectTypeFactory> {
 
         public GuiEffectOverrideChecker(
                 Tree overriderTree,
-                AnnotatedTypeMirror.AnnotatedExecutableType overrider,
+                TreePath overriderDeclPath,
+                AnnotatedExecutableType overrider,
                 AnnotatedTypeMirror overridingType,
                 AnnotatedTypeMirror overridingReturnType,
+                ExecutableElement overriddenElt,
                 AnnotatedExecutableType overridden,
-                AnnotatedTypeMirror.AnnotatedDeclaredType overriddenType,
+                AnnotatedDeclaredType overriddenType,
                 AnnotatedTypeMirror overriddenReturnType) {
             super(
                     overriderTree,
+                    overriderDeclPath,
                     overrider,
                     overridingType,
                     overridingReturnType,
+                    overriddenElt,
                     overridden,
                     overriddenType,
                     overriddenReturnType);
@@ -162,17 +167,21 @@ public class GuiEffectVisitor extends BaseTypeVisitor<GuiEffectTypeFactory> {
     @Override
     protected OverrideChecker createOverrideChecker(
             Tree overriderTree,
+            TreePath overriderDeclPath,
             AnnotatedExecutableType overrider,
             AnnotatedTypeMirror overridingType,
             AnnotatedTypeMirror overridingReturnType,
+            ExecutableElement overriddenElt,
             AnnotatedExecutableType overridden,
             AnnotatedTypeMirror.AnnotatedDeclaredType overriddenType,
             AnnotatedTypeMirror overriddenReturnType) {
         return new GuiEffectOverrideChecker(
                 overriderTree,
+                overriderDeclPath,
                 overrider,
                 overridingType,
                 overridingReturnType,
+                overriddenElt,
                 overridden,
                 overriddenType,
                 overriddenReturnType);

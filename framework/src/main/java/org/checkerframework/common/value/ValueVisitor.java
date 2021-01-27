@@ -6,6 +6,7 @@ import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.TypeCastTree;
+import com.sun.source.util.TreePath;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -99,8 +100,10 @@ public class ValueVisitor extends BaseTypeVisitor<ValueAnnotatedTypeFactory> {
     @Override
     protected boolean checkOverride(
             MethodTree overriderTree,
+            TreePath overriderDeclPath,
             AnnotatedTypeMirror.AnnotatedExecutableType overrider,
             AnnotatedTypeMirror.AnnotatedDeclaredType overridingType,
+            ExecutableElement overriddenElt,
             AnnotatedTypeMirror.AnnotatedExecutableType overridden,
             AnnotatedTypeMirror.AnnotatedDeclaredType overriddenType) {
 
@@ -108,7 +111,13 @@ public class ValueVisitor extends BaseTypeVisitor<ValueAnnotatedTypeFactory> {
         replaceSpecialIntRangeAnnotations(overridden);
 
         return super.checkOverride(
-                overriderTree, overrider, overridingType, overridden, overriddenType);
+                overriderTree,
+                overriderDeclPath,
+                overrider,
+                overridingType,
+                overriddenElt,
+                overridden,
+                overriddenType);
     }
 
     /**

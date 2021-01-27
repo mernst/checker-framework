@@ -11,6 +11,7 @@ import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.StringJoiner;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -337,5 +338,24 @@ public final class TreePathUtil {
             return classTree.getModifiers().getFlags().contains(Modifier.STATIC);
         }
         return false;
+    }
+
+    ///
+    /// Formatting
+    ///
+
+    /**
+     * Return a printed representation of a TreePath.
+     *
+     * @param path a TreePath
+     * @return a printed representation of the given TreePath
+     */
+    public static String toString(TreePath path) {
+        StringJoiner result = new StringJoiner(System.lineSeparator() + "    ");
+        result.add("TreePath:");
+        for (Tree t : path) {
+            result.add(TreeUtils.toStringTruncated(t, 65));
+        }
+        return result.toString();
     }
 }
