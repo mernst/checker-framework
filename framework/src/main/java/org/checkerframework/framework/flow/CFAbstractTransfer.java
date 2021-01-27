@@ -1278,8 +1278,11 @@ public abstract class CFAbstractTransfer<
                 JavaExpression je =
                         // JavaExpressionParseUtil.parse(
                         //         expression, methodUseContext, pathToInvocation, false);
-                        JavaExpressionParseUtil.parseUseMethodScope(
-                                expressionString, methodUseContext, pathToInvocation);
+                        JavaExpressionParseUtil.parse(
+                                expressionString,
+                                methodUseContext,
+                                pathToInvocation,
+                                UseLocalScope.YES);
                 // "insertOrRefine" is called so that the postcondition information is added to any
                 // existing information rather than replacing it.  If the called method is not
                 // side-effect-free, then the values that might have been changed by the method call
