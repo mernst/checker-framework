@@ -3183,12 +3183,12 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         // Prevent calling declarationFor on elements we know we don't have
         // the tree for.
 
-        if (elt.getKind() == ElementKind.FIELD) {
-            Tree declarationFor =
-                    com.sun.tools.javac.tree.TreeInfo.declarationFor(
-                            (com.sun.tools.javac.code.Symbol) elt,
-                            (com.sun.tools.javac.tree.JCTree) root);
-            if (false) {
+        if (false) {
+            if (elt.getKind() == ElementKind.FIELD) {
+                Tree declarationFor =
+                        com.sun.tools.javac.tree.TreeInfo.declarationFor(
+                                (com.sun.tools.javac.code.Symbol) elt,
+                                (com.sun.tools.javac.tree.JCTree) root);
                 System.out.printf(
                         "declarationFromElement(FIELD %s): declarationFor=%s%n",
                         elt,
