@@ -91,11 +91,9 @@ public class FieldAccess extends JavaExpression {
     @Override
     public String toStringDebug() {
         return String.format(
-                "FieldAccess type=%s receiver=%s [%s] [%s] field=%s [%s] [%s] owner=%s",
+                "FieldAccess(type=%s, receiver=%s, field=%s [%s] [%s] owner=%s)",
                 type,
-                receiver,
-                receiver.getClass().getSimpleName(),
-                System.identityHashCode(receiver),
+                receiver.toStringDebug(),
                 field,
                 field.getClass().getSimpleName(),
                 System.identityHashCode(field),

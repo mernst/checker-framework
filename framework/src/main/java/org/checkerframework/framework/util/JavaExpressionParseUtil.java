@@ -412,8 +412,7 @@ public class JavaExpressionParseUtil {
             }
             if (fieldElem != null && fieldElem.getKind() == ElementKind.FIELD) {
                 FieldAccess fieldAccess =
-                        (FieldAccess)
-                                getFieldJavaExpression(fieldElem, context, isOriginalReceiver);
+                        getFieldJavaExpression(fieldElem, context, isOriginalReceiver);
                 TypeElement scopeClassElement =
                         TypesUtils.getTypeElement(fieldAccess.getReceiver().getType());
                 if (!isOriginalReceiver
@@ -861,7 +860,7 @@ public class JavaExpressionParseUtil {
          * @param isOriginalReceiver whether the receiver is the original one
          * @return a JavaExpression for the given name
          */
-        private static JavaExpression getFieldJavaExpression(
+        private static FieldAccess getFieldJavaExpression(
                 VariableElement fieldElem,
                 JavaExpressionContext context,
                 boolean isOriginalReceiver) {
