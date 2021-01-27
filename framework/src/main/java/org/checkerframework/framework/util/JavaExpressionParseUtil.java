@@ -1342,7 +1342,7 @@ public class JavaExpressionParseUtil {
         JavaExpression receiverJe = JavaExpression.getImplicitReceiver(elt);
         JavaExpressionContext context =
                 new JavaExpressionContext(receiverJe, /*arguments=*/ null, provider.getChecker());
-        return parseUseMethodScope(tree.getName().toString(), context, provider.getPath(tree));
+        return parse(tree.getName().toString(), context, provider.getPath(tree), UseLocalScope.YES);
     }
 
     ///////////////////////////////////////////////////////////////////////////

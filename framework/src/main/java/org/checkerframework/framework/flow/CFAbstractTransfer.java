@@ -589,8 +589,11 @@ public abstract class CFAbstractTransfer<
                 JavaExpression exprJe =
                         // JavaExpressionParseUtil.parse(
                         //         expressionString, methodUseContext, methodDeclPath, false);
-                        JavaExpressionParseUtil.parseUseMethodScope(
-                                expressionString, methodUseContext, methodDeclPath);
+                        JavaExpressionParseUtil.parse(
+                                expressionString,
+                                methodUseContext,
+                                methodDeclPath,
+                                UseLocalScope.YES);
                 initialStore.insertValue(exprJe, annotation);
             } catch (JavaExpressionParseException e) {
                 // Errors are reported by BaseTypeVisitor.checkContractsAtMethodDeclaration().
