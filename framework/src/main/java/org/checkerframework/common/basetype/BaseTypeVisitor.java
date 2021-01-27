@@ -4257,8 +4257,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 // This could be optimized to store the result the first time.
                 // (same for other annotations)
                 JavaExpression expressionJe =
-                        JavaExpressionParseUtil.parseUseMethodScope(
-                                expressionString, flowExprContext, path);
+                        JavaExpressionParseUtil.parse(
+                                expressionString, flowExprContext, path, UseLocalScope.YES);
                 result.add(Pair.of(expressionJe, annotation));
             } catch (JavaExpressionParseException e) {
                 if (false) {
