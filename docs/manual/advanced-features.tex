@@ -467,13 +467,15 @@ the CLIMB-to-top rule.
 
 \subsectionAndLabel{Inherited defaults}{inherited-defaults}
 
-When overriding a method, programmers must fully specify the overridding
-method, which duplicates information on the overridden method.  An example
-is that when definining an \<equals()> method, programmers must write the
-type annotation \<@Nullable> and the method postcondition \<@EnsuresNonNullIf>:
+When overriding a method, programmers must fully specify types in the overridding
+method, which duplicates information on the overridden method.
+By contrast, declaration annotations that are meta-annotated with
+\<@InheritedAnnotation> are inherited by overriding methods.
+
+An example for type annotations is that when definining an \<equals()>
+method, programmers must write the type annotation \<@Nullable>:
 
 \begin{Verbatim}
-  @EnsuresNonNullIf(expression="#1", result=true)
   public boolean equals(@Nullable Object obj) {
       ...
   }
@@ -490,7 +492,9 @@ value by looking at a single file.  If annotations could be inherited from
 supertypes, then a user would have to examine all supertypes, and do
 computations over them, to understand the meaning of an unannotated type in
 a given file.
-Computation is necessary because different annotations might be inherited
+For declaration annotations, no computation is necessary; that is why they
+may be inherited.
+Computation is necessary for type annotations because different annotations might be inherited
 from a supertype and an interface, or from two interfaces.  For return
 types, the inherited type should be the least upper bound of all
 annotations on overridden implementations in supertypes.  For method
