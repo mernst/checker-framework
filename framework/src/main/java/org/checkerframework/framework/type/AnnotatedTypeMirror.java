@@ -978,8 +978,8 @@ public abstract class AnnotatedTypeMirror {
         }
 
         @Override
-        public List<AnnotatedDeclaredType> directSuperTypes() {
-            return Collections.unmodifiableList(SupertypeFinder.directSuperTypes(this));
+        public List<AnnotatedDeclaredType> directSupertypes() {
+            return Collections.unmodifiableList(SupertypeFinder.directSupertypes(this));
         }
 
         @Override
@@ -2101,7 +2101,7 @@ public abstract class AnnotatedTypeMirror {
          * @return the direct super types of this
          */
         @Override
-        public List<? extends AnnotatedTypeMirror> directSuperTypes() {
+        public List<? extends AnnotatedTypeMirror> directSupertypes() {
             return getBounds();
         }
 
@@ -2110,7 +2110,7 @@ public abstract class AnnotatedTypeMirror {
          * in an explicitly written intersections, during capture conversion, intersections with
          * other kinds of types are created.
          *
-         * <p>This returns the same types as {@link #directSuperTypes()}.
+         * <p>This returns the same types as {@link #directSupertypes()}.
          *
          * @return the bounds of this, which are also the direct super types of this
          */
@@ -2227,9 +2227,10 @@ public abstract class AnnotatedTypeMirror {
 
     /**
      * This method returns a list of AnnotatedTypeMirrors where the Java type of each ATM is an
-     * immediate supertype (class or interface) of the Java type of this. If the directSuperType has
-     * type arguments, then the annotations on those type arguments are taken with proper
-     * translation from the declaration of the Java type of this.
+     * immediate supertype (class or interface) of the Java type of this. The interface types, if
+     * any, appear at the end of the list. If the directSuperType has type arguments, then the
+     * annotations on those type arguments are taken with proper translation from the declaration of
+     * the Java type of this.
      *
      * <p>For example,
      *
@@ -2263,9 +2264,10 @@ public abstract class AnnotatedTypeMirror {
      * The direct supertypes of the ATM {@code @Nullable A} are {@code @Nullable B <@NonNull
      * String>} and {@code @Nullable List<@NonNull Integer>}.
      *
+     * @return the immediate supertypes of this
      * @see Types#directSupertypes(TypeMirror)
      */
-    public List<? extends AnnotatedTypeMirror> directSuperTypes() {
-        return SupertypeFinder.directSuperTypes(this);
+    public List<? extends AnnotatedTypeMirror> directSupertypes() {
+        return SupertypeFinder.directSupertypes(this);
     }
 }

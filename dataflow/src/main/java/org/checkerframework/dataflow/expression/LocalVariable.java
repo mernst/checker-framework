@@ -4,6 +4,9 @@ import com.sun.tools.javac.code.Symbol.VarSymbol;
 import java.util.List;
 import java.util.Objects;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.util.Elements;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.javacutil.ElementUtils;
@@ -41,6 +44,44 @@ public class LocalVariable extends JavaExpression {
                 && vsother.owner.toString().equals(vs.owner.toString());
     }
 
+    /**
+     * Returns true if this is the same formal parameter as {@code other}.
+     *
+     * @param je1 the first JavaExpression to compare
+     * @param je2 the second JavaExpression to compare
+     * @param elements element utilities
+     * @return true if this is the same formal parameter as {@code other}
+     */
+    public static boolean isSameFormalParameter(
+            JavaExpression je1, JavaExpression je2, Elements elements) {
+        if (je1 instanceof LocalVariable && je2 instanceof LocalVariable) {
+            LocalVariable var1 = (LocalVariable) je1;
+            LocalVariable var2 = (LocalVariable) je2;
+            Element enclosing1 = var1.element.getEnclosingElement();
+            Element enclosing2 = var2.element.getEnclosingElement();
+            if (enclosing1 instanceof ExecutableElement
+                    && enclosing2 instanceof ExecutableElement) {
+                ExecutableElement methodElt1 = (ExecutableElement) enclosing1;
+                ExecutableElement methodElt2 = (ExecutableElement) enclosing2;
+                int index1 = methodElt1.getParameters().indexOf(var1.element);
+                int index2 = methodElt2.getParameters().indexOf(var2.element);
+                if (index1 != -1 && index1 == index2) {
+                    if (elements.overrides(
+                                    methodElt1,
+                                    methodElt2,
+                                    (TypeElement) methodElt1.getEnclosingElement())
+                            || elements.overrides(
+                                    methodElt2,
+                                    methodElt1,
+                                    (TypeElement) methodElt2.getEnclosingElement())) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     public Element getElement() {
         return element;
     }
@@ -72,6 +113,11 @@ public class LocalVariable extends JavaExpression {
             }
         }
         return result;
+    }
+
+    @Override
+    public String toStringDebug() {
+        return super.toStringDebug() + " [owner=" + ((VarSymbol) element).owner + "]";
     }
 
     @Override

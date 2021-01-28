@@ -36,9 +36,10 @@ public abstract class Contract {
     public final String expressionString;
 
     // It is not possible to standardize this annotation when creating the contract.  Trees.typeOf
-    // may return null if a call to a method textually precede the definition of the method and its
+    // may return null if a call to a method textually precedes the definition of the method and its
     // type.  That can happen when a single compilation unit (= file) defines multiple types at its
     // top level.
+    // (Does this same remark might apply to the `expressionString` field as well?)
     /**
      * The annotation on the type of expression, according to this contract. It is not necessarily
      * standardized.
