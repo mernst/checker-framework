@@ -83,6 +83,7 @@ import org.checkerframework.dataflow.cfg.node.BooleanLiteralNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.ReturnNode;
 import org.checkerframework.dataflow.expression.JavaExpression;
+import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.util.PurityChecker;
 import org.checkerframework.dataflow.util.PurityChecker.PurityResult;
@@ -131,6 +132,7 @@ import org.checkerframework.javacutil.SystemUtil;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
+import org.plumelib.util.SystemPlume;
 
 /**
  * A {@link SourceVisitor} that performs assignment and pseudo-assignment checking, method
@@ -3716,6 +3718,22 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             this.overriddenReturnType = overriddenReturnType;
             this.overridingReturnType = overridingReturnType;
 
+            if (false) {
+                if (overriderDeclPath == null) {
+                    System.out.println("overriderTree=" + overriderTree);
+                    System.out.println("overriderDeclPath=" + overriderDeclPath);
+                    System.out.println("overrider=" + overrider);
+                    System.out.println("overridingType=" + overridingType);
+                    System.out.println("overridingReturnType=" + overridingReturnType);
+                    System.out.println("overriddenElt=" + overriddenElt);
+                    System.out.println("overridden=" + overridden);
+                    System.out.println("overriddenType=" + overriddenType);
+                    System.out.println("overriddenReturnType=" + overriddenReturnType);
+                    new Error("null overriderDeclPath").printStackTrace(System.out);
+                    SystemPlume.sleep(100);
+                }
+            }
+
             overriderMeth = overrider.toString();
             if (overridingType.getKind() == TypeKind.DECLARED) {
                 DeclaredType overriderTypeMirror =
@@ -3785,8 +3803,18 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 return;
             }
 
-            if (false) {
-                System.out.printf("checkPreAndPostConditions%n");
+            boolean debug = false;
+            /*
+                    overriddenElt.toString().contains("equals")
+                            && overriddenElt
+                                    .getEnclosingElement()
+                                    .toString()
+                                    .endsWith("LiteralNode");
+            */
+            // true;
+
+            if (debug) {
+                System.out.printf("checkPreAndPostConditions overriddenElt = %s%n", overriddenElt);
             }
 
             ContractsFromMethod contractsUtils = atypeFactory.getContractsFromMethod();
@@ -3817,9 +3845,13 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     resolveContracts(superPre, overridden, overriddenElt);
             Set<Pair<JavaExpression, AnnotationMirror>> subPre2 =
                     resolveContracts(subPre, overrider, overriderDeclPath);
+            if (debug && !(superPre.isEmpty() && subPre.isEmpty())) {
+                System.out.printf("Resolved super %s%n            to %s%n", superPre, superPre2);
+                System.out.printf("Resolved sub   %s%n            to %s%n", subPre, subPre2);
+            }
             @SuppressWarnings("compilermessages")
             @CompilerMessageKey String premsg = "contracts.precondition." + msgKey + ".invalid";
-            if (false) {
+            if (debug) {
                 System.out.printf(
                         "About to call checkContractsSubset(%s, %s,%n %s, %s,%n %s,%n %s,%n %s)%n",
                         overriderMeth,
@@ -3851,6 +3883,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     resolveContracts(superCPostTrue, overridden, overriddenElt);
             Set<Pair<JavaExpression, AnnotationMirror>> subCPostTrue2 =
                     resolveContracts(subCPostTrue, overrider, overriderDeclPath);
+            if (debug && !(superCPostTrue.isEmpty() && subCPostTrue.isEmpty())) {
+                System.out.printf(
+                        "resolveContracts super %s => %s%n", superCPostTrue, superCPostTrue2);
+                System.out.printf("resolveContracts sub   %s => %s%n", subCPostTrue, subCPostTrue2);
+            }
+
             @SuppressWarnings("compilermessages")
             @CompilerMessageKey String posttruemsg = "contracts.conditional.postcondition.true." + msgKey + ".invalid";
             checkContractsSubset(
@@ -4231,6 +4269,10 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Set<Pair<JavaExpression, AnnotationMirror>> set,
             @CompilerMessageKey String messageKey) {
         boolean debug = false;
+        /*
+        overriddenMeth.toString().contains("equals")
+                && overriddenTyp.toString().endsWith("LiteralNode");
+        */
         if (debug) {
             System.out.printf(
                     "checkContractsSubset%n  %s %s%n  %s %s%n  %s%n  %s%n  %s%n",
@@ -4251,9 +4293,14 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     System.out.printf("weak: %s %s%n", weak.second, weak.first.toStringDebug());
                     System.out.printf(
                             "strong: %s %s%n", strong.second, strong.first.toStringDebug());
+                    System.out.printf(
+                            "weak.first.equals(strong.first) = %s%n",
+                            weak.first.equals(strong.first));
                 }
                 // are we looking at a contract of the same receiver?
-                if (weak.first.equals(strong.first)) {
+                if (weak.first.equals(strong.first)
+                        || LocalVariable.isSameFormalParameter(
+                                weak.first, strong.first, elements)) {
 
                     // check subtyping relationship of annotations
                     QualifierHierarchy qualifierHierarchy = atypeFactory.getQualifierHierarchy();
@@ -4291,8 +4338,23 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Set<? extends Contract> contractSet,
             AnnotatedExecutableType method,
             ExecutableElement methodElt) {
+
+        /*
+        boolean debug = method.toString().contains("initInitialInputs");
         MethodTree methodDeclTree = (MethodTree) atypeFactory.declarationFromElement(methodElt);
+        if (debug && methodDeclTree == null) {
+            System.out.printf(
+                    "methodDeclTree==null for resolveContracts(%s, %s, %s)%n",
+                    contractSet, method, methodElt);
+        }
         TreePath methodDeclPath = atypeFactory.getPath(methodDeclTree);
+        if (debug && methodDeclPath == null) {
+            System.out.printf(
+                    "methodDeclPath==null for resolveContracts(%s, %s, %s) methodDeclTree=%s%n",
+                    contractSet, method, methodElt, methodDeclTree);
+        }
+        */
+        TreePath methodDeclPath = atypeFactory.getTreeUtils().getPath(methodElt);
         return resolveContracts(contractSet, method, methodDeclPath);
     }
 
@@ -4309,17 +4371,25 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             AnnotatedExecutableType method,
             TreePath methodDeclPath) {
         boolean debug = false;
+        // method.toString().contains("initInitialInputs");
         if (debug) {
-            System.out.printf("resolveContracts(%s, %s)%n", method, contractSet);
+            System.out.printf(
+                    "resolveContracts(%s, %s, %s)%n", method, contractSet, methodDeclPath);
+            if (methodDeclPath == null) {
+                new Error("backtrace").printStackTrace(System.out);
+                SystemPlume.sleep(100);
+            }
         }
         Set<Pair<JavaExpression, AnnotationMirror>> result = new HashSet<>();
         MethodTree methodTree =
                 methodDeclPath == null ? null : (MethodTree) methodDeclPath.getLeaf();
         if (debug) {
-            System.out.printf("methodTree = %s%n", TreeUtils.toStringTruncated(methodTree, 65));
+            System.out.printf(
+                    "methodTree = %s%n",
+                    methodTree == null ? "null" : TreeUtils.toStringTruncated(methodTree, 65));
             System.out.printf(
                     "resolveContracts methodDeclPath = %s%n",
-                    TreePathUtil.toString(methodDeclPath));
+                    methodDeclPath == null ? "null" : TreePathUtil.toString(methodDeclPath));
         }
         JavaExpressionContext flowExprContext = null; // lazily initialized, for efficiency
         for (Contract p : contractSet) {
@@ -4327,6 +4397,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             AnnotationMirror annotation = p.annotation;
             if (flowExprContext == null) {
                 if (methodTree == null) {
+                    if (debug) {
+                        System.out.printf("methodTree=null for contract %s%n", p);
+                    }
                     continue;
                 }
                 flowExprContext =
@@ -4360,7 +4433,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 result.add(Pair.of(expressionJe, annotation));
             } catch (JavaExpressionParseException e) {
                 if (debug) {
-                    System.out.printf("e = %s%n", e);
+                    System.out.printf("Error in resolution of %s: e = %s%n", p, e);
                 }
                 // report errors here
                 checker.report(methodTree, e.getDiagMessage());
