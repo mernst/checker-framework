@@ -968,7 +968,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     TreeUtils.toStringTruncated(pathToMethodDecl.getLeaf(), 65));
         }
 
-        JavaExpressionContext flowExprContext =
+        JavaExpressionContext jeContext =
                 JavaExpressionContext.buildContextForMethodDeclaration(
                         methodTree, pathToMethodDecl, checker);
 
@@ -983,10 +983,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 exprJe =
                         JavaExpressionParseUtil.parse(
                                 // TODO: I guess I need to adjust the path here.
-                                expressionString,
-                                flowExprContext,
-                                pathToMethodDecl,
-                                UseLocalScope.YES);
+                                expressionString, jeContext, pathToMethodDecl, UseLocalScope.YES);
             } catch (JavaExpressionParseException e) {
                 checker.report(methodTree, e.getDiagMessage());
             }
@@ -1003,7 +1000,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 AnnotationMirror annotation =
                         atypeFactory.standardizeAnnotationFromContract(
                                 contract.annotation,
-                                flowExprContext,
+                                jeContext,
                                 // This TreePath prevents delocalization.
                                 new TreePath(pathToMethodDecl, methodTree.getBody()));
 
@@ -1712,10 +1709,10 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             return;
         }
 
-        JavaExpressionContext flowExprContext =
+        JavaExpressionContext jeContext =
                 JavaExpressionContext.buildContextForMethodUse(tree, checker);
 
-        if (flowExprContext == null) {
+        if (jeContext == null) {
             checker.reportError(tree, "flowexpr.parse.context.not.determined", tree);
             return;
         }
@@ -1727,13 +1724,13 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
             anno =
                     atypeFactory.standardizeAnnotationFromContract(
-                            anno, flowExprContext, getCurrentPath());
+                            anno, jeContext, getCurrentPath());
 
             JavaExpression exprJe;
             try {
                 exprJe =
                         JavaExpressionParseUtil.parseUseMethodScope(
-                                expressionString, flowExprContext, getCurrentPath());
+                                expressionString, jeContext, getCurrentPath());
             } catch (JavaExpressionParseException e) {
                 // report errors here
                 checker.report(tree, e.getDiagMessage());
@@ -4391,25 +4388,25 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     "resolveContracts methodDeclPath = %s%n",
                     methodDeclPath == null ? "null" : TreePathUtil.toString(methodDeclPath));
         }
-        JavaExpressionContext flowExprContext = null; // lazily initialized, for efficiency
+        JavaExpressionContext jeContext = null; // lazily initialized, for efficiency
         for (Contract p : contractSet) {
             String expressionString = p.expressionString;
             AnnotationMirror annotation = p.annotation;
-            if (flowExprContext == null) {
+            if (jeContext == null) {
                 if (methodTree == null) {
                     if (debug) {
                         System.out.printf("methodTree=null for contract %s%n", p);
                     }
                     continue;
                 }
-                flowExprContext =
+                jeContext =
                         JavaExpressionContext.buildContextForMethodDeclaration(
                                 methodTree, method.getReceiverType().getUnderlyingType(), checker);
             }
 
             annotation =
                     atypeFactory.standardizeAnnotationFromContract(
-                            annotation, flowExprContext, methodDeclPath);
+                            annotation, jeContext, methodDeclPath);
 
             try {
                 // TODO: currently, these expressions are parsed many times.
@@ -4418,7 +4415,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 JavaExpression expressionJe =
                         JavaExpressionParseUtil.parse(
                                 expressionString,
-                                flowExprContext,
+                                jeContext,
                                 methodDeclPath,
                                 // This is the change in useLocalScope-2-pums2
                                 UseLocalScope.YES);
@@ -4426,7 +4423,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     System.out.printf(
                             "parse(%s)%n context=%s%n methodDeclPath.getLeaf()=%s%n => %s%n",
                             expressionString,
-                            flowExprContext.toStringDebug(),
+                            jeContext.toStringDebug(),
                             TreeUtils.toStringTruncated(methodDeclPath.getLeaf(), 165),
                             expressionJe.toStringDebug());
                 }
