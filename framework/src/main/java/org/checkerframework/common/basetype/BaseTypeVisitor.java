@@ -978,13 +978,14 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             }
             String expressionString = contract.expressionString;
 
-            JavaExpression exprJe = null;
+            JavaExpression exprJe;
             try {
                 exprJe =
                         JavaExpressionParseUtil.parse(
                                 // TODO: I guess I need to adjust the path here.
                                 expressionString, jeContext, pathToMethodDecl, UseLocalScope.YES);
             } catch (JavaExpressionParseException e) {
+                exprJe = null;
                 checker.report(methodTree, e.getDiagMessage());
             }
             // If exprJe is null, then an error was issued above.
@@ -1021,6 +1022,20 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             }
 
             if (formalParamNames != null && formalParamNames.contains(expressionString)) {
+                System.out.printf("%s contains %s%n", formalParamNames, expressionString);
+                JavaExpression asField;
+                try {
+                    asField =
+                            JavaExpressionParseUtil.parse(
+                                    // TODO: I guess I need to adjust the path here.
+                                    expressionString,
+                                    jeContext,
+                                    pathToMethodDecl.getParentPath(),
+                                    UseLocalScope.YES);
+                } catch (JavaExpressionParseException e) {
+                    asField = null;
+                }
+
                 String locationOfExpression =
                         contract.kind.errorKey
                                 + " "
@@ -1029,7 +1044,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                                         .asElement()
                                         .getSimpleName()
                                 + " on the declaration";
-                if (exprJe == null) {
+                if (asField == null) {
                     checker.reportWarning(
                             methodTree,
                             "expression.parameter.name.invalid",
