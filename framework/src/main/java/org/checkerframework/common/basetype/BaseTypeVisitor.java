@@ -1022,7 +1022,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             }
 
             if (formalParamNames != null && formalParamNames.contains(expressionString)) {
-                System.out.printf("%s contains %s%n", formalParamNames, expressionString);
                 JavaExpression asField;
                 try {
                     asField =
