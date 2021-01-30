@@ -144,6 +144,8 @@ public abstract class JavaExpression {
         return this.equals(other) || store.canAlias(this, other);
     }
 
+    // TODO: Remove this method, replacing it by a delocalization routine.
+    // TODO: The argument is always a list of LocalVariable, no other type of JavaExpression.
     /**
      * Format this, using "#2" syntax for formal parameters.
      *

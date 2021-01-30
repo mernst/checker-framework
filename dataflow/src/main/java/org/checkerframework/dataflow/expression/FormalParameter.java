@@ -1,5 +1,6 @@
 package org.checkerframework.dataflow.expression;
 
+import java.util.List;
 import javax.lang.model.element.Element;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -68,7 +69,7 @@ public class FormalParameter extends LocalVariable {
     }
 
     @Override
-    public String toString() {
+    public String toString(List<JavaExpression> parameters) {
         return "#" + index;
     }
 
