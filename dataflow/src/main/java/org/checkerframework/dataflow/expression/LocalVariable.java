@@ -1,6 +1,7 @@
 package org.checkerframework.dataflow.expression;
 
 import com.sun.tools.javac.code.Symbol.VarSymbol;
+import java.util.List;
 import java.util.Objects;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
@@ -167,7 +168,12 @@ public class LocalVariable extends JavaExpression {
     }
 
     @Override
-    public abstract LocalVariable atMethodScope(List<JavaExpression> parameters) {
-        return this;
+    public LocalVariable atMethodScope(List<JavaExpression> parameters) {
+        int index = parameters.indexOf(this);
+        if (index == -1) {
+            return this;
+        } else {
+            return new FormalParameter(element, index + 1);
+        }
     }
 }

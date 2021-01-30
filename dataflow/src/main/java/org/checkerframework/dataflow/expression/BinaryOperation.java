@@ -1,6 +1,7 @@
 package org.checkerframework.dataflow.expression;
 
 import com.sun.source.tree.Tree;
+import java.util.List;
 import java.util.Objects;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -217,5 +218,13 @@ public class BinaryOperation extends JavaExpression {
     }
 
     @Override
-    public abstract BinaryOperation atMethodScope(List<JavaExpression> parameters) {}
+    public BinaryOperation atMethodScope(List<JavaExpression> parameters) {
+        JavaExpression newLeft = left.atMethodScope(parameters);
+        JavaExpression newRight = right.atMethodScope(parameters);
+        if (left == newLeft && right == newRight) {
+            return this;
+        } else {
+            return new BinaryOperation(type, operationKind, newLeft, newRight);
+        }
+    }
 }

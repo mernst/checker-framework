@@ -22,6 +22,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.interning.qual.EqualsMethod;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.dataflow.analysis.Store;
 import org.checkerframework.dataflow.cfg.node.ArrayAccessNode;
 import org.checkerframework.dataflow.cfg.node.ArrayCreationNode;
@@ -667,12 +668,13 @@ public abstract class JavaExpression {
      * @param list a list of JavaExpressions
      * @return a variant of the given list with formal parameters expressed as "#2"
      */
-    public static <T extends @Nullable JavaExpression> List<T> listAsMethodScope(
-            List<T> list, List<JavaExpression> parameters) {
-        List<T> result = new ArrayList<T>(list.size());
+    // TODO: reinstate "nullable" here.
+    public static List<@PolyNull JavaExpression> listAtMethodScope(
+            List<@PolyNull JavaExpression> list, List<JavaExpression> parameters) {
+        List<@PolyNull JavaExpression> result = new ArrayList<>(list.size());
         boolean different = false;
-        for (T elt : list) {
-            newElt = elt == null ? null : elt.atMethodScope(parameters);
+        for (JavaExpression elt : list) {
+            JavaExpression newElt = elt == null ? null : elt.atMethodScope(parameters);
             different = different || newElt != elt;
             result.add(newElt);
         }

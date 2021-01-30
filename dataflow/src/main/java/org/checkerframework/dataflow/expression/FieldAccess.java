@@ -1,6 +1,7 @@
 package org.checkerframework.dataflow.expression;
 
 import com.sun.tools.javac.code.Symbol;
+import java.util.List;
 import java.util.Objects;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
@@ -113,5 +114,12 @@ public class FieldAccess extends JavaExpression {
     }
 
     @Override
-    public abstract FieldAccess atMethodScope(List<JavaExpression> parameters) {}
+    public FieldAccess atMethodScope(List<JavaExpression> parameters) {
+        JavaExpression newReceiver = receiver.atMethodScope(parameters);
+        if (receiver == newReceiver) {
+            return this;
+        } else {
+            return new FieldAccess(newReceiver, type, field);
+        }
+    }
 }

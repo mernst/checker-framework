@@ -779,12 +779,18 @@ public class DependentTypesHelper {
         if (debug) {
             System.out.printf("standardizeString(%s) => %s%n", expression, result.toStringDebug());
         }
-        if (debug) {
-            System.out.printf(
-                    "args to toString: %s, arguments=%s%n",
-                    result.toStringDebug(), delocalize ? context.arguments : null);
+        if (methodScope) {
+            if (debug) {
+                System.out.printf(
+                        "delocalizing %s, arguments=%s%n",
+                        result.toStringDebug(), context.arguments);
+            }
+            result = result.atMethodScope(context.arguments);
+            if (debug) {
+                System.out.printf("delocalized => %s%n", result.toStringDebug());
+            }
         }
-        return result.toString(delocalize ? context.arguments : null);
+        return result.toString();
     }
 
     /**

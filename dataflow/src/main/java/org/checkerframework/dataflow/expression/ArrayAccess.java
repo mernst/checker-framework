@@ -1,5 +1,6 @@
 package org.checkerframework.dataflow.expression;
 
+import java.util.List;
 import java.util.Objects;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -109,5 +110,13 @@ public class ArrayAccess extends JavaExpression {
     }
 
     @Override
-    public abstract ArrayAccess atMethodScope(List<JavaExpression> parameters) {}
+    public ArrayAccess atMethodScope(List<JavaExpression> parameters) {
+        JavaExpression newArray = array.atMethodScope(parameters);
+        JavaExpression newIndex = index.atMethodScope(parameters);
+        if (array == newArray && index == newIndex) {
+            return this;
+        } else {
+            return new ArrayAccess(type, newArray, newIndex);
+        }
+    }
 }

@@ -155,5 +155,15 @@ public class ArrayCreation extends JavaExpression {
     }
 
     @Override
-    public abstract ArrayCreation atMethodScope(List<JavaExpression> parameters) {}
+    public ArrayCreation atMethodScope(List<JavaExpression> parameters) {
+        List<@Nullable JavaExpression> newDimensions =
+                JavaExpression.listAtMethodScope(dimensions, parameters);
+        List<JavaExpression> newInitializers =
+                JavaExpression.listAtMethodScope(initializers, parameters);
+        if (dimensions == newDimensions && initializers == newInitializers) {
+            return this;
+        } else {
+            return new ArrayCreation(type, newDimensions, newInitializers);
+        }
+    }
 }

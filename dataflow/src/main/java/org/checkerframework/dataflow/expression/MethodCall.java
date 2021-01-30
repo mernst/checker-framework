@@ -171,13 +171,13 @@ public class MethodCall extends JavaExpression {
     }
 
     @Override
-    public abstract MethodCall atMethodScope(List<JavaExpression> parameters) {
+    public MethodCall atMethodScope(List<JavaExpression> parameters) {
         JavaExpression newReceiver = receiver.atMethodScope(parameters);
-        List<JavaExpression> newArguments = JavaExpression.listAsMethodScope(parameters);
-        if (receiver == newReceiver && arguments = newArguments) {
+        List<JavaExpression> newArguments = JavaExpression.listAtMethodScope(arguments, parameters);
+        if (receiver == newReceiver && arguments == newArguments) {
             return this;
         } else {
-            return new MethodCall(type, method, newReceiver, newParameters);
+            return new MethodCall(type, method, newReceiver, newArguments);
         }
     }
 }

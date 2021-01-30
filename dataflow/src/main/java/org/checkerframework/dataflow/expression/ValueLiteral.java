@@ -1,6 +1,7 @@
 package org.checkerframework.dataflow.expression;
 
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Objects;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
