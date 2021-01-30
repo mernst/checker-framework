@@ -12,7 +12,7 @@ import org.checkerframework.javacutil.TypesUtils;
 public class LocalVariable extends JavaExpression {
     protected final Element element;
 
-    public LocalVariable(LocalVariableNode localVar) {
+    protected LocalVariable(LocalVariableNode localVar) {
         super(localVar.getType());
         this.element = localVar.getElement();
     }
@@ -20,6 +20,27 @@ public class LocalVariable extends JavaExpression {
     public LocalVariable(Element elem) {
         super(ElementUtils.getType(elem));
         this.element = elem;
+    }
+
+    /**
+     * Creates a LocalVariable or a FormalParameter, depending on the argument.
+     *
+     * @param localVar a CFG node for a variable
+     * @return a LocalVariable or FormalParameter for the given CFG variable
+     */
+    public static LocalVariable create(LocalVariableNode localVar) {
+        String name = localVar.getName();
+        if (name.startsWith(FormalParameter.PARAMETER_REPLACEMENT)) {
+            try {
+                return new FormalParameter(
+                        localVar.getElement(),
+                        Integer.parseInt(
+                                name.substring(FormalParameter.PARAMETER_REPLACEMENT_LENGTH)));
+            } catch (NumberFormatException e) {
+                // fallthrough
+            }
+        }
+        return new LocalVariable(localVar);
     }
 
     @Override
