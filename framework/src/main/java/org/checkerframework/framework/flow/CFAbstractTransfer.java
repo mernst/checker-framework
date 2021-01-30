@@ -1278,7 +1278,7 @@ public abstract class CFAbstractTransfer<
             try {
                 JavaExpression je =
                         // JavaExpressionParseUtil.parse(
-                        //         expression, methodUseContext, pathToInvocation, false);
+                        //         expressionString, methodUseContext, pathToInvocation, false);
                         JavaExpressionParseUtil.parseUseMethodScope(
                                 expressionString, methodUseContext, pathToInvocation);
                 // "insertOrRefine" is called so that the postcondition information is added to any
