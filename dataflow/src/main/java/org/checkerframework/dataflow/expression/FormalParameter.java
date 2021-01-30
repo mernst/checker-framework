@@ -69,7 +69,7 @@ public class FormalParameter extends LocalVariable {
     }
 
     @Override
-    public String toString(List<JavaExpression> parameters) {
+    public String toString(@Nullable List<JavaExpression> parameters) {
         return "#" + index;
     }
 
