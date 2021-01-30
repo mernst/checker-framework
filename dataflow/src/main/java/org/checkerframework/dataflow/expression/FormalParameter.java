@@ -53,6 +53,11 @@ public class FormalParameter extends LocalVariable {
         return super.equals(other) && this.index == other.index;
     }
 
+    /**
+     * Returns the 1-based index of this formal parameter.
+     *
+     * @return the 1-based index of this formal parameter
+     */
     public int getIndex() {
         return index;
     }

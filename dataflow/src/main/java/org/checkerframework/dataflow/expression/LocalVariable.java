@@ -10,8 +10,14 @@ import org.checkerframework.javacutil.TypeAnnotationUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 public class LocalVariable extends JavaExpression {
+    /** The element for this local variable. */
     protected final Element element;
 
+    /**
+     * Creates a new LocalVariable.
+     *
+     * @param localVar a CFG local variable
+     */
     protected LocalVariable(LocalVariableNode localVar) {
         super(localVar.getType());
         this.element = localVar.getElement();
