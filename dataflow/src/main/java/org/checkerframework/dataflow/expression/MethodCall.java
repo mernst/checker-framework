@@ -173,7 +173,7 @@ public class MethodCall extends JavaExpression {
         preParen.append(methodName);
         preParen.append("(");
         StringJoiner result = new StringJoiner(", ", preParen, ")");
-        for (JavaExpression parameter : parameters) {
+        for (JavaExpression parameter : this.parameters) {
             result.add(parameter.toString(parameters));
         }
         return result.toString();
