@@ -674,9 +674,13 @@ public abstract class JavaExpression {
         List<@PolyNull JavaExpression> result = new ArrayList<>(list.size());
         boolean different = false;
         for (JavaExpression elt : list) {
-            JavaExpression newElt = elt == null ? null : elt.atMethodScope(parameters);
-            different = different || newElt != elt;
-            result.add(newElt);
+            if (elt == null) {
+                result.add(null);
+            } else {
+                JavaExpression newElt = elt.atMethodScope(parameters);
+                different = different || newElt != elt;
+                result.add(newElt);
+            }
         }
         if (different) {
             return result;
