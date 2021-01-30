@@ -668,7 +668,7 @@ public abstract class JavaExpression {
      * @param list a list of JavaExpressions
      * @return a variant of the given list with formal parameters expressed as "#2"
      */
-    // TODO: reinstate "nullable" here.
+    @SuppressWarnings("interning:not.interned") // test whether method returns its argument
     public static List<@PolyNull JavaExpression> listAtMethodScope(
             List<@PolyNull JavaExpression> list, List<JavaExpression> parameters) {
         List<@PolyNull JavaExpression> result = new ArrayList<>(list.size());

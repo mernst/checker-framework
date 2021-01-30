@@ -171,6 +171,7 @@ public class MethodCall extends JavaExpression {
     }
 
     @Override
+    @SuppressWarnings("interning:not.interned") // test whether method returns its argument
     public MethodCall atMethodScope(List<JavaExpression> parameters) {
         JavaExpression newReceiver = receiver.atMethodScope(parameters);
         List<JavaExpression> newArguments = JavaExpression.listAtMethodScope(arguments, parameters);

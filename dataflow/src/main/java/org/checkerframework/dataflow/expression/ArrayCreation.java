@@ -155,6 +155,7 @@ public class ArrayCreation extends JavaExpression {
     }
 
     @Override
+    @SuppressWarnings("interning:not.interned") // test whether method returns its argument
     public ArrayCreation atMethodScope(List<JavaExpression> parameters) {
         List<@Nullable JavaExpression> newDimensions =
                 JavaExpression.listAtMethodScope(dimensions, parameters);

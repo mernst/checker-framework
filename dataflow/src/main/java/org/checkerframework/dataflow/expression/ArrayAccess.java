@@ -110,6 +110,7 @@ public class ArrayAccess extends JavaExpression {
     }
 
     @Override
+    @SuppressWarnings("interning:not.interned") // test whether method returns its argument
     public ArrayAccess atMethodScope(List<JavaExpression> parameters) {
         JavaExpression newArray = array.atMethodScope(parameters);
         JavaExpression newIndex = index.atMethodScope(parameters);
