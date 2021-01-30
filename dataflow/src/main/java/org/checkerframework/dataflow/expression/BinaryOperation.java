@@ -1,7 +1,6 @@
 package org.checkerframework.dataflow.expression;
 
 import com.sun.source.tree.Tree;
-import java.util.List;
 import java.util.Objects;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -152,12 +151,12 @@ public class BinaryOperation extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameters) {
-        return left.toString(parameters)
+    public String toString() {
+        return left.toString()
                 + " "
                 + operationKindToString(operationKind)
                 + " "
-                + right.toString(parameters);
+                + right.toString();
     }
 
     /**
@@ -210,4 +209,7 @@ public class BinaryOperation extends JavaExpression {
                 throw new Error("unhandled " + operationKind);
         }
     }
+
+    @Override
+    public abstract BinaryOperation atMethodScope(List<JavaExpression> parameters) {}
 }

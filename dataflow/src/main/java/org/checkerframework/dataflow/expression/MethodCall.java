@@ -161,21 +161,32 @@ public class MethodCall extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameters) {
+    public String toString() {
         StringBuilder preParen = new StringBuilder();
         if (receiver instanceof ClassName) {
             preParen.append(receiver.getType());
         } else {
-            preParen.append(receiver.toString(parameters));
+            preParen.append(receiver.toString());
         }
         preParen.append(".");
         String methodName = method.getSimpleName().toString();
         preParen.append(methodName);
         preParen.append("(");
         StringJoiner result = new StringJoiner(", ", preParen, ")");
-        for (JavaExpression parameter : this.parameters) {
-            result.add(parameter.toString(parameters));
+        for (JavaExpression parameter : parameters) {
+            result.add(parameter.toString());
         }
         return result.toString();
+    }
+
+    @Override
+    public abstract MethodCall atMethodScope(List<JavaExpression> parameters) {
+        JavaExpression newReceiver = receiver.atMethodScope(parameters);
+        List<JavaExpression> newArguments = JavaExpression.listAsMethodScope(parameters);
+        if (receiver == newReceiver && arguments = newArguments) {
+            return this;
+        } else {
+            return new MethodCall(type, method, newReceiver, newParameters);
+        }
     }
 }

@@ -144,23 +144,6 @@ public abstract class JavaExpression {
         return this.equals(other) || store.canAlias(this, other);
     }
 
-    // TODO: Remove this method, replacing it by a delocalization routine.
-    // TODO: The argument is always a list of LocalVariable, no other type of JavaExpression.
-    /**
-     * Format this, using "#2" syntax for formal parameters.
-     *
-     * @param parameters formal parameters, in order; used to substitute "#2" syntax for formal
-     *     parameters; null means do no substitution
-     * @return a string representation of this, using "#2" syntax for formal parameters
-     */
-    // TODO: Alternately, parameters could map from Element to Integer.
-    public abstract String toString(@Nullable List<JavaExpression> parameters);
-
-    @Override
-    public final String toString() {
-        return toString(null);
-    }
-
     /**
      * Format this verbosely, for debugging.
      *
@@ -618,6 +601,41 @@ public abstract class JavaExpression {
             return new ClassName(enclosingType);
         } else {
             return new ThisReference(enclosingType);
+        }
+    }
+
+    ///
+    /// Viewpont adaptation
+    ///
+
+    /**
+     * Returns a variant of this with LocalVariable replaced by FormalParameter where possible. That
+     * is, it replaces formal parameter names by "#2" syntax.
+     *
+     * @return a variant of this with formal parameters expressed as "#2"
+     */
+    public abstract JavaExpression atMethodScope(List<JavaExpression> parameters);
+
+    /**
+     * Returns a variant of the given list with LocalVariable replaced by FormalParameter where
+     * possible. That is, it replaces formal parameter names by "#2" syntax.
+     *
+     * @param list a list of JavaExpressions
+     * @return a variant of the given list with formal parameters expressed as "#2"
+     */
+    public static <T extends @Nullable JavaExpression> List<T> listAsMethodScope(
+            List<T> list, List<JavaExpression> parameters) {
+        List<T> result = new ArrayList<T>(list.size());
+        boolean different = false;
+        for (T elt : list) {
+            newElt = elt == null ? null : elt.atMethodScope(parameters);
+            different = different || newElt != elt;
+            result.add(newElt);
+        }
+        if (different) {
+            return result;
+        } else {
+            return list;
         }
     }
 }

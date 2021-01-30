@@ -105,7 +105,7 @@ public class ArrayCreation extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameters) {
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         if (false) {
             System.out.printf(
@@ -117,7 +117,7 @@ public class ArrayCreation extends JavaExpression {
             sb.append("new " + TypesUtils.getInnermostComponentType((ArrayType) type));
             for (JavaExpression dim : dimensions) {
                 sb.append("[");
-                sb.append(dim == null ? "" : dim);
+                sb.append(dim == null ? "" : dim.toString());
                 sb.append("]");
             }
         }
@@ -144,4 +144,7 @@ public class ArrayCreation extends JavaExpression {
                 + " initializers="
                 + initializers;
     }
+
+    @Override
+    public abstract ArrayCreation atMethodScope(List<JavaExpression> parameters) {}
 }

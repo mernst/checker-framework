@@ -1,7 +1,6 @@
 package org.checkerframework.dataflow.expression;
 
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Objects;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -137,7 +136,7 @@ public class ValueLiteral extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameters) {
+    public String toString() {
         if (TypesUtils.isString(type)) {
             return "\"" + value + "\"";
         } else if (type.getKind() == TypeKind.LONG) {
@@ -152,5 +151,10 @@ public class ValueLiteral extends JavaExpression {
     @Override
     public int hashCode() {
         return Objects.hash(value, type.toString());
+    }
+
+    @Override
+    public ValueLiteral atMethodScope(List<JavaExpression> parameters) {
+        return this;
     }
 }

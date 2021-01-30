@@ -1,7 +1,6 @@
 package org.checkerframework.dataflow.expression;
 
 import com.sun.source.tree.Tree;
-import java.util.List;
 import java.util.Objects;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -104,8 +103,8 @@ public class UnaryOperation extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameters) {
-        String operandString = operand.toString(parameters);
+    public String toString() {
+        String operandString = operand.toString();
         switch (operationKind) {
             case BITWISE_COMPLEMENT:
                 return "~" + operandString;
@@ -125,6 +124,16 @@ public class UnaryOperation extends JavaExpression {
                 return "+" + operandString;
             default:
                 throw new Error("Unrecognized unary operation kind " + operationKind);
+        }
+    }
+
+    @Override
+    public UnaryOperation atMethodScope(List<JavaExpression> parameters) {
+        UnaryOperation newOperand = operand.atMethodScope();
+        if (operand == newOperand) {
+            return this;
+        } else {
+            return new UnaryOperation(type, operationKind, newOperand);
         }
     }
 }
