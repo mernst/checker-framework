@@ -247,7 +247,7 @@ public abstract class JavaExpression {
             result = new ThisReference(receiverNode.getType());
         } else if (receiverNode instanceof LocalVariableNode) {
             LocalVariableNode lv = (LocalVariableNode) receiverNode;
-            result = new LocalVariable(lv);
+            result = LocalVariable.create(lv);
         } else if (receiverNode instanceof ArrayAccessNode) {
             ArrayAccessNode a = (ArrayAccessNode) receiverNode;
             result = fromArrayAccess(provider, a);
