@@ -147,12 +147,12 @@ public abstract class JavaExpression {
     /**
      * Format this, using "#2" syntax for formal parameters.
      *
-     * @param parameterIndex map from formal parameter name to 1-based index; null means do no
-     *     substitution
+     * @param parameters formal parameters, in order; used to substitute "#2" syntax for formal
+     *     parameters; null means do no substitution
      * @return a string representation of this, using "#2" syntax for formal parameters
      */
-    // TODO: Alternately, parameterIndex could map from Element to Integer.
-    public abstract String toString(@Nullable List<JavaExpression> parameterIndex);
+    // TODO: Alternately, parameters could map from Element to Integer.
+    public abstract String toString(@Nullable List<JavaExpression> parameters);
 
     @Override
     public final String toString() {

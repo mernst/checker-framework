@@ -30,7 +30,7 @@ public class Unknown extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
+    public String toString(@Nullable List<JavaExpression> parameters) {
         return "?";
     }
 

@@ -104,8 +104,8 @@ public class UnaryOperation extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
-        String operandString = operand.toString(parameterIndex);
+    public String toString(@Nullable List<JavaExpression> parameters) {
+        String operandString = operand.toString(parameters);
         switch (operationKind) {
             case BITWISE_COMPLEMENT:
                 return "~" + operandString;

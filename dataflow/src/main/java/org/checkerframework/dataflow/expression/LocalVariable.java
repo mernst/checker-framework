@@ -96,18 +96,18 @@ public class LocalVariable extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
+    public String toString(@Nullable List<JavaExpression> parameters) {
         String result = element.toString();
-        if (parameterIndex != null) {
+        if (parameters != null) {
             if (false) {
                 System.out.printf(
                         "LocalVariable.toString: %s [%s] %d%n",
-                        this.toString(null), this.getClass(), parameterIndex.size());
-                for (JavaExpression je : parameterIndex) {
+                        this.toString(null), this.getClass(), parameters.size());
+                for (JavaExpression je : parameters) {
                     System.out.printf("  %s [%s]%n", je.toString(null), je.getClass());
                 }
             }
-            int zeroBased = parameterIndex.indexOf(this);
+            int zeroBased = parameters.indexOf(this);
             if (zeroBased != -1) {
                 return "#" + (zeroBased + 1);
             }

@@ -39,7 +39,7 @@ public class ClassName extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
+    public String toString(@Nullable List<JavaExpression> parameters) {
         if (typeString.endsWith(">")) {
             return typeString.substring(0, typeString.indexOf("<")) + ".class";
         }

@@ -105,7 +105,7 @@ public class ArrayCreation extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
+    public String toString(@Nullable List<JavaExpression> parameters) {
         StringBuilder sb = new StringBuilder();
         if (false) {
             System.out.printf(

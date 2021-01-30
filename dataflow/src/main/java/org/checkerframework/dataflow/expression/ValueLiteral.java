@@ -137,7 +137,7 @@ public class ValueLiteral extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
+    public String toString(@Nullable List<JavaExpression> parameters) {
         if (TypesUtils.isString(type)) {
             return "\"" + value + "\"";
         } else if (type.getKind() == TypeKind.LONG) {

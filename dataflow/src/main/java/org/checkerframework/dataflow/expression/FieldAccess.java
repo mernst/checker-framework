@@ -80,7 +80,7 @@ public class FieldAccess extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
+    public String toString(@Nullable List<JavaExpression> parameters) {
         if (receiver instanceof ClassName) {
             return receiver.getType() + "." + field;
         } else {

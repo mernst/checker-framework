@@ -89,11 +89,11 @@ public class ArrayAccess extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
+    public String toString(@Nullable List<JavaExpression> parameters) {
         StringBuilder result = new StringBuilder();
-        result.append(receiver.toString(parameterIndex));
+        result.append(receiver.toString(parameters));
         result.append("[");
-        result.append(index.toString(parameterIndex));
+        result.append(index.toString(parameters));
         result.append("]");
         return result.toString();
     }

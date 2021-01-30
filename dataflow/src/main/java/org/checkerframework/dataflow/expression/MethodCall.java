@@ -161,12 +161,12 @@ public class MethodCall extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
+    public String toString(@Nullable List<JavaExpression> parameters) {
         StringBuilder preParen = new StringBuilder();
         if (receiver instanceof ClassName) {
             preParen.append(receiver.getType());
         } else {
-            preParen.append(receiver.toString(parameterIndex));
+            preParen.append(receiver.toString(parameters));
         }
         preParen.append(".");
         String methodName = method.getSimpleName().toString();
@@ -174,7 +174,7 @@ public class MethodCall extends JavaExpression {
         preParen.append("(");
         StringJoiner result = new StringJoiner(", ", preParen, ")");
         for (JavaExpression parameter : parameters) {
-            result.add(parameter.toString(parameterIndex));
+            result.add(parameter.toString(parameters));
         }
         return result.toString();
     }

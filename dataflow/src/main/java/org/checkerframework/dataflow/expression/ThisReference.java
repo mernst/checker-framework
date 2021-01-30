@@ -22,7 +22,7 @@ public class ThisReference extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
+    public String toString(@Nullable List<JavaExpression> parameters) {
         return "this";
     }
 

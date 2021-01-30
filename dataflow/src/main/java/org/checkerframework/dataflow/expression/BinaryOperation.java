@@ -152,12 +152,12 @@ public class BinaryOperation extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
-        return left.toString(parameterIndex)
+    public String toString(@Nullable List<JavaExpression> parameters) {
+        return left.toString(parameters)
                 + " "
                 + operationKindToString(operationKind)
                 + " "
-                + right.toString(parameterIndex);
+                + right.toString(parameters);
     }
 
     /**
