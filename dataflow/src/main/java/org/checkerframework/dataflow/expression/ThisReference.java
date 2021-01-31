@@ -22,7 +22,7 @@ public class ThisReference extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
+    public String toString() {
         return "this";
     }
 
@@ -32,8 +32,13 @@ public class ThisReference extends JavaExpression {
     }
 
     @Override
-    public boolean syntacticEquals(JavaExpression other) {
-        return other instanceof ThisReference;
+    public boolean syntacticEquals(JavaExpression je) {
+        return je instanceof ThisReference;
+    }
+
+    @Override
+    public boolean containsSyntacticEqualJavaExpression(JavaExpression other) {
+        return this.syntacticEquals(other);
     }
 
     @Override
@@ -49,5 +54,10 @@ public class ThisReference extends JavaExpression {
     @Override
     public boolean containsModifiableAliasOf(Store<?> store, JavaExpression other) {
         return false; // 'this' is not modifiable
+    }
+
+    @Override
+    public ThisReference atMethodScope(List<JavaExpression> parameters) {
+        return this;
     }
 }

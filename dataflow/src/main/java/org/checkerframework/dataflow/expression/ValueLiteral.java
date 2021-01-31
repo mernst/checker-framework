@@ -10,7 +10,7 @@ import org.checkerframework.dataflow.analysis.Store;
 import org.checkerframework.dataflow.cfg.node.ValueLiteralNode;
 import org.checkerframework.javacutil.TypesUtils;
 
-/** FlowExpression.JavaExpression for literals. */
+/** JavaExpression for literals. */
 public class ValueLiteral extends JavaExpression {
 
     /** The value of the literal. */
@@ -114,8 +114,13 @@ public class ValueLiteral extends JavaExpression {
     }
 
     @Override
-    public boolean syntacticEquals(JavaExpression other) {
-        return this.equals(other);
+    public boolean syntacticEquals(JavaExpression je) {
+        return this.equals(je);
+    }
+
+    @Override
+    public boolean containsSyntacticEqualJavaExpression(JavaExpression other) {
+        return this.syntacticEquals(other);
     }
 
     @Override
@@ -137,7 +142,7 @@ public class ValueLiteral extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
+    public String toString() {
         if (TypesUtils.isString(type)) {
             return "\"" + value + "\"";
         } else if (type.getKind() == TypeKind.LONG) {
@@ -152,5 +157,10 @@ public class ValueLiteral extends JavaExpression {
     @Override
     public int hashCode() {
         return Objects.hash(value, type.toString());
+    }
+
+    @Override
+    public ValueLiteral atMethodScope(List<JavaExpression> parameters) {
+        return this;
     }
 }

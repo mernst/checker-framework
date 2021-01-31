@@ -1267,9 +1267,18 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
         return lockExpressions;
     }
 
+    /**
+     * Parse a Java expression.
+     *
+     * @param expression the Java expression
+     * @param jeContext the Java Expression parsing context
+     * @param path the path to the expression
+     * @param itself the self expression
+     * @return the parsed expression
+     */
     private LockExpression parseExpressionString(
             String expression,
-            JavaExpressionContext flowExprContext,
+            JavaExpressionContext jeContext,
             TreePath path,
             JavaExpression itself) {
 
@@ -1294,7 +1303,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
                     return lockExpression;
                 } else {
                     // TODO: The proper way to do this is to call
-                    // flowExprContext.copyChangeToParsingMemberOfReceiver to set the receiver to
+                    // jeContext.copyChangeToParsingMemberOfReceiver to set the receiver to
                     // the <self> expression, and then call JavaExpressionParseUtil.parse on the
                     // remaining expression string with the new JavaExpressionContext. However,
                     // this currently results in a JavaExpression that has a different
@@ -1307,7 +1316,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
                     lockExpression.lockExpression =
                             JavaExpressionParseUtil.parse(
                                     itself.toString() + "." + remainingExpression,
-                                    flowExprContext,
+                                    jeContext,
                                     path,
                                     UseLocalScope.YES);
                     if (!atypeFactory.isExpressionEffectivelyFinal(lockExpression.lockExpression)) {
@@ -1321,7 +1330,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
             } else {
                 lockExpression.lockExpression =
                         JavaExpressionParseUtil.parse(
-                                expression, flowExprContext, path, UseLocalScope.YES);
+                                expression, jeContext, path, UseLocalScope.YES);
                 return lockExpression;
             }
         } catch (JavaExpressionParseException ex) {

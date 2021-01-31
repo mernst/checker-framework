@@ -46,14 +46,14 @@ public class ParameterExpression {
     }
 
     @EnsuresNonNull("param")
-    // :: warning: (expression.parameter.name.shadows.field)
+    // :: warning: (expression.parameter.name.invalid)
     public void m6a(@Nullable Object param) {
         param = new Object();
     }
 
     @EnsuresNonNull("param")
     // :: error: (contracts.postcondition.not.satisfied)
-    // :: warning: (expression.parameter.name.shadows.field)
+    // :: warning: (expression.parameter.name.invalid)
     public void m6b(@Nullable Object param) {
         param = null;
     }
@@ -76,7 +76,7 @@ public class ParameterExpression {
     public void m8() {}
 
     @RequiresNonNull("param")
-    // :: warning: (expression.parameter.name.shadows.field)
+    // :: warning: (expression.parameter.name.invalid)
     public void m9(Object param) {}
 
     @RequiresNonNull("field")
@@ -91,7 +91,7 @@ public class ParameterExpression {
     }
 
     @EnsuresNonNullIf(result = true, expression = "param")
-    // :: warning: (expression.parameter.name.shadows.field)
+    // :: warning: (expression.parameter.name.invalid)
     public boolean m12(Object param) {
         param = new Object();
         return true;

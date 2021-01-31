@@ -66,7 +66,7 @@ import org.plumelib.util.StringsPlume;
  *       strings that are equivalent are made to be equal. For example, an instance field f may
  *       appear in an expression string as "f" or "this.f"; this class standardizes both strings to
  *       "this.f". It also standardizes formal parameter references such as "#2" to the formal
- *       parameter name.
+ *       parameter name, in method signature contexts but not within method bodies.
  *   <li>Viewpoint-adapts annotations on field or method declarations at field accesses or method
  *       invocations.
  *   <li>Changes invalid expression strings to an error string that includes the reason why the
@@ -738,7 +738,7 @@ public class DependentTypesHelper {
      * @param context the context
      * @param localScope the local scope
      * @param useLocalScope whether {@code localScope} should be used to resolve identifiers
-     * @param delocalize if true, use "#2" instead of names for formal parameters
+     * @param methodScope if true, use "#2" instead of names for formal parameters
      * @return the standardized version of the Java expression
      */
     public String standardizeString(
@@ -746,7 +746,7 @@ public class DependentTypesHelper {
             JavaExpressionContext context,
             TreePath localScope,
             UseLocalScope useLocalScope,
-            boolean delocalize) {
+            boolean methodScope) {
         if (DependentTypesError.isExpressionError(expression)) {
             return expression;
         }
@@ -779,12 +779,18 @@ public class DependentTypesHelper {
         if (debug) {
             System.out.printf("standardizeString(%s) => %s%n", expression, result.toStringDebug());
         }
-        if (debug) {
-            System.out.printf(
-                    "args to toString: %s, arguments=%s%n",
-                    result.toStringDebug(), delocalize ? context.arguments : null);
+        if (methodScope) {
+            if (debug) {
+                System.out.printf(
+                        "delocalizing %s, arguments=%s%n",
+                        result.toStringDebug(), context.arguments);
+            }
+            result = result.atMethodScope(context.arguments);
+            if (debug) {
+                System.out.printf("delocalized => %s%n", result.toStringDebug());
+            }
         }
-        return result.toString(delocalize ? context.arguments : null);
+        return result.toString();
     }
 
     /**

@@ -91,15 +91,21 @@ public class BinaryOperation extends JavaExpression {
     }
 
     @Override
-    public boolean syntacticEquals(JavaExpression other) {
-        if (!(other instanceof BinaryOperation)) {
+    public boolean syntacticEquals(JavaExpression je) {
+        if (!(je instanceof BinaryOperation)) {
             return false;
         }
-        BinaryOperation biOp = (BinaryOperation) other;
-        if (!(operationKind == biOp.getOperationKind())) {
-            return false;
-        }
-        return left.equals(biOp.left) && right.equals(biOp.right);
+        BinaryOperation other = (BinaryOperation) je;
+        return operationKind == other.getOperationKind()
+                && left.syntacticEquals(other.left)
+                && right.syntacticEquals(other.right);
+    }
+
+    @Override
+    public boolean containsSyntacticEqualJavaExpression(JavaExpression other) {
+        return this.syntacticEquals(other)
+                || left.containsSyntacticEqualJavaExpression(other)
+                || right.containsSyntacticEqualJavaExpression(other);
     }
 
     @Override
@@ -152,12 +158,12 @@ public class BinaryOperation extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
-        return left.toString(parameterIndex)
+    public String toString() {
+        return left.toString()
                 + " "
                 + operationKindToString(operationKind)
                 + " "
-                + right.toString(parameterIndex);
+                + right.toString();
     }
 
     /**
@@ -208,6 +214,18 @@ public class BinaryOperation extends JavaExpression {
                 return "^";
             default:
                 throw new Error("unhandled " + operationKind);
+        }
+    }
+
+    @Override
+    @SuppressWarnings("interning:not.interned") // test whether method returns its argument
+    public BinaryOperation atMethodScope(List<JavaExpression> parameters) {
+        JavaExpression newLeft = left.atMethodScope(parameters);
+        JavaExpression newRight = right.atMethodScope(parameters);
+        if (left == newLeft && right == newRight) {
+            return this;
+        } else {
+            return new BinaryOperation(type, operationKind, newLeft, newRight);
         }
     }
 }

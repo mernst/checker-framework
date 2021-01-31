@@ -13,10 +13,22 @@ import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TypeAnnotationUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
+/**
+ * A local variable.
+ *
+ * <p>This class includes formal parameters expressed using their name. Subclass {@link
+ * FormalParameter} represents a formal parameter expressed using the "#2" notation.
+ */
 public class LocalVariable extends JavaExpression {
+    /** The element for this local variable. */
     protected final Element element;
 
-    public LocalVariable(LocalVariableNode localVar) {
+    /**
+     * Creates a new LocalVariable.
+     *
+     * @param localVar a CFG local variable
+     */
+    protected LocalVariable(LocalVariableNode localVar) {
         super(localVar.getType());
         this.element = localVar.getElement();
     }
@@ -24,6 +36,27 @@ public class LocalVariable extends JavaExpression {
     public LocalVariable(Element elem) {
         super(ElementUtils.getType(elem));
         this.element = elem;
+    }
+
+    /**
+     * Creates a LocalVariable or a FormalParameter, depending on the argument.
+     *
+     * @param localVar a CFG node for a variable
+     * @return a LocalVariable or FormalParameter for the given CFG variable
+     */
+    public static LocalVariable create(LocalVariableNode localVar) {
+        String name = localVar.getName();
+        if (name.startsWith(FormalParameter.PARAMETER_REPLACEMENT)) {
+            try {
+                return new FormalParameter(
+                        localVar.getElement(),
+                        Integer.parseInt(
+                                name.substring(FormalParameter.PARAMETER_REPLACEMENT_LENGTH)));
+            } catch (NumberFormatException e) {
+                // fallthrough
+            }
+        }
+        return new LocalVariable(localVar);
     }
 
     @Override
@@ -96,23 +129,8 @@ public class LocalVariable extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
-        String result = element.toString();
-        if (parameterIndex != null) {
-            if (false) {
-                System.out.printf(
-                        "LocalVariable.toString: %s [%s] %d%n",
-                        this.toString(null), this.getClass(), parameterIndex.size());
-                for (JavaExpression je : parameterIndex) {
-                    System.out.printf("  %s [%s]%n", je.toString(null), je.getClass());
-                }
-            }
-            int zeroBased = parameterIndex.indexOf(this);
-            if (zeroBased != -1) {
-                return "#" + (zeroBased + 1);
-            }
-        }
-        return result;
+    public String toString() {
+        return element.toString();
     }
 
     @Override
@@ -126,12 +144,12 @@ public class LocalVariable extends JavaExpression {
     }
 
     @Override
-    public boolean syntacticEquals(JavaExpression other) {
-        if (!(other instanceof LocalVariable)) {
+    public boolean syntacticEquals(JavaExpression je) {
+        if (!(je instanceof LocalVariable)) {
             return false;
         }
-        LocalVariable l = (LocalVariable) other;
-        return l.equals(this);
+        LocalVariable other = (LocalVariable) je;
+        return this.equals(other);
     }
 
     @Override
@@ -147,5 +165,15 @@ public class LocalVariable extends JavaExpression {
     @Override
     public boolean isUnmodifiableByOtherCode() {
         return TypesUtils.isImmutableTypeInJdk(((VarSymbol) element).type);
+    }
+
+    @Override
+    public LocalVariable atMethodScope(List<JavaExpression> parameters) {
+        int index = parameters.indexOf(this);
+        if (index == -1) {
+            return this;
+        } else {
+            return new FormalParameter(element, index + 1);
+        }
     }
 }

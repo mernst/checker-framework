@@ -196,7 +196,10 @@ public class LockAnnotatedTypeFactory
                         return new DependentTypesError(expression, NOT_EFFECTIVELY_FINAL)
                                 .toString();
                     }
-                    return result.toString(delocalize ? context.arguments : null);
+                    if (delocalize) {
+                        result = result.atMethodScope(context.arguments);
+                    }
+                    return result.toString();
                 } catch (JavaExpressionParseUtil.JavaExpressionParseException e) {
                     return new DependentTypesError(expression, e).toString();
                 }
@@ -232,8 +235,8 @@ public class LockAnnotatedTypeFactory
             return ElementUtils.isEffectivelyFinal(((LocalVariable) expr).getElement());
         } else if (expr instanceof MethodCall) {
             MethodCall methodCall = (MethodCall) expr;
-            for (JavaExpression param : methodCall.getParameters()) {
-                if (!isExpressionEffectivelyFinal(param)) {
+            for (JavaExpression arg : methodCall.getArguments()) {
+                if (!isExpressionEffectivelyFinal(arg)) {
                     return false;
                 }
             }

@@ -22,6 +22,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.interning.qual.EqualsMethod;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.dataflow.analysis.Store;
 import org.checkerframework.dataflow.cfg.node.ArrayAccessNode;
 import org.checkerframework.dataflow.cfg.node.ArrayCreationNode;
@@ -111,52 +112,81 @@ public abstract class JavaExpression {
     public abstract boolean isUnmodifiableByOtherCode();
 
     /**
-     * Returns true if and only if the two receivers are syntactically identical.
+     * Returns true if and only if the two Java expressions are syntactically identical.
      *
-     * @param other the other object to compare to this one
-     * @return true if and only if the two receivers are syntactically identical
+     * <p>This exists for use by {@link containsSyntacticEqualJavaExpression}.
+     *
+     * @param je the other Java expression to compare to this one
+     * @return true if and only if the two Java expressions are syntactically identical
      */
     @EqualsMethod
-    public boolean syntacticEquals(JavaExpression other) {
-        return other == this;
+    public abstract boolean syntacticEquals(JavaExpression je);
+
+    /**
+     * Returns true if the corresponding list elements satisfy {@link #syntacticEquals}.
+     *
+     * @param lst1 the first list to compare
+     * @param lst2 the second list to compare
+     * @return true if the corresponding list elements satisfy {@link #syntacticEquals}
+     */
+    static boolean syntacticEqualsList(
+            List<? extends @Nullable JavaExpression> lst1,
+            List<? extends @Nullable JavaExpression> lst2) {
+        if (lst1.size() != lst2.size()) {
+            return false;
+        }
+        for (int i = 0; i < lst1.size(); i++) {
+            JavaExpression dim1 = lst1.get(i);
+            JavaExpression dim2 = lst2.get(i);
+            if (dim1 == null && dim2 == null) {
+                continue;
+            } else if (dim1 == null || dim2 == null) {
+                return false;
+            } else {
+                if (!dim1.syntacticEquals(dim2)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**
-     * Returns true if and only if this receiver contains a receiver that is syntactically equal to
+     * Returns true if and only if this contains a JavaExpression that is syntactically equal to
      * {@code other}.
      *
-     * @return true if and only if this receiver contains a receiver that is syntactically equal to
+     * @param other the JavaExpression to search for
+     * @return true if and only if this contains a JavaExpression that is syntactically equal to
      *     {@code other}
      */
-    public boolean containsSyntacticEqualJavaExpression(JavaExpression other) {
-        return syntacticEquals(other);
+    public abstract boolean containsSyntacticEqualJavaExpression(JavaExpression other);
+
+    /**
+     * Returns true if the given list contains a JavaExpression that is syntactically equal to
+     * {@code other}.
+     *
+     * @param list the list in which to search for a match
+     * @param other the JavaExpression to search for
+     * @return true if and only if the list contains a JavaExpression that is syntactically equal to
+     *     {@code other}
+     */
+    @SuppressWarnings("nullness:dereference.of.nullable") // flow within a lambda
+    public static boolean listContainsSyntacticEqualJavaExpression(
+            List<? extends @Nullable JavaExpression> list, JavaExpression other) {
+        return list.stream()
+                .anyMatch(je -> je != null && je.containsSyntacticEqualJavaExpression(other));
     }
 
     /**
-     * Returns true if and only if {@code other} appears anywhere in this receiver or an expression
-     * appears in this receiver such that {@code other} might alias this expression, and that
-     * expression is modifiable.
+     * Returns true if and only if {@code other} appears anywhere in this or an expression appears
+     * in this such that {@code other} might alias this expression, and that expression is
+     * modifiable.
      *
      * <p>This is always true, except for cases where the Java type information prevents aliasing
      * and none of the subexpressions can alias 'other'.
      */
     public boolean containsModifiableAliasOf(Store<?> store, JavaExpression other) {
         return this.equals(other) || store.canAlias(this, other);
-    }
-
-    /**
-     * Format this, using "#2" syntax for formal parameters.
-     *
-     * @param parameterIndex map from formal parameter name to 1-based index; null means do no
-     *     substitution
-     * @return a string representation of this, using "#2" syntax for formal parameters
-     */
-    // TODO: Alternately, parameterIndex could map from Element to Integer.
-    public abstract String toString(@Nullable List<JavaExpression> parameterIndex);
-
-    @Override
-    public final String toString() {
-        return toString(null);
     }
 
     /**
@@ -174,7 +204,7 @@ public abstract class JavaExpression {
 
     /**
      * Returns the internal representation (as {@link FieldAccess}) of a {@link FieldAccessNode}.
-     * Can contain {@link Unknown} as receiver.
+     * The result may contain {@link Unknown} as receiver.
      *
      * @return the internal representation (as {@link FieldAccess}) of a {@link FieldAccessNode}.
      *     Can contain {@link Unknown} as receiver.
@@ -193,7 +223,7 @@ public abstract class JavaExpression {
 
     /**
      * Returns the internal representation (as {@link FieldAccess}) of a {@link FieldAccessNode}.
-     * Can contain {@link Unknown} as receiver.
+     * The result may contain {@link Unknown} as receiver.
      *
      * @return the internal representation (as {@link FieldAccess}) of a {@link FieldAccessNode}.
      *     Can contain {@link Unknown} as receiver.
@@ -247,7 +277,7 @@ public abstract class JavaExpression {
             result = new ThisReference(receiverNode.getType());
         } else if (receiverNode instanceof LocalVariableNode) {
             LocalVariableNode lv = (LocalVariableNode) receiverNode;
-            result = new LocalVariable(lv);
+            result = LocalVariable.create(lv);
         } else if (receiverNode instanceof ArrayAccessNode) {
             ArrayAccessNode a = (ArrayAccessNode) receiverNode;
             result = fromArrayAccess(provider, a);
@@ -616,6 +646,46 @@ public abstract class JavaExpression {
             return new ClassName(enclosingType);
         } else {
             return new ThisReference(enclosingType);
+        }
+    }
+
+    ///
+    /// Viewpont adaptation
+    ///
+
+    /**
+     * Returns a variant of this with LocalVariable replaced by FormalParameter where possible. That
+     * is, it replaces formal parameter names by "#2" syntax.
+     *
+     * @return a variant of this with formal parameters expressed as "#2"
+     */
+    public abstract JavaExpression atMethodScope(List<JavaExpression> parameters);
+
+    /**
+     * Returns a variant of the given list with LocalVariable replaced by FormalParameter where
+     * possible. That is, it replaces formal parameter names by "#2" syntax.
+     *
+     * @param list a list of JavaExpressions
+     * @return a variant of the given list with formal parameters expressed as "#2"
+     */
+    @SuppressWarnings("interning:not.interned") // test whether method returns its argument
+    public static List<@PolyNull JavaExpression> listAtMethodScope(
+            List<@PolyNull JavaExpression> list, List<JavaExpression> parameters) {
+        List<@PolyNull JavaExpression> result = new ArrayList<>(list.size());
+        boolean different = false;
+        for (JavaExpression elt : list) {
+            if (elt == null) {
+                result.add(null);
+            } else {
+                JavaExpression newElt = elt.atMethodScope(parameters);
+                different = different || newElt != elt;
+                result.add(newElt);
+            }
+        }
+        if (different) {
+            return result;
+        } else {
+            return list;
         }
     }
 }

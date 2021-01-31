@@ -76,12 +76,17 @@ public class UnaryOperation extends JavaExpression {
     }
 
     @Override
-    public boolean syntacticEquals(JavaExpression other) {
-        if (!(other instanceof UnaryOperation)) {
+    public boolean syntacticEquals(JavaExpression je) {
+        if (!(je instanceof UnaryOperation)) {
             return false;
         }
-        UnaryOperation unOp = (UnaryOperation) other;
-        return operationKind == unOp.getOperationKind() && operand.equals(unOp.operand);
+        UnaryOperation other = (UnaryOperation) je;
+        return operationKind == other.getOperationKind() && operand.syntacticEquals(other.operand);
+    }
+
+    @Override
+    public boolean containsSyntacticEqualJavaExpression(JavaExpression other) {
+        return this.syntacticEquals(other) || operand.containsSyntacticEqualJavaExpression(other);
     }
 
     @Override
@@ -104,8 +109,8 @@ public class UnaryOperation extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
-        String operandString = operand.toString(parameterIndex);
+    public String toString() {
+        String operandString = operand.toString();
         switch (operationKind) {
             case BITWISE_COMPLEMENT:
                 return "~" + operandString;
@@ -125,6 +130,17 @@ public class UnaryOperation extends JavaExpression {
                 return "+" + operandString;
             default:
                 throw new Error("Unrecognized unary operation kind " + operationKind);
+        }
+    }
+
+    @Override
+    @SuppressWarnings("interning:not.interned") // test whether method returns its argument
+    public UnaryOperation atMethodScope(List<JavaExpression> parameters) {
+        JavaExpression newOperand = operand.atMethodScope(parameters);
+        if (operand == newOperand) {
+            return this;
+        } else {
+            return new UnaryOperation(type, operationKind, newOperand);
         }
     }
 }

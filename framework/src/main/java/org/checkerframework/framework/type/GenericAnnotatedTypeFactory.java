@@ -2484,14 +2484,12 @@ public abstract class GenericAnnotatedTypeFactory<
      * <p>This converts all instances of "#2" into the corresponding formal parameter.
      *
      * @param annoFromContract the annotation to be standardized
-     * @param flowExprContext the context to use for standardization
+     * @param jeContext the context to use for standardization
      * @param path the path to a use of the contract (a method call) or to the method declaration
      * @return the standardized annotation, or the argument if it does not need standardization
      */
     public AnnotationMirror standardizeAnnotationFromContract(
-            AnnotationMirror annoFromContract,
-            JavaExpressionContext flowExprContext,
-            TreePath path) {
+            AnnotationMirror annoFromContract, JavaExpressionContext jeContext, TreePath path) {
         if (false) {
             System.out.printf(
                     "standardizeAnnotationFromContract%n  annoFromContract=%s%n  path.getLeaf()=%s %s%n",
@@ -2503,7 +2501,7 @@ public abstract class GenericAnnotatedTypeFactory<
         if (dependentTypesHelper != null) {
             AnnotationMirror standardized =
                     dependentTypesHelper.standardizeAnnotationIfDependentType(
-                            flowExprContext, path, annoFromContract, UseLocalScope.YES, false);
+                            jeContext, path, annoFromContract, UseLocalScope.YES, false);
             if (standardized != null) {
                 dependentTypesHelper.checkAnnotation(
                         standardized, path == null ? null : path.getLeaf());

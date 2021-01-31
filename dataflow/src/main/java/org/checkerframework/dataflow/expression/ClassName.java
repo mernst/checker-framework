@@ -39,7 +39,7 @@ public class ClassName extends JavaExpression {
     }
 
     @Override
-    public String toString(@Nullable List<JavaExpression> parameterIndex) {
+    public String toString() {
         if (typeString.endsWith(">")) {
             return typeString.substring(0, typeString.indexOf("<")) + ".class";
         }
@@ -52,8 +52,17 @@ public class ClassName extends JavaExpression {
     }
 
     @Override
-    public boolean syntacticEquals(JavaExpression other) {
-        return this.equals(other);
+    public boolean syntacticEquals(JavaExpression je) {
+        if (!(je instanceof ClassName)) {
+            return false;
+        }
+        ClassName other = (ClassName) je;
+        return typeString.equals(other.typeString);
+    }
+
+    @Override
+    public boolean containsSyntacticEqualJavaExpression(JavaExpression other) {
+        return this.syntacticEquals(other);
     }
 
     @Override
@@ -69,5 +78,10 @@ public class ClassName extends JavaExpression {
     @Override
     public boolean containsModifiableAliasOf(Store<?> store, JavaExpression other) {
         return false; // not modifiable
+    }
+
+    @Override
+    public ClassName atMethodScope(List<JavaExpression> parameters) {
+        return this;
     }
 }
