@@ -122,15 +122,11 @@ public class JavaExpressionParseUtil {
      * @param context information about any receiver and arguments
      * @param annotatedConstruct a program element annotated with an annotation that contains {@code
      *     expression}
-     * @param useLocalScope whether {@code annotatedConstruct} should be used to resolve identifiers
      * @return the JavaExpression for the given string
      * @throws JavaExpressionParseException if the string cannot be parsed
      */
     public static JavaExpression parse(
-            String expression,
-            JavaExpressionContext context,
-            TreePath annotatedConstruct,
-            UseLocalScope useLocalScope)
+            String expression, JavaExpressionContext context, TreePath annotatedConstruct)
             throws JavaExpressionParseException {
 
         Expression expr;
@@ -147,7 +143,6 @@ public class JavaExpressionParseUtil {
                         "parse(%s, %s [%s]) context=%s%n",
                         expression, expr, expr.getClass(), context.toStringDebug());
             }
-            context = context.copyAndSetUseLocalScope(useLocalScope);
             ProcessingEnvironment env = context.checker.getProcessingEnvironment();
             result =
                     expr.accept(
@@ -370,7 +365,7 @@ public class JavaExpressionParseUtil {
             }
 
             // Local variable, parameter, or field.
-            if (!context.parsingMember && context.useLocalScope == UseLocalScope.YES) {
+            if (!context.parsingMember) {
                 // Attempt to match a local variable within the scope of the
                 // given path before attempting to match a field.
                 VariableElement varElem =
@@ -991,8 +986,6 @@ public class JavaExpressionParseUtil {
          * If so, certain constructs like "#2" and local variables cannot occur.
          */
         public final boolean parsingMember;
-        /** Whether the TreePath should be used to find identifiers. */
-        public final UseLocalScope useLocalScope;
 
         /**
          * Creates a context for parsing a Java expression.
@@ -1006,7 +999,7 @@ public class JavaExpressionParseUtil {
          */
         public JavaExpressionContext(
                 JavaExpression receiver, List<JavaExpression> arguments, SourceChecker checker) {
-            this(receiver, arguments, checker, false, UseLocalScope.YES);
+            this(receiver, arguments, checker, false);
         }
 
         /**
@@ -1020,20 +1013,17 @@ public class JavaExpressionParseUtil {
          *     org.checkerframework.dataflow.expression.JavaExpression}s
          * @param parsingMember whether or not the JavaExpressionParser is parsing the "member" part
          *     of a member select
-         * @param useLocalScope whether the TreePath should be used to find identifiers
          */
         private JavaExpressionContext(
                 JavaExpression receiver,
                 List<JavaExpression> arguments,
                 SourceChecker checker,
-                boolean parsingMember,
-                UseLocalScope useLocalScope) {
+                boolean parsingMember) {
             assert checker != null;
             this.receiver = receiver;
             this.arguments = arguments;
             this.checker = checker;
             this.parsingMember = parsingMember;
-            this.useLocalScope = useLocalScope;
         }
 
         /**
@@ -1216,8 +1206,7 @@ public class JavaExpressionParseUtil {
          * @return a copy of the context, with the given receiver
          */
         public JavaExpressionContext copyChangeToParsingMemberOfReceiver(JavaExpression receiver) {
-            return new JavaExpressionContext(
-                    receiver, arguments, checker, /*parsingMember=*/ true, useLocalScope);
+            return new JavaExpressionContext(receiver, arguments, checker, /*parsingMember=*/ true);
         }
 
         /**
@@ -1230,19 +1219,7 @@ public class JavaExpressionParseUtil {
                 return this;
             }
             return new JavaExpressionContext(
-                    receiver, arguments, checker, /*parsingMember=*/ false, useLocalScope);
-        }
-
-        /**
-         * Returns a copy of the context that differs in that {@code useLocalScope} is set to the
-         * given value.
-         *
-         * @param useLocalScope whether the local scope should be used to resolve identifiers
-         * @return a copy of the context, with {@code useLocalScope} is set to the given value
-         */
-        public JavaExpressionContext copyAndSetUseLocalScope(UseLocalScope useLocalScope) {
-            return new JavaExpressionContext(
-                    receiver, arguments, checker, parsingMember, useLocalScope);
+                    receiver, arguments, checker, /*parsingMember=*/ false);
         }
 
         /**
@@ -1258,7 +1235,6 @@ public class JavaExpressionParseUtil {
             sj.add("checker=" + "...");
             // sj.add("checker="+ checker);
             sj.add("parsingMember=" + parsingMember);
-            sj.add("useLocalScope=" + useLocalScope);
             return sj.toString();
         }
     }
@@ -1297,15 +1273,16 @@ public class JavaExpressionParseUtil {
     }
 
     /**
-     * Get a JavaExpression from a VariableTree, passing {@code true} for useLocalScope.
+     * Get a JavaExpression from a VariableTree.
      *
      * @param provider gives the context
      * @param tree the VariableTree
      * @return a JavaExpression for the given VariableTree
      * @throws JavaExpressionParseException if the expression string cannot be parsed
      */
-    public static JavaExpression fromVariableTreeUseLocalScope(
-            AnnotatedTypeFactory provider, VariableTree tree) throws JavaExpressionParseException {
+    // TODO: Rename to fromVariableTree, eliminate other variants.
+    public static JavaExpression fromVariableTree(AnnotatedTypeFactory provider, VariableTree tree)
+            throws JavaExpressionParseException {
         Element elt = TreeUtils.elementFromDeclaration(tree);
 
         if (elt.getKind() == ElementKind.LOCAL_VARIABLE
@@ -1317,59 +1294,7 @@ public class JavaExpressionParseUtil {
         JavaExpression receiverJe = JavaExpression.getImplicitReceiver(elt);
         JavaExpressionContext context =
                 new JavaExpressionContext(receiverJe, /*arguments=*/ null, provider.getChecker());
-        return parse(tree.getName().toString(), context, provider.getPath(tree), UseLocalScope.YES);
-    }
-
-    /**
-     * Get a JavaExpression from a VariableTree, passing {@code false} for useLocalScope.
-     *
-     * @param provider gives the context
-     * @param tree the VariableTree
-     * @return a JavaExpression for the given VariableTree
-     * @throws JavaExpressionParseException if the expression string cannot be parsed
-     */
-    public static JavaExpression fromVariableTreeDoNotUseLocalScope(
-            AnnotatedTypeFactory provider, VariableTree tree) throws JavaExpressionParseException {
-        Element elt = TreeUtils.elementFromDeclaration(tree);
-
-        if (elt.getKind() == ElementKind.LOCAL_VARIABLE
-                || elt.getKind() == ElementKind.RESOURCE_VARIABLE
-                || elt.getKind() == ElementKind.EXCEPTION_PARAMETER
-                || elt.getKind() == ElementKind.PARAMETER) {
-            return new LocalVariable(elt);
-        }
-        JavaExpression receiverJe = JavaExpression.getImplicitReceiver(elt);
-        JavaExpressionContext context =
-                new JavaExpressionContext(receiverJe, /*arguments=*/ null, provider.getChecker());
-        // TODO: Why not use local scope?  (Really: Why was fromVariableTreeDoNotUseLocalScope
-        // called at all?)
-        return parse(tree.getName().toString(), context, provider.getPath(tree), UseLocalScope.YES);
-    }
-
-    /**
-     * Get a JavaExpression from a VariableTree, using method scope.
-     *
-     * @param provider gives the context
-     * @param tree the VariableTree
-     * @return a JavaExpression for the given VariableTree
-     * @throws JavaExpressionParseException if the expression string cannot be parsed
-     */
-    // TODO: This method is used at places that I guessed should use method scope.  Those guesses
-    // need to be validated.
-    public static JavaExpression fromVariableTreeUseMethodScope(
-            AnnotatedTypeFactory provider, VariableTree tree) throws JavaExpressionParseException {
-        Element elt = TreeUtils.elementFromDeclaration(tree);
-
-        if (elt.getKind() == ElementKind.LOCAL_VARIABLE
-                || elt.getKind() == ElementKind.RESOURCE_VARIABLE
-                || elt.getKind() == ElementKind.EXCEPTION_PARAMETER
-                || elt.getKind() == ElementKind.PARAMETER) {
-            return new LocalVariable(elt);
-        }
-        JavaExpression receiverJe = JavaExpression.getImplicitReceiver(elt);
-        JavaExpressionContext context =
-                new JavaExpressionContext(receiverJe, /*arguments=*/ null, provider.getChecker());
-        return parse(tree.getName().toString(), context, provider.getPath(tree), UseLocalScope.YES);
+        return parse(tree.getName().toString(), context, provider.getPath(tree));
     }
 
     ///////////////////////////////////////////////////////////////////////////

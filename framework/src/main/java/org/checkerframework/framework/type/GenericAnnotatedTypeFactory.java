@@ -99,7 +99,6 @@ import org.checkerframework.framework.util.ContractsFromMethod;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
-import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.framework.util.defaults.QualifierDefaults;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesHelper;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesTreeAnnotator;
@@ -910,7 +909,7 @@ public abstract class GenericAnnotatedTypeFactory<
                         JavaExpression.getParametersOfEnclosingMethod(this, currentPath),
                         this.getChecker());
 
-        return JavaExpressionParseUtil.parse(expression, context, currentPath, UseLocalScope.YES);
+        return JavaExpressionParseUtil.parse(expression, context, currentPath);
     }
 
     /**
@@ -2501,7 +2500,7 @@ public abstract class GenericAnnotatedTypeFactory<
         if (dependentTypesHelper != null) {
             AnnotationMirror standardized =
                     dependentTypesHelper.standardizeAnnotationIfDependentType(
-                            jeContext, path, annoFromContract, UseLocalScope.YES, false);
+                            jeContext, path, annoFromContract, false);
             if (standardized != null) {
                 dependentTypesHelper.checkAnnotation(
                         standardized, path == null ? null : path.getLeaf());

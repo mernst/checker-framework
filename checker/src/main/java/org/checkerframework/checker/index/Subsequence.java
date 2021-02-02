@@ -12,7 +12,6 @@ import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
-import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
@@ -115,8 +114,7 @@ public class Subsequence {
     private static String standardizeAndViewpointAdapt(
             String s, TreePath currentPath, JavaExpressionContext context) {
         try {
-            return JavaExpressionParseUtil.parse(s, context, currentPath, UseLocalScope.YES)
-                    .toString();
+            return JavaExpressionParseUtil.parse(s, context, currentPath).toString();
         } catch (JavaExpressionParseException e) {
             return s;
         }

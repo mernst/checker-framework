@@ -76,7 +76,6 @@ import org.checkerframework.framework.util.ContractsFromMethod;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
-import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesHelper;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
@@ -590,10 +589,7 @@ public abstract class CFAbstractTransfer<
                         // JavaExpressionParseUtil.parse(
                         //         expressionString, methodUseContext, methodDeclPath, false);
                         JavaExpressionParseUtil.parse(
-                                expressionString,
-                                methodUseContext,
-                                methodDeclPath,
-                                UseLocalScope.YES);
+                                expressionString, methodUseContext, methodDeclPath);
                 initialStore.insertValue(exprJe, annotation);
             } catch (JavaExpressionParseException e) {
                 // Errors are reported by BaseTypeVisitor.checkContractsAtMethodDeclaration().
@@ -617,7 +613,7 @@ public abstract class CFAbstractTransfer<
         if (dependentTypesHelper != null) {
             AnnotationMirror standardized =
                     dependentTypesHelper.standardizeAnnotationIfDependentType(
-                            jeContext, path, annoFromContract, UseLocalScope.YES, false);
+                            jeContext, path, annoFromContract, false);
             if (standardized != null) {
                 // BaseTypeVisitor checks the validity of the annotaiton. Errors are reported there
                 // when called from BaseTypeVisitor.checkContractsAtMethodDeclaration().
@@ -1280,10 +1276,7 @@ public abstract class CFAbstractTransfer<
                         // JavaExpressionParseUtil.parse(
                         //         expressionString, methodUseContext, pathToInvocation, false);
                         JavaExpressionParseUtil.parse(
-                                expressionString,
-                                methodUseContext,
-                                pathToInvocation,
-                                UseLocalScope.YES);
+                                expressionString, methodUseContext, pathToInvocation);
                 // "insertOrRefine" is called so that the postcondition information is added to any
                 // existing information rather than replacing it.  If the called method is not
                 // side-effect-free, then the values that might have been changed by the method call

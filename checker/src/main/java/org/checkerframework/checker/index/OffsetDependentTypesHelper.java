@@ -13,7 +13,6 @@ import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
-import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesError;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesHelper;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesTreeAnnotator;
@@ -33,7 +32,6 @@ public class OffsetDependentTypesHelper extends DependentTypesHelper {
             final String expression,
             JavaExpressionContext context,
             TreePath localScope,
-            UseLocalScope useLocalScope,
             // TODO: use this
             boolean delocalize) {
         if (DependentTypesError.isExpressionError(expression)) {
@@ -41,7 +39,7 @@ public class OffsetDependentTypesHelper extends DependentTypesHelper {
         }
         JavaExpression result;
         try {
-            result = JavaExpressionParseUtil.parse(expression, context, localScope, useLocalScope);
+            result = JavaExpressionParseUtil.parse(expression, context, localScope);
         } catch (JavaExpressionParseUtil.JavaExpressionParseException e) {
             return new DependentTypesError(expression, e).toString();
         }

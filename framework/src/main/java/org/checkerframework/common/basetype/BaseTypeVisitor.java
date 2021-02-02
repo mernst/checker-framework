@@ -122,7 +122,6 @@ import org.checkerframework.framework.util.FieldInvariants;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
-import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
@@ -983,7 +982,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 exprJe =
                         JavaExpressionParseUtil.parse(
                                 // TODO: I guess I need to adjust the path here.
-                                expressionString, jeContext, pathToMethodDecl, UseLocalScope.YES);
+                                expressionString, jeContext, pathToMethodDecl);
             } catch (JavaExpressionParseException e) {
                 exprJe = null;
                 checker.report(methodTree, e.getDiagMessage());
@@ -1027,10 +1026,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     asField =
                             JavaExpressionParseUtil.parse(
                                     // TODO: I guess I need to adjust the path here.
-                                    expressionString,
-                                    jeContext,
-                                    pathToMethodDecl.getParentPath(),
-                                    UseLocalScope.YES);
+                                    expressionString, jeContext, pathToMethodDecl.getParentPath());
                 } catch (JavaExpressionParseException e) {
                     asField = null;
                 }
@@ -1762,9 +1758,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                             TreeUtils.toStringTruncated(path.getLeaf(), 65));
                 }
 
-                exprJe =
-                        JavaExpressionParseUtil.parse(
-                                expressionString, jeContext, path, UseLocalScope.YES);
+                exprJe = JavaExpressionParseUtil.parse(expressionString, jeContext, path);
             } catch (JavaExpressionParseException e) {
                 if (debug_pums11) {
                     System.out.printf("checkPreconditions: parse(%s) => %s%n", expressionString, e);
@@ -4455,12 +4449,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 // This could be optimized to store the result the first time.
                 // (same for other annotations)
                 JavaExpression expressionJe =
-                        JavaExpressionParseUtil.parse(
-                                expressionString,
-                                jeContext,
-                                methodDeclPath,
-                                // This is the change in useLocalScope-2-pums2
-                                UseLocalScope.YES);
+                        JavaExpressionParseUtil.parse(expressionString, jeContext, methodDeclPath);
                 if (debug) {
                     System.out.printf(
                             "parse(%s)%n context=%s%n methodDeclPath.getLeaf()=%s%n => %s%n",

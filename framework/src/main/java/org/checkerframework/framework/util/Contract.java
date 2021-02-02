@@ -192,7 +192,7 @@ public abstract class Contract {
                   // ALTERNATE CODE:
                 AnnotationMirror standardized =
                         dth.standardizeAnnotationIfDependentType(
-                                context, pathToMethodDecl, annotation, UseLocalScope.YES, false);
+                                context, pathToMethodDecl, annotation, false);
                 if (standardized != null) {
                 if (false) {
                     System.out.printf(

@@ -45,7 +45,6 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutab
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
-import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
@@ -317,10 +316,7 @@ public class I18nFormatterTreeUtil {
                         try {
                             paramArg =
                                     JavaExpressionParseUtil.parse(
-                                            formatforArg,
-                                            jeContext,
-                                            atypeFactory.getPath(tree),
-                                            UseLocalScope.YES);
+                                            formatforArg, jeContext, atypeFactory.getPath(tree));
                             paramIndex = jeContext.arguments.indexOf(paramArg);
                         } catch (JavaExpressionParseException e) {
                             // report errors here

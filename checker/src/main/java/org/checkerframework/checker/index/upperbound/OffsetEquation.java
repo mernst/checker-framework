@@ -24,7 +24,6 @@ import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.util.JavaExpressionParseUtil;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
-import org.checkerframework.framework.util.UseLocalScope;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesError;
 import org.checkerframework.javacutil.AnnotationProvider;
 import org.checkerframework.javacutil.TreeUtils;
@@ -299,7 +298,6 @@ public class OffsetEquation {
      * @param subtract whether the terms are negative or positive
      * @param context the JavaExpressionContext, for standardization
      * @param scope the local scope, for standardization
-     * @param useLocalScope whether to use the local scope for standardization
      * @param factory the AnnotatedTypeFactory used for annotation accessing. It can be null.
      * @throws JavaExpressionParseException if a term cannot be parsed
      */
@@ -308,15 +306,13 @@ public class OffsetEquation {
             boolean subtract,
             JavaExpressionContext context,
             TreePath scope,
-            UseLocalScope useLocalScope,
             AnnotatedTypeFactory factory)
             throws JavaExpressionParseException {
         // Standardize all terms and remove constants
         int length = terms.size(), j = 0;
         for (int i = 0; i < length; ++i) {
             String term = terms.get(i);
-            JavaExpression termExpr =
-                    JavaExpressionParseUtil.parse(term, context, scope, useLocalScope);
+            JavaExpression termExpr = JavaExpressionParseUtil.parse(term, context, scope);
             Integer termConstant = evalConstantTerm(termExpr, (BaseAnnotatedTypeFactory) factory);
             if (termConstant == null) {
                 terms.set(j, termExpr.toString());
@@ -336,22 +332,16 @@ public class OffsetEquation {
      *
      * @param context a JavaExpressionContext
      * @param scope local scope
-     * @param useLocalScope whether or not local scope is used
      * @param factory an AnnotatedTypeFactory used for annotation accessing. It can be null.
      * @throws JavaExpressionParseException if any term isn't able to be parsed this exception is
      *     thrown. If this happens, no string terms are changed.
      */
     public void standardizeAndViewpointAdapt(
-            JavaExpressionContext context,
-            TreePath scope,
-            UseLocalScope useLocalScope,
-            @Nullable AnnotatedTypeFactory factory)
+            JavaExpressionContext context, TreePath scope, @Nullable AnnotatedTypeFactory factory)
             throws JavaExpressionParseException {
 
-        standardizeAndViewpointAdaptTerms(
-                addedTerms, false, context, scope, useLocalScope, factory);
-        standardizeAndViewpointAdaptTerms(
-                subtractedTerms, true, context, scope, useLocalScope, factory);
+        standardizeAndViewpointAdaptTerms(addedTerms, false, context, scope, factory);
+        standardizeAndViewpointAdaptTerms(subtractedTerms, true, context, scope, factory);
     }
 
     /**
@@ -359,15 +349,13 @@ public class OffsetEquation {
      *
      * @param context a JavaExpressionContext
      * @param scope local scope
-     * @param useLocalScope whether or not local scope is used
      * @throws JavaExpressionParseException if any term isn't able to be parsed this exception is
      *     thrown. If this happens, no string terms are changed.
      */
-    public void standardizeAndViewpointAdapt(
-            JavaExpressionContext context, TreePath scope, UseLocalScope useLocalScope)
+    public void standardizeAndViewpointAdapt(JavaExpressionContext context, TreePath scope)
             throws JavaExpressionParseException {
 
-        standardizeAndViewpointAdapt(context, scope, useLocalScope, null);
+        standardizeAndViewpointAdapt(context, scope, null);
     }
 
     /**
