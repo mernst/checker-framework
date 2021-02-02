@@ -676,10 +676,6 @@ public class DependentTypesHelper {
             default:
                 // It's not a variable (it might be METHOD, CONSTRUCTOR, CLASS, or INTERFACE, for
                 // example), so there is nothing to do.
-                if (false) {
-                    System.out.printf(
-                            "standardizeVariable skipping %s %s %s%n", elt.getKind(), type, elt);
-                }
                 break;
         }
     }

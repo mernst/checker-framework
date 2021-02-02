@@ -957,12 +957,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         }
 
         TreePath pathToMethodDecl = getCurrentPath();
-        if (false) {
-            System.out.printf(
-                    "pathToMethodDecl.getLeaf() = %s%n",
-                    TreeUtils.toStringTruncated(pathToMethodDecl.getLeaf(), 65));
-        }
-
         JavaExpressionContext jeContext =
                 JavaExpressionContext.buildContextForMethodDeclaration(
                         methodTree, pathToMethodDecl, checker);
@@ -3353,7 +3347,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     protected OverrideChecker createOverrideChecker(
             Tree overriderTree,
             TreePath overriderDeclPath,
-            AnnotatedExecutableType overrider,
+            AnnotatedExecutableType overriderMethodType,
             AnnotatedTypeMirror overridingType,
             AnnotatedTypeMirror overridingReturnType,
             ExecutableElement overriddenElt,
@@ -3363,7 +3357,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         return new OverrideChecker(
                 overriderTree,
                 overriderDeclPath,
-                overrider,
+                overriderMethodType,
                 overridingType,
                 overridingReturnType,
                 overriddenElt,
@@ -3396,14 +3390,14 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             AnnotatedDeclaredType overriddenType) {
 
         // Get the type of the overriding method.
-        AnnotatedExecutableType overrider = atypeFactory.getAnnotatedType(overriderTree);
+        AnnotatedExecutableType overriderMethodType = atypeFactory.getAnnotatedType(overriderTree);
 
-        // Call the other version of the method, which takes overrider. Both versions
+        // Call the other version of the method, which takes overriderMethodType. Both versions
         // exist to allow checkers to override one or the other depending on their needs.
         return checkOverride(
                 overriderTree,
                 overriderDeclPath,
-                overrider,
+                overriderMethodType,
                 overridingType,
                 overriddenElt,
                 overriddenMethodType,
@@ -3420,7 +3414,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      *     ExecutableElement, AnnotatedTypeMirror.AnnotatedExecutableType,
      *     AnnotatedTypeMirror.AnnotatedDeclaredType)
      * @param overriderTree declaration tree of overriding method
-     * @param overrider type of the overriding method
+     * @param overriderMethodType type of the overriding method
      * @param overridingType type of overriding class
      * @param overriddenElt the overridden method
      * @param overriddenMethodType type of overridden method
@@ -3430,15 +3424,15 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     protected boolean checkOverride(
             MethodTree overriderTree,
             TreePath overriderDeclPath,
-            AnnotatedExecutableType overrider,
+            AnnotatedExecutableType overriderMethodType,
             AnnotatedDeclaredType overridingType,
             ExecutableElement overriddenElt,
             AnnotatedExecutableType overriddenMethodType,
             AnnotatedDeclaredType overriddenType) {
 
-        // This needs to be done before overrider.getReturnType() and
+        // This needs to be done before overriderMethodType.getReturnType() and
         // overriddenMethodType.getReturnType()
-        if (overrider.getTypeVariables().isEmpty()
+        if (overriderMethodType.getTypeVariables().isEmpty()
                 && !overriddenMethodType.getTypeVariables().isEmpty()) {
             overriddenMethodType = overriddenMethodType.getErased();
         }
@@ -3447,9 +3441,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 createOverrideChecker(
                         overriderTree,
                         overriderDeclPath,
-                        overrider,
+                        overriderMethodType,
                         overridingType,
-                        overrider.getReturnType(),
+                        overriderMethodType.getReturnType(),
                         overriddenElt,
                         overriddenMethodType,
                         overriddenType,
