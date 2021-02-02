@@ -56,7 +56,7 @@ public final class TreePathUtil {
 
         while (p != null) {
             Tree leaf = p.getLeaf();
-            assert leaf != null; /*nninvariant*/
+            assert leaf != null;
             if (kinds.contains(leaf.getKind())) {
                 return p;
             }
@@ -85,6 +85,21 @@ public final class TreePathUtil {
      */
     public static @Nullable TreePath pathTillMethod(final TreePath path) {
         return pathTillOfKind(path, Tree.Kind.METHOD);
+    }
+
+    /**
+     * Gets the root path.
+     *
+     * @param path a path
+     * @return the path's root
+     */
+    public static TreePath getRoot(TreePath path) {
+        TreePath parentPath = path.getParentPath();
+        while (parentPath != null) {
+            path = parentPath;
+            parentPath = path.getParentPath();
+        }
+        return path;
     }
 
     ///
