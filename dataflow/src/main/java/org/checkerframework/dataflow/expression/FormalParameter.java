@@ -30,7 +30,7 @@ public class FormalParameter extends LocalVariable {
      * @param index the 1-based index
      * @param element the element for the formal parameter itself
      */
-    public FormalParameter(Element element, int index) {
+    public FormalParameter(int index, Element element) {
         super(element);
         this.index = index;
     }
