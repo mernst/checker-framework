@@ -229,7 +229,8 @@ public class DependentTypesHelper {
                 context,
                 currentPath,
                 viewpointAdaptedType,
-                UseLocalScope.NO,
+                // This is the change in branch remove-useLocalScope-2-viewpointAdaptExecutable.
+                UseLocalScope.YES,
                 /*removeErroneousExpressions=*/ false);
         new ViewpointAdaptedCopier().visit(viewpointAdaptedType, methodType);
     }
