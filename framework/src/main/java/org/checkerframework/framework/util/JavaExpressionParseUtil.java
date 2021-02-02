@@ -111,26 +111,6 @@ public class JavaExpressionParseUtil {
     /** Unanchored; can be used to find all formal parameter uses. */
     protected static final Pattern UNANCHORED_PARAMETER_PATTERN = Pattern.compile(PARAMETER_REGEX);
 
-    /**
-     * Parse a string and return its representation as a {@link JavaExpression}, or throw a {@link
-     * JavaExpressionParseException}.
-     *
-     * @param expression a Java expression to parse
-     * @param context information about any receiver and arguments
-     * @param annotatedConstruct path to local scope; the containing method will be used as the
-     *     local scope
-     * @return the JavaExpression for the given expression string
-     * @throws JavaExpressionParseException if the expression string cannot be parsed
-     */
-    // TODO: This is called at places that I think need to use method scope.  Maybe eventually
-    // eliminate this method.
-    public static JavaExpression parseUseMethodScope(
-            String expression, JavaExpressionContext context, TreePath annotatedConstruct)
-            throws JavaExpressionParseException {
-        // TODO: pass the method scope and UseLocalScope.YES, or do that at clients.
-        return parse(expression, context, annotatedConstruct, UseLocalScope.NO);
-    }
-
     /** Debugging for pums11 branch. */
     private static final boolean debug_pums11 = false;
 
