@@ -160,7 +160,7 @@ public abstract class GenericAnnotatedTypeFactory<
     /** to handle defaults specified by the user */
     protected QualifierDefaults defaults;
 
-    /** To handle dependent type annotations. */
+    /** To handle dependent type annotations and contract expressions. */
     protected DependentTypesHelper dependentTypesHelper;
 
     /** to handle method pre- and postconditions */

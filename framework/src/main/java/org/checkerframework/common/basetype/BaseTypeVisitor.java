@@ -1421,9 +1421,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         return false;
     }
 
-    /** Debugging for the removemore7 branch. */
-    static boolean debug7 = false;
-
     /**
      * Performs two checks: subtyping and assignability checks, using {@link
      * #commonAssignmentCheck(Tree, ExpressionTree, String, Object[])}.
@@ -1432,9 +1429,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      */
     @Override
     public Void visitAssignment(AssignmentTree node, Void p) {
-        if (debug7) {
-            System.out.printf("visitAssignment(%s)%n", node);
-        }
         Pair<Tree, AnnotatedTypeMirror> preAssignmentContext = visitorState.getAssignmentContext();
         visitorState.setAssignmentContext(
                 Pair.of(
@@ -1695,9 +1689,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 lastParamAnnotatedType, wrappedVarargsType, tree, "varargs.type.incompatible");
     }
 
-    /** Debugging for pums11 branch. */
-    private static final boolean debug_pums11 = false;
-
     /**
      * Checks that all the given {@code preconditions} hold true immediately prior to the method
      * invocation or variable access at {@code tree}.
@@ -1741,26 +1732,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 if (path == null) {
                     path = TreePathUtil.getRoot(getCurrentPath());
                 }
-                if (debug_pums11) {
-                    System.out.printf(
-                            "checkPreconditions(%s): path=%s%n",
-                            tree.getMethodSelect(),
-                            TreeUtils.toStringTruncated(path.getLeaf(), 65));
-                }
 
                 exprJe = JavaExpressionParseUtil.parse(expressionString, jeContext, path);
             } catch (JavaExpressionParseException e) {
-                if (debug_pums11) {
-                    System.out.printf("checkPreconditions: parse(%s) => %s%n", expressionString, e);
-                }
                 // report errors here
                 checker.report(tree, e.getDiagMessage());
                 return;
-            }
-            if (debug_pums11) {
-                System.out.printf(
-                        "checkPreconditions: parse(%s) => %s%n",
-                        expressionString, exprJe.toStringDebug());
             }
 
             CFAbstractStore<?, ?> store = atypeFactory.getStoreBefore(tree);
@@ -2692,10 +2669,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             ExpressionTree valueExp,
             @CompilerMessageKey String errorKey,
             Object... extraArgs) {
-        if (debug7) {
-            System.out.printf("commonAssignmentCheck#1(%s, %s, %s)%n", varTree, valueExp, errorKey);
-        }
-
         AnnotatedTypeMirror varType = atypeFactory.getAnnotatedTypeLhs(varTree);
         assert varType != null : "no variable found for tree: " + varTree;
         if (false) {
@@ -2727,9 +2700,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             ExpressionTree valueExp,
             @CompilerMessageKey String errorKey,
             Object... extraArgs) {
-        if (debug7) {
-            System.out.printf("commonAssignmentCheck#2(%s, %s, %s)%n", varType, valueExp, errorKey);
-        }
         if (shouldSkipUses(valueExp)) {
             return;
         }
@@ -2772,11 +2742,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Tree valueTree,
             @CompilerMessageKey String errorKey,
             Object... extraArgs) {
-
-        if (debug7) {
-            System.out.printf(
-                    "commonAssignmentCheck#1(%s, %s, %s)%n", varType, valueType, errorKey);
-        }
 
         commonAssignmentCheckStartDiagnostic(varType, valueType, valueTree);
 

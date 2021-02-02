@@ -585,8 +585,6 @@ public abstract class CFAbstractTransfer<
                 // be optimized to store the result the first time.
                 // (same for other annotations)
                 JavaExpression exprJe =
-                        // JavaExpressionParseUtil.parse(
-                        //         expressionString, methodUseContext, methodDeclPath, false);
                         JavaExpressionParseUtil.parse(
                                 expressionString, methodUseContext, methodDeclPath);
                 initialStore.insertValue(exprJe, annotation);
