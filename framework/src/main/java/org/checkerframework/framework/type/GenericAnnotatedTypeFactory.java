@@ -606,9 +606,7 @@ public abstract class GenericAnnotatedTypeFactory<
     @Override
     public AnnotatedDeclaredType fromNewClass(NewClassTree newClassTree) {
         AnnotatedDeclaredType superResult = super.fromNewClass(newClassTree);
-        if (dependentTypesHelper.hasDependentAnnotations()) {
-            dependentTypesHelper.standardizeNewClassTree(newClassTree, superResult);
-        }
+        dependentTypesHelper.standardizeNewClassTree(newClassTree, superResult);
         return superResult;
     }
 
@@ -1596,9 +1594,7 @@ public abstract class GenericAnnotatedTypeFactory<
     public ParameterizedExecutableType constructorFromUse(NewClassTree tree) {
         ParameterizedExecutableType mType = super.constructorFromUse(tree);
         AnnotatedExecutableType method = mType.executableType;
-        if (dependentTypesHelper.hasDependentAnnotations()) {
-            dependentTypesHelper.viewpointAdaptConstructor(tree, method);
-        }
+        dependentTypesHelper.viewpointAdaptConstructor(tree, method);
         return mType;
     }
 
@@ -1611,18 +1607,14 @@ public abstract class GenericAnnotatedTypeFactory<
     @Override
     public AnnotatedTypeMirror getMethodReturnType(MethodTree m) {
         AnnotatedTypeMirror returnType = super.getMethodReturnType(m);
-        if (dependentTypesHelper.hasDependentAnnotations()) {
-            dependentTypesHelper.standardizeReturnType(m, returnType);
-        }
+        dependentTypesHelper.standardizeReturnType(m, returnType);
         return returnType;
     }
 
     @Override
     public AnnotatedTypeMirror getMethodReturnType(MethodTree m, ReturnTree r) {
         AnnotatedTypeMirror returnType = super.getMethodReturnType(m, r);
-        if (dependentTypesHelper.hasDependentAnnotations()) {
-            dependentTypesHelper.standardizeReturnType(m, returnType);
-        }
+        dependentTypesHelper.standardizeReturnType(m, returnType);
         return returnType;
     }
 
@@ -1906,18 +1898,14 @@ public abstract class GenericAnnotatedTypeFactory<
         applyQualifierParameterDefaults(elt, type);
         typeAnnotator.visit(type, null);
         defaults.annotate(elt, type);
-        if (dependentTypesHelper.hasDependentAnnotations()) {
-            dependentTypesHelper.standardizeVariable(type, elt);
-        }
+        dependentTypesHelper.standardizeVariable(type, elt);
     }
 
     @Override
     public ParameterizedExecutableType methodFromUse(MethodInvocationTree tree) {
         ParameterizedExecutableType mType = super.methodFromUse(tree);
         AnnotatedExecutableType method = mType.executableType;
-        if (dependentTypesHelper.hasDependentAnnotations()) {
-            dependentTypesHelper.viewpointAdaptMethod(tree, method);
-        }
+        dependentTypesHelper.viewpointAdaptMethod(tree, method);
         return mType;
     }
 
@@ -1933,10 +1921,7 @@ public abstract class GenericAnnotatedTypeFactory<
     public List<AnnotatedTypeParameterBounds> typeVariablesFromUse(
             AnnotatedDeclaredType type, TypeElement element) {
         List<AnnotatedTypeParameterBounds> f = super.typeVariablesFromUse(type, element);
-        if (dependentTypesHelper.hasDependentAnnotations()) {
-            dependentTypesHelper.viewpointAdaptTypeVariableBounds(
-                    element, f, visitorState.getPath());
-        }
+        dependentTypesHelper.viewpointAdaptTypeVariableBounds(element, f, visitorState.getPath());
         return f;
     }
 

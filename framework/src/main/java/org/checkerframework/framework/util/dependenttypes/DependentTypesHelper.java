@@ -147,6 +147,9 @@ public class DependentTypesHelper {
      */
     public void viewpointAdaptTypeVariableBounds(
             TypeElement classDecl, List<AnnotatedTypeParameterBounds> bounds, TreePath pathToUse) {
+        if (!hasDependentAnnotations()) {
+            return;
+        }
         JavaExpression r = JavaExpression.getImplicitReceiver(classDecl);
         JavaExpressionContext context = new JavaExpressionContext(r, null, factory.getChecker());
         for (AnnotatedTypeParameterBounds bound : bounds) {
@@ -192,6 +195,9 @@ public class DependentTypesHelper {
             ExpressionTree tree,
             AnnotatedExecutableType methodType,
             List<? extends ExpressionTree> argTrees) {
+        if (!hasDependentAnnotations()) {
+            return;
+        }
 
         Element methodElt = TreeUtils.elementFromUse(tree);
         // The annotations on `viewpointAdaptedType` will be copied to `methodType`.
@@ -321,6 +327,10 @@ public class DependentTypesHelper {
      * @param type the type of the expression; is side-effected by this method
      */
     public void standardizeNewClassTree(NewClassTree tree, AnnotatedDeclaredType type) {
+        if (!hasDependentAnnotations()) {
+            return;
+        }
+
         if (!hasDependentType(type)) {
             return;
         }
@@ -384,6 +394,9 @@ public class DependentTypesHelper {
             MethodTree methodDeclTree,
             AnnotatedTypeMirror atm,
             boolean removeErroneousExpressions) {
+        if (!hasDependentAnnotations()) {
+            return;
+        }
         if (!hasDependentType(atm)) {
             return;
         }
@@ -617,6 +630,9 @@ public class DependentTypesHelper {
     }
 
     public void standardizeVariable(AnnotatedTypeMirror type, Element elt) {
+        if (!hasDependentAnnotations()) {
+            return;
+        }
         if (!hasDependentType(type)) {
             return;
         }
@@ -940,6 +956,10 @@ public class DependentTypesHelper {
      * @param errorTree the tree at which to report any found errors
      */
     public void checkType(AnnotatedTypeMirror atm, Tree errorTree) {
+        if (!hasDependentAnnotations()) {
+            return;
+        }
+
         List<DependentTypesError> errors = new ExpressionErrorChecker().visit(atm);
         if (errors == null || errors.isEmpty()) {
             return;
@@ -1024,6 +1044,10 @@ public class DependentTypesHelper {
      * @param type annotated type of the class
      */
     public void checkClass(ClassTree classTree, AnnotatedDeclaredType type) {
+        if (!hasDependentAnnotations()) {
+            return;
+        }
+
         // TODO: check that invalid annotations in type variable bounds are properly
         // formatted. They are part of the type, but the output isn't nicely formatted.
         checkType(type, classTree);
@@ -1038,6 +1062,10 @@ public class DependentTypesHelper {
      * @param type annotated type of the method
      */
     public void checkMethod(MethodTree methodDeclTree, AnnotatedExecutableType type) {
+        if (!hasDependentAnnotations()) {
+            return;
+        }
+
         // Parameters and receivers are checked by visitVariable
         // So only type parameters and return type need to be checked here.
         checkTypeVariables(methodDeclTree, type);
