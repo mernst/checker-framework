@@ -22,6 +22,9 @@ public class ClassName extends JavaExpression {
     public ClassName(TypeMirror type) {
         super(type);
         typeString = type.toString();
+        if (typeString.endsWith(">")) {
+            typeString = typeString.substring(0, typeString.indexOf("<"));
+        }
     }
 
     @Override
