@@ -56,7 +56,7 @@ public final class TreePathUtil {
 
         while (p != null) {
             Tree leaf = p.getLeaf();
-            assert leaf != null; /*nninvariant*/
+            assert leaf != null;
             if (kinds.contains(leaf.getKind())) {
                 return p;
             }
