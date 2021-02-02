@@ -116,17 +116,13 @@ public class ArrayCreation extends JavaExpression {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        if (false) {
-            System.out.printf(
-                    "type=%s, dimensions=%s initializers=%s%n", type, dimensions, initializers);
-        }
         if (dimensions.isEmpty()) {
             sb.append("new " + type);
         } else {
             sb.append("new " + TypesUtils.getInnermostComponentType((ArrayType) type));
             for (JavaExpression dim : dimensions) {
                 sb.append("[");
-                sb.append(dim == null ? "" : dim.toString());
+                sb.append(dim == null ? "" : dim);
                 sb.append("]");
             }
         }
@@ -134,9 +130,6 @@ public class ArrayCreation extends JavaExpression {
             sb.append(" {");
             sb.append(StringsPlume.join(", ", initializers));
             sb.append("}");
-        }
-        if (false) {
-            System.out.printf("toString => %s%n", sb);
         }
         return sb.toString();
     }

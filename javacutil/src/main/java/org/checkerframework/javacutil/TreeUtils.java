@@ -1229,7 +1229,7 @@ public final class TreeUtils {
      * @param tree the tree whose type to return
      * @return the type as a TypeMirror of {@code tree}, or null
      */
-    public static /*@Nullable*/ TypeMirror typeOf(Tree tree) {
+    public static @Nullable TypeMirror typeOf(Tree tree) {
         return ((JCTree) tree).type;
     }
 

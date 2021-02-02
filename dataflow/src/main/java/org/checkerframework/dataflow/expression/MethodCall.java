@@ -157,7 +157,7 @@ public class MethodCall extends JavaExpression {
         if (receiver instanceof ClassName) {
             preParen.append(receiver.getType());
         } else {
-            preParen.append(receiver.toString());
+            preParen.append(receiver);
         }
         preParen.append(".");
         String methodName = method.getSimpleName().toString();

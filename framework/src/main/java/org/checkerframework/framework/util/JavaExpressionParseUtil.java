@@ -381,10 +381,6 @@ public class JavaExpressionParseUtil {
                             System.out.printf("ETJEV.visit(NameExpr: %s): FIELD%n", expr);
                             System.out.printf("ETJEV.visit(NameExpr: %s): pass%n", expr);
                         }
-                        /*
-                        boolean isOriginalReceiver = context.receiver instanceof ThisReference;
-                        return getFieldJavaExpression(varElem, context, isOriginalReceiver);
-                        */
                     } else {
                         if (false) {
                             System.out.printf("A local variable: %s%n", varElem);
@@ -664,8 +660,7 @@ public class JavaExpressionParseUtil {
             // Parse the rest, with a new receiver.
             JavaExpressionContext newContext =
                     context.copyChangeToParsingMemberOfReceiver(receiver);
-            JavaExpression result = visit(expr.getNameAsExpression(), newContext);
-            return result;
+            return visit(expr.getNameAsExpression(), newContext);
         }
 
         // expr is a Class literal
@@ -873,7 +868,6 @@ public class JavaExpressionParseUtil {
             return null;
         }
 
-        // TODO: `context` needs better documentation.
         /**
          * Returns a JavaExpression for the given field.
          *

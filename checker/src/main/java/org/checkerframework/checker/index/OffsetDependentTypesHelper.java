@@ -32,7 +32,6 @@ public class OffsetDependentTypesHelper extends DependentTypesHelper {
             final String expression,
             JavaExpressionContext context,
             TreePath localScope,
-            // TODO: use this
             boolean delocalize) {
         if (DependentTypesError.isExpressionError(expression)) {
             return expression;

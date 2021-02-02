@@ -32,10 +32,9 @@ public class ParameterExpression {
     @EnsuresNonNull("#3")
     public void m4(@Nullable Object x1, @Nullable Object x2, final @Nullable Object x3) {}
 
-    // When a method has a formal parameter named "field", then the identifier 'field' is
-    // interpreted as the formal parameter, not as the field that it shadows.
-    // To avoid ambiguity, the programmer should write "#1" for the formal parameter, and
-    // "this.field" for the field.
+    // Formal parameter names should not be used in signatures (pre/postcondition, conditional
+    // postcondition, and formal parameter annotations).  Use "#paramNum", because the parameter
+    // names are not saved in bytecode.
 
     @Nullable Object field = null;
 

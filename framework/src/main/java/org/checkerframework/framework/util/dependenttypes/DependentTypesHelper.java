@@ -621,8 +621,6 @@ public class DependentTypesHelper {
             return;
         }
 
-        // TODO: if it's the FIELD for `this`, get the receiver declaration.
-
         switch (elt.getKind()) {
             case PARAMETER:
             case LOCAL_VARIABLE:

@@ -972,16 +972,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                         methodTree, pathToMethodDecl, checker);
 
         for (Contract contract : contracts) {
-            if (false) {
-                System.out.printf("contract: %s%n", contract);
-            }
             String expressionString = contract.expressionString;
 
             JavaExpression exprJe;
             try {
                 exprJe =
                         JavaExpressionParseUtil.parse(
-                                // TODO: I guess I need to adjust the path here.
                                 expressionString, jeContext, pathToMethodDecl);
             } catch (JavaExpressionParseException e) {
                 exprJe = null;
@@ -2766,13 +2762,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             return;
         }
         AnnotatedTypeMirror valueType = atypeFactory.getAnnotatedType(valueExp);
-        // TODO: PROBLEM: Here the type of `m` is @GuardedBy("lock") instead of
-        // @GuardedBy("this.lock").
-        if (false) {
-            System.out.printf(
-                    "commonAssignmentCheck(%s, %s [type=%s])%n",
-                    varType, TreeUtils.toStringTruncated(valueExp, 65), valueType);
-        }
         assert valueType != null : "null type for expression: " + valueExp;
         commonAssignmentCheck(varType, valueType, valueExp, errorKey, extraArgs);
     }
@@ -4448,7 +4437,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 // TODO: currently, these expressions are parsed many times.
                 // This could be optimized to store the result the first time.
                 // (same for other annotations)
-                JavaExpression expressionJe =
+                JavaExpression exprJe =
                         JavaExpressionParseUtil.parse(expressionString, jeContext, methodDeclPath);
                 if (debug) {
                     System.out.printf(
@@ -4456,9 +4445,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                             expressionString,
                             jeContext.toStringDebug(),
                             TreeUtils.toStringTruncated(methodDeclPath.getLeaf(), 165),
-                            expressionJe.toStringDebug());
+                            exprJe.toStringDebug());
                 }
-                result.add(Pair.of(expressionJe, annotation));
+                result.add(Pair.of(exprJe, annotation));
             } catch (JavaExpressionParseException e) {
                 if (debug) {
                     System.out.printf("Error in resolution of %s: e = %s%n", p, e);
