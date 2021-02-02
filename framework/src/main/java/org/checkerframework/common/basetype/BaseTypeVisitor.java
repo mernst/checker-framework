@@ -1709,6 +1709,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 lastParamAnnotatedType, wrappedVarargsType, tree, "varargs.type.incompatible");
     }
 
+    /** Debugging for pums11 branch. */
+    private static final boolean debug_pums11 = false;
+
     /**
      * Checks that all the given {@code preconditions} hold true immediately prior to the method
      * invocation or variable access at {@code tree}.
@@ -1742,13 +1745,38 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
             JavaExpression exprJe;
             try {
+                ExecutableElement methodElt = TreeUtils.elementFromUse(tree);
+                Tree methodDeclTree = atypeFactory.declarationFromElement(methodElt);
+
+                TreePath path = null;
+                if (methodDeclTree != null) {
+                    path = atypeFactory.getPath(methodDeclTree);
+                }
+                if (path == null) {
+                    path = TreePathUtil.getRoot(getCurrentPath());
+                }
+                if (debug_pums11) {
+                    System.out.printf(
+                            "checkPreconditions(%s): path=%s%n",
+                            tree.getMethodSelect(),
+                            TreeUtils.toStringTruncated(path.getLeaf(), 65));
+                }
+
                 exprJe =
-                        JavaExpressionParseUtil.parseUseMethodScope(
-                                expressionString, jeContext, getCurrentPath());
+                        JavaExpressionParseUtil.parse(
+                                expressionString, jeContext, path, UseLocalScope.YES);
             } catch (JavaExpressionParseException e) {
+                if (debug_pums11) {
+                    System.out.printf("checkPreconditions: parse(%s) => %s%n", expressionString, e);
+                }
                 // report errors here
                 checker.report(tree, e.getDiagMessage());
                 return;
+            }
+            if (debug_pums11) {
+                System.out.printf(
+                        "checkPreconditions: parse(%s) => %s%n",
+                        expressionString, exprJe.toStringDebug());
             }
 
             CFAbstractStore<?, ?> store = atypeFactory.getStoreBefore(tree);

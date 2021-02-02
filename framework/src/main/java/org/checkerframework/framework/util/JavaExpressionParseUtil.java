@@ -131,6 +131,9 @@ public class JavaExpressionParseUtil {
         return parse(expression, context, annotatedConstruct, UseLocalScope.NO);
     }
 
+    /** Debugging for pums11 branch. */
+    private static final boolean debug_pums11 = false;
+
     /**
      * Parse a string and return its representation as a {@link JavaExpression}, or throw a {@link
      * JavaExpressionParseException}.
@@ -159,8 +162,10 @@ public class JavaExpressionParseUtil {
 
         JavaExpression result;
         try {
-            if (false) {
-                System.out.printf("context=%s%n", context);
+            if (debug_pums11) {
+                System.out.printf(
+                        "parse(%s, %s [%s]) context=%s%n",
+                        expression, expr, expr.getClass(), context.toStringDebug());
             }
             context = context.copyAndSetUseLocalScope(useLocalScope);
             ProcessingEnvironment env = context.checker.getProcessingEnvironment();
@@ -168,6 +173,9 @@ public class JavaExpressionParseUtil {
                     expr.accept(
                             new ExpressionToJavaExpressionVisitor(annotatedConstruct, env),
                             context);
+            if (debug_pums11) {
+                System.out.printf("parse(%s) => %s%n", expression, result.toStringDebug());
+            }
         } catch (ParseRuntimeException e) {
             // Convert unchecked to checked exception. Visitor methods can't throw checked
             // exceptions. They override the methods in the superclass, and a checked exception
@@ -307,11 +315,21 @@ public class JavaExpressionParseUtil {
         @Override
         public JavaExpression visit(ThisExpr n, JavaExpressionContext context) {
             if (context.receiver == null) {
+                if (debug_pums11) {
+                    System.out.printf("visit(%s) (1) => %s%n", n, null);
+                }
                 return null;
             }
             if (!context.receiver.containsUnknown()) {
                 // "this" is the receiver of the context
+                if (debug_pums11) {
+                    System.out.printf("visit(%s) (2) => %s%n", n, context.receiver);
+                }
                 return context.receiver;
+            }
+            if (debug_pums11) {
+                System.out.printf(
+                        "visit(%s) (3) => %s%n", n, new ThisReference(context.receiver.getType()));
             }
             return new ThisReference(context.receiver.getType());
         }
@@ -356,6 +374,11 @@ public class JavaExpressionParseUtil {
         // expr is an identifier with no dots in its name.
         @Override
         public JavaExpression visit(NameExpr expr, JavaExpressionContext context) {
+            if (debug_pums11) {
+                System.out.printf(
+                        "ETJEV.visit(NameExpr: %s) context=%s%n", expr, context.toStringDebug());
+            }
+
             String s = expr.getNameAsString();
             setResolverField();
 
@@ -372,10 +395,21 @@ public class JavaExpressionParseUtil {
                 // given path before attempting to match a field.
                 VariableElement varElem =
                         resolver.findLocalVariableOrParameterOrField(s, annotatedConstruct);
+                if (debug_pums11) {
+                    System.out.printf(
+                            "ETJEV.visit(NameExpr: %s): varElem=%s [%s]%n",
+                            expr, varElem, varElem == null ? null : varElem.getKind());
+                }
                 if (varElem != null) {
                     if (varElem.getKind() == ElementKind.FIELD) {
+                        if (debug_pums11) {
+                            System.out.printf("ETJEV.visit(NameExpr: %s): FIELD%n", expr);
+                            System.out.printf("ETJEV.visit(NameExpr: %s): pass%n", expr);
+                        }
+                        /*
                         boolean isOriginalReceiver = context.receiver instanceof ThisReference;
                         return getFieldJavaExpression(varElem, context, isOriginalReceiver);
+                        */
                     } else {
                         if (false) {
                             System.out.printf("A local variable: %s%n", varElem);
@@ -393,6 +427,11 @@ public class JavaExpressionParseUtil {
             if (s.equals("length") && receiverType.getKind() == TypeKind.ARRAY) {
                 fieldElem = resolver.findField(s, receiverType, annotatedConstruct);
             }
+            if (debug_pums11) {
+                System.out.printf(
+                        "ETJEV.visit(NameExpr: %s): fieldElem(1)=%s [%s]%n",
+                        expr, fieldElem, fieldElem == null ? null : fieldElem.getKind());
+            }
             if (fieldElem == null) {
                 // Search for field in each enclosing class.
                 while (receiverType.getKind() == TypeKind.DECLARED) {
@@ -403,6 +442,11 @@ public class JavaExpressionParseUtil {
                     receiverType = getTypeOfEnclosingClass((DeclaredType) receiverType);
                     isOriginalReceiver = false;
                 }
+            }
+            if (debug_pums11) {
+                System.out.printf(
+                        "ETJEV.visit(NameExpr: %s): fieldElem(2)=%s [%s]%n",
+                        expr, fieldElem, fieldElem == null ? null : fieldElem.getKind());
             }
             if (fieldElem != null && fieldElem.getKind() == ElementKind.FIELD) {
                 FieldAccess fieldAccess =
@@ -615,6 +659,10 @@ public class JavaExpressionParseUtil {
         public JavaExpression visit(FieldAccessExpr expr, JavaExpressionContext context) {
             setResolverField();
 
+            if (debug_pums11) {
+                System.out.printf("ETJEV.visit(%s)%n", expr);
+            }
+
             Symbol.PackageSymbol packageSymbol =
                     resolver.findPackage(expr.getScope().toString(), annotatedConstruct);
             if (packageSymbol != null) {
@@ -634,6 +682,9 @@ public class JavaExpressionParseUtil {
             }
 
             JavaExpression receiver = expr.getScope().accept(this, context);
+            if (debug_pums11) {
+                System.out.printf("visit(%s) receiver=%s%n", expr, receiver);
+            }
 
             // Parse the rest, with a new receiver.
             JavaExpressionContext newContext =

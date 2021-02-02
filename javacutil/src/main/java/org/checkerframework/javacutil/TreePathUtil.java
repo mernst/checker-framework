@@ -87,6 +87,21 @@ public final class TreePathUtil {
         return pathTillOfKind(path, Tree.Kind.METHOD);
     }
 
+    /**
+     * Gets the root path.
+     *
+     * @param path a path
+     * @return the path's root
+     */
+    public static TreePath getRoot(TreePath path) {
+        TreePath parentPath = path.getParentPath();
+        while (parentPath != null) {
+            path = parentPath;
+            parentPath = path.getParentPath();
+        }
+        return path;
+    }
+
     ///
     /// Retrieving a tree
     ///
