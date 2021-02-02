@@ -1,5 +1,6 @@
 package org.checkerframework.dataflow.expression;
 
+import com.sun.tools.javac.code.Symbol.VarSymbol;
 import java.util.List;
 import javax.lang.model.element.Element;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -73,12 +74,10 @@ public class FormalParameter extends LocalVariable {
         return "#" + index;
     }
 
-    /*
     @Override
     public String toStringDebug() {
         return super.toStringDebug() + " [owner=" + ((VarSymbol) element).owner + "]";
     }
-    */
 
     @Override
     public boolean containsOfClass(Class<? extends JavaExpression> clazz) {
