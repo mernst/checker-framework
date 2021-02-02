@@ -16,7 +16,7 @@ import org.checkerframework.javacutil.TypesUtils;
 /**
  * A local variable.
  *
- * <p>This class includes formal parameters expressed using their name. Subclass {@link
+ * <p>This class also represents a formal parameters expressed using its name. Subclass {@link
  * FormalParameter} represents a formal parameter expressed using the "#2" notation.
  */
 public class LocalVariable extends JavaExpression {
@@ -33,13 +33,19 @@ public class LocalVariable extends JavaExpression {
         this.element = localVar.getElement();
     }
 
-    public LocalVariable(Element elem) {
-        super(ElementUtils.getType(elem));
-        this.element = elem;
+    /**
+     * Creates a LocalVariable
+     *
+     * @param element the element for the local variable
+     */
+    public LocalVariable(Element element) {
+        super(ElementUtils.getType(element));
+        this.element = element;
     }
 
     /**
-     * Creates a LocalVariable or a FormalParameter, depending on the argument.
+     * Creates a LocalVariable or a FormalParameter, depending on whether the argument starts with
+     * "__param__".
      *
      * @param localVar a CFG node for a variable
      * @return a LocalVariable or FormalParameter for the given CFG variable
@@ -49,9 +55,9 @@ public class LocalVariable extends JavaExpression {
         if (name.startsWith(FormalParameter.PARAMETER_REPLACEMENT)) {
             try {
                 return new FormalParameter(
-                        localVar.getElement(),
                         Integer.parseInt(
-                                name.substring(FormalParameter.PARAMETER_REPLACEMENT_LENGTH)));
+                                name.substring(FormalParameter.PARAMETER_REPLACEMENT_LENGTH)),
+                        localVar.getElement());
             } catch (NumberFormatException e) {
                 // fallthrough
             }
@@ -66,15 +72,15 @@ public class LocalVariable extends JavaExpression {
         }
 
         LocalVariable other = (LocalVariable) obj;
-        VarSymbol vs = (VarSymbol) element;
-        VarSymbol vsother = (VarSymbol) other.element;
-        // The code below isn't just return vs.equals(vsother) because an element might be
+        VarSymbol vs1 = (VarSymbol) this.element;
+        VarSymbol vs2 = (VarSymbol) other.element;
+        // The code below isn't just return vs1.equals(vs2) because an element might be
         // different between subcheckers.  The owner of a lambda parameter is the enclosing
         // method, so a local variable and a lambda parameter might have the same name and the
         // same owner.  pos is used to differentiate this case.
-        return vs.pos == vsother.pos
-                && vsother.name.contentEquals(vs.name)
-                && vsother.owner.toString().equals(vs.owner.toString());
+        return vs1.pos == vs2.pos
+                && vs1.name.contentEquals(vs2.name)
+                && vs1.owner.toString().equals(vs2.owner.toString());
     }
 
     /**
@@ -115,6 +121,11 @@ public class LocalVariable extends JavaExpression {
         return false;
     }
 
+    /**
+     * Returns the element for this variable.
+     *
+     * @return the element for this variable
+     */
     public Element getElement() {
         return element;
     }
@@ -173,7 +184,7 @@ public class LocalVariable extends JavaExpression {
         if (index == -1) {
             return this;
         } else {
-            return new FormalParameter(element, index + 1);
+            return new FormalParameter(index + 1, element);
         }
     }
 }

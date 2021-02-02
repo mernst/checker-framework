@@ -5,7 +5,11 @@ import java.util.List;
 import javax.lang.model.element.Element;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/** A formal parameter, represented by its 1-based index. */
+/**
+ * A formal parameter, represented by its 1-based index.
+ *
+ * <p>Superclass {@link LocalVariable} represents a formal parameter expressed using its name.
+ */
 public class FormalParameter extends LocalVariable {
 
     /**
@@ -21,7 +25,7 @@ public class FormalParameter extends LocalVariable {
     protected final int index;
 
     /**
-     * Create a FormalParameter.
+     * Creates a FormalParameter.
      *
      * @param index the 1-based index
      * @param element the element for the formal parameter itself
@@ -37,9 +41,9 @@ public class FormalParameter extends LocalVariable {
         this.element = localVar.getElement();
     }
 
-    public FormalParameter(Element elem) {
-        super(ElementUtils.getType(elem));
-        this.element = elem;
+    public FormalParameter(Element element) {
+        super(ElementUtils.getType(element));
+        this.element = element;
     }
     */
 
@@ -85,12 +89,12 @@ public class FormalParameter extends LocalVariable {
     }
 
     @Override
-    public boolean syntacticEquals(JavaExpression other) {
-        if (!(other instanceof FormalParameter)) {
+    public boolean syntacticEquals(JavaExpression je) {
+        if (!(je instanceof FormalParameter)) {
             return false;
         }
-        FormalParameter l = (FormalParameter) other;
-        return l.equals(this);
+        FormalParameter other = (FormalParameter) je;
+        return other.equals(this);
     }
 
     @Override
