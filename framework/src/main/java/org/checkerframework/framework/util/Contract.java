@@ -124,7 +124,7 @@ public abstract class Contract {
      *
      * @param kind precondition, postcondition, or conditional postcondition
      * @param expressionString the Java expression that should have a type qualifier
-     * @param annotation the type qualifier that {@code expression} should have
+     * @param annotation the type qualifier that {@code expressionString} should have
      * @param contractAnnotation the pre- or post-condition annotation that the programmer wrote;
      *     used for diagnostic messages
      */
