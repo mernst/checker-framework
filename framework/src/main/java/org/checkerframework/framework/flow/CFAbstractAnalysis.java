@@ -45,13 +45,11 @@ public abstract class CFAbstractAnalysis<
     /** The type hierarchy. */
     protected final TypeHierarchy typeHierarchy;
 
-    /** The dependent type helper used to standardize contracts. */
-    protected final DependentTypesHelper dependentTypesHelperForContracts;
-
     /**
-     * The dependent type helper used to standardize annotations belonging to the type hierarchy.
+     * The dependent type helper used to standardize both annotations belonging to the type
+     * hierarchy, and contract expressions.
      */
-    protected final DependentTypesHelper dependentTypesHelperForQualifiers;
+    protected final DependentTypesHelper dependentTypesHelper;
 
     /** A type factory that can provide static type annotations for AST Trees. */
     protected final GenericAnnotatedTypeFactory<V, S, T, ? extends CFAbstractAnalysis<V, S, T>>
@@ -87,8 +85,7 @@ public abstract class CFAbstractAnalysis<
         types = env.getTypeUtils();
         qualifierHierarchy = factory.getQualifierHierarchy();
         typeHierarchy = factory.getTypeHierarchy();
-        dependentTypesHelperForContracts = factory.getDependentTypesHelperForContracts();
-        dependentTypesHelperForQualifiers = factory.getDependentTypesHelperForQualifiers();
+        dependentTypesHelper = factory.getDependentTypesHelper();
         this.atypeFactory = factory;
         this.checker = checker;
         this.transferFunction = createTransferFunction();

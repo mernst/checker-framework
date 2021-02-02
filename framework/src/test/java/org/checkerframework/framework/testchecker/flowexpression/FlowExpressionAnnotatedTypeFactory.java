@@ -26,7 +26,7 @@ public class FlowExpressionAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
     }
 
     @Override
-    protected DependentTypesHelper createDependentTypesHelperForContracts() {
+    protected DependentTypesHelper createDependentTypesHelper() {
         return new DependentTypesHelper(this);
     }
 

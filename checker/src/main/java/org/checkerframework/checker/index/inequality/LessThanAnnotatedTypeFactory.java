@@ -67,7 +67,7 @@ public class LessThanAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
 
     @Override
-    protected DependentTypesHelper createDependentTypesHelperForContracts() {
+    protected DependentTypesHelper createDependentTypesHelper() {
         // Allows + or - in a @LessThan.
         return new OffsetDependentTypesHelper(this);
     }

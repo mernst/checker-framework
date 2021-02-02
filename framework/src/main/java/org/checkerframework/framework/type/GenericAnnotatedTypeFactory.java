@@ -155,14 +155,8 @@ public abstract class GenericAnnotatedTypeFactory<
     /** to handle defaults specified by the user */
     protected QualifierDefaults defaults;
 
-    /** To handle dependent type annotations for contracts. */
-    protected DependentTypesHelper dependentTypesHelperForContracts;
-
-    /**
-     * To handle dependent type annotations for qualifiers. Same as {@link
-     * #dependentTypesHelperForContracts}, or null.
-     */
-    protected @Nullable DependentTypesHelper dependentTypesHelperForQualifiers;
+    /** To handle dependent type annotations. */
+    protected DependentTypesHelper dependentTypesHelper;
 
     /** to handle method pre- and postconditions */
     protected ContractsFromMethod contractsUtils;
@@ -338,8 +332,7 @@ public abstract class GenericAnnotatedTypeFactory<
     protected void postInit() {
         super.postInit();
 
-        this.dependentTypesHelperForContracts = createDependentTypesHelperForContracts();
-        this.dependentTypesHelperForQualifiers = createDependentTypesHelperForQualifiers();
+        this.dependentTypesHelper = createDependentTypesHelper();
         this.defaults = createAndInitQualifierDefaults();
         this.treeAnnotator = createTreeAnnotator();
         this.typeAnnotator = createTypeAnnotator();
@@ -445,9 +438,8 @@ public abstract class GenericAnnotatedTypeFactory<
         List<TreeAnnotator> treeAnnotators = new ArrayList<>();
         treeAnnotators.add(new PropagationTreeAnnotator(this));
         treeAnnotators.add(new LiteralTreeAnnotator(this).addStandardLiteralQualifiers());
-        if (dependentTypesHelperForQualifiers != null) {
-            treeAnnotators.add(
-                    dependentTypesHelperForQualifiers.createDependentTypesTreeAnnotator());
+        if (dependentTypesHelper.hasDependentAnnotations()) {
+            treeAnnotators.add(dependentTypesHelper.createDependentTypesTreeAnnotator());
         }
         return new ListTreeAnnotator(treeAnnotators);
     }
@@ -575,47 +567,22 @@ public abstract class GenericAnnotatedTypeFactory<
     }
 
     /**
-     * Creates a {@link DependentTypesHelper} and returns it. Use {@link
-     * #getDependentTypesHelperForContracts} to access the value.
+     * Creates a {@link DependentTypesHelper} and returns it. Use {@link #getDependentTypesHelper}
+     * to access the value.
      *
      * @return a new {@link DependentTypesHelper}
      */
-    protected DependentTypesHelper createDependentTypesHelperForContracts() {
+    protected DependentTypesHelper createDependentTypesHelper() {
         return new DependentTypesHelper(this);
     }
 
     /**
-     * Creates a {@link DependentTypesHelper} and returns it. Use {@link
-     * #getDependentTypesHelperForQualifiers} to access the value.
+     * Returns the DependentTypesHelper.
      *
-     * <p>Call after {@link #createDependentTypesHelperForContracts}. Returns either that value or
-     * null.
-     *
-     * @return a new {@link DependentTypesHelper}
+     * @return the DependentTypesHelper
      */
-    protected DependentTypesHelper createDependentTypesHelperForQualifiers() {
-        if (dependentTypesHelperForContracts.hasDependentAnnotations()) {
-            return dependentTypesHelperForContracts;
-        }
-        return null;
-    }
-
-    /**
-     * Returns the DependentTypesHelper to use for contracts.
-     *
-     * @return the DependentTypesHelper to use for contracts
-     */
-    public DependentTypesHelper getDependentTypesHelperForContracts() {
-        return dependentTypesHelperForContracts;
-    }
-
-    /**
-     * Returns the DependentTypesHelper to use for qualifiers, or null if none is needed.
-     *
-     * @return the DependentTypesHelper to use for qualifiers, or null if none is needed
-     */
-    public DependentTypesHelper getDependentTypesHelperForQualifiers() {
-        return dependentTypesHelperForQualifiers;
+    public DependentTypesHelper getDependentTypesHelper() {
+        return dependentTypesHelper;
     }
 
     /**
@@ -639,8 +606,8 @@ public abstract class GenericAnnotatedTypeFactory<
     @Override
     public AnnotatedDeclaredType fromNewClass(NewClassTree newClassTree) {
         AnnotatedDeclaredType superResult = super.fromNewClass(newClassTree);
-        if (dependentTypesHelperForQualifiers != null) {
-            dependentTypesHelperForQualifiers.standardizeNewClassTree(newClassTree, superResult);
+        if (dependentTypesHelper.hasDependentAnnotations()) {
+            dependentTypesHelper.standardizeNewClassTree(newClassTree, superResult);
         }
         return superResult;
     }
@@ -1629,8 +1596,8 @@ public abstract class GenericAnnotatedTypeFactory<
     public ParameterizedExecutableType constructorFromUse(NewClassTree tree) {
         ParameterizedExecutableType mType = super.constructorFromUse(tree);
         AnnotatedExecutableType method = mType.executableType;
-        if (dependentTypesHelperForQualifiers != null) {
-            dependentTypesHelperForQualifiers.viewpointAdaptConstructor(tree, method);
+        if (dependentTypesHelper.hasDependentAnnotations()) {
+            dependentTypesHelper.viewpointAdaptConstructor(tree, method);
         }
         return mType;
     }
@@ -1644,8 +1611,8 @@ public abstract class GenericAnnotatedTypeFactory<
     @Override
     public AnnotatedTypeMirror getMethodReturnType(MethodTree m) {
         AnnotatedTypeMirror returnType = super.getMethodReturnType(m);
-        if (dependentTypesHelperForQualifiers != null) {
-            dependentTypesHelperForQualifiers.standardizeReturnType(m, returnType);
+        if (dependentTypesHelper.hasDependentAnnotations()) {
+            dependentTypesHelper.standardizeReturnType(m, returnType);
         }
         return returnType;
     }
@@ -1653,8 +1620,8 @@ public abstract class GenericAnnotatedTypeFactory<
     @Override
     public AnnotatedTypeMirror getMethodReturnType(MethodTree m, ReturnTree r) {
         AnnotatedTypeMirror returnType = super.getMethodReturnType(m, r);
-        if (dependentTypesHelperForQualifiers != null) {
-            dependentTypesHelperForQualifiers.standardizeReturnType(m, returnType);
+        if (dependentTypesHelper.hasDependentAnnotations()) {
+            dependentTypesHelper.standardizeReturnType(m, returnType);
         }
         return returnType;
     }
@@ -1939,8 +1906,8 @@ public abstract class GenericAnnotatedTypeFactory<
         applyQualifierParameterDefaults(elt, type);
         typeAnnotator.visit(type, null);
         defaults.annotate(elt, type);
-        if (dependentTypesHelperForQualifiers != null) {
-            dependentTypesHelperForQualifiers.standardizeVariable(type, elt);
+        if (dependentTypesHelper.hasDependentAnnotations()) {
+            dependentTypesHelper.standardizeVariable(type, elt);
         }
     }
 
@@ -1948,8 +1915,8 @@ public abstract class GenericAnnotatedTypeFactory<
     public ParameterizedExecutableType methodFromUse(MethodInvocationTree tree) {
         ParameterizedExecutableType mType = super.methodFromUse(tree);
         AnnotatedExecutableType method = mType.executableType;
-        if (dependentTypesHelperForQualifiers != null) {
-            dependentTypesHelperForQualifiers.viewpointAdaptMethod(tree, method);
+        if (dependentTypesHelper.hasDependentAnnotations()) {
+            dependentTypesHelper.viewpointAdaptMethod(tree, method);
         }
         return mType;
     }
@@ -1966,8 +1933,8 @@ public abstract class GenericAnnotatedTypeFactory<
     public List<AnnotatedTypeParameterBounds> typeVariablesFromUse(
             AnnotatedDeclaredType type, TypeElement element) {
         List<AnnotatedTypeParameterBounds> f = super.typeVariablesFromUse(type, element);
-        if (dependentTypesHelperForQualifiers != null) {
-            dependentTypesHelperForQualifiers.viewpointAdaptTypeVariableBounds(
+        if (dependentTypesHelper.hasDependentAnnotations()) {
+            dependentTypesHelper.viewpointAdaptTypeVariableBounds(
                     element, f, visitorState.getPath());
         }
         return f;
@@ -2496,21 +2463,19 @@ public abstract class GenericAnnotatedTypeFactory<
                     path.getLeaf().getKind(),
                     TreeUtils.toStringTruncated(path.getLeaf(), 65));
         }
-        DependentTypesHelper dependentTypesHelper = getDependentTypesHelperForContracts();
-        if (dependentTypesHelper != null) {
-            AnnotationMirror standardized =
-                    dependentTypesHelper.standardizeAnnotationIfDependentType(
-                            jeContext, path, annoFromContract, false);
-            if (standardized != null) {
-                dependentTypesHelper.checkAnnotation(
-                        standardized, path == null ? null : path.getLeaf());
-                if (false) {
-                    System.out.printf(
-                            "standardizeAnnotationFromContract%n  annoFromContract=%s%n  => standardized =%s%n",
-                            annoFromContract, standardized);
-                }
-                return standardized;
+        DependentTypesHelper dependentTypesHelper = getDependentTypesHelper();
+        AnnotationMirror standardized =
+                dependentTypesHelper.standardizeAnnotationIfDependentType(
+                        jeContext, path, annoFromContract, false);
+        if (standardized != null) {
+            dependentTypesHelper.checkAnnotation(
+                    standardized, path == null ? null : path.getLeaf());
+            if (false) {
+                System.out.printf(
+                        "standardizeAnnotationFromContract%n  annoFromContract=%s%n  => standardized =%s%n",
+                        annoFromContract, standardized);
             }
+            return standardized;
         }
         return annoFromContract;
     }

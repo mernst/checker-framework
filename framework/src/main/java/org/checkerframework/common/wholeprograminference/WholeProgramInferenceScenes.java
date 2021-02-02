@@ -651,8 +651,8 @@ public class WholeProgramInferenceScenes implements WholeProgramInference {
                 atypeFactory.getAnnotatedType(retNode.getTree().getExpression());
         atypeFactory.wpiAdjustForUpdateNonField(rhsATM);
         DependentTypesHelper dependentTypesHelper =
-                ((GenericAnnotatedTypeFactory) atypeFactory).getDependentTypesHelperForQualifiers();
-        if (dependentTypesHelper != null) {
+                ((GenericAnnotatedTypeFactory) atypeFactory).getDependentTypesHelper();
+        if (dependentTypesHelper.hasDependentAnnotations()) {
             dependentTypesHelper.standardizeReturnType(
                     methodDeclTree, rhsATM, /*removeErroneousExpressions=*/ true);
         }

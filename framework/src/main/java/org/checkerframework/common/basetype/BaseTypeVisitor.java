@@ -372,8 +372,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         }
 
         AnnotatedDeclaredType classType = atypeFactory.getAnnotatedType(classTree);
-        if (atypeFactory.getDependentTypesHelperForQualifiers() != null) {
-            atypeFactory.getDependentTypesHelperForQualifiers().checkClass(classTree, classType);
+        if (atypeFactory.getDependentTypesHelper().hasDependentAnnotations()) {
+            atypeFactory.getDependentTypesHelper().checkClass(classTree, classType);
         }
         validateType(classTree, classType);
 
@@ -717,8 +717,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 validateTypeOf(thr);
             }
 
-            if (atypeFactory.getDependentTypesHelperForQualifiers() != null) {
-                atypeFactory.getDependentTypesHelperForQualifiers().checkMethod(node, methodType);
+            if (atypeFactory.getDependentTypesHelper().hasDependentAnnotations()) {
+                atypeFactory.getDependentTypesHelper().checkMethod(node, methodType);
             }
 
             // Check method overrides
@@ -1287,8 +1287,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         visitorState.setAssignmentContext(Pair.of(node, variableType));
 
         try {
-            if (atypeFactory.getDependentTypesHelperForQualifiers() != null) {
-                atypeFactory.getDependentTypesHelperForQualifiers().checkType(variableType, node);
+            if (atypeFactory.getDependentTypesHelper().hasDependentAnnotations()) {
+                atypeFactory.getDependentTypesHelper().checkType(variableType, node);
             }
             // If there's no assignment in this variable declaration, skip it.
             if (node.getInitializer() != null) {
@@ -1916,8 +1916,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
         if (valid) {
             AnnotatedDeclaredType dt = atypeFactory.getAnnotatedType(node);
-            if (atypeFactory.getDependentTypesHelperForQualifiers() != null) {
-                atypeFactory.getDependentTypesHelperForQualifiers().checkType(dt, node);
+            if (atypeFactory.getDependentTypesHelper().hasDependentAnnotations()) {
+                atypeFactory.getDependentTypesHelper().checkType(dt, node);
             }
             checkConstructorInvocation(dt, constructorType, node);
         }
@@ -2178,8 +2178,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
         if (valid && node.getType() != null) {
             AnnotatedArrayType arrayType = atypeFactory.getAnnotatedType(node);
-            if (atypeFactory.getDependentTypesHelperForQualifiers() != null) {
-                atypeFactory.getDependentTypesHelperForQualifiers().checkType(arrayType, node);
+            if (atypeFactory.getDependentTypesHelper().hasDependentAnnotations()) {
+                atypeFactory.getDependentTypesHelper().checkType(arrayType, node);
             }
             if (node.getInitializers() != null) {
                 checkArrayInitialization(arrayType.getComponentType(), node.getInitializers());
@@ -2368,9 +2368,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             checkTypecastSafety(node);
             checkTypecastRedundancy(node);
         }
-        if (atypeFactory.getDependentTypesHelperForQualifiers() != null) {
+        if (atypeFactory.getDependentTypesHelper().hasDependentAnnotations()) {
             AnnotatedTypeMirror type = atypeFactory.getAnnotatedType(node);
-            atypeFactory.getDependentTypesHelperForQualifiers().checkType(type, node.getType());
+            atypeFactory.getDependentTypesHelper().checkType(type, node.getType());
         }
 
         if (node.getType().getKind() == Tree.Kind.INTERSECTION_TYPE) {
