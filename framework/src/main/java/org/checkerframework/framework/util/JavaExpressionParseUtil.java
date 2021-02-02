@@ -364,29 +364,19 @@ public class JavaExpressionParseUtil {
                 return getParameterJavaExpression(s, context);
             }
 
-            // Local variable, parameter, or field.
+            // Local variable or parameter.
             if (!context.parsingMember) {
                 // Attempt to match a local variable within the scope of the
                 // given path before attempting to match a field.
                 VariableElement varElem =
-                        resolver.findLocalVariableOrParameterOrField(s, annotatedConstruct);
+                        resolver.findLocalVariableOrParameter(s, annotatedConstruct);
                 if (debug_pums11) {
                     System.out.printf(
                             "ETJEV.visit(NameExpr: %s): varElem=%s [%s]%n",
                             expr, varElem, varElem == null ? null : varElem.getKind());
                 }
                 if (varElem != null) {
-                    if (varElem.getKind() == ElementKind.FIELD) {
-                        if (debug_pums11) {
-                            System.out.printf("ETJEV.visit(NameExpr: %s): FIELD%n", expr);
-                            System.out.printf("ETJEV.visit(NameExpr: %s): pass%n", expr);
-                        }
-                    } else {
-                        if (false) {
-                            System.out.printf("A local variable: %s%n", varElem);
-                        }
-                        return new LocalVariable(varElem);
-                    }
+                    return new LocalVariable(varElem);
                 }
             }
 
@@ -980,6 +970,18 @@ public class JavaExpressionParseUtil {
          * If so, certain constructs like "#2" and local variables cannot occur.
          */
         public final boolean parsingMember;
+
+        /**
+         * Creates a context for parsing a Java expression, with "null" for arguments.
+         *
+         * @param receiver used to replace "this" in a Java expression and used to resolve
+         *     identifiers in any Java expression with an implicit "this"
+         * @param checker used to create {@link
+         *     org.checkerframework.dataflow.expression.JavaExpression}s
+         */
+        public JavaExpressionContext(JavaExpression receiver, SourceChecker checker) {
+            this(receiver, null, checker);
+        }
 
         /**
          * Creates a context for parsing a Java expression.

@@ -151,7 +151,7 @@ public class DependentTypesHelper {
             return;
         }
         JavaExpression r = JavaExpression.getImplicitReceiver(classDecl);
-        JavaExpressionContext context = new JavaExpressionContext(r, null, factory.getChecker());
+        JavaExpressionContext context = new JavaExpressionContext(r, factory.getChecker());
         for (AnnotatedTypeParameterBounds bound : bounds) {
             standardize(context, pathToUse, bound.getUpperBound());
             standardize(context, pathToUse, bound.getLowerBound());
@@ -364,7 +364,7 @@ public class DependentTypesHelper {
         }
         JavaExpression receiverJe = JavaExpression.getImplicitReceiver(classElt);
         JavaExpressionContext classignmentContext =
-                new JavaExpressionContext(receiverJe, null, factory.getChecker());
+                new JavaExpressionContext(receiverJe, factory.getChecker());
         standardize(classignmentContext, path, type);
     }
 
@@ -545,7 +545,7 @@ public class DependentTypesHelper {
                     receiverJe = JavaExpression.getImplicitReceiver(variableElt);
                 }
                 JavaExpressionContext fieldContext =
-                        new JavaExpressionContext(receiverJe, null, factory.getChecker());
+                        new JavaExpressionContext(receiverJe, factory.getChecker());
                 if (debug) {
                     System.out.printf(
                             "standardizeVariable(%s, %s, %s)%n",
@@ -588,8 +588,7 @@ public class DependentTypesHelper {
         }
 
         JavaExpression receiver = JavaExpression.fromTree(factory, node.getExpression());
-        JavaExpressionContext context =
-                new JavaExpressionContext(receiver, null, factory.getChecker());
+        JavaExpressionContext context = new JavaExpressionContext(receiver, factory.getChecker());
         TreePath pathToFieldAccess = factory.getPath(node);
         if (false) {
             System.out.printf(
