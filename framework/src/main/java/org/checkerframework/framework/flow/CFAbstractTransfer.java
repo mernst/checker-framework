@@ -1226,15 +1226,7 @@ public abstract class CFAbstractTransfer<
             // Standardize with respect to the method use (the call site).
             TreePath pathToInvocation = atypeFactory.getPath(invocationTree);
             AnnotationMirror standardizedUse =
-                    standardizeAnnotationFromContract(
-                            anno,
-                            methodUseContext,
-                            // TODO: Which is the right context?  do we need the invocation itself
-                            // to handle standardizing "this" and "#2" in contracts?
-                            // This leaf is a method call, but the annotations apply to its
-                            // postcondition, which is a sibling scope to the method call.
-                            // pathToInvocation.getParentPath()
-                            pathToInvocation);
+                    standardizeAnnotationFromContract(anno, methodUseContext, pathToInvocation);
 
             anno = standardizedUse;
 

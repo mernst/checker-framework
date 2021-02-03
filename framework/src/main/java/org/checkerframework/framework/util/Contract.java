@@ -153,7 +153,6 @@ public abstract class Contract {
      * @param pathToMethodDecl used for standardizing annotations
      * @return a new contract
      */
-    // TODO: This needs to return STANDARDIZED annotations.
     protected static Contract create(
             Kind kind,
             String expressionString,

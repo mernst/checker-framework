@@ -767,8 +767,7 @@ public class DependentTypesHelper {
             builder.setValue(value, standardizedStrings);
         }
 
-        AnnotationMirror result = builder.build();
-        return result;
+        return builder.build();
     }
 
     /** A visitor that standardizes Java expression strings in dependent type annotations. */

@@ -1010,7 +1010,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 try {
                     asField =
                             JavaExpressionParseUtil.parse(
-                                    // TODO: I guess I need to adjust the path here.
                                     expressionString, jeContext, pathToMethodDecl.getParentPath());
                 } catch (JavaExpressionParseException e) {
                     asField = null;
@@ -4228,7 +4227,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Set<? extends Contract> contractSet,
             AnnotatedExecutableType method,
             ExecutableElement methodElt) {
-
         TreePath methodDeclPath = atypeFactory.getTreeUtils().getPath(methodElt);
         return resolveContracts(contractSet, method, methodDeclPath);
     }
