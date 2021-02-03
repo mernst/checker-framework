@@ -607,12 +607,6 @@ public abstract class CFAbstractTransfer<
             return annoFromContract;
         }
 
-        System.out.printf(
-                "CFAT.standardizeAnnotationFromContract(%s, context, %s)%n context = %s%n",
-                annoFromContract,
-                TreePathUtil.leafToStringTruncated(path, 65),
-                jeContext.toStringDebug());
-
         // TODO: common implementation with
         // GenericAnnotatedTypeFactory.standardizeAnnotationFromContract.
         AnnotationMirror standardized =
@@ -621,9 +615,6 @@ public abstract class CFAbstractTransfer<
         if (standardized != null) {
             // BaseTypeVisitor checks the validity of the annotaiton. Errors are reported there
             // when called from BaseTypeVisitor.checkContractsAtMethodDeclaration().
-            System.out.printf(
-                    "CFAT.standardizeAnnotationFromContract: %s => %s%n",
-                    annoFromContract, standardized);
             return standardized;
         }
         return annoFromContract;
