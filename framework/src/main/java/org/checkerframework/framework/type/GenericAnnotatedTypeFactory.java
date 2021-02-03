@@ -2446,13 +2446,6 @@ public abstract class GenericAnnotatedTypeFactory<
      */
     public AnnotationMirror standardizeAnnotationFromContract(
             AnnotationMirror annoFromContract, JavaExpressionContext jeContext, TreePath path) {
-        if (false) {
-            System.out.printf(
-                    "standardizeAnnotationFromContract%n  annoFromContract=%s%n  path.getLeaf()=%s %s%n",
-                    annoFromContract,
-                    path.getLeaf().getKind(),
-                    TreeUtils.toStringTruncated(path.getLeaf(), 65));
-        }
         DependentTypesHelper dependentTypesHelper = getDependentTypesHelper();
         AnnotationMirror standardized =
                 dependentTypesHelper.standardizeAnnotationIfDependentType(
@@ -2460,11 +2453,6 @@ public abstract class GenericAnnotatedTypeFactory<
         if (standardized != null) {
             dependentTypesHelper.checkAnnotation(
                     standardized, path == null ? null : path.getLeaf());
-            if (false) {
-                System.out.printf(
-                        "standardizeAnnotationFromContract%n  annoFromContract=%s%n  => standardized =%s%n",
-                        annoFromContract, standardized);
-            }
             return standardized;
         }
         return annoFromContract;

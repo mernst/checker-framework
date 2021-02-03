@@ -57,7 +57,7 @@ public class ThisReference extends JavaExpression {
     }
 
     @Override
-    public ThisReference atMethodScope(List<JavaExpression> parameters) {
+    public ThisReference atMethodSignature(List<JavaExpression> parameters) {
         return this;
     }
 }

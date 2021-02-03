@@ -179,7 +179,7 @@ public class LocalVariable extends JavaExpression {
     }
 
     @Override
-    public LocalVariable atMethodScope(List<JavaExpression> parameters) {
+    public LocalVariable atMethodSignature(List<JavaExpression> parameters) {
         int index = parameters.indexOf(this);
         if (index == -1) {
             return this;

@@ -115,8 +115,8 @@ public class FieldAccess extends JavaExpression {
 
     @Override
     @SuppressWarnings("interning:not.interned") // test whether method returns its argument
-    public FieldAccess atMethodScope(List<JavaExpression> parameters) {
-        JavaExpression newReceiver = receiver.atMethodScope(parameters);
+    public FieldAccess atMethodSignature(List<JavaExpression> parameters) {
+        JavaExpression newReceiver = receiver.atMethodSignature(parameters);
         if (receiver == newReceiver) {
             return this;
         } else {

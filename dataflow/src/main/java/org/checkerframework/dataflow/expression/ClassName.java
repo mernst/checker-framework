@@ -82,7 +82,7 @@ public class ClassName extends JavaExpression {
     }
 
     @Override
-    public ClassName atMethodScope(List<JavaExpression> parameters) {
+    public ClassName atMethodSignature(List<JavaExpression> parameters) {
         return this;
     }
 }

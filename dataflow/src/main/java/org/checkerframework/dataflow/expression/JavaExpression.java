@@ -659,7 +659,7 @@ public abstract class JavaExpression {
      *
      * @return a variant of this with formal parameters expressed as "#2"
      */
-    public abstract JavaExpression atMethodScope(List<JavaExpression> parameters);
+    public abstract JavaExpression atMethodSignature(List<JavaExpression> parameters);
 
     /**
      * Returns a variant of the given list with LocalVariable replaced by FormalParameter where
@@ -669,7 +669,7 @@ public abstract class JavaExpression {
      * @return a variant of the given list with formal parameters expressed as "#2"
      */
     @SuppressWarnings("interning:not.interned") // test whether method returns its argument
-    public static List<@PolyNull JavaExpression> listAtMethodScope(
+    public static List<@PolyNull JavaExpression> listAtMethodSignature(
             List<@PolyNull JavaExpression> list, List<JavaExpression> parameters) {
         List<@PolyNull JavaExpression> result = new ArrayList<>(list.size());
         boolean different = false;
@@ -677,7 +677,7 @@ public abstract class JavaExpression {
             if (elt == null) {
                 result.add(null);
             } else {
-                JavaExpression newElt = elt.atMethodScope(parameters);
+                JavaExpression newElt = elt.atMethodSignature(parameters);
                 different = different || newElt != elt;
                 result.add(newElt);
             }

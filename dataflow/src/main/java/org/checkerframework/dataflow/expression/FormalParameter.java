@@ -113,7 +113,7 @@ public class FormalParameter extends LocalVariable {
     }
 
     @Override
-    public FormalParameter atMethodScope(List<JavaExpression> parameters) {
+    public FormalParameter atMethodSignature(List<JavaExpression> parameters) {
         return this;
     }
 }

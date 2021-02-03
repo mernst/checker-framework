@@ -180,9 +180,6 @@ public class Resolver {
         }
     }
 
-    /** Debugging for pums11 branch. */
-    private static final boolean debug_pums11 = false;
-
     /**
      * Finds the field with name {@code name} in a given type.
      *
@@ -205,11 +202,6 @@ public class Resolver {
                             type,
                             names.fromString(name),
                             Kinds.KindSelector.VAR);
-            if (debug_pums11) {
-                System.out.printf(
-                        "findField(%s, %s, %s): res = %s%n",
-                        name, type, TreeUtils.toStringTruncated(path.getLeaf(), 65), res);
-            }
 
             if (res.getKind() == ElementKind.FIELD) {
                 return (VariableElement) res;

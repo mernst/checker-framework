@@ -219,9 +219,9 @@ public class BinaryOperation extends JavaExpression {
 
     @Override
     @SuppressWarnings("interning:not.interned") // test whether method returns its argument
-    public BinaryOperation atMethodScope(List<JavaExpression> parameters) {
-        JavaExpression newLeft = left.atMethodScope(parameters);
-        JavaExpression newRight = right.atMethodScope(parameters);
+    public BinaryOperation atMethodSignature(List<JavaExpression> parameters) {
+        JavaExpression newLeft = left.atMethodSignature(parameters);
+        JavaExpression newRight = right.atMethodSignature(parameters);
         if (left == newLeft && right == newRight) {
             return this;
         } else {

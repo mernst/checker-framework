@@ -135,8 +135,8 @@ public class UnaryOperation extends JavaExpression {
 
     @Override
     @SuppressWarnings("interning:not.interned") // test whether method returns its argument
-    public UnaryOperation atMethodScope(List<JavaExpression> parameters) {
-        JavaExpression newOperand = operand.atMethodScope(parameters);
+    public UnaryOperation atMethodSignature(List<JavaExpression> parameters) {
+        JavaExpression newOperand = operand.atMethodSignature(parameters);
         if (operand == newOperand) {
             return this;
         } else {

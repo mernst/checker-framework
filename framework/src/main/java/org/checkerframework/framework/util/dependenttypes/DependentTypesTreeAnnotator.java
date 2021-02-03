@@ -64,11 +64,6 @@ public class DependentTypesTreeAnnotator extends TreeAnnotator {
     @Override
     public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror annotatedTypeMirror) {
         Element ele = TreeUtils.elementFromUse(node);
-        if (false) {
-            System.out.printf(
-                    "visitIdentifier(%s, %s) ele=%s [%s]%n",
-                    node, annotatedTypeMirror, ele, ele.getKind());
-        }
         if (ele.getKind() == ElementKind.FIELD
                 && ((VariableElement) ele).getSimpleName().contentEquals("this")) {
             MethodTree methodTree = atypeFactory.getEnclosingMethod(node);
@@ -83,11 +78,6 @@ public class DependentTypesTreeAnnotator extends TreeAnnotator {
             helper.standardizeVariable(annotatedTypeMirror, ele);
         } else {
             // This does nothing for PARAMETER and LOCAL_VARIABLE.  Should it?
-            if (false) {
-                System.out.printf(
-                        "visitIdentifier(%s, %s) skipping unrecognized kind %s%n",
-                        node, annotatedTypeMirror, ele.getKind());
-            }
         }
         return super.visitIdentifier(node, annotatedTypeMirror);
     }

@@ -166,12 +166,6 @@ public abstract class Contract {
         if ((ensuresQualifierIf != null) != (kind == Kind.CONDITIONALPOSTCONDITION)) {
             throw new BugInCF("Mismatch: ensuresQualifierIf=%s, kind=%s", ensuresQualifierIf, kind);
         }
-        boolean debug = false;
-        if (debug) {
-            System.out.printf(
-                    "Contract.create(kind=%s, expressionString=%s, ensuresQualifierIf=%s)%n  annotation=%s%n  contractAnnotation=%s%n",
-                    kind, expressionString, ensuresQualifierIf, annotation, contractAnnotation);
-        }
 
         // pathToMethodDecl is null if the method is not declared in source code.
         // TODO: The annotations still need to be standardized in that case.  We don't currently
@@ -182,11 +176,6 @@ public abstract class Contract {
                 AnnotationMirror standardized =
                         atypeFactory.standardizeAnnotationFromContract(
                                 annotation, context, pathToMethodDecl);
-                if (debug) {
-                    System.out.printf(
-                            "Contract.create:%n  annotation   = %s%n  standardized = %s%n",
-                            annotation, standardized);
-                }
                 annotation = standardized;
                 /*
                   // ALTERNATE CODE:
@@ -194,11 +183,6 @@ public abstract class Contract {
                         dth.standardizeAnnotationIfDependentType(
                                 context, pathToMethodDecl, annotation, false);
                 if (standardized != null) {
-                if (false) {
-                    System.out.printf(
-                            "Contract.create:%n  annotation   = %s%n  standardized = %s%n",
-                            annotation, standardized);
-                }
                 annotation = standardized;
                 */
             }

@@ -28,7 +28,7 @@ public class KeyForShadowing {
         // :: error: (argument.type.incompatible)
         getMap2(m0, m1, k).toString();
 
-        // No error here; the signature of getMap1 is nonsensical.
+        // No error here, because the signature of getMap1 is nonsensical.
         getMap1(m0, m1, k).toString();
 
         getMap4(m0, m1, k).toString();

@@ -60,7 +60,7 @@ public class OffsetDependentTypesHelper extends DependentTypesHelper {
         }
 
         if (delocalize) {
-            result = result.atMethodScope(context.arguments);
+            result = result.atMethodSignature(context.arguments);
         }
         return result.toString();
     }

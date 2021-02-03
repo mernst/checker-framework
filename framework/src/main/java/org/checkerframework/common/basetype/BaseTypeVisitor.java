@@ -131,7 +131,6 @@ import org.checkerframework.javacutil.SystemUtil;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
-import org.plumelib.util.SystemPlume;
 
 /**
  * A {@link SourceVisitor} that performs assignment and pseudo-assignment checking, method
@@ -1696,7 +1695,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         if (preconditions.isEmpty()) {
             return;
         }
-
         JavaExpressionContext jeContext =
                 JavaExpressionContext.buildContextForMethodUse(tree, checker);
 
@@ -1771,11 +1769,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             AnnotationMirror necessaryAnnotation,
             AnnotationMirror inferredAnnotation,
             CFAbstractStore<?, ?> store) {
-        if (false) {
-            System.out.printf(
-                    "checkContract:%n  %s%n  %s%n  %s%n",
-                    expr, necessaryAnnotation, inferredAnnotation);
-        }
         return inferredAnnotation != null
                 && atypeFactory
                         .getQualifierHierarchy()
@@ -2665,13 +2658,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Object... extraArgs) {
         AnnotatedTypeMirror varType = atypeFactory.getAnnotatedTypeLhs(varTree);
         assert varType != null : "no variable found for tree: " + varTree;
-        if (false) {
-            System.out.printf(
-                    "commonAssignmentCheck(%s [type=%s], %s)%n",
-                    TreeUtils.toStringTruncated(varTree, 65),
-                    varType,
-                    TreeUtils.toStringTruncated(valueExp, 65));
-        }
 
         if (!validateType(varTree, varType)) {
             return;
@@ -3699,22 +3685,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             this.overriddenReturnType = overriddenReturnType;
             this.overridingReturnType = overridingReturnType;
 
-            if (false) {
-                if (overriderDeclPath == null) {
-                    System.out.println("overriderTree=" + overriderTree);
-                    System.out.println("overriderDeclPath=" + overriderDeclPath);
-                    System.out.println("overrider=" + overrider);
-                    System.out.println("overridingType=" + overridingType);
-                    System.out.println("overridingReturnType=" + overridingReturnType);
-                    System.out.println("overriddenElt=" + overriddenElt);
-                    System.out.println("overridden=" + overridden);
-                    System.out.println("overriddenType=" + overriddenType);
-                    System.out.println("overriddenReturnType=" + overriddenReturnType);
-                    new Error("null overriderDeclPath").printStackTrace(System.out);
-                    SystemPlume.sleep(100);
-                }
-            }
-
             overriderMeth = overrider.toString();
             if (overridingType.getKind() == TypeKind.DECLARED) {
                 DeclaredType overriderTypeMirror =
@@ -3784,20 +3754,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 return;
             }
 
-            boolean debug = false;
-            /*
-                    overriddenElt.toString().contains("equals")
-                            && overriddenElt
-                                    .getEnclosingElement()
-                                    .toString()
-                                    .endsWith("LiteralNode");
-            */
-            // true;
-
-            if (debug) {
-                System.out.printf("checkPreAndPostConditions overriddenElt = %s%n", overriddenElt);
-            }
-
             ContractsFromMethod contractsUtils = atypeFactory.getContractsFromMethod();
 
             // Check postconditions
@@ -3826,23 +3782,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     resolveContracts(superPre, overridden, overriddenElt);
             Set<Pair<JavaExpression, AnnotationMirror>> subPre2 =
                     resolveContracts(subPre, overrider, overriderDeclPath);
-            if (debug && !(superPre.isEmpty() && subPre.isEmpty())) {
-                System.out.printf("Resolved super %s%n            to %s%n", superPre, superPre2);
-                System.out.printf("Resolved sub   %s%n            to %s%n", subPre, subPre2);
-            }
             @SuppressWarnings("compilermessages")
             @CompilerMessageKey String premsg = "contracts.precondition." + msgKey + ".invalid";
-            if (debug) {
-                System.out.printf(
-                        "About to call checkContractsSubset(%s, %s,%n %s, %s,%n %s,%n %s,%n %s)%n",
-                        overriderMeth,
-                        overriderTyp,
-                        overriddenMeth,
-                        overriddenTyp,
-                        subPre2,
-                        superPre2,
-                        premsg);
-            }
             checkContractsSubset(
                     overriderMeth,
                     overriderTyp,
@@ -3864,12 +3805,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     resolveContracts(superCPostTrue, overridden, overriddenElt);
             Set<Pair<JavaExpression, AnnotationMirror>> subCPostTrue2 =
                     resolveContracts(subCPostTrue, overrider, overriderDeclPath);
-            if (debug && !(superCPostTrue.isEmpty() && subCPostTrue.isEmpty())) {
-                System.out.printf(
-                        "resolveContracts super %s => %s%n", superCPostTrue, superCPostTrue2);
-                System.out.printf("resolveContracts sub   %s => %s%n", subCPostTrue, subCPostTrue2);
-            }
-
             @SuppressWarnings("compilermessages")
             @CompilerMessageKey String posttruemsg = "contracts.conditional.postcondition.true." + msgKey + ".invalid";
             checkContractsSubset(
@@ -4249,40 +4184,14 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Set<Pair<JavaExpression, AnnotationMirror>> mustSubset,
             Set<Pair<JavaExpression, AnnotationMirror>> set,
             @CompilerMessageKey String messageKey) {
-        boolean debug = false;
-        /*
-        overriddenMeth.toString().contains("equals")
-                && overriddenTyp.toString().endsWith("LiteralNode");
-        */
-        if (debug) {
-            System.out.printf(
-                    "checkContractsSubset%n  %s %s%n  %s %s%n  %s%n  %s%n  %s%n",
-                    overriderMeth,
-                    overriderTyp,
-                    overriddenMeth,
-                    overriddenTyp,
-                    mustSubset,
-                    set,
-                    messageKey);
-        }
-
         for (Pair<JavaExpression, AnnotationMirror> weak : mustSubset) {
             boolean found = false;
 
             for (Pair<JavaExpression, AnnotationMirror> strong : set) {
-                if (debug) {
-                    System.out.printf("weak: %s %s%n", weak.second, weak.first.toStringDebug());
-                    System.out.printf(
-                            "strong: %s %s%n", strong.second, strong.first.toStringDebug());
-                    System.out.printf(
-                            "weak.first.equals(strong.first) = %s%n",
-                            weak.first.equals(strong.first));
-                }
                 // are we looking at a contract of the same receiver?
                 if (weak.first.equals(strong.first)
                         || LocalVariable.isSameFormalParameter(
                                 weak.first, strong.first, elements)) {
-
                     // check subtyping relationship of annotations
                     QualifierHierarchy qualifierHierarchy = atypeFactory.getQualifierHierarchy();
                     if (qualifierHierarchy.isSubtype(strong.second, weak.second)) {
@@ -4320,21 +4229,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             AnnotatedExecutableType method,
             ExecutableElement methodElt) {
 
-        /*
-        boolean debug = method.toString().contains("initInitialInputs");
-        MethodTree methodDeclTree = (MethodTree) atypeFactory.declarationFromElement(methodElt);
-        if (debug && methodDeclTree == null) {
-            System.out.printf(
-                    "methodDeclTree==null for resolveContracts(%s, %s, %s)%n",
-                    contractSet, method, methodElt);
-        }
-        TreePath methodDeclPath = atypeFactory.getPath(methodDeclTree);
-        if (debug && methodDeclPath == null) {
-            System.out.printf(
-                    "methodDeclPath==null for resolveContracts(%s, %s, %s) methodDeclTree=%s%n",
-                    contractSet, method, methodElt, methodDeclTree);
-        }
-        */
         TreePath methodDeclPath = atypeFactory.getTreeUtils().getPath(methodElt);
         return resolveContracts(contractSet, method, methodDeclPath);
     }
@@ -4353,34 +4247,15 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             TreePath methodDeclPath) {
         boolean debug = false;
         // method.toString().contains("initInitialInputs");
-        if (debug) {
-            System.out.printf(
-                    "resolveContracts(%s, %s, %s)%n", method, contractSet, methodDeclPath);
-            if (methodDeclPath == null) {
-                new Error("backtrace").printStackTrace(System.out);
-                SystemPlume.sleep(100);
-            }
-        }
         Set<Pair<JavaExpression, AnnotationMirror>> result = new HashSet<>();
         MethodTree methodTree =
                 methodDeclPath == null ? null : (MethodTree) methodDeclPath.getLeaf();
-        if (debug) {
-            System.out.printf(
-                    "methodTree = %s%n",
-                    methodTree == null ? "null" : TreeUtils.toStringTruncated(methodTree, 65));
-            System.out.printf(
-                    "resolveContracts methodDeclPath = %s%n",
-                    methodDeclPath == null ? "null" : TreePathUtil.toString(methodDeclPath));
-        }
         JavaExpressionContext jeContext = null; // lazily initialized, for efficiency
         for (Contract p : contractSet) {
             String expressionString = p.expressionString;
             AnnotationMirror annotation = p.annotation;
             if (jeContext == null) {
                 if (methodTree == null) {
-                    if (debug) {
-                        System.out.printf("methodTree=null for contract %s%n", p);
-                    }
                     continue;
                 }
                 jeContext =
@@ -4398,25 +4273,11 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 // (same for other annotations)
                 JavaExpression exprJe =
                         JavaExpressionParseUtil.parse(expressionString, jeContext, methodDeclPath);
-                if (debug) {
-                    System.out.printf(
-                            "parse(%s)%n context=%s%n methodDeclPath.getLeaf()=%s%n => %s%n",
-                            expressionString,
-                            jeContext.toStringDebug(),
-                            TreeUtils.toStringTruncated(methodDeclPath.getLeaf(), 165),
-                            exprJe.toStringDebug());
-                }
                 result.add(Pair.of(exprJe, annotation));
             } catch (JavaExpressionParseException e) {
-                if (debug) {
-                    System.out.printf("Error in resolution of %s: e = %s%n", p, e);
-                }
                 // report errors here
                 checker.report(methodTree, e.getDiagMessage());
             }
-        }
-        if (debug) {
-            System.out.printf("resolveContracts(%s, %s) => %s%n", method, contractSet, result);
         }
         return result;
     }

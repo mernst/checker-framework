@@ -65,7 +65,7 @@ public class Unknown extends JavaExpression {
     }
 
     @Override
-    public Unknown atMethodScope(List<JavaExpression> parameters) {
+    public Unknown atMethodSignature(List<JavaExpression> parameters) {
         return this;
     }
 }

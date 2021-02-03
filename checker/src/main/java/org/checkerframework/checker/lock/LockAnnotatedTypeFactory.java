@@ -194,7 +194,7 @@ public class LockAnnotatedTypeFactory
                                 .toString();
                     }
                     if (delocalize) {
-                        result = result.atMethodScope(context.arguments);
+                        result = result.atMethodSignature(context.arguments);
                     }
                     return result.toString();
                 } catch (JavaExpressionParseUtil.JavaExpressionParseException e) {

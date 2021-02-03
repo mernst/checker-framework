@@ -80,7 +80,6 @@ import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
-import org.plumelib.util.SystemPlume;
 
 /**
  * The default analysis transfer function for the Checker Framework propagates information through
@@ -1076,12 +1075,7 @@ public abstract class CFAbstractTransfer<
         TransferResult<V, S> result =
                 new ConditionalTransferResult<>(
                         finishValue(resValue, thenStore, elseStore), thenStore, elseStore);
-        if (false) {
-            System.out.printf("visitMethodInvocation(%s, %s) => %s%n", n, in, result);
-            SystemPlume.sleep(100);
-            new Error("backtrace").printStackTrace();
-            SystemPlume.sleep(100);
-        }
+
         return result;
     }
 
@@ -1164,11 +1158,6 @@ public abstract class CFAbstractTransfer<
             S store,
             ExecutableElement methodElement,
             Tree invocationTree) {
-        if (false) {
-            System.out.printf(
-                    "processPostconditions(%s, %s, %s)%n",
-                    invocationNode, methodElement, invocationTree);
-        }
         ContractsFromMethod contractsUtils = analysis.atypeFactory.getContractsFromMethod();
         Set<Postcondition> postconditions = contractsUtils.getPostconditions(methodElement);
         processPostconditionsAndConditionalPostconditions(
@@ -1194,9 +1183,6 @@ public abstract class CFAbstractTransfer<
         ContractsFromMethod contractsUtils = analysis.atypeFactory.getContractsFromMethod();
         Set<ConditionalPostcondition> conditionalPostconditions =
                 contractsUtils.getConditionalPostconditions(methodElement);
-        if (false) {
-            System.out.printf("conditionalPostconditions = %s%n", conditionalPostconditions);
-        }
         processPostconditionsAndConditionalPostconditions(
                 invocationNode, invocationTree, thenStore, elseStore, conditionalPostconditions);
     }
@@ -1239,16 +1225,6 @@ public abstract class CFAbstractTransfer<
 
             // Standardize with respect to the method use (the call site).
             TreePath pathToInvocation = atypeFactory.getPath(invocationTree);
-            if (false) {
-                System.out.printf(
-                        "About to call standardizeAnnotationFromContract(%s)%n context=%s%n pathToInvocation.getLeaf()=%s [%s]%n        parent=%s [%s]%n",
-                        anno,
-                        methodUseContext.toStringDebug(),
-                        pathToInvocation.getLeaf(),
-                        pathToInvocation.getLeaf().getClass(),
-                        pathToInvocation.getParentPath().getLeaf(),
-                        pathToInvocation.getParentPath().getLeaf().getClass());
-            }
             AnnotationMirror standardizedUse =
                     standardizeAnnotationFromContract(
                             anno,
@@ -1259,16 +1235,11 @@ public abstract class CFAbstractTransfer<
                             // postcondition, which is a sibling scope to the method call.
                             // pathToInvocation.getParentPath()
                             pathToInvocation);
-            if (false) {
-                System.out.printf("standardizeAnnotationFromContract() => %s%n", standardizedUse);
-            }
 
             anno = standardizedUse;
 
             try {
                 JavaExpression je =
-                        // JavaExpressionParseUtil.parse(
-                        //         expressionString, methodUseContext, pathToInvocation, false);
                         JavaExpressionParseUtil.parse(
                                 expressionString, methodUseContext, pathToInvocation);
                 // "insertOrRefine" is called so that the postcondition information is added to any

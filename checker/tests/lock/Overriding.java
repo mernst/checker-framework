@@ -4,9 +4,7 @@ import org.checkerframework.dataflow.qual.*;
 public class Overriding {
 
     class SuperClass {
-        protected final Object a = new Object();
-        protected final Object b = new Object();
-        protected final Object c = new Object();
+        protected Object a, b, c;
 
         @Holding("a")
         void guardedByOne() {}

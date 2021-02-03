@@ -1033,28 +1033,11 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
      * @return the annotated type of {@code tree}
      */
     public AnnotatedTypeMirror getAnnotatedType(Tree tree) {
-        boolean debug =
-                // tree.getKind() != Tree.Kind.METHOD
-                //         && tree.getKind() != Tree.Kind.NEW_CLASS
-                //         && tree.getKind() != Tree.Kind.CLASS;
-                false;
-        if (debug) {
-            System.out.printf(
-                    "getAnnotatedType(%s [%s])%n",
-                    TreeUtils.toStringTruncated(tree, 65), tree.getKind());
-        }
 
         if (tree == null) {
             throw new BugInCF("AnnotatedTypeFactory.getAnnotatedType: null tree");
         }
         if (shouldCache && classAndMethodTreeCache.containsKey(tree)) {
-            if (debug) {
-                System.out.printf(
-                        "getAnnotatedType(%s [%s]) cached => %s%n",
-                        TreeUtils.toStringTruncated(tree, 65),
-                        tree.getKind(),
-                        classAndMethodTreeCache.get(tree));
-            }
             return classAndMethodTreeCache.get(tree).deepCopy();
         }
 
@@ -1072,17 +1055,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
                             + tree.getKind());
         }
 
-        if (debug) {
-            System.out.printf(
-                    "Before addComputedTypeAnnotations: tree=%s%n  type=%s%n",
-                    TreeUtils.toStringTruncated(tree, 65), type);
-        }
         addComputedTypeAnnotations(tree, type);
-        if (debug) {
-            System.out.printf(
-                    "After  addComputedTypeAnnotations: tree=%s%n  type=%s%n",
-                    TreeUtils.toStringTruncated(tree, 65), type);
-        }
 
         if (TreeUtils.isClassTree(tree) || tree.getKind() == Tree.Kind.METHOD) {
             // Don't cache VARIABLE
@@ -1091,13 +1064,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
             }
         } else {
             // No caching otherwise
-        }
-
-        // For debugging
-        if (debug) {
-            System.out.printf(
-                    "AnnotatedTypeFactory::getAnnotatedType(%s) => %s%n",
-                    TreeUtils.toStringTruncated(tree, 65), type);
         }
 
         return type;
@@ -1286,22 +1252,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
                     "AnnotatedTypeFactory.fromMember: not a method or variable declaration: "
                             + tree);
         }
-        boolean debug =
-                // tree.getKind() != Tree.Kind.METHOD
-                //         && tree.getKind() != Tree.Kind.NEW_CLASS
-                //         && tree.getKind() != Tree.Kind.CLASS;
-                false;
-        if (debug) {
-            System.out.printf("fromMember(%s)%n", TreeUtils.toStringTruncated(tree, 65));
-        }
         if (shouldCache && fromMemberTreeCache.containsKey(tree)) {
             return fromMemberTreeCache.get(tree).deepCopy();
         }
         AnnotatedTypeMirror result = TypeFromTree.fromMember(this, tree);
-        if (debug) {
-            System.out.printf(
-                    "fromMember(%s): %s%n", TreeUtils.toStringTruncated(tree, 65), result);
-        }
 
         if (checker.hasOption("mergeStubsWithSource")) {
             if (debugStubParser) {
@@ -1315,10 +1269,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
         if (shouldCache) {
             fromMemberTreeCache.put(tree, result.deepCopy());
-        }
-        if (debug) {
-            System.out.printf(
-                    "fromMember(%s) => %s%n", TreeUtils.toStringTruncated(tree, 65), result);
         }
 
         return result;
@@ -3183,21 +3133,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         // Prevent calling declarationFor on elements we know we don't have
         // the tree for.
 
-        if (false) {
-            if (elt.getKind() == ElementKind.FIELD) {
-                Tree declarationFor =
-                        com.sun.tools.javac.tree.TreeInfo.declarationFor(
-                                (com.sun.tools.javac.code.Symbol) elt,
-                                (com.sun.tools.javac.tree.JCTree) root);
-                System.out.printf(
-                        "declarationFromElement(FIELD %s): declarationFor=%s%n",
-                        elt,
-                        declarationFor == null
-                                ? null
-                                : TreeUtils.toStringTruncated(declarationFor, 65));
-            }
-        }
-
         switch (elt.getKind()) {
             case CLASS:
             case ENUM:
@@ -3216,14 +3151,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
                                 (com.sun.tools.javac.tree.JCTree) root);
                 break;
         }
-        if (false) {
-            System.out.printf(
-                    "declarationFromElement(%s [%s]) => %s%n",
-                    elt,
-                    elt.getKind(),
-                    fromElt == null ? null : TreeUtils.toStringTruncated(fromElt, 65));
-        }
-
         if (shouldCache) {
             elementToTreeCache.put(elt, fromElt);
         }
@@ -3658,16 +3585,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
             cacheDeclAnnos.put(elt, results);
         }
 
-        boolean debug = false;
-        /*
-                elt.toString().contains("equals")
-                        && elt.getEnclosingElement().toString().endsWith("LiteralNode");
-        */
-        if (debug) {
-            System.out.printf(
-                    "getDeclAnnotation(%s.%s) => %s%n", elt.getEnclosingElement(), elt, results);
-        }
-
         return results;
     }
 
@@ -3718,16 +3635,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
      *     the element itself.
      */
     private void inheritOverriddenDeclAnnos(ExecutableElement elt, Set<AnnotationMirror> results) {
-        boolean debug = false;
-        /*
-                elt.toString().contains("equals")
-                        && elt.getEnclosingElement().toString().endsWith("LiteralNode");
-        */
-        if (debug) {
-            System.out.printf(
-                    "inheritOverriddenDeclAnnos(%s.%s)%n", elt.getEnclosingElement(), elt);
-        }
-
         Map<AnnotatedDeclaredType, ExecutableElement> overriddenMethods =
                 AnnotatedTypes.overriddenMethods(elements, this, elt);
 

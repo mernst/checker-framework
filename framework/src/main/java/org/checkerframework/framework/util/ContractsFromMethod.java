@@ -154,9 +154,6 @@ public class ContractsFromMethod {
         List<Pair<AnnotationMirror, AnnotationMirror>> declAnnotations =
                 factory.getDeclAnnotationWithMetaAnnotation(executableElement, kind.metaAnnotation);
         for (Pair<AnnotationMirror, AnnotationMirror> r : declAnnotations) {
-            if (false) {
-                System.out.printf("r = %s%n", r);
-            }
             AnnotationMirror anno = r.first;
             // contractAnno is the meta-annotation on anno.
             AnnotationMirror contractAnno = r.second;
@@ -183,9 +180,6 @@ public class ContractsFromMethod {
                                         factory,
                                         context,
                                         pathToMethodDecl));
-                if (false) {
-                    System.out.printf("Created contract: %s%n", contract);
-                }
                 result.add(contract);
             }
         }

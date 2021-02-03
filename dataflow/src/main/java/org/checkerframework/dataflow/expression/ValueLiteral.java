@@ -160,7 +160,7 @@ public class ValueLiteral extends JavaExpression {
     }
 
     @Override
-    public ValueLiteral atMethodScope(List<JavaExpression> parameters) {
+    public ValueLiteral atMethodSignature(List<JavaExpression> parameters) {
         return this;
     }
 }

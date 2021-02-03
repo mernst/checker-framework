@@ -149,11 +149,11 @@ public class ArrayCreation extends JavaExpression {
 
     @Override
     @SuppressWarnings("interning:not.interned") // test whether method returns its argument
-    public ArrayCreation atMethodScope(List<JavaExpression> parameters) {
+    public ArrayCreation atMethodSignature(List<JavaExpression> parameters) {
         List<@Nullable JavaExpression> newDimensions =
-                JavaExpression.listAtMethodScope(dimensions, parameters);
+                JavaExpression.listAtMethodSignature(dimensions, parameters);
         List<JavaExpression> newInitializers =
-                JavaExpression.listAtMethodScope(initializers, parameters);
+                JavaExpression.listAtMethodSignature(initializers, parameters);
         if (dimensions == newDimensions && initializers == newInitializers) {
             return this;
         } else {

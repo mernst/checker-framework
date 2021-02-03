@@ -330,7 +330,6 @@ public class DependentTypesHelper {
         if (!hasDependentAnnotations()) {
             return;
         }
-
         if (!hasDependentType(type)) {
             return;
         }
@@ -463,19 +462,12 @@ public class DependentTypesHelper {
                     declarationTree, declarationTree.getKind(), type, variableElt);
         }
 
-        boolean debug = false;
-
         if (!hasDependentType(type)) {
             return;
         }
 
         TreePath pathToVariableDecl = factory.getPath(declarationTree);
         if (pathToVariableDecl == null) {
-            if (false) {
-                System.out.printf(
-                        "pathToVariableDecl=null for %s, %s, %s%n",
-                        TreeUtils.toStringTruncated(declarationTree, 65), type, variableElt);
-            }
             return;
         }
         switch (variableElt.getKind()) {
@@ -515,20 +507,7 @@ public class DependentTypesHelper {
                         JavaExpression.getParametersOfEnclosingMethod(factory, pathToVariableDecl);
                 JavaExpressionContext localContext =
                         new JavaExpressionContext(receiver, params, factory.getChecker());
-                if (debug) {
-                    System.out.printf(
-                            "standardizeVariable(%s, %s, %s)%n",
-                            TreeUtils.toStringTruncated(declarationTree, 65), type, variableElt);
-                    System.out.printf(
-                            "About to call standardize for local, resource, or exception parameter.%n  pathToVariableDecl.getLeaf()=%s%n  parent=%s%n",
-                            TreeUtils.toStringTruncated(pathToVariableDecl.getLeaf(), 65),
-                            TreeUtils.toStringTruncated(
-                                    pathToVariableDecl.getParentPath().getLeaf(), 65));
-                }
                 standardize(localContext, pathToVariableDecl, type);
-                if (debug) {
-                    System.out.printf("standardize => %s%n", type);
-                }
                 break;
 
             case FIELD:
@@ -546,20 +525,7 @@ public class DependentTypesHelper {
                 }
                 JavaExpressionContext fieldContext =
                         new JavaExpressionContext(receiverJe, factory.getChecker());
-                if (debug) {
-                    System.out.printf(
-                            "standardizeVariable(%s, %s, %s)%n",
-                            TreeUtils.toStringTruncated(declarationTree, 65), type, variableElt);
-                    System.out.printf(
-                            "About to call standardize for field or enum constant.%n  pathToVariableDecl.getLeaf()=%s%n  parent=%s%n",
-                            TreeUtils.toStringTruncated(pathToVariableDecl.getLeaf(), 65),
-                            TreeUtils.toStringTruncated(
-                                    pathToVariableDecl.getParentPath().getLeaf(), 65));
-                }
                 standardize(fieldContext, pathToVariableDecl, type);
-                if (debug) {
-                    System.out.printf("standardize => %s%n", type);
-                }
                 break;
 
             default:
@@ -590,15 +556,7 @@ public class DependentTypesHelper {
         JavaExpression receiver = JavaExpression.fromTree(factory, node.getExpression());
         JavaExpressionContext context = new JavaExpressionContext(receiver, factory.getChecker());
         TreePath pathToFieldAccess = factory.getPath(node);
-        if (false) {
-            System.out.printf(
-                    "About to call standardize(%s) for %s%ncontext=%s%n",
-                    type, pathToFieldAccess.getLeaf(), context.toStringDebug());
-        }
         standardize(context, pathToFieldAccess, type);
-        if (false) {
-            System.out.printf("standardize => %s%n", type);
-        }
     }
 
     /**
@@ -648,12 +606,6 @@ public class DependentTypesHelper {
                     // It is not possible to standardize if the element was not defined in source
                     // code.
                     // TODO: It is still necessary, even though our current code does not handle it.
-                    if (false) {
-                        System.out.printf(
-                                "standardizeVariable(%s, %s [%s %s]): no declaration tree%n",
-                                type, elt, elt.getKind(), elt.getClass());
-                        new Error("backtrace").printStackTrace();
-                    }
                     return;
                 } else if (TreeUtils.typeOf(declarationTree) == null) {
                     // org.checkerframework.framework.flow.CFAbstractTransfer.getValueFromFactory()
@@ -662,15 +614,7 @@ public class DependentTypesHelper {
                     return;
                 }
 
-                if (false) {
-                    System.out.printf(
-                            "About to call standardizeVariable(%s, %s, %s)%n",
-                            declarationTree, type, elt);
-                }
                 standardizeVariable(declarationTree, type, elt);
-                if (false) {
-                    System.out.printf("standardizeVariable => %s%n", type);
-                }
                 return;
 
             default:
@@ -744,14 +688,7 @@ public class DependentTypesHelper {
         try {
             result = JavaExpressionParseUtil.parse(expression, context, localScope);
         } catch (JavaExpressionParseUtil.JavaExpressionParseException e) {
-            if (debug) {
-                System.out.printf("standardizeString(%s) err => %s%n", expression, e);
-            }
             return new DependentTypesError(expression, e).toString();
-        }
-        if (debug) {
-            System.out.printf(
-                    "standardizeString(%s) (1) => %s%n", expression, result.toStringDebug());
         }
         if (result == null) {
             return new DependentTypesError(expression, /*error message=*/ " ").toString();
@@ -765,19 +702,8 @@ public class DependentTypesHelper {
                 return constant.toString();
             }
         }
-        if (debug) {
-            System.out.printf("standardizeString(%s) => %s%n", expression, result.toStringDebug());
-        }
         if (methodScope) {
-            if (debug) {
-                System.out.printf(
-                        "delocalizing %s, arguments=%s%n",
-                        result.toStringDebug(), context.arguments);
-            }
-            result = result.atMethodScope(context.arguments);
-            if (debug) {
-                System.out.printf("delocalized => %s%n", result.toStringDebug());
-            }
+            result = result.atMethodSignature(context.arguments);
         }
         return result.toString();
     }
@@ -821,24 +747,9 @@ public class DependentTypesHelper {
                 new AnnotationBuilder(
                         factory.getProcessingEnv(), AnnotationUtils.annotationName(anno));
 
-        if (false) {
-            if (localScope == null || localScope.getLeaf() == null) {
-                throw new BugInCF(
-                        "standardizeDependentTypeAnnotation%n  context: %s%n  localScope: %s%n  anno: %s%n  removeErroneousExpressions: %s",
-                        context, localScope, anno, removeErroneousExpressions);
-            }
-        }
         // localScope can be null if the method is not from source code
         boolean delocalize =
                 localScope != null && localScope.getLeaf().getKind() == Tree.Kind.METHOD;
-        if (false) {
-            System.out.printf(
-                    "standardizeDependentTypeAnnotation: anno=%s delocalize=%s%n",
-                    anno, delocalize);
-            if (delocalize == true) {
-                System.out.printf("  context.arguments = %s%n", context.arguments);
-            }
-        }
 
         for (String value : getListOfExpressionElements(anno)) {
             List<String> expressionStrings =
@@ -858,11 +769,6 @@ public class DependentTypesHelper {
         }
 
         AnnotationMirror result = builder.build();
-        if (false) {
-            System.out.printf(
-                    "standardizeDependentTypeAnnotation: anno=%s delocalize=%s%n  => %s%n",
-                    anno, delocalize, result);
-        }
         return result;
     }
 
@@ -930,10 +836,6 @@ public class DependentTypesHelper {
                     // both the nonstandard annotation and the standard annotation are equal with
                     // respect to Object#equals, so only one new annotation will be added to the
                     // type.
-                    if (debug) {
-                        System.out.printf(
-                                "scan(%s)%n  replacing %s%n         by %s%n", type, anno, newAnno);
-                    }
                     type.removeAnnotation(anno);
                     type.addAnnotation(newAnno);
                 }
