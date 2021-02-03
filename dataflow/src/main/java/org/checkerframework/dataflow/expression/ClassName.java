@@ -11,7 +11,7 @@ import org.checkerframework.dataflow.analysis.Store;
  * invocation.
  */
 public class ClassName extends JavaExpression {
-    /** The string representation of the type of this. */
+    /** The string representation of the raw type of this. */
     private final String typeString;
 
     /**
@@ -44,9 +44,6 @@ public class ClassName extends JavaExpression {
 
     @Override
     public String toString() {
-        if (typeString.endsWith(">")) {
-            return typeString.substring(0, typeString.indexOf("<")) + ".class";
-        }
         return typeString + ".class";
     }
 
