@@ -683,7 +683,6 @@ public class DependentTypesHelper {
         if (DependentTypesError.isExpressionError(expression)) {
             return expression;
         }
-        boolean debug = false;
         JavaExpression result;
         try {
             result = JavaExpressionParseUtil.parse(expression, context, localScope);
@@ -823,7 +822,6 @@ public class DependentTypesHelper {
 
         @Override
         protected Void scan(AnnotatedTypeMirror type, Void aVoid) {
-            boolean debug = false;
             for (AnnotationMirror anno :
                     AnnotationUtils.createAnnotationSet(type.getAnnotations())) {
                 AnnotationMirror newAnno =

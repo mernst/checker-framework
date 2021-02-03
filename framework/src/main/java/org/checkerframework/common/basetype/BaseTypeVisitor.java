@@ -4245,7 +4245,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Set<? extends Contract> contractSet,
             AnnotatedExecutableType method,
             TreePath methodDeclPath) {
-        boolean debug = false;
         // method.toString().contains("initInitialInputs");
         Set<Pair<JavaExpression, AnnotationMirror>> result = new HashSet<>();
         MethodTree methodTree =
