@@ -1215,7 +1215,6 @@ public class JavaExpressionParseUtil {
      * @return a JavaExpression for the given VariableTree
      * @throws JavaExpressionParseException if the expression string cannot be parsed
      */
-    // TODO: Rename to fromVariableTree, eliminate other variants.
     public static JavaExpression fromVariableTree(AnnotatedTypeFactory provider, VariableTree tree)
             throws JavaExpressionParseException {
         Element elt = TreeUtils.elementFromDeclaration(tree);

@@ -1097,6 +1097,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 Set<AnnotationMirror> annos = value.getAnnotations();
                 inferredAnno = hierarchy.findAnnotationInSameHierarchy(annos, annotation);
             }
+            System.out.printf(
+                    "About to call checkContract(%s, %s, %s, %s)%n",
+                    expression, annotation, inferredAnno, exitStore);
             if (!checkContract(expression, annotation, inferredAnno, exitStore)) {
                 checker.reportError(
                         methodTree,

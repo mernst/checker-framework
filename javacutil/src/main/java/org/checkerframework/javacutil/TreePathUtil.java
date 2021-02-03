@@ -373,4 +373,20 @@ public final class TreePathUtil {
         }
         return result.toString();
     }
+
+    /**
+     * Returns a string representation of the leaf of the given path, using {@link
+     * TreeUtils#toStringTruncated}.
+     *
+     * @param path a path
+     * @param length the maximum length for the result; must be at least 6
+     * @return a one-line string representation of the leaf of the given path that is no longer than
+     *     {@code length} characters long
+     */
+    public static String leafToStringTruncated(@Nullable TreePath path, int length) {
+        if (path == null) {
+            return "null";
+        }
+        return TreeUtils.toStringTruncated(path.getLeaf(), length);
+    }
 }
