@@ -230,8 +230,7 @@ public class DependentTypesHelper {
         // Then copy annotations from the viewpoint adapted type to methodType, if that annotation
         // is not on a type that was substituted for a type variable.
 
-        standardizeAtm(
-                context, currentPath, viewpointAdaptedType, /*removeErroneousExpressions=*/ false);
+        standardize(context, currentPath, viewpointAdaptedType);
         new ViewpointAdaptedCopier().visit(viewpointAdaptedType, methodType);
     }
 
@@ -624,8 +623,6 @@ public class DependentTypesHelper {
         }
     }
 
-    // TODO: This is the same as standardizeAtm. Some calls to standardizeAtm can be simplified into
-    // calls to this.
     /**
      * Standardize a type.
      *
@@ -634,18 +631,6 @@ public class DependentTypesHelper {
      * @param type the type to standardize; is side-effected by this method
      */
     private void standardize(
-            JavaExpressionContext context, TreePath localScope, AnnotatedTypeMirror type) {
-        standardizeAtm(context, localScope, type);
-    }
-
-    /**
-     * Standardize a type.
-     *
-     * @param context the context
-     * @param localScope the local scope
-     * @param type the type to standardize; is side-effected by this method
-     */
-    private void standardizeAtm(
             JavaExpressionContext context, TreePath localScope, AnnotatedTypeMirror type) {
         standardizeAtm(context, localScope, type, /*removeErroneousExpressions=*/ false);
     }
