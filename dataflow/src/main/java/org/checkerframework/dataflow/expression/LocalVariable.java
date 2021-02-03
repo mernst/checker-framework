@@ -16,7 +16,7 @@ import org.checkerframework.javacutil.TypesUtils;
 /**
  * A local variable.
  *
- * <p>This class also represents a formal parameters expressed using its name. Subclass {@link
+ * <p>This class also represents a formal parameter expressed using its name. Subclass {@link
  * FormalParameter} represents a formal parameter expressed using the "#2" notation.
  */
 public class LocalVariable extends JavaExpression {
