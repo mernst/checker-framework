@@ -766,7 +766,6 @@ public class DependentTypesHelper {
             }
             builder.setValue(value, standardizedStrings);
         }
-
         return builder.build();
     }
 
