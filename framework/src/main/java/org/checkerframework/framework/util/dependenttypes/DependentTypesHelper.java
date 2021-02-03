@@ -663,14 +663,14 @@ public class DependentTypesHelper {
      * @param expression a Java expression
      * @param context the context
      * @param localScope the local scope
-     * @param methodScope if true, use "#2" instead of names for formal parameters
+     * @param atMethodSignature if true, use "#2" instead of names for formal parameters
      * @return the standardized version of the Java expression
      */
     public String standardizeString(
             String expression,
             JavaExpressionContext context,
             TreePath localScope,
-            boolean methodScope) {
+            boolean atMethodSignature) {
         if (DependentTypesError.isExpressionError(expression)) {
             return expression;
         }
@@ -692,7 +692,7 @@ public class DependentTypesHelper {
                 return constant.toString();
             }
         }
-        if (methodScope) {
+        if (atMethodSignature) {
             result = result.atMethodSignature(context.arguments);
         }
         return result.toString();

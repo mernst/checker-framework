@@ -176,14 +176,6 @@ public abstract class Contract {
                         atypeFactory.standardizeAnnotationFromContract(
                                 annotation, context, pathToMethodDecl);
                 annotation = standardized;
-                /*
-                  // ALTERNATE CODE:
-                AnnotationMirror standardized =
-                        dth.standardizeAnnotationIfDependentType(
-                                context, pathToMethodDecl, annotation, false);
-                if (standardized != null) {
-                annotation = standardized;
-                */
             }
         }
 
