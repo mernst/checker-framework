@@ -1072,11 +1072,8 @@ public abstract class CFAbstractTransfer<
         // add new information based on conditional postcondition
         processConditionalPostconditions(n, method, invocationTree, thenStore, elseStore);
 
-        TransferResult<V, S> result =
-                new ConditionalTransferResult<>(
-                        finishValue(resValue, thenStore, elseStore), thenStore, elseStore);
-
-        return result;
+        return new ConditionalTransferResult<>(
+                finishValue(resValue, thenStore, elseStore), thenStore, elseStore);
     }
 
     @Override
