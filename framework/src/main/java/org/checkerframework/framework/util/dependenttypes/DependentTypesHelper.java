@@ -738,7 +738,7 @@ public class DependentTypesHelper {
                         factory.getProcessingEnv(), AnnotationUtils.annotationName(anno));
 
         // localScope can be null if the method is not from source code
-        boolean delocalize =
+        boolean atMethodSignature =
                 localScope != null && localScope.getLeaf().getKind() == Tree.Kind.METHOD;
 
         for (String value : getListOfExpressionElements(anno)) {
@@ -747,7 +747,7 @@ public class DependentTypesHelper {
             List<String> standardizedStrings = new ArrayList<>();
             for (String expression : expressionStrings) {
                 String standardized =
-                        standardizeString(expression, context, localScope, delocalize);
+                        standardizeString(expression, context, localScope, atMethodSignature);
                 if (removeErroneousExpressions
                         && DependentTypesError.isExpressionError(standardized)) {
                     // nothing to do

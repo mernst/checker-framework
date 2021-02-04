@@ -32,7 +32,7 @@ public class OffsetDependentTypesHelper extends DependentTypesHelper {
             final String expression,
             JavaExpressionContext context,
             TreePath localScope,
-            boolean delocalize) {
+            boolean atMethodSignature) {
         if (DependentTypesError.isExpressionError(expression)) {
             return expression;
         }
@@ -59,7 +59,7 @@ public class OffsetDependentTypesHelper extends DependentTypesHelper {
             result = ValueCheckerUtils.optimize(result, vatf);
         }
 
-        if (delocalize) {
+        if (atMethodSignature) {
             result = result.atMethodSignature(context.arguments);
         }
         return result.toString();
