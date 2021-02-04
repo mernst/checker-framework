@@ -4216,34 +4216,42 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     }
 
     /**
-     * Takes a set of contracts identified by their expression and annotation strings and resolves
-     * them to the correct {@link JavaExpression} and {@link AnnotationMirror}.
+     * Takes as input a set of contracts, each of which contains an expression string and an
+     * annotation. Outputs a set of pairs of {@link JavaExpression} (parsed expression string) and
+     * standardized annotation.
+     *
+     * <p>This discards any contract whose expression cannot be parsed into a JavaExpression.
      *
      * @param contractSet a set of contracts
-     * @param method the method that the contracts are for
+     * @param methodType the type of the method that the contracts are for
+     * @param methodElt the method that the contracts are for
      * @return pairs of (expression, AnnotationMirror), which are resolved contracts
      */
     private Set<Pair<JavaExpression, AnnotationMirror>> resolveContracts(
             Set<? extends Contract> contractSet,
-            AnnotatedExecutableType method,
+            AnnotatedExecutableType methodType,
             ExecutableElement methodElt) {
         TreePath methodDeclPath = atypeFactory.getTreeUtils().getPath(methodElt);
-        return resolveContracts(contractSet, method, methodDeclPath);
+        return resolveContracts(contractSet, methodType, methodDeclPath);
     }
 
     /**
-     * Takes a set of contracts identified by their expression and annotation strings and resolves
-     * them to the correct {@link JavaExpression} and {@link AnnotationMirror}.
+     * Takes as input a set of contracts, each of which contains an expression string and an
+     * annotation. Outputs a set of pairs of {@link JavaExpression} (parsed expression string) and
+     * standardized annotation.
+     *
+     * <p>This discards any contract whose expression cannot be parsed into a JavaExpression.
      *
      * @param contractSet a set of contracts
-     * @param method the method that the contracts are for
+     * @param methodType the type of the method that the contracts are for
+     * @param methodDeclPath the path to the declaration of the method that the contracts are for
      * @return pairs of (expression, AnnotationMirror), which are resolved contracts
      */
     private Set<Pair<JavaExpression, AnnotationMirror>> resolveContracts(
             Set<? extends Contract> contractSet,
-            AnnotatedExecutableType method,
+            AnnotatedExecutableType methodType,
             TreePath methodDeclPath) {
-        // method.toString().contains("initInitialInputs");
+        // methodType.toString().contains("initInitialInputs");
         Set<Pair<JavaExpression, AnnotationMirror>> result = new HashSet<>();
         MethodTree methodTree =
                 methodDeclPath == null ? null : (MethodTree) methodDeclPath.getLeaf();
@@ -4251,19 +4259,22 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         for (Contract p : contractSet) {
             String expressionString = p.expressionString;
             AnnotationMirror annotation = p.annotation;
-            if (jeContext == null) {
-                if (methodTree == null) {
-                    continue;
-                }
+            if (jeContext == null && methodTree != null) {
                 jeContext =
                         JavaExpressionContext.buildContextForMethodDeclaration(
-                                methodTree, method.getReceiverType().getUnderlyingType(), checker);
+                                methodTree,
+                                methodType.getReceiverType().getUnderlyingType(),
+                                checker);
             }
 
-            annotation =
-                    atypeFactory.standardizeAnnotationFromContract(
-                            annotation, jeContext, methodDeclPath);
+            if (jeContext != null) {
+                annotation =
+                        atypeFactory.standardizeAnnotationFromContract(
+                                annotation, jeContext, methodDeclPath);
+            }
 
+            // TODO: What to do if jeContext is null??  I still need a JavaExpression for the
+            // contract.  Change JavaExpressionContext to rely more on elements and less on trees.
             try {
                 // TODO: currently, these expressions are parsed many times.
                 // This could be optimized to store the result the first time.
