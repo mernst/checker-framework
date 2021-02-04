@@ -1024,7 +1024,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                                         .getSimpleName()
                                 + " on the declaration";
                 if (asField == null) {
-                    checker.reportWarning(
+                    checker.reportError(
                             methodTree,
                             "expression.parameter.name.invalid",
                             locationOfExpression,
@@ -1032,7 +1032,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                             expressionString,
                             formalParamNames.indexOf(expressionString) + 1);
                 } else {
-                    checker.reportWarning(
+                    checker.reportError(
                             methodTree,
                             "expression.parameter.name.shadows.field",
                             locationOfExpression,

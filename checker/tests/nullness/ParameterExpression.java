@@ -45,20 +45,20 @@ public class ParameterExpression {
     }
 
     @EnsuresNonNull("param")
-    // :: warning: (expression.parameter.name.invalid)
+    // :: error: (expression.parameter.name.invalid)
     public void m6a(@Nullable Object param) {
         param = new Object();
     }
 
     @EnsuresNonNull("param")
     // :: error: (contracts.postcondition.not.satisfied)
-    // :: warning: (expression.parameter.name.invalid)
+    // :: error: (expression.parameter.name.invalid)
     public void m6b(@Nullable Object param) {
         param = null;
     }
 
     @EnsuresNonNull("field")
-    // :: warning: (expression.parameter.name.shadows.field)
+    // :: error: (expression.parameter.name.shadows.field)
     public void m7a(@Nullable Object field) {
         field = new Object();
     }
@@ -75,11 +75,11 @@ public class ParameterExpression {
     public void m8() {}
 
     @RequiresNonNull("param")
-    // :: warning: (expression.parameter.name.invalid)
+    // :: error: (expression.parameter.name.invalid)
     public void m9(Object param) {}
 
     @RequiresNonNull("field")
-    // :: warning: (expression.parameter.name.shadows.field)
+    // :: error: (expression.parameter.name.shadows.field)
     public void m10(Object field) {}
 
     // Conditional postconditions
@@ -90,28 +90,28 @@ public class ParameterExpression {
     }
 
     @EnsuresNonNullIf(result = true, expression = "param")
-    // :: warning: (expression.parameter.name.invalid)
+    // :: error: (expression.parameter.name.invalid)
     public boolean m12(Object param) {
         param = new Object();
         return true;
     }
 
     @EnsuresNonNullIf(result = true, expression = "field")
-    // :: warning: (expression.parameter.name.shadows.field)
+    // :: error: (expression.parameter.name.shadows.field)
     public boolean m13a(@Nullable Object field) {
         field = new Object();
         return true;
     }
 
     @EnsuresNonNullIf(result = true, expression = "field")
-    // :: warning: (expression.parameter.name.shadows.field)
+    // :: error: (expression.parameter.name.shadows.field)
     public boolean m13b(@Nullable Object field) {
         field = new Object();
         return false;
     }
 
     @EnsuresNonNullIf(result = true, expression = "field")
-    // :: warning: (expression.parameter.name.shadows.field)
+    // :: error: (expression.parameter.name.shadows.field)
     public boolean m13c(@Nullable Object field) {
         field = null;
         // :: error: (contracts.conditional.postcondition.not.satisfied)
