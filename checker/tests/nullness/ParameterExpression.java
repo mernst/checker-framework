@@ -65,7 +65,7 @@ public class ParameterExpression {
 
     @EnsuresNonNull("field")
     // :: error: (contracts.postcondition.not.satisfied)
-    // :: warning: (expression.parameter.name.shadows.field)
+    // :: error: (expression.parameter.name.shadows.field)
     public void m7b(@Nullable Object field) {
         field = null;
     }
@@ -119,7 +119,7 @@ public class ParameterExpression {
     }
 
     @EnsuresNonNullIf(result = true, expression = "field")
-    // :: warning: (expression.parameter.name.shadows.field)
+    // :: error: (expression.parameter.name.shadows.field)
     public boolean m13d(@Nullable Object field) {
         field = null;
         return false;
