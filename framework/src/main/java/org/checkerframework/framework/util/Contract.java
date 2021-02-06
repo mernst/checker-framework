@@ -175,13 +175,15 @@ public abstract class Contract {
         // pathToMethodDecl is null if the method is not declared in source code.
         // TODO: The annotations still need to be standardized in that case.  We don't currently
         // have a way to standardize such annotations.
-        if (pathToMethodDecl != null) {
-            DependentTypesHelper dth = atypeFactory.getDependentTypesHelper();
-            if (dth.hasDependentAnnotations()) {
-                AnnotationMirror standardized =
-                        atypeFactory.standardizeAnnotationFromContract(
-                                annotation, context, pathToMethodDecl);
-                annotation = standardized;
+        if (false) {
+            if (pathToMethodDecl != null) {
+                DependentTypesHelper dth = atypeFactory.getDependentTypesHelper();
+                if (dth.hasDependentAnnotations()) {
+                    AnnotationMirror standardized =
+                            atypeFactory.standardizeAnnotationFromContract(
+                                    annotation, context, pathToMethodDecl);
+                    annotation = standardized;
+                }
             }
         }
 
