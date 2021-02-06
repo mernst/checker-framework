@@ -165,7 +165,13 @@ public abstract class Contract {
         if ((ensuresQualifierIf != null) != (kind == Kind.CONDITIONALPOSTCONDITION)) {
             throw new BugInCF("Mismatch: ensuresQualifierIf=%s, kind=%s", ensuresQualifierIf, kind);
         }
+        System.out.printf(
+                "Contract.create(%s, %s, %s, %s, %s)%n",
+                kind, expressionString, annotation, contractAnnotation, ensuresQualifierIf);
 
+        // *****
+        // TODO: REMOVE???
+        // *****
         // pathToMethodDecl is null if the method is not declared in source code.
         // TODO: The annotations still need to be standardized in that case.  We don't currently
         // have a way to standardize such annotations.
@@ -179,17 +185,27 @@ public abstract class Contract {
             }
         }
 
+        Contract result;
         switch (kind) {
             case PRECONDITION:
-                return new Precondition(expressionString, annotation, contractAnnotation);
+                result = new Precondition(expressionString, annotation, contractAnnotation);
+                break;
             case POSTCONDITION:
-                return new Postcondition(expressionString, annotation, contractAnnotation);
+                result = new Postcondition(expressionString, annotation, contractAnnotation);
+                break;
             case CONDITIONALPOSTCONDITION:
-                return new ConditionalPostcondition(
-                        expressionString, annotation, contractAnnotation, ensuresQualifierIf);
+                result =
+                        new ConditionalPostcondition(
+                                expressionString,
+                                annotation,
+                                contractAnnotation,
+                                ensuresQualifierIf);
+                break;
             default:
                 throw new BugInCF("Unrecognized kind: " + kind);
         }
+        System.out.printf("Contract.create => %s%n", result);
+        return result;
     }
 
     // Note that equality requires exact match of the run-time class and that it ignores the
