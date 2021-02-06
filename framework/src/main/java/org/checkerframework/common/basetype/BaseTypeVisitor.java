@@ -3771,6 +3771,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     resolveContracts(subPost, overrider, overriderDeclPath);
             @SuppressWarnings("compilermessages")
             @CompilerMessageKey String postmsg = "contracts.postcondition." + msgKey + ".invalid";
+            System.out.printf("calling checkContractsSubset%n");
             checkContractsSubset(overriderType, overriddenType, superPost2, subPost2, postmsg);
 
             // Check conditional postconditions
@@ -4172,6 +4173,10 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Set<Pair<JavaExpression, AnnotationMirror>> mustSubset,
             Set<Pair<JavaExpression, AnnotationMirror>> set,
             @CompilerMessageKey String messageKey) {
+        System.out.printf(
+                "checkContractsSubset(%s, %s, %s, %s, %s)%n",
+                overriderType, overriddenType, mustSubset, set, messageKey);
+
         for (Pair<JavaExpression, AnnotationMirror> weak : mustSubset) {
             boolean found = false;
 
