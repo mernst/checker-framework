@@ -974,7 +974,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 // Check the contract, which is a postcondition.
                 // Preconditions are checked at method invocations, not declarations.
 
-                // Undo delocalization; that is, convert "#2" to a formal parameter name.
+                // Localize; that is, convert "#2" to a formal parameter name.
                 AnnotationMirror annotation =
                         atypeFactory.standardizeAnnotationFromContract(
                                 contract.annotation,

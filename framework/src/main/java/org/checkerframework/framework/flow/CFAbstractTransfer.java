@@ -1212,8 +1212,6 @@ public abstract class CFAbstractTransfer<
 
         for (Contract p : postconditions) {
             String expressionString = p.expressionString;
-            // The annotation as written in the contract.  Will later be reassigned to the
-            // standardized version of the annotation.
             AnnotationMirror anno = p.annotation;
 
             if (methodUseContext == null) {
