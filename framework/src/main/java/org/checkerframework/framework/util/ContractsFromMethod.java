@@ -112,7 +112,6 @@ public class ContractsFromMethod {
      */
     private <T extends Contract> Set<T> getContracts(
             ExecutableElement executableElement, Kind kind, Class<T> clazz) {
-
         Set<T> result = new LinkedHashSet<>();
         // Check for a single framework-defined contract annotation.
         AnnotationMirror frameworkContractAnno =

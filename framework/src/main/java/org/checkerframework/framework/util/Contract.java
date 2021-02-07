@@ -23,7 +23,8 @@ import org.checkerframework.javacutil.BugInCF;
 public abstract class Contract {
 
     // Both `expressionString` and `annotation` have Java expressions at the method signature, also
-    // known as non-localized.  That is, they use "#2" rather than a formal parameter name.
+    // known as non-localized expression strings.  That is, they use "#2" rather than a formal
+    // parameter name.
     /**
      * The expression for which the condition must hold, such as {@code "foo"} in
      * {@code @RequiresNonNull("foo")}.
