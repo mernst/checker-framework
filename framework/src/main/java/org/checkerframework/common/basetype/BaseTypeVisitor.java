@@ -3762,6 +3762,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             checkContractsSubset(overriderType, overriddenType, subPre2, superPre2, premsg);
 
             // Check postconditions
+            System.out.println();
             System.out.printf(
                     "Checking postconditions.  super=%s, sub=%s%n", overriddenType, overriderType);
             Set<Postcondition> superPost =
