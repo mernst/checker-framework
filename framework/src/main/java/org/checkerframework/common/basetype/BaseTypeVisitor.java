@@ -4242,14 +4242,13 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      * Localizes some contracts -- that is, viewpoint-adapts them to some method body, according to
      * the value of {@link #visitorState}.
      *
-     * <p>The input is a set of contracts, each of which contains an expression string and an
-     * annotation. The input contracts as given are standardized to the method signature (e.g., they
-     * use "#2" for formal parameters).
+     * <p>The input is a set of {@link Contract}s, each of which contains an expression string and
+     * an annotation. In a {@link Contract}, Java expressions are standardized to the method
+     * signature (e.g., the Java expression uses "#2" for formal parameters).
      *
      * <p>The output is a set of pairs of {@link JavaExpression} (parsed expression string) and
-     * standardized annotation (with respect to the path of {@link #visitorState}.
-     *
-     * <p>This discards any contract whose expression cannot be parsed into a JavaExpression.
+     * standardized annotation (with respect to the path of {@link #visitorState}. This method
+     * discards any contract whose expression cannot be parsed into a JavaExpression.
      *
      * @param contractSet a set of contracts
      * @param methodType the type of the method that the contracts are for
@@ -4260,6 +4259,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         if (contractSet.isEmpty()) {
             return Collections.emptySet();
         }
+
         Set<Pair<JavaExpression, AnnotationMirror>> result = new HashSet<>();
         // This is the path to a place where the contract is being used, which might or might not be
         // where the contract was defined.  For example, methodTree might be an overriding
@@ -4281,8 +4281,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             annotation =
                     atypeFactory.standardizeAnnotationFromContract(annotation, jeContext, path);
 
-            // TODO: What to do if jeContext is null??  I still need a JavaExpression for the
-            // contract.  Change JavaExpressionContext to rely more on elements and less on trees.
             try {
                 // TODO: currently, these expressions are parsed many times.
                 // This could be optimized to store the result the first time.
