@@ -4212,8 +4212,10 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                                 methodTree, method.getReceiverType().getUnderlyingType(), checker);
             }
 
+            System.out.printf("before standardizeAnnotationFromContract: %s%n", annotation);
             annotation =
                     atypeFactory.standardizeAnnotationFromContract(annotation, jeContext, path);
+            System.out.printf("after  standardizeAnnotationFromContract: %s%n", annotation);
 
             try {
                 // TODO: currently, these expressions are parsed many times.
