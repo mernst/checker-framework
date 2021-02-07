@@ -1,6 +1,5 @@
 package org.checkerframework.framework.util;
 
-import com.sun.source.util.TreePath;
 import java.lang.annotation.Annotation;
 import java.util.Objects;
 import javax.lang.model.element.AnnotationMirror;
@@ -11,8 +10,6 @@ import org.checkerframework.framework.qual.EnsuresQualifierIf;
 import org.checkerframework.framework.qual.PostconditionAnnotation;
 import org.checkerframework.framework.qual.PreconditionAnnotation;
 import org.checkerframework.framework.qual.RequiresQualifier;
-import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
-import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
 import org.checkerframework.javacutil.BugInCF;
 
 /**
@@ -25,6 +22,8 @@ import org.checkerframework.javacutil.BugInCF;
  */
 public abstract class Contract {
 
+    // Both `expressionString` and `annotation` have Java expressions at the method signature, also
+    // known as non-localized.  That is, they use "#2" rather than a formal parameter name.
     /**
      * The expression for which the condition must hold, such as {@code "foo"} in
      * {@code @RequiresNonNull("foo")}.
@@ -34,15 +33,7 @@ public abstract class Contract {
      */
     public final String expressionString;
 
-    // It is not possible to standardize this annotation when creating the contract.  Trees.typeOf
-    // may return null if a call to a method textually precedes the definition of the method and its
-    // type.  That can happen when a single compilation unit (= file) defines multiple types at its
-    // top level.
-    // (Does this same remark might apply to the `expressionString` field as well?)
-    /**
-     * The annotation on the type of expression, according to this contract. It is not necessarily
-     * standardized.
-     */
+    /** The annotation on the type of expression, according to this contract. */
     public final AnnotationMirror annotation;
 
     /** The annotation that expressed this contract; used for diagnostic messages. */
@@ -147,9 +138,6 @@ public abstract class Contract {
      * @param contractAnnotation the pre- or post-condition annotation that the programmer wrote;
      *     used for diagnostic messages
      * @param ensuresQualifierIf the ensuresQualifierIf field, for a conditional postcondition
-     * @param atypeFactory used for standardizing annotations
-     * @param context used for standardizing annotations
-     * @param pathToMethodDecl used for standardizing annotations
      * @return a new contract
      */
     protected static Contract create(
@@ -157,10 +145,7 @@ public abstract class Contract {
             String expressionString,
             AnnotationMirror annotation,
             AnnotationMirror contractAnnotation,
-            Boolean ensuresQualifierIf,
-            GenericAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory,
-            JavaExpressionContext context,
-            TreePath pathToMethodDecl) {
+            Boolean ensuresQualifierIf) {
         if ((ensuresQualifierIf != null) != (kind == Kind.CONDITIONALPOSTCONDITION)) {
             throw new BugInCF("Mismatch: ensuresQualifierIf=%s, kind=%s", ensuresQualifierIf, kind);
         }
