@@ -4269,7 +4269,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         System.out.printf("resolveContracts(%s, %s)%n", contractSet, method);
         Set<Pair<JavaExpression, AnnotationMirror>> result = new HashSet<>();
         // This is the path to a place where the contract is being used, which might or might not be
-        // where it is defined.
+        // where it is defined.  For example, methodTree might be an overriding definition, and the
+        // contract might be for a superclass.
         MethodTree methodTree = visitorState.getMethodTree();
         TreePath path = atypeFactory.getPath(methodTree);
         System.out.printf("path = %s%n", TreePathUtil.leafToStringTruncated(path, 65));
@@ -4285,8 +4286,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
             System.out.printf("before standardizeAnnotationFromContract: %s%n", annotation);
             annotation =
-                    atypeFactory.standardizeAnnotationFromContract(
-                            annotation, jeContext, methodDeclPath);
+                    atypeFactory.standardizeAnnotationFromContract(annotation, jeContext, path);
             System.out.printf("after  standardizeAnnotationFromContract: %s%n", annotation);
 
             try {
@@ -4294,7 +4294,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 // This could be optimized to store the result the first time.
                 // (same for other annotations)
                 JavaExpression exprJe =
-                        JavaExpressionParseUtil.parse(expressionString, jeContext, methodDeclPath);
+                        JavaExpressionParseUtil.parse(expressionString, jeContext, path);
                 result.add(Pair.of(exprJe, annotation));
             } catch (JavaExpressionParseException e) {
                 // report errors here
