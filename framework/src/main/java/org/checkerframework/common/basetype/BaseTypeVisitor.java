@@ -974,7 +974,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 // Check the contract, which is a postcondition.
                 // Preconditions are checked at method invocations, not declarations.
 
-                // Undo delocalization; that is, convert "#2" to a formal parameter name.
+                // Localize; that is, convert "#2" to a formal parameter name.
                 AnnotationMirror annotation =
                         atypeFactory.standardizeAnnotationFromContract(
                                 contract.annotation,
@@ -999,6 +999,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             }
 
             if (formalParamNames != null && formalParamNames.contains(expressionString)) {
+                // asField is non-null if the formal parameter shadows a field.
                 JavaExpression asField;
                 try {
                     asField =
@@ -1706,18 +1707,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
             JavaExpression exprJe;
             try {
-                ExecutableElement methodElt = TreeUtils.elementFromUse(tree);
-                Tree methodDeclTree = atypeFactory.declarationFromElement(methodElt);
-
-                TreePath path = null;
-                if (methodDeclTree != null) {
-                    path = atypeFactory.getPath(methodDeclTree);
-                }
-                if (path == null) {
-                    path = TreePathUtil.getRoot(getCurrentPath());
-                }
-
-                exprJe = JavaExpressionParseUtil.parse(expressionString, jeContext, path);
+                exprJe =
+                        JavaExpressionParseUtil.parse(
+                                expressionString, jeContext, getCurrentPath());
             } catch (JavaExpressionParseException e) {
                 // report errors here
                 checker.report(tree, e.getDiagMessage());
