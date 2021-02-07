@@ -3754,9 +3754,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Set<Precondition> superPre = contractsUtils.getPreconditions(overridden.getElement());
             Set<Precondition> subPre = contractsUtils.getPreconditions(overrider.getElement());
             Set<Pair<JavaExpression, AnnotationMirror>> superPre2 =
-                    resolveContracts(superPre, overridden);
+                    localizeContracts(superPre, overridden);
             Set<Pair<JavaExpression, AnnotationMirror>> subPre2 =
-                    resolveContracts(subPre, overrider);
+                    localizeContracts(subPre, overrider);
             @SuppressWarnings("compilermessages")
             @CompilerMessageKey String premsg = "contracts.precondition." + msgKey + ".invalid";
             checkContractsSubset(overriderType, overriddenType, subPre2, superPre2, premsg);
@@ -3766,9 +3766,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     contractsUtils.getPostconditions(overridden.getElement());
             Set<Postcondition> subPost = contractsUtils.getPostconditions(overrider.getElement());
             Set<Pair<JavaExpression, AnnotationMirror>> superPost2 =
-                    resolveContracts(superPost, overridden);
+                    localizeContracts(superPost, overridden);
             Set<Pair<JavaExpression, AnnotationMirror>> subPost2 =
-                    resolveContracts(subPost, overrider);
+                    localizeContracts(subPost, overrider);
             @SuppressWarnings("compilermessages")
             @CompilerMessageKey String postmsg = "contracts.postcondition." + msgKey + ".invalid";
             checkContractsSubset(overriderType, overriddenType, superPost2, subPost2, postmsg);
@@ -3782,9 +3782,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Set<Postcondition> superCPostTrue = filterConditionalPostconditions(superCPost, true);
             Set<Postcondition> subCPostTrue = filterConditionalPostconditions(subCPost, true);
             Set<Pair<JavaExpression, AnnotationMirror>> superCPostTrue2 =
-                    resolveContracts(superCPostTrue, overridden);
+                    localizeContracts(superCPostTrue, overridden);
             Set<Pair<JavaExpression, AnnotationMirror>> subCPostTrue2 =
-                    resolveContracts(subCPostTrue, overrider);
+                    localizeContracts(subCPostTrue, overrider);
             @SuppressWarnings("compilermessages")
             @CompilerMessageKey String posttruemsg = "contracts.conditional.postcondition.true." + msgKey + ".invalid";
             checkContractsSubset(
@@ -3794,9 +3794,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Set<Postcondition> superCPostFalse = filterConditionalPostconditions(superCPost, false);
             Set<Postcondition> subCPostFalse = filterConditionalPostconditions(subCPost, false);
             Set<Pair<JavaExpression, AnnotationMirror>> superCPostFalse2 =
-                    resolveContracts(superCPostFalse, overridden);
+                    localizeContracts(superCPostFalse, overridden);
             Set<Pair<JavaExpression, AnnotationMirror>> subCPostFalse2 =
-                    resolveContracts(subCPostFalse, overrider);
+                    localizeContracts(subCPostFalse, overrider);
             @SuppressWarnings("compilermessages")
             @CompilerMessageKey String postfalsemsg =
                     "contracts.conditional.postcondition.false." + msgKey + ".invalid";
@@ -4252,9 +4252,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      *
      * @param contractSet a set of contracts
      * @param methodType the type of the method that the contracts are for
-     * @return pairs of (expression, AnnotationMirror), which are resolved contracts
+     * @return pairs of (expression, AnnotationMirror), which are localized contracts
      */
-    private Set<Pair<JavaExpression, AnnotationMirror>> resolveContracts(
+    private Set<Pair<JavaExpression, AnnotationMirror>> localizeContracts(
             Set<? extends Contract> contractSet, AnnotatedExecutableType methodType) {
         if (contractSet.isEmpty()) {
             return Collections.emptySet();
@@ -4266,17 +4266,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         // definition, and the contract might be for a superclass.
         MethodTree methodTree = visitorState.getMethodTree();
         TreePath path = atypeFactory.getPath(methodTree);
-        JavaExpressionContext jeContext = null; // lazily initialized, for efficiency
+        JavaExpressionContext jeContext =
+                JavaExpressionContext.buildContextForMethodDeclaration(
+                        methodTree, methodType.getReceiverType().getUnderlyingType(), checker);
         for (Contract p : contractSet) {
             String expressionString = p.expressionString;
             AnnotationMirror annotation = p.annotation;
-            if (jeContext == null) {
-                jeContext =
-                        JavaExpressionContext.buildContextForMethodDeclaration(
-                                methodTree,
-                                methodType.getReceiverType().getUnderlyingType(),
-                                checker);
-            }
 
             annotation =
                     atypeFactory.standardizeAnnotationFromContract(annotation, jeContext, path);
