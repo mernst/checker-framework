@@ -4275,6 +4275,10 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Set<? extends Contract> contractSet,
             AnnotatedExecutableType method,
             TreePath methodDeclPath) {
+        if (contractSet.isEmpty()) {
+            return Collections.emptySet();
+        }
+
         System.out.printf("calling resolveContracts(%s, %s)%n", contractSet, method);
         Set<Pair<JavaExpression, AnnotationMirror>> result = new HashSet<>();
         // Using visitorState.getMethodTree() here would be WRONG because it might be the superclass
