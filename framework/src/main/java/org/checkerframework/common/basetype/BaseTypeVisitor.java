@@ -4269,8 +4269,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         System.out.printf("resolveContracts(%s, %s)%n", contractSet, method);
         Set<Pair<JavaExpression, AnnotationMirror>> result = new HashSet<>();
         // This is the path to a place where the contract is being used, which might or might not be
-        // where it is defined.  For example, methodTree might be an overriding definition, and the
-        // contract might be for a superclass.
+        // where the contract was defined.  For example, methodTree might be an overriding
+        // definition, and the contract might be for a superclass.
         MethodTree methodTree = visitorState.getMethodTree();
         TreePath path = atypeFactory.getPath(methodTree);
         System.out.printf("path = %s%n", TreePathUtil.leafToStringTruncated(path, 65));
