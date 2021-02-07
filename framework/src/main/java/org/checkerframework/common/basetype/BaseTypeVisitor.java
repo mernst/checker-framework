@@ -3639,7 +3639,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
         /** The type of the overriding method. */
         protected final AnnotatedExecutableType overrider;
-        /** The subtype that declares the overrider method. */
+        /** The subtype that declares the overriding method. */
         protected final AnnotatedTypeMirror overriderType;
 
         protected final ExecutableElement overriddenElt;
