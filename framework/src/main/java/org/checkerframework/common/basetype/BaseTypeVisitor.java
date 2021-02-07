@@ -4211,17 +4211,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         // definition, and the contract might be for a superclass.
         MethodTree methodTree = visitorState.getMethodTree();
         TreePath path = atypeFactory.getPath(methodTree);
-        JavaExpressionContext jeContext = null; // lazily initialized, for efficiency
+        JavaExpressionContext jeContext =
+                JavaExpressionContext.buildContextForMethodDeclaration(
+                        methodTree, methodType.getReceiverType().getUnderlyingType(), checker);
         for (Contract p : contractSet) {
             String expressionString = p.expressionString;
             AnnotationMirror annotation = p.annotation;
-            if (jeContext == null) {
-                jeContext =
-                        JavaExpressionContext.buildContextForMethodDeclaration(
-                                methodTree,
-                                methodType.getReceiverType().getUnderlyingType(),
-                                checker);
-            }
 
             annotation =
                     atypeFactory.standardizeAnnotationFromContract(annotation, jeContext, path);
