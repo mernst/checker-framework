@@ -4213,6 +4213,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
         System.out.printf("resolveContracts(%s, %s)%n", contractSet, method);
         Set<Pair<JavaExpression, AnnotationMirror>> result = new HashSet<>();
+        // This is the path to where the contract is used, which might or might not be where it is
+        // defined.
         MethodTree methodTree = visitorState.getMethodTree();
         TreePath path = atypeFactory.getPath(methodTree);
         System.out.printf("path = %s%n", TreePathUtil.leafToStringTruncated(path, 65));
