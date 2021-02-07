@@ -29,10 +29,7 @@ public class OffsetDependentTypesHelper extends DependentTypesHelper {
 
     @Override
     public String standardizeString(
-            final String expression,
-            JavaExpressionContext context,
-            TreePath localScope,
-            boolean atMethodSignature) {
+            final String expression, JavaExpressionContext context, TreePath localScope) {
         if (DependentTypesError.isExpressionError(expression)) {
             return expression;
         }
@@ -59,9 +56,6 @@ public class OffsetDependentTypesHelper extends DependentTypesHelper {
             result = ValueCheckerUtils.optimize(result, vatf);
         }
 
-        if (atMethodSignature) {
-            result = result.atMethodSignature(context.arguments);
-        }
         return result.toString();
     }
 

@@ -167,10 +167,7 @@ public class LockAnnotatedTypeFactory
 
             @Override
             public String standardizeString(
-                    String expression,
-                    JavaExpressionContext context,
-                    TreePath localScope,
-                    boolean atMethodSignature) {
+                    String expression, JavaExpressionContext context, TreePath localScope) {
                 if (DependentTypesError.isExpressionError(expression)) {
                     return expression;
                 }
@@ -192,9 +189,6 @@ public class LockAnnotatedTypeFactory
                         // NOT_EFFECTIVELY_FINAL error string.
                         return new DependentTypesError(expression, NOT_EFFECTIVELY_FINAL)
                                 .toString();
-                    }
-                    if (atMethodSignature) {
-                        result = result.atMethodSignature(context.arguments);
                     }
                     return result.toString();
                 } catch (JavaExpressionParseUtil.JavaExpressionParseException e) {

@@ -663,14 +663,10 @@ public class DependentTypesHelper {
      * @param expression a Java expression
      * @param context the context
      * @param localScope the local scope
-     * @param atMethodSignature if true, use "#2" instead of names for formal parameters
      * @return the standardized version of the Java expression
      */
     public String standardizeString(
-            String expression,
-            JavaExpressionContext context,
-            TreePath localScope,
-            boolean atMethodSignature) {
+            String expression, JavaExpressionContext context, TreePath localScope) {
         if (DependentTypesError.isExpressionError(expression)) {
             return expression;
         }
@@ -691,9 +687,6 @@ public class DependentTypesHelper {
             if (constant != null && !(constant instanceof String)) {
                 return constant.toString();
             }
-        }
-        if (atMethodSignature) {
-            result = result.atMethodSignature(context.arguments);
         }
         return result.toString();
     }
@@ -737,17 +730,12 @@ public class DependentTypesHelper {
                 new AnnotationBuilder(
                         factory.getProcessingEnv(), AnnotationUtils.annotationName(anno));
 
-        // localScope can be null if the method is not from source code
-        boolean atMethodSignature =
-                localScope != null && localScope.getLeaf().getKind() == Tree.Kind.METHOD;
-
         for (String value : getListOfExpressionElements(anno)) {
             List<String> expressionStrings =
                     AnnotationUtils.getElementValueArray(anno, value, String.class, true);
             List<String> standardizedStrings = new ArrayList<>();
             for (String expression : expressionStrings) {
-                String standardized =
-                        standardizeString(expression, context, localScope, atMethodSignature);
+                String standardized = standardizeString(expression, context, localScope);
                 if (removeErroneousExpressions
                         && DependentTypesError.isExpressionError(standardized)) {
                     // nothing to do
