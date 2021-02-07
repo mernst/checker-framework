@@ -4272,7 +4272,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
     /**
      * Takes a set of contracts identified by their expression and annotation strings and resolves
-     * them to the correct {@link JavaExpression} and {@link AnnotationMirror}.
+     * them to the correct {@link JavaExpression} and {@link AnnotationMirror} for the current
+     * visitorState. The contracts as given are standardized to the method signature (e.g., they use
+     * "#2" for formal parameters).
      *
      * @param contractSet a set of contracts
      * @param method the method that the contracts are for
