@@ -3778,6 +3778,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             @CompilerMessageKey String postmsg = "contracts.postcondition." + msgKey + ".invalid";
             System.out.printf("calling checkContractsSubset for postcondition%n");
             checkContractsSubset(overriderType, overriddenType, superPost2, subPost2, postmsg);
+            System.out.printf("Done checkeing postconditions.%n");
+            System.out.println();
 
             // Check conditional postconditions
             Set<ConditionalPostcondition> superCPost =
