@@ -4276,6 +4276,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             AnnotatedExecutableType method,
             TreePath methodDeclPath) {
         System.out.printf("calling resolveContracts(%s, %s)%n", contractSet, method);
+        System.out.printf("methodDeclPath = %s%n", methodDeclPath);
         Set<Pair<JavaExpression, AnnotationMirror>> result = new HashSet<>();
         MethodTree methodTree =
                 methodDeclPath == null ? null : (MethodTree) methodDeclPath.getLeaf();
@@ -4292,9 +4293,11 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                                 methodTree, method.getReceiverType().getUnderlyingType(), checker);
             }
 
+            System.out.printf("before standardizeAnnotationFromContract: %s%n", annotation);
             annotation =
                     atypeFactory.standardizeAnnotationFromContract(
                             annotation, jeContext, methodDeclPath);
+            System.out.printf("after  standardizeAnnotationFromContract: %s%n", annotation);
 
             try {
                 // TODO: currently, these expressions are parsed many times.
