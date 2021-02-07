@@ -665,7 +665,7 @@ public class DependentTypesHelper {
      * @param localScope the local scope
      * @return the standardized version of the Java expression
      */
-    public String standardizeString(
+    protected String standardizeString(
             String expression, JavaExpressionContext context, TreePath localScope) {
         if (DependentTypesError.isExpressionError(expression)) {
             return expression;

@@ -28,7 +28,7 @@ public class OffsetDependentTypesHelper extends DependentTypesHelper {
     }
 
     @Override
-    public String standardizeString(
+    protected String standardizeString(
             final String expression, JavaExpressionContext context, TreePath localScope) {
         if (DependentTypesError.isExpressionError(expression)) {
             return expression;
