@@ -4277,9 +4277,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             TreePath methodDeclPath) {
         System.out.printf("calling resolveContracts(%s, %s)%n", contractSet, method);
         Set<Pair<JavaExpression, AnnotationMirror>> result = new HashSet<>();
+        // Using visitorState.getMethodTree() here would be WRONG because it might be the superclass
+        // contract.
         MethodTree methodTree =
                 methodDeclPath == null ? null : (MethodTree) methodDeclPath.getLeaf();
-        System.out.printf("path = %s%n", TreePathUtil.toStringTruncated(methodDeclPath, 65));
+        TreePath path = methodDeclPath;
+        System.out.printf("path = %s%n", TreePathUtil.leafToStringTruncated(methodDeclPath, 65));
         JavaExpressionContext jeContext = null; // lazily initialized, for efficiency
         for (Contract p : contractSet) {
             String expressionString = p.expressionString;
