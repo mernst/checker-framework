@@ -13,7 +13,6 @@ import org.checkerframework.framework.qual.PreconditionAnnotation;
 import org.checkerframework.framework.qual.RequiresQualifier;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
-import org.checkerframework.framework.util.dependenttypes.DependentTypesHelper;
 import org.checkerframework.javacutil.BugInCF;
 
 /**
@@ -165,20 +164,6 @@ public abstract class Contract {
         if ((ensuresQualifierIf != null) != (kind == Kind.CONDITIONALPOSTCONDITION)) {
             throw new BugInCF("Mismatch: ensuresQualifierIf=%s, kind=%s", ensuresQualifierIf, kind);
         }
-
-        // pathToMethodDecl is null if the method is not declared in source code.
-        // TODO: The annotations still need to be standardized in that case.  We don't currently
-        // have a way to standardize such annotations.
-        if (pathToMethodDecl != null) {
-            DependentTypesHelper dth = atypeFactory.getDependentTypesHelper();
-            if (dth.hasDependentAnnotations()) {
-                AnnotationMirror standardized =
-                        atypeFactory.standardizeAnnotationFromContract(
-                                annotation, context, pathToMethodDecl);
-                annotation = standardized;
-            }
-        }
-
         switch (kind) {
             case PRECONDITION:
                 return new Precondition(expressionString, annotation, contractAnnotation);
