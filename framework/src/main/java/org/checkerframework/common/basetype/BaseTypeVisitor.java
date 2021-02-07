@@ -731,13 +731,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 AnnotatedExecutableType overriddenMethodType =
                         AnnotatedTypes.asMemberOf(
                                 types, atypeFactory, overriddenType, overriddenMethodElt);
-                if (!checkOverride(
-                        node,
-                        visitorState.getPath(),
-                        enclosingType,
-                        overriddenMethodElt,
-                        overriddenMethodType,
-                        overriddenType)) {
+                if (!checkOverride(node, enclosingType, overriddenMethodType, overriddenType)) {
                     // Stop at the first mismatch; this makes a difference only if
                     // -Awarns is passed, in which case multiple warnings might be raised on
                     // the same method, not adding any value. See Issue 373.
@@ -781,9 +775,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
     /**
      * Check method purity if needed. Note that overriding rules are checked as part of {@link
-     * #checkOverride(MethodTree, TreePath, AnnotatedTypeMirror.AnnotatedExecutableType,
-     * AnnotatedTypeMirror.AnnotatedDeclaredType, ExecutableElement,
-     * AnnotatedTypeMirror.AnnotatedExecutableType, AnnotatedTypeMirror.AnnotatedDeclaredType)}.
+     * #checkOverride(MethodTree, AnnotatedTypeMirror.AnnotatedExecutableType,
+     * AnnotatedTypeMirror.AnnotatedDeclaredType, AnnotatedTypeMirror.AnnotatedExecutableType,
+     * AnnotatedTypeMirror.AnnotatedDeclaredType)}.
      *
      * @param node the method tree to check
      */
@@ -3341,21 +3335,17 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      */
     protected OverrideChecker createOverrideChecker(
             Tree overriderTree,
-            TreePath overriderDeclPath,
             AnnotatedExecutableType overriderMethodType,
             AnnotatedTypeMirror overriderType,
             AnnotatedTypeMirror overriderReturnType,
-            ExecutableElement overriddenElt,
             AnnotatedExecutableType overriddenMethodType,
             AnnotatedDeclaredType overriddenType,
             AnnotatedTypeMirror overriddenReturnType) {
         return new OverrideChecker(
                 overriderTree,
-                overriderDeclPath,
                 overriderMethodType,
                 overriderType,
                 overriderReturnType,
-                overriddenElt,
                 overriddenMethodType,
                 overriddenType,
                 overriddenReturnType);
@@ -3366,21 +3356,18 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      * created by {@link #createOverrideChecker}. This version of the method uses the annotated type
      * factory to get the annotated type of the overriding method, and does NOT expose that type.
      *
-     * @see #checkOverride(MethodTree, TreePath, AnnotatedTypeMirror.AnnotatedExecutableType,
-     *     AnnotatedTypeMirror.AnnotatedDeclaredType, ExecutableElement,
-     *     AnnotatedTypeMirror.AnnotatedExecutableType, AnnotatedTypeMirror.AnnotatedDeclaredType)
+     * @see #checkOverride(MethodTree, AnnotatedTypeMirror.AnnotatedExecutableType,
+     *     AnnotatedTypeMirror.AnnotatedDeclaredType, AnnotatedTypeMirror.AnnotatedExecutableType,
+     *     AnnotatedTypeMirror.AnnotatedDeclaredType)
      * @param overriderTree declaration tree of overriding method
      * @param overriderType type of overriding class
-     * @param overriddenElt the overridden method
      * @param overriddenMethodType type of overridden method
      * @param overriddenType type of overridden class
      * @return true if the override is allowed
      */
     protected boolean checkOverride(
             MethodTree overriderTree,
-            TreePath overriderDeclPath,
             AnnotatedDeclaredType overriderType,
-            ExecutableElement overriddenElt,
             AnnotatedExecutableType overriddenMethodType,
             AnnotatedDeclaredType overriddenType) {
 
@@ -3391,10 +3378,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         // exist to allow checkers to override one or the other depending on their needs.
         return checkOverride(
                 overriderTree,
-                overriderDeclPath,
                 overriderMethodType,
                 overriderType,
-                overriddenElt,
                 overriddenMethodType,
                 overriddenType);
     }
@@ -3405,23 +3390,19 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      * AnnotatedExecutableType of the overriding method. Override this version of the method if you
      * need to access that type.
      *
-     * @see #checkOverride(MethodTree, TreePath, AnnotatedTypeMirror.AnnotatedDeclaredType,
-     *     ExecutableElement, AnnotatedTypeMirror.AnnotatedExecutableType,
-     *     AnnotatedTypeMirror.AnnotatedDeclaredType)
+     * @see #checkOverride(MethodTree, AnnotatedTypeMirror.AnnotatedDeclaredType,
+     *     AnnotatedTypeMirror.AnnotatedExecutableType, AnnotatedTypeMirror.AnnotatedDeclaredType)
      * @param overriderTree declaration tree of overriding method
      * @param overriderMethodType type of the overriding method
      * @param overriderType type of overriding class
-     * @param overriddenElt the overridden method
      * @param overriddenMethodType type of overridden method
      * @param overriddenType type of overridden class
      * @return true if the override is allowed
      */
     protected boolean checkOverride(
             MethodTree overriderTree,
-            TreePath overriderDeclPath,
             AnnotatedExecutableType overriderMethodType,
             AnnotatedDeclaredType overriderType,
-            ExecutableElement overriddenElt,
             AnnotatedExecutableType overriddenMethodType,
             AnnotatedDeclaredType overriddenType) {
 
@@ -3435,11 +3416,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         OverrideChecker overrideChecker =
                 createOverrideChecker(
                         overriderTree,
-                        overriderDeclPath,
                         overriderMethodType,
                         overriderType,
                         overriderMethodType.getReturnType(),
-                        overriddenElt,
                         overriddenMethodType,
                         overriddenType,
                         overriddenMethodType.getReturnType());
@@ -3561,11 +3540,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             OverrideChecker overrideChecker =
                     createOverrideChecker(
                             memberReferenceTree,
-                            atypeFactory.getPath(memberReferenceTree),
                             invocationType,
                             enclosingType,
                             invocationReturnType,
-                            compileTimeDeclaration,
                             functionType,
                             (AnnotatedDeclaredType) functionalInterface,
                             functionTypeReturnType);
@@ -3632,8 +3609,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
         /** The declaration of an overriding method. */
         protected final Tree overriderTree;
-
-        protected final TreePath overriderDeclPath;
         /** True if {@link #overriderTree} is a MEMBER_REFERENCE. */
         protected final boolean isMethodReference;
 
@@ -3641,8 +3616,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         protected final AnnotatedExecutableType overrider;
         /** The subtype that declares the overriding method. */
         protected final AnnotatedTypeMirror overriderType;
-
-        protected final ExecutableElement overriddenElt;
         /** The type of the overridden method. */
         protected final AnnotatedExecutableType overridden;
         /** The supertype that declares the overridden method. */
@@ -3670,20 +3643,16 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
          */
         public OverrideChecker(
                 Tree overriderTree,
-                TreePath overriderDeclPath,
                 AnnotatedExecutableType overrider,
                 AnnotatedTypeMirror overriderType,
                 AnnotatedTypeMirror overriderReturnType,
-                ExecutableElement overriddenElt,
                 AnnotatedExecutableType overridden,
                 AnnotatedDeclaredType overriddenType,
                 AnnotatedTypeMirror overriddenReturnType) {
 
             this.overriderTree = overriderTree;
-            this.overriderDeclPath = overriderDeclPath;
             this.overrider = overrider;
             this.overriderType = overriderType;
-            this.overriddenElt = overriddenElt;
             this.overridden = overridden;
             this.overriddenType = overriddenType;
             this.overriddenReturnType = overriddenReturnType;
