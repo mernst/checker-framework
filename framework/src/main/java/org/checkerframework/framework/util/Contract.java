@@ -147,30 +147,17 @@ public abstract class Contract {
         if ((ensuresQualifierIf != null) != (kind == Kind.CONDITIONALPOSTCONDITION)) {
             throw new BugInCF("Mismatch: ensuresQualifierIf=%s, kind=%s", ensuresQualifierIf, kind);
         }
-        System.out.printf(
-                "Contract.create(%s, %s, %s, %s, %s)%n",
-                kind, expressionString, annotation, contractAnnotation, ensuresQualifierIf);
-        Contract result;
         switch (kind) {
             case PRECONDITION:
-                result = new Precondition(expressionString, annotation, contractAnnotation);
-                break;
+                return new Precondition(expressionString, annotation, contractAnnotation);
             case POSTCONDITION:
-                result = new Postcondition(expressionString, annotation, contractAnnotation);
-                break;
+                return new Postcondition(expressionString, annotation, contractAnnotation);
             case CONDITIONALPOSTCONDITION:
-                result =
-                        new ConditionalPostcondition(
-                                expressionString,
-                                annotation,
-                                contractAnnotation,
-                                ensuresQualifierIf);
-                break;
+                return new ConditionalPostcondition(
+                        expressionString, annotation, contractAnnotation, ensuresQualifierIf);
             default:
                 throw new BugInCF("Unrecognized kind: " + kind);
         }
-        System.out.printf("Contract.create => %s%n", result);
-        return result;
     }
 
     // Note that equality requires exact match of the run-time class and that it ignores the

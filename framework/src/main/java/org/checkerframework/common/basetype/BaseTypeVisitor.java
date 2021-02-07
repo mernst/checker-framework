@@ -3709,24 +3709,16 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             checkContractsSubset(overriderType, overriddenType, subPre2, superPre2, premsg);
 
             // Check postconditions
-            System.out.println();
-            System.out.printf(
-                    "Checking postconditions.  super=%s, sub=%s%n", overriddenType, overriderType);
             Set<Postcondition> superPost =
                     contractsUtils.getPostconditions(overridden.getElement());
             Set<Postcondition> subPost = contractsUtils.getPostconditions(overrider.getElement());
-            System.out.printf("calling resolveContracts for superPost%n");
             Set<Pair<JavaExpression, AnnotationMirror>> superPost2 =
                     resolveContracts(superPost, overridden);
-            System.out.printf("calling resolveContracts for subPost%n");
             Set<Pair<JavaExpression, AnnotationMirror>> subPost2 =
                     resolveContracts(subPost, overrider);
             @SuppressWarnings("compilermessages")
             @CompilerMessageKey String postmsg = "contracts.postcondition." + msgKey + ".invalid";
-            System.out.printf("calling checkContractsSubset for postcondition%n");
             checkContractsSubset(overriderType, overriddenType, superPost2, subPost2, postmsg);
-            System.out.printf("Done checkeing postconditions.%n");
-            System.out.println();
 
             // Check conditional postconditions
             Set<ConditionalPostcondition> superCPost =
@@ -4127,10 +4119,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Set<Pair<JavaExpression, AnnotationMirror>> mustSubset,
             Set<Pair<JavaExpression, AnnotationMirror>> set,
             @CompilerMessageKey String messageKey) {
-        System.out.printf(
-                "checkContractsSubset(%s, %s, %s, %s, %s)%n",
-                overriderType, overriddenType, mustSubset, set, messageKey);
-
         for (Pair<JavaExpression, AnnotationMirror> weak : mustSubset) {
             boolean found = false;
 
@@ -4218,7 +4206,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         // definition, and the contract might be for a superclass.
         MethodTree methodTree = visitorState.getMethodTree();
         TreePath path = atypeFactory.getPath(methodTree);
-        System.out.printf("path = %s%n", TreePathUtil.leafToStringTruncated(path, 65));
         JavaExpressionContext jeContext = null; // lazily initialized, for efficiency
         for (Contract p : contractSet) {
             String expressionString = p.expressionString;
@@ -4229,10 +4216,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                                 methodTree, method.getReceiverType().getUnderlyingType(), checker);
             }
 
-            System.out.printf("before standardizeAnnotationFromContract: %s%n", annotation);
             annotation =
                     atypeFactory.standardizeAnnotationFromContract(annotation, jeContext, path);
-            System.out.printf("after  standardizeAnnotationFromContract: %s%n", annotation);
 
             try {
                 // TODO: currently, these expressions are parsed many times.
@@ -4246,7 +4231,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 checker.report(methodTree, e.getDiagMessage());
             }
         }
-        System.out.printf("resolveContracts(%s, %s) => %s%n", contractSet, method, result);
         return result;
     }
 
