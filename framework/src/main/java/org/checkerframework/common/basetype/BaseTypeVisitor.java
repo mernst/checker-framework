@@ -4276,10 +4276,10 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             AnnotatedExecutableType method,
             TreePath methodDeclPath) {
         System.out.printf("calling resolveContracts(%s, %s)%n", contractSet, method);
-        System.out.printf("methodDeclPath = %s%n", methodDeclPath);
         Set<Pair<JavaExpression, AnnotationMirror>> result = new HashSet<>();
         MethodTree methodTree =
                 methodDeclPath == null ? null : (MethodTree) methodDeclPath.getLeaf();
+        System.out.printf("path = %s%n", TreePathUtil.toStringTruncated(methodDeclPath, 65));
         JavaExpressionContext jeContext = null; // lazily initialized, for efficiency
         for (Contract p : contractSet) {
             String expressionString = p.expressionString;
