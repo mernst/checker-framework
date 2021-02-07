@@ -3762,11 +3762,15 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             checkContractsSubset(overriderType, overriddenType, subPre2, superPre2, premsg);
 
             // Check postconditions
+            System.out.printf(
+                    "Checking postconditions.  super=%s, sub=%s%n", overriddenType, overriderType);
             Set<Postcondition> superPost =
                     contractsUtils.getPostconditions(overridden.getElement());
             Set<Postcondition> subPost = contractsUtils.getPostconditions(overrider.getElement());
+            System.out.printf("calling resolveContracts for superPost%n");
             Set<Pair<JavaExpression, AnnotationMirror>> superPost2 =
                     resolveContracts(superPost, overridden, overriddenElt);
+            System.out.printf("calling resolveContracts for subPost%n");
             Set<Pair<JavaExpression, AnnotationMirror>> subPost2 =
                     resolveContracts(subPost, overrider, overriderDeclPath);
             @SuppressWarnings("compilermessages")
@@ -4279,7 +4283,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             return Collections.emptySet();
         }
 
-        System.out.printf("calling resolveContracts(%s, %s)%n", contractSet, method);
+        System.out.printf("resolveContracts(%s, %s)%n", contractSet, method);
         Set<Pair<JavaExpression, AnnotationMirror>> result = new HashSet<>();
         // Using visitorState.getMethodTree() here would be WRONG because it might be the superclass
         // contract.
