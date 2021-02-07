@@ -13,7 +13,6 @@ import org.checkerframework.framework.qual.PreconditionAnnotation;
 import org.checkerframework.framework.qual.RequiresQualifier;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
-import org.checkerframework.framework.util.dependenttypes.DependentTypesHelper;
 import org.checkerframework.javacutil.BugInCF;
 
 /**
@@ -165,49 +164,17 @@ public abstract class Contract {
         if ((ensuresQualifierIf != null) != (kind == Kind.CONDITIONALPOSTCONDITION)) {
             throw new BugInCF("Mismatch: ensuresQualifierIf=%s, kind=%s", ensuresQualifierIf, kind);
         }
-        System.out.printf(
-                "Contract.create(%s, %s, %s, %s, %s)%n",
-                kind, expressionString, annotation, contractAnnotation, ensuresQualifierIf);
-
-        // *****
-        // TODO: REMOVE???
-        // *****
-        // pathToMethodDecl is null if the method is not declared in source code.
-        // TODO: The annotations still need to be standardized in that case.  We don't currently
-        // have a way to standardize such annotations.
-        if (false) {
-            if (pathToMethodDecl != null) {
-                DependentTypesHelper dth = atypeFactory.getDependentTypesHelper();
-                if (dth.hasDependentAnnotations()) {
-                    AnnotationMirror standardized =
-                            atypeFactory.standardizeAnnotationFromContract(
-                                    annotation, context, pathToMethodDecl);
-                    annotation = standardized;
-                }
-            }
-        }
-
-        Contract result;
         switch (kind) {
             case PRECONDITION:
-                result = new Precondition(expressionString, annotation, contractAnnotation);
-                break;
+                return new Precondition(expressionString, annotation, contractAnnotation);
             case POSTCONDITION:
-                result = new Postcondition(expressionString, annotation, contractAnnotation);
-                break;
+                return new Postcondition(expressionString, annotation, contractAnnotation);
             case CONDITIONALPOSTCONDITION:
-                result =
-                        new ConditionalPostcondition(
-                                expressionString,
-                                annotation,
-                                contractAnnotation,
-                                ensuresQualifierIf);
-                break;
+                return new ConditionalPostcondition(
+                        expressionString, annotation, contractAnnotation, ensuresQualifierIf);
             default:
                 throw new BugInCF("Unrecognized kind: " + kind);
         }
-        System.out.printf("Contract.create => %s%n", result);
-        return result;
     }
 
     // Note that equality requires exact match of the run-time class and that it ignores the

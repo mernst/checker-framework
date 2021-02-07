@@ -183,8 +183,6 @@ public class ContractsFromMethod {
                 result.add(contract);
             }
         }
-        System.out.printf(
-                "getContracts(%s, %s, %s) => %s%n", executableElement, kind, clazz, result);
         return result;
     }
 
