@@ -498,9 +498,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
     @Override
     protected boolean checkOverride(
             MethodTree overriderTree,
-            TreePath methodDeclPath,
             AnnotatedDeclaredType enclosingType,
-            ExecutableElement overriddenElt,
             AnnotatedExecutableType overriddenMethodType,
             AnnotatedDeclaredType overriddenType) {
 
@@ -510,7 +508,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
                 atypeFactory.methodSideEffectAnnotation(
                         TreeUtils.elementFromDeclaration(overriderTree), false);
         SideEffectAnnotation seaOfOverridenMethod =
-                atypeFactory.methodSideEffectAnnotation(overriddenElt, false);
+                atypeFactory.methodSideEffectAnnotation(overriddenMethodType.getElement(), false);
 
         if (seaOfOverriderMethod.isWeakerThan(seaOfOverridenMethod)) {
             isValid = false;
@@ -525,12 +523,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
         }
 
         return super.checkOverride(
-                        overriderTree,
-                        methodDeclPath,
-                        enclosingType,
-                        overriddenElt,
-                        overriddenMethodType,
-                        overriddenType)
+                        overriderTree, enclosingType, overriddenMethodType, overriddenType)
                 && isValid;
     }
 

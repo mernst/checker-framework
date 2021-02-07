@@ -155,21 +155,17 @@ public class GuiEffectVisitor extends BaseTypeVisitor<GuiEffectTypeFactory> {
          */
         public GuiEffectOverrideChecker(
                 Tree overriderTree,
-                TreePath overriderDeclPath,
                 AnnotatedExecutableType overrider,
                 AnnotatedTypeMirror overridingType,
                 AnnotatedTypeMirror overridingReturnType,
-                ExecutableElement overriddenElt,
                 AnnotatedExecutableType overridden,
                 AnnotatedDeclaredType overriddenType,
                 AnnotatedTypeMirror overriddenReturnType) {
             super(
                     overriderTree,
-                    overriderDeclPath,
                     overrider,
                     overridingType,
                     overridingReturnType,
-                    overriddenElt,
                     overridden,
                     overriddenType,
                     overriddenReturnType);
@@ -179,21 +175,17 @@ public class GuiEffectVisitor extends BaseTypeVisitor<GuiEffectTypeFactory> {
     @Override
     protected OverrideChecker createOverrideChecker(
             Tree overriderTree,
-            TreePath overriderDeclPath,
             AnnotatedExecutableType overrider,
             AnnotatedTypeMirror overridingType,
             AnnotatedTypeMirror overridingReturnType,
-            ExecutableElement overriddenElt,
             AnnotatedExecutableType overridden,
             AnnotatedTypeMirror.AnnotatedDeclaredType overriddenType,
             AnnotatedTypeMirror overriddenReturnType) {
         return new GuiEffectOverrideChecker(
                 overriderTree,
-                overriderDeclPath,
                 overrider,
                 overridingType,
                 overridingReturnType,
-                overriddenElt,
                 overridden,
                 overriddenType,
                 overriddenReturnType);
