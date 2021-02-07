@@ -4282,7 +4282,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         MethodTree methodTree =
                 methodDeclPath == null ? null : (MethodTree) methodDeclPath.getLeaf();
         TreePath path = methodDeclPath;
-        System.out.printf("path = %s%n", TreePathUtil.leafToStringTruncated(methodDeclPath, 65));
+        System.out.printf("path = %s%n", TreePathUtil.leafToStringTruncated(path, 65));
         JavaExpressionContext jeContext = null; // lazily initialized, for efficiency
         for (Contract p : contractSet) {
             String expressionString = p.expressionString;
