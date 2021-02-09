@@ -46,27 +46,27 @@ public class ParameterExpression {
 
     @EnsuresNonNull("param")
     // :: error: (expression.parameter.name.invalid)
-    public void m6a(@Nullable Object param) {
+    public void m6c(@Nullable Object param) {
         param = new Object();
     }
 
     @EnsuresNonNull("param")
     // :: error: (contracts.postcondition.not.satisfied)
     // :: error: (expression.parameter.name.invalid)
-    public void m6b(@Nullable Object param) {
+    public void m6d(@Nullable Object param) {
         param = null;
     }
 
     @EnsuresNonNull("field")
     // :: error: (expression.parameter.name.shadows.field)
-    public void m7a(@Nullable Object field) {
+    public void m7c(@Nullable Object field) {
         field = new Object();
     }
 
     @EnsuresNonNull("field")
     // :: error: (contracts.postcondition.not.satisfied)
     // :: error: (expression.parameter.name.shadows.field)
-    public void m7b(@Nullable Object field) {
+    public void m7d(@Nullable Object field) {
         field = null;
     }
 
