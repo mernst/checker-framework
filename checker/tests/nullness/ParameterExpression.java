@@ -46,6 +46,20 @@ public class ParameterExpression {
 
     @EnsuresNonNull("param")
     // :: error: (expression.parameter.name.invalid)
+    public void m6a(Object param) {
+        param = new Object();
+    }
+
+    @EnsuresNonNull("param")
+    // :: error: (contracts.postcondition.not.satisfied)
+    // :: error: (expression.parameter.name.invalid)
+    public void m6b(Object param) {
+        // :: error: (assignment.type.incompatible)
+        param = null;
+    }
+
+    @EnsuresNonNull("param")
+    // :: error: (expression.parameter.name.invalid)
     public void m6c(@Nullable Object param) {
         param = new Object();
     }
@@ -55,6 +69,20 @@ public class ParameterExpression {
     // :: error: (expression.parameter.name.invalid)
     public void m6d(@Nullable Object param) {
         param = null;
+    }
+
+    @EnsuresNonNull("field")
+    // :: error: (expression.parameter.name.shadows.field)
+    public void m7a(Object field) {
+        field = new Object();
+    }
+
+    @EnsuresNonNull("field")
+    // :: error: (contracts.postcondition.not.satisfied)
+    // :: error: (expression.parameter.name.shadows.field)
+    public void m7b(Object field) {
+        // :: error: (assignment.type.incompatible)
+        field = null;
     }
 
     @EnsuresNonNull("field")
