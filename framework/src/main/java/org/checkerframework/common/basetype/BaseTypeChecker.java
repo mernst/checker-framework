@@ -86,7 +86,7 @@ import org.checkerframework.javacutil.UserError;
  *
  * @checker_framework.manual #creating-compiler-interface The checker class
  */
-public abstract class BaseTypeChecker extends SourceChecker implements BaseTypeContext {
+public abstract class BaseTypeChecker extends SourceChecker {
 
     @Override
     public void initChecker() {
@@ -232,6 +232,16 @@ public abstract class BaseTypeChecker extends SourceChecker implements BaseTypeC
     }
 
     /**
+     * A public variant of {@link #createSourceVisitor}. Only use this if you know what you are
+     * doing.
+     *
+     * @return the type-checking visitor
+     */
+    public BaseTypeVisitor<?> createSourceVisitorPublic() {
+        return createSourceVisitor();
+    }
+
+    /**
      * Returns the name of a class related to a given one, by replacing "Checker" or "Subchecker" by
      * {@code replacement}.
      *
@@ -316,21 +326,15 @@ public abstract class BaseTypeChecker extends SourceChecker implements BaseTypeC
     }
 
     @Override
-    public BaseTypeContext getContext() {
-        return this;
-    }
-
-    @Override
-    public BaseTypeChecker getChecker() {
-        return this;
-    }
-
-    @Override
     public BaseTypeVisitor<?> getVisitor() {
         return (BaseTypeVisitor<?>) super.getVisitor();
     }
 
-    @Override
+    /**
+     * Return the type factory associated with this checker.
+     *
+     * @return the type factory associated with this checker
+     */
     public GenericAnnotatedTypeFactory<?, ?, ?, ?> getTypeFactory() {
         BaseTypeVisitor<?> visitor = getVisitor();
         // Avoid NPE if this method is called during initialization.
@@ -510,10 +514,9 @@ public abstract class BaseTypeChecker extends SourceChecker implements BaseTypeC
     }
 
     /**
-     * Issues a warning about any {@code @SuppressWarnings} that isn't used by this checker, but
-     * contains a string that would suppress a warning from this checker.
+     * {@inheritDoc}
      *
-     * <p>Collects needed warning suppressions for all subcheckers.
+     * <p>This implementation collects needed warning suppressions for all subcheckers.
      */
     @Override
     protected void warnUnneededSuppressions() {
@@ -524,18 +527,19 @@ public abstract class BaseTypeChecker extends SourceChecker implements BaseTypeC
         if (!hasOption("warnUnneededSuppressions")) {
             return;
         }
-        Set<Element> elementsSuppress = new HashSet<>(this.elementsWithSuppressedWarnings);
+        Set<Element> elementsWithSuppressedWarnings =
+                new HashSet<>(this.elementsWithSuppressedWarnings);
         this.elementsWithSuppressedWarnings.clear();
         Set<String> prefixes = new HashSet<>(getSuppressWarningsPrefixes());
         Set<String> errorKeys = new HashSet<>(messagesProperties.stringPropertyNames());
         for (BaseTypeChecker subChecker : subcheckers) {
-            elementsSuppress.addAll(subChecker.elementsWithSuppressedWarnings);
+            elementsWithSuppressedWarnings.addAll(subChecker.elementsWithSuppressedWarnings);
             subChecker.elementsWithSuppressedWarnings.clear();
             prefixes.addAll(subChecker.getSuppressWarningsPrefixes());
             errorKeys.addAll(subChecker.messagesProperties.stringPropertyNames());
             subChecker.getVisitor().treesWithSuppressWarnings.clear();
         }
-        warnUnneededSuppressions(elementsSuppress, prefixes, errorKeys);
+        warnUnneededSuppressions(elementsWithSuppressedWarnings, prefixes, errorKeys);
 
         getVisitor().treesWithSuppressWarnings.clear();
     }

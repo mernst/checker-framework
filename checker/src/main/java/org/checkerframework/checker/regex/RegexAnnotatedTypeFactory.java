@@ -21,6 +21,7 @@ import org.checkerframework.checker.regex.qual.PolyRegex;
 import org.checkerframework.checker.regex.qual.Regex;
 import org.checkerframework.checker.regex.qual.RegexBottom;
 import org.checkerframework.checker.regex.qual.UnknownRegex;
+import org.checkerframework.checker.regex.util.RegexUtil;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.flow.CFAbstractAnalysis;
@@ -199,7 +200,8 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 AnnotationMirror a1,
                 QualifierKind qualifierKind1,
                 AnnotationMirror a2,
-                QualifierKind qualifierKind2) {
+                QualifierKind qualifierKind2,
+                QualifierKind lubKind) {
             if (qualifierKind1 == REGEX_KIND && qualifierKind2 == REGEX_KIND) {
                 int value1 = getRegexValue(a1);
                 int value2 = getRegexValue(a2);
@@ -227,7 +229,8 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 AnnotationMirror a1,
                 QualifierKind qualifierKind1,
                 AnnotationMirror a2,
-                QualifierKind qualifierKind2) {
+                QualifierKind qualifierKind2,
+                QualifierKind glbKind) {
             if (qualifierKind1 == REGEX_KIND && qualifierKind2 == REGEX_KIND) {
                 int value1 = getRegexValue(a1);
                 int value2 = getRegexValue(a2);
@@ -478,7 +481,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                     case INTERSECTION:
                         Integer maxBound = null;
                         for (final AnnotatedTypeMirror bound :
-                                ((AnnotatedIntersectionType) type).directSuperTypes()) {
+                                ((AnnotatedIntersectionType) type).getBounds()) {
                             Integer boundRegexNum = getMinimumRegexCount(bound);
                             if (boundRegexNum != null) {
                                 if (maxBound == null || boundRegexNum > maxBound) {

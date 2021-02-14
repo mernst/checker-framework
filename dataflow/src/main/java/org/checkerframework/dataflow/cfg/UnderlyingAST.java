@@ -4,9 +4,10 @@ import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
+import java.util.concurrent.atomic.AtomicLong;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
+import org.plumelib.util.StringsPlume;
 import org.plumelib.util.UniqueId;
-import org.plumelib.util.UtilPlume;
 
 /**
  * Represents an abstract syntax tree of type {@link Tree} that underlies a given control flow
@@ -27,8 +28,10 @@ public abstract class UnderlyingAST implements UniqueId {
     /** The kind of the underlying AST. */
     protected final Kind kind;
 
+    /** The unique ID for the next-created object. */
+    static final AtomicLong nextUid = new AtomicLong(0);
     /** The unique ID of this object. */
-    final transient long uid = UniqueId.nextUid.getAndIncrement();
+    final transient long uid = nextUid.getAndIncrement();
 
     @Override
     public long getUid(@UnknownInitialization UnderlyingAST this) {
@@ -80,7 +83,7 @@ public abstract class UnderlyingAST implements UniqueId {
         }
 
         /**
-         * Returns the name of the method
+         * Returns the name of the method.
          *
          * @return the name of the method
          */
@@ -108,7 +111,7 @@ public abstract class UnderlyingAST implements UniqueId {
 
         @Override
         public String toString() {
-            return UtilPlume.joinLines("CFGMethod(", method, ")");
+            return StringsPlume.joinLines("CFGMethod(", method, ")");
         }
     }
 
@@ -190,7 +193,7 @@ public abstract class UnderlyingAST implements UniqueId {
 
         @Override
         public String toString() {
-            return UtilPlume.joinLines("CFGLambda(", lambda, ")");
+            return StringsPlume.joinLines("CFGLambda(", lambda, ")");
         }
     }
 
@@ -228,7 +231,7 @@ public abstract class UnderlyingAST implements UniqueId {
 
         @Override
         public String toString() {
-            return UtilPlume.joinLines("CFGStatement(", code, ")");
+            return StringsPlume.joinLines("CFGStatement(", code, ")");
         }
     }
 }

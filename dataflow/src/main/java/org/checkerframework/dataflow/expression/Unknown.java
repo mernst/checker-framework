@@ -7,11 +7,11 @@ import org.checkerframework.dataflow.analysis.Store;
 
 /** Stands for any expression that the Dataflow Framework lacks explicit support for. */
 @UsesObjectEquals
-public class Unknown extends Receiver {
+public class Unknown extends JavaExpression {
     /**
-     * Create a new Unknown receiver.
+     * Create a new Unknown JavaExpression.
      *
-     * @param type the Java type of this receiver
+     * @param type the Java type of this
      */
     public Unknown(TypeMirror type) {
         super(type);
@@ -22,6 +22,7 @@ public class Unknown extends Receiver {
         return obj == this;
     }
 
+    // Overridden to avoid an error "overrides equals, but does not override hashCode"
     @Override
     public int hashCode() {
         return System.identityHashCode(this);
@@ -33,12 +34,22 @@ public class Unknown extends Receiver {
     }
 
     @Override
-    public boolean containsModifiableAliasOf(Store<?> store, Receiver other) {
+    public boolean syntacticEquals(JavaExpression je) {
+        return this == je;
+    }
+
+    @Override
+    public boolean containsSyntacticEqualJavaExpression(JavaExpression other) {
+        return this.syntacticEquals(other);
+    }
+
+    @Override
+    public boolean containsModifiableAliasOf(Store<?> store, JavaExpression other) {
         return true;
     }
 
     @Override
-    public boolean containsOfClass(Class<? extends Receiver> clazz) {
+    public boolean containsOfClass(Class<? extends JavaExpression> clazz) {
         return getClass() == clazz;
     }
 
