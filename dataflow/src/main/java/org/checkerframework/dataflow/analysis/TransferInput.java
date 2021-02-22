@@ -1,11 +1,12 @@
 package org.checkerframework.dataflow.analysis;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.cfg.node.Node;
+import org.plumelib.util.StringsPlume;
 import org.plumelib.util.UniqueId;
-import org.plumelib.util.UtilPlume;
 
 /**
  * {@code TransferInput} is used as the input type of the individual transfer functions of a {@link
@@ -49,8 +50,10 @@ public class TransferInput<V extends AbstractValue<V>, S extends Store<S>> imple
     /** The corresponding analysis class to get intermediate flow results. */
     protected final Analysis<V, S, ?> analysis;
 
+    /** The unique ID for the next-created object. */
+    static final AtomicLong nextUid = new AtomicLong(0);
     /** The unique ID of this object. */
-    final transient long uid = UniqueId.nextUid.getAndIncrement();
+    final transient long uid = nextUid.getAndIncrement();
 
     @Override
     public long getUid(@UnknownInitialization TransferInput<V, S> this) {
@@ -300,11 +303,11 @@ public class TransferInput<V extends AbstractValue<V>, S extends Store<S>> imple
     public String toString() {
         if (store == null) {
             return "[then="
-                    + UtilPlume.indentLinesExceptFirst(2, thenStore)
+                    + StringsPlume.indentLinesExceptFirst(2, thenStore)
                     + ","
                     + System.lineSeparator()
                     + "  else="
-                    + UtilPlume.indentLinesExceptFirst(2, elseStore)
+                    + StringsPlume.indentLinesExceptFirst(2, elseStore)
                     + "]";
         } else {
             return "[" + store + "]";

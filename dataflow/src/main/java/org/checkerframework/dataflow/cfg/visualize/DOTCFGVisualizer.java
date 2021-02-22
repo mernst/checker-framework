@@ -33,21 +33,23 @@ import org.checkerframework.dataflow.expression.FieldAccess;
 import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.dataflow.expression.MethodCall;
 import org.checkerframework.javacutil.BugInCF;
+import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.UserError;
 
 /** Generate a graph description in the DOT language of a control graph. */
-@SuppressWarnings("nullness:initialization.fields.uninitialized") // uses init method
 public class DOTCFGVisualizer<
                 V extends AbstractValue<V>, S extends Store<S>, T extends TransferFunction<V, S>>
         extends AbstractCFGVisualizer<V, S, T> {
 
     /** The output directory. */
+    @SuppressWarnings("nullness:initialization.field.uninitialized") // uses init method
     protected String outDir;
 
     /** The (optional) checker name. Used as a part of the name of the output dot file. */
     protected @Nullable String checkerName;
 
     /** Mapping from class/method representation to generated dot file. */
+    @SuppressWarnings("nullness:initialization.field.uninitialized") // uses init method
     protected Map<String, String> generated;
 
     /** Terminator for lines that are left-justified. */
@@ -221,12 +223,12 @@ public class DOTCFGVisualizer<
             CFGLambda cfgLambda = (CFGLambda) ast;
             String clsName = cfgLambda.getSimpleClassName();
             String methodName = cfgLambda.getMethodName();
-            int hashCode = cfgLambda.getCode().hashCode();
+            long uid = TreeUtils.treeUids.get(cfgLambda.getCode());
             outFile.append(clsName);
             outFile.append("-");
             outFile.append(methodName);
             outFile.append("-");
-            outFile.append(hashCode);
+            outFile.append(uid);
 
             srcLoc.append("<");
             srcLoc.append(clsName);
@@ -300,7 +302,7 @@ public class DOTCFGVisualizer<
      * @param str the string to be escaped
      * @return the escaped version of the string
      */
-    private String escapeDoubleQuotes(final String str) {
+    private static String escapeDoubleQuotes(final String str) {
         return str.replace("\"", "\\\"");
     }
 
@@ -310,7 +312,7 @@ public class DOTCFGVisualizer<
      * @param obj an object
      * @return an escaped version of the string representation of the object
      */
-    private String escapeDoubleQuotes(final Object obj) {
+    private static String escapeDoubleQuotes(final Object obj) {
         return escapeDoubleQuotes(String.valueOf(obj));
     }
 
