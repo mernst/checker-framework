@@ -62,7 +62,7 @@ public class Initializer {
     String f = "";
 
     void t1(@UnknownInitialization Initializer this) {
-        // :: error: (dereference.of.nullable)
+        // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
         this.f.toString();
     }
 
@@ -76,16 +76,16 @@ class SubInitializer extends Initializer {
     void subt1(@UnknownInitialization(Initializer.class) SubInitializer this) {
         fieldF.toString();
         super.f.toString();
-        // :: error: (dereference.of.nullable)
+        // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
         this.f.toString();
     }
 
     void subt2(@UnknownInitialization SubInitializer this) {
         // :: error: (dereference.of.nullable)
         fieldF.toString();
-        // :: error: (dereference.of.nullable)
+        // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
         super.f.toString();
-        // :: error: (dereference.of.nullable)
+        // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
         this.f.toString();
     }
 }

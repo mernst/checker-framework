@@ -4,6 +4,7 @@ import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.BlockTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.tree.CompoundAssignmentTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.MemberSelectTree;
@@ -465,60 +466,82 @@ public class InitializationVisitor<
         }
     }
 
-    // TODO: This produces false positives in both methods and constructors that set fields.  The
-    // code ought to use the Initialization Checker's logic to determine which fields are already
-    // set.  However, the Initialization Checker only tracks @NonNull fields, not all fields.  We
-    // should add a feature (controlled by a command-line option) to track all fields, not just
-    // @NonNull ones.  Method hasFieldInvariantAnnotation is relevant; it determines which fields
-    // the Initialization Checker tracks.
+    // TODO: Use method hasFieldInvariantAnnotation(), so that this only issues warnings for fields
+    // that the Initialization Checker tracks.
+    // TODO: Look up in the store or in the types whether the field is initialized yet (using the
+    // Initialization Checker's logic).
+    // TODO: In the future, add a feature (controlled by a command-line option) to track all fields,
+    // not just @NonNull ones.
     @Override
     protected void checkAccessAllowed(
             Element field,
             AnnotatedTypeMirror receiverType,
             @FindDistinct ExpressionTree accessTree) {
+        super.checkAccessAllowed(field, receiverType, accessTree);
+
         if (receiverType == null) {
             return;
         }
 
         Tree statement = this.enclosingStatement(accessTree);
-        if (statement != null
-                && statement.getKind() == Tree.Kind.ASSIGNMENT // TODO
-                && ((AssignmentTree) statement).getVariable() == accessTree) {
-            // This is an lvalue use.
-            return;
+        if (statement != null) {
+            if ((statement.getKind() == Tree.Kind.ASSIGNMENT // TODO
+                            && ((AssignmentTree) statement).getVariable() == accessTree)
+                    || (statement instanceof CompoundAssignmentTree
+                            && ((CompoundAssignmentTree) statement).getVariable() == accessTree)) {
+                // This is an lvalue use.
+                return;
+            }
         }
 
+        // enclosingType is the type that declares the field.
         TypeMirror enclosingType = field.getEnclosingElement().asType();
 
-        Name identifier;
-        switch (accessTree.getKind()) {
-            case MEMBER_SELECT:
-                identifier = ((MemberSelectTree) accessTree).getIdentifier();
-                break;
-            case IDENTIFIER:
-                identifier = ((IdentifierTree) accessTree).getName();
-                break;
-            default:
-                throw new BugInCF(
-                        "Unexpected accessTree (%s): %s", accessTree.getKind(), accessTree);
-        }
-
-        AnnotationMirror initAnno =
+        AnnotationMirror receiverInitAnno =
                 receiverType.getAnnotationInHierarchy(
                         ((InitializationAnnotatedTypeFactory) atypeFactory).INITIALIZED);
-        if (initAnno == null || atypeFactory.areSameByClass(initAnno, Initialized.class)) {
+        if (receiverInitAnno == null
+                || atypeFactory.areSameByClass(receiverInitAnno, Initialized.class)) {
+            // The receiver is fully initialized, so all field accesses are legal.
             return;
         }
-        // initAnno is @UnknownInitialization or @UnderInitialization
+        // receiverInitAnno is @UnknownInitialization or @UnderInitialization
         DeclaredType frame =
-                AnnotationUtils.getElementValueOrNull(initAnno, "value", DeclaredType.class, false);
+                AnnotationUtils.getElementValueOrNull(
+                        receiverInitAnno, "value", DeclaredType.class, false);
 
         if (frame == null || !atypeFactory.types.isSubtype(frame, enclosingType)) {
-            checker.reportError(
-                    accessTree, "initialization.invalid.field.access", identifier, receiverType);
-        }
+            // The receiver is not initialized enough for the field to be accessed.
 
-        // TODO:  super.checkAccessAllowed();
+            Name identifier;
+            switch (accessTree.getKind()) {
+                case MEMBER_SELECT:
+                    identifier = ((MemberSelectTree) accessTree).getIdentifier();
+                    break;
+                case IDENTIFIER:
+                    identifier = ((IdentifierTree) accessTree).getName();
+                    break;
+                default:
+                    throw new BugInCF(
+                            "Unexpected accessTree (%s): %s", accessTree.getKind(), accessTree);
+            }
+
+            Store store = atypeFactory.getStoreBefore(accessTree);
+            Pair<List<VariableTree>, List<VariableTree>> uninitializedFields =
+                    atypeFactory.getUninitializedFields(
+                            store, getCurrentPath(), false, receiverType.getAnnotations());
+            // TODO: Add a method like uninitializedFields that takes a single field as an argument
+            // and returns a boolean, to avoid having to make so many lists.
+            for (VariableTree uninitVar : uninitializedFields.first) {
+                if (uninitVar.getName().contentEquals(identifier)) {
+                    checker.reportError(
+                            accessTree,
+                            "initialization.invalid.field.access",
+                            identifier,
+                            receiverType);
+                }
+            }
+        }
 
         return;
     }

@@ -51,11 +51,11 @@ class MyClass {
 \end{Verbatim}
 
 \noindent
-Method \<getX> is incorrect because it returns 0, which is not positive.
-However, the code type-checks because there is never an assignment to \<x>
+Method \<getX> violates its return type annotation because it returns 0, which is not positive.
+However, the code incorrectly type-checks because there is never an assignment to \<x>
 whose right-hand side is not positive.
 If you run the Index Checker together with the Initialized Fields Checker,
-then the code correctly does not type-check.
+then the Checker Framework correctly issues a type-checking error.
 
 
 \subsubsectionAndLabel{Remaining unsoundness}{initialized-fields-remaining-unsoundness}

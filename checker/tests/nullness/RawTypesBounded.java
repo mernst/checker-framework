@@ -39,12 +39,13 @@ public class RawTypesBounded {
         }
 
         public void init(@UnknownInitialization A this) {
-            // :: error: (dereference.of.nullable)
+            // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
             output(this.field.length());
         }
 
         public void initExpl2(@UnknownInitialization A this) {
-            // :: error: (argument.type.incompatible)
+            // :: error: (argument.type.incompatible) :: error:
+            // (initialization.invalid.field.access)
             output(this.field);
         }
 
@@ -54,7 +55,8 @@ public class RawTypesBounded {
         }
 
         public void initImpl2(@UnknownInitialization A this) {
-            // :: error: (argument.type.incompatible)
+            // :: error: (argument.type.incompatible) :: error:
+            // (initialization.invalid.field.access)
             output(field);
         }
     }
@@ -82,7 +84,7 @@ public class RawTypesBounded {
         }
 
         public void initExpl2(@UnknownInitialization B this) {
-            // :: error: (dereference.of.nullable)
+            // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
             output(this.otherField.length()); // error
         }
 

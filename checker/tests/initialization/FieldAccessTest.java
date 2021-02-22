@@ -1,3 +1,6 @@
+// This is all tests of primitives.
+// @skip-test until the feature is implemented.
+
 import org.checkerframework.checker.initialization.qual.Initialized;
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;

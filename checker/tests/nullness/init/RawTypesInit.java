@@ -40,12 +40,13 @@ public class RawTypesInit {
         }
 
         public void init(@UnknownInitialization A this) {
-            // :: error: (dereference.of.nullable)
+            // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
             output(this.field.length());
         }
 
         public void initExpl2(@UnknownInitialization A this) {
-            // :: error: (argument.type.incompatible)
+            // :: error: (argument.type.incompatible) :: error:
+            // (initialization.invalid.field.access)
             output(this.field);
         }
 
@@ -55,7 +56,8 @@ public class RawTypesInit {
         }
 
         public void initImpl2(@UnknownInitialization A this) {
-            // :: error: (argument.type.incompatible)
+            // :: error: (argument.type.incompatible) :: error:
+            // (initialization.invalid.field.access)
             output(field);
         }
     }
@@ -83,7 +85,7 @@ public class RawTypesInit {
         }
 
         public void initExpl2(@UnknownInitialization B this) {
-            // :: error: (dereference.of.nullable)
+            // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
             output(this.otherField.length()); // error
         }
 
@@ -110,7 +112,7 @@ public class RawTypesInit {
 
         @Override
         public void init(@UnknownInitialization C this) {
-            // :: error: (dereference.of.nullable)
+            // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
             output(this.strings.length); // error
             System.out.println(); // valid
         }
@@ -135,7 +137,7 @@ public class RawTypesInit {
         }
 
         void myTest(@UnknownInitialization MyTest this) {
-            // :: error: (unboxing.of.nullable)
+            // :: error: (unboxing.of.nullable) :: error: (initialization.invalid.field.access)
             i = i + 1;
         }
     }

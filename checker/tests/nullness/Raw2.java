@@ -18,9 +18,9 @@ public class Raw2 {
     }
 
     private void method(@UnknownInitialization Raw2 this, @UnknownInitialization Raw2 arg) {
-        // :: error: (dereference.of.nullable)
+        // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
         arg.field.hashCode();
-        // :: error: (dereference.of.nullable)
+        // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
         this.field.hashCode();
     }
 
