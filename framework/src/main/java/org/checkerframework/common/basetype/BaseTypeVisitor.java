@@ -4316,9 +4316,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             Element field,
             AnnotatedTypeMirror receiverType,
             @FindDistinct ExpressionTree accessTree) {
-        System.out.printf("isAccessAllowed(%s, %s, %s)%n", field, receiverType, accessTree);
         AnnotationMirror unused = atypeFactory.getDeclAnnotation(field, Unused.class);
-        System.out.printf("  unused=%s%n", unused);
         if (unused == null) {
             return;
         }
