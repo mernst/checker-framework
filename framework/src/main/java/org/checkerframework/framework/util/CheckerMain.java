@@ -17,11 +17,10 @@ import java.util.jar.JarInputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
-import org.checkerframework.checker.signature.qual.CanonicalName;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
-import org.checkerframework.common.subtyping.SubtypingChecker;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.SystemUtil;
+import org.checkerframework.javacutil.UserError;
 
 /**
  * This class behaves similarly to javac. CheckerMain does the following:
@@ -37,11 +36,11 @@ import org.checkerframework.javacutil.SystemUtil;
  * To debug this class, use the {@code -AoutputArgsToFile=FILENAME} command-line argument or {@code
  * -AoutputArgsToFile=-} to output to standard out.
  *
- * <p>"To run the Checker Framework" really means to run java, where the program being run is a
- * special version of javac, and javac is passed a {@code -processor} command-line argument that
- * mentions a Checker Framework checker. There are 5 relevant classpaths: The classpath and
- * bootclasspath when running java, and the classpath, bootclasspath, and processorpath used by
- * javac. The latter three are the only important ones.
+ * <p>"To run the Checker Framework" really means to run java, where the program being run is javac
+ * and javac is passed a {@code -processor} command-line argument that mentions a Checker Framework
+ * checker. There are 5 relevant classpaths: The classpath and bootclasspath when running java, and
+ * the classpath, bootclasspath, and processorpath used by javac. The latter three are the only
+ * important ones.
  *
  * <p>Note for developers: Try to limit the work done (and options interpreted) by CheckerMain,
  * because its functionality is not available to users who choose not to use the Checker Framework
@@ -68,6 +67,10 @@ public class CheckerMain {
     /** The path to checker-qual.jar. */
     protected final File checkerQualJar;
 
+    /** The path to checker-util.jar. */
+    protected final File checkerUtilJar;
+
+    /** Compilation bootclasspath. */
     private final List<String> compilationBootclasspath;
 
     private final List<String> runtimeClasspath;
@@ -97,6 +100,12 @@ public class CheckerMain {
     public static final String CHECKER_QUAL_PATH_OPT = "-checkerQualJar";
 
     /**
+     * Option name for specifying an alternative checker-util.jar location. The accompanying value
+     * MUST be the path to the jar file (NOT the path to its encompassing directory)
+     */
+    public static final String CHECKER_UTIL_PATH_OPT = "-checkerUtilJar";
+
+    /**
      * Option name for specifying an alternative javac.jar location. The accompanying value MUST be
      * the path to the jar file (NOT the path to its encompassing directory)
      */
@@ -124,6 +133,10 @@ public class CheckerMain {
                 extractFileArg(
                         CHECKER_QUAL_PATH_OPT, new File(searchPath, "checker-qual.jar"), args);
 
+        this.checkerUtilJar =
+                extractFileArg(
+                        CHECKER_UTIL_PATH_OPT, new File(searchPath, "checker-util.jar"), args);
+
         this.javacJar = extractFileArg(JAVAC_PATH_OPT, new File(searchPath, "javac.jar"), args);
 
         this.compilationBootclasspath = createCompilationBootclasspath(args);
@@ -140,10 +153,9 @@ public class CheckerMain {
     /** Assert that required jars exist. */
     protected void assertValidState() {
         if (SystemUtil.getJreVersion() < 9) {
-            assertFilesExist(Arrays.asList(javacJar, checkerJar, checkerQualJar));
+            assertFilesExist(Arrays.asList(javacJar, checkerJar, checkerQualJar, checkerUtilJar));
         } else {
-            // TODO: once the jdk11 jars exist, check for them.
-            assertFilesExist(Arrays.asList(checkerJar, checkerQualJar));
+            assertFilesExist(Arrays.asList(checkerJar, checkerQualJar, checkerUtilJar));
         }
     }
 
@@ -176,6 +188,8 @@ public class CheckerMain {
     protected List<String> createCpOpts(final List<String> argsList) {
         final List<String> extractedOpts = extractCpOpts(argsList);
         extractedOpts.add(0, this.checkerQualJar.getAbsolutePath());
+        extractedOpts.add(0, this.checkerUtilJar.getAbsolutePath());
+
         return extractedOpts;
     }
 
@@ -189,6 +203,8 @@ public class CheckerMain {
             extractedOpts.addAll(this.cpOpts);
         }
         extractedOpts.add(0, this.checkerJar.getAbsolutePath());
+        extractedOpts.add(0, this.checkerUtilJar.getAbsolutePath());
+
         return extractedOpts;
     }
 
@@ -686,6 +702,15 @@ public class CheckerMain {
         }
 
         if (!missingFiles.isEmpty()) {
+            if (missingFiles.size() == 1) {
+                File missingFile = missingFiles.get(0);
+                if (missingFile.getName().equals("javac.jar")) {
+                    throw new UserError(
+                            "Could not find "
+                                    + missingFile.getAbsolutePath()
+                                    + ". This may be because you built the Checker Framework under Java 11 but are running it under Java 8.");
+                }
+            }
             List<String> missingAbsoluteFilenames = new ArrayList<>(missingFiles.size());
             for (File missingFile : missingFiles) {
                 missingAbsoluteFilenames.add(missingFile.getAbsolutePath());
@@ -712,24 +737,10 @@ public class CheckerMain {
     /// Shorthand checker names
     ///
 
-    /**
-     * All "built-in" Checker Framework checkers, except SubtypingChecker, start with this package
-     * file path. Framework Checkers, except for SubtypingChecker, are excluded from processor
-     * shorthand.
-     */
-    protected static final String CHECKER_BASE_PACKAGE = "org.checkerframework.checker";
-    /**
-     * The version of CHECKER_BASE_PACKAGE using / rather than . as the separator. Forward slash is
-     * used instead of File.separator because checker.jar uses / as the separator.
-     */
-    protected static final String CHECKER_BASE_DIR_NAME = CHECKER_BASE_PACKAGE.replace(".", "/");
-
-    /** The canonical name of {@link SubtypingChecker}. */
-    protected static final @CanonicalName String FULLY_QUALIFIED_SUBTYPING_CHECKER =
-            SubtypingChecker.class.getCanonicalName();
-
-    /** The simple name of {@link SubtypingChecker}. */
-    protected static final String SUBTYPING_CHECKER_NAME = SubtypingChecker.class.getSimpleName();
+    /** Processor shorthand is enabled for processors in this directory in checker.jar. */
+    protected static final String CHECKER_BASE_DIR_NAME = "org/checkerframework/checker/";
+    /** Processor shorthand is enabled for processors in this directory in checker.jar. */
+    protected static final String COMMON_BASE_DIR_NAME = "org/checkerframework/common/";
 
     /**
      * Returns true if processorString, once transformed into fully-qualified form, is present in
@@ -789,7 +800,9 @@ public class CheckerMain {
                 final String name = entry.getName();
                 // Checkers ending in "Subchecker" are not included in this list used by
                 // CheckerMain.
-                if (name.startsWith(CHECKER_BASE_DIR_NAME) && name.endsWith("Checker.class")) {
+                if ((name.startsWith(CHECKER_BASE_DIR_NAME)
+                                || name.startsWith(COMMON_BASE_DIR_NAME))
+                        && name.endsWith("Checker.class")) {
                     // Forward slash is used instead of File.separator because checker.jar uses / as
                     // the separator.
                     @SuppressWarnings("signature") // string manipulation
@@ -840,14 +853,10 @@ public class CheckerMain {
             boolean allowSubcheckers) {
         final String[] processors = processorsString.split(",");
         for (int i = 0; i < processors.length; i++) {
-            if (processors[i].equals(SUBTYPING_CHECKER_NAME)) { // Allow "subtyping" as well.
-                processors[i] = FULLY_QUALIFIED_SUBTYPING_CHECKER;
-            } else {
-                if (!processors[i].contains(".")) { // Not already fully qualified
-                    processors[i] =
-                            unshorthandProcessorName(
-                                    processors[i], fullyQualifiedCheckerNames, allowSubcheckers);
-                }
+            if (!processors[i].contains(".")) { // Not already fully qualified
+                processors[i] =
+                        unshorthandProcessorName(
+                                processors[i], fullyQualifiedCheckerNames, allowSubcheckers);
             }
         }
 
@@ -900,7 +909,7 @@ public class CheckerMain {
 
     /**
      * Given a shorthand processor name, returns true if it can be expanded to a checker in the
-     * fullyQualifiedCheckerNames list. Does not match the subtyping checker.
+     * fullyQualifiedCheckerNames list.
      *
      * @param processorName a string identifying one processor
      * @param fullyQualifiedCheckerNames a list of fully-qualified checker names to match

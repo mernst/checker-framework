@@ -4,8 +4,13 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.checkerframework.framework.test.*;
+import org.checkerframework.checker.nullness.NullnessChecker;
 import org.checkerframework.framework.test.CheckerFrameworkPerDirectoryTest;
+import org.checkerframework.framework.test.TestConfiguration;
+import org.checkerframework.framework.test.TestConfigurationBuilder;
+import org.checkerframework.framework.test.TestUtilities;
+import org.checkerframework.framework.test.TypecheckExecutor;
+import org.checkerframework.framework.test.TypecheckResult;
 import org.junit.runners.Parameterized.Parameters;
 
 /** JUnit tests for the Nullness checker when using safe defaults for unannotated source code. */
@@ -19,7 +24,7 @@ public class NullnessSafeDefaultsSourceCodeTest extends CheckerFrameworkPerDirec
     public NullnessSafeDefaultsSourceCodeTest(List<File> testFiles) {
         super(
                 testFiles,
-                org.checkerframework.checker.nullness.NullnessChecker.class,
+                NullnessChecker.class,
                 "nullness",
                 "-AuseConservativeDefaultsForUncheckedCode=source",
                 "-cp",
@@ -44,11 +49,11 @@ public class NullnessSafeDefaultsSourceCodeTest extends CheckerFrameworkPerDirec
                 TestConfigurationBuilder.buildDefaultConfiguration(
                         "tests/nullness-safedefaultssourcecodelib",
                         new File("tests/nullness-safedefaultssourcecodelib", "Lib.java"),
-                        checkerName,
+                        NullnessChecker.class,
                         customizedOptions1,
                         shouldEmitDebugInfo);
         TypecheckResult testResult1 = new TypecheckExecutor().runTest(config1);
-        TestUtilities.assertResultsAreValid(testResult1);
+        TestUtilities.assertTestDidNotFail(testResult1);
 
         List<String> customizedOptions2 =
                 customizeOptions(Collections.unmodifiableList(checkerOptions));
@@ -56,10 +61,10 @@ public class NullnessSafeDefaultsSourceCodeTest extends CheckerFrameworkPerDirec
                 TestConfigurationBuilder.buildDefaultConfiguration(
                         testDir,
                         testFiles,
-                        Collections.singleton(checkerName),
+                        Collections.singleton(NullnessChecker.class.getName()),
                         customizedOptions2,
                         shouldEmitDebugInfo);
         TypecheckResult testResult2 = new TypecheckExecutor().runTest(config2);
-        TestUtilities.assertResultsAreValid(testResult2);
+        TestUtilities.assertTestDidNotFail(testResult2);
     }
 }

@@ -8,6 +8,8 @@ import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.TypeCastTree;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
@@ -158,8 +160,11 @@ public class ValueVisitor extends BaseTypeVisitor<ValueAnnotatedTypeFactory> {
      *
      * <p>Issues a warning if any @ArrayLen/@ArrayLenRange annotations contain a negative array
      * length.
+     *
+     * <p>Issues a warning if any {@literal @}MatchesRegex annotation contains an invalid regular
+     * expression.
      */
-    /* Implementation note: the ValueAnnotatedTypeFactory replaces such invalid annotations with valid ones.
+    /* Implementation note: the ValueTypeAnnotator replaces such invalid annotations with valid ones.
      * Therefore, the usual validation in #validateType cannot perform this validation.
      * These warnings cannot be issued in the ValueAnnotatedTypeFactory, because the conversions
      * might happen multiple times.
@@ -233,6 +238,16 @@ public class ValueVisitor extends BaseTypeVisitor<ValueAnnotatedTypeFactory> {
                     return null;
                 }
                 break;
+            case ValueAnnotatedTypeFactory.MATCHES_REGEX_NAME:
+                List<String> regexes = ValueAnnotatedTypeFactory.getStringValues(anno);
+                for (String regex : regexes) {
+                    try {
+                        Pattern.compile(regex);
+                    } catch (PatternSyntaxException pse) {
+                        checker.reportWarning(node, "invalid.matches.regex", pse.getMessage());
+                    }
+                }
+                break;
             default:
                 // Do nothing.
         }
@@ -261,7 +276,7 @@ public class ValueVisitor extends BaseTypeVisitor<ValueAnnotatedTypeFactory> {
                 && exprAnno != null
                 && atypeFactory.isIntRange(castAnno)
                 && atypeFactory.isIntRange(exprAnno)) {
-            final Range castRange = ValueAnnotatedTypeFactory.getRange(castAnno);
+            final Range castRange = atypeFactory.getRange(castAnno);
             final TypeKind castTypeKind = castType.getKind();
             if (castTypeKind == TypeKind.BYTE && castRange.isByteEverything()) {
                 return p;
@@ -282,7 +297,7 @@ public class ValueVisitor extends BaseTypeVisitor<ValueAnnotatedTypeFactory> {
                 // Range.ignoreOverflow is only set if this checker is ignoring overflow.
                 // In that case, do not warn if the range of the expression encompasses
                 // the whole type being casted to (i.e. the warning is actually about overflow).
-                Range exprRange = ValueAnnotatedTypeFactory.getRange(exprAnno);
+                Range exprRange = atypeFactory.getRange(exprAnno);
                 if (castTypeKind == TypeKind.BYTE
                         || castTypeKind == TypeKind.CHAR
                         || castTypeKind == TypeKind.SHORT
@@ -391,7 +406,7 @@ public class ValueVisitor extends BaseTypeVisitor<ValueAnnotatedTypeFactory> {
             // If the method is static, issue no warning.  This is incorrect in the case of a
             // constructor or a static method in an inner class.
             if (!ElementUtils.isStatic(method)) {
-                receiverType = ElementUtils.getType(ElementUtils.enclosingClass(method));
+                receiverType = ElementUtils.getType(ElementUtils.enclosingTypeElement(method));
             }
             if (receiverType != null
                     && receiverType.getKind() != TypeKind.NONE

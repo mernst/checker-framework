@@ -1,7 +1,6 @@
 package org.checkerframework.framework.type.visitor;
 
 import java.util.IdentityHashMap;
-import java.util.Map;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
@@ -153,7 +152,7 @@ public abstract class AnnotatedTypeScanner<R, P> implements AnnotatedTypeVisitor
     }
 
     // To prevent infinite loops
-    protected final Map<AnnotatedTypeMirror, R> visitedNodes = new IdentityHashMap<>();
+    protected final IdentityHashMap<AnnotatedTypeMirror, R> visitedNodes = new IdentityHashMap<>();
 
     /**
      * Reset the scanner to allow reuse of the same instance. Subclasses should override this method
@@ -280,7 +279,7 @@ public abstract class AnnotatedTypeScanner<R, P> implements AnnotatedTypeVisitor
             return visitedNodes.get(type);
         }
         visitedNodes.put(type, defaultResult);
-        R r = scan(type.directSuperTypes(), p);
+        R r = scan(type.getBounds(), p);
         visitedNodes.put(type, r);
         return r;
     }
