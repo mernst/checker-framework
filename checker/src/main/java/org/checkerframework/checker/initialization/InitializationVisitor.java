@@ -478,8 +478,8 @@ public class InitializationVisitor<
         super.checkAccessAllowed(field, receiverType, accessTree);
 
         if (receiverType == null) {
-            throw new BugInCF("Why is receiverType null?");
-            // return;
+            // Field is static
+            return;
         }
 
         Tree statement = this.enclosingStatement(accessTree);
