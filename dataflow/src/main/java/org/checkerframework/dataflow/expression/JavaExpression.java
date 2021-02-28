@@ -348,7 +348,7 @@ public abstract class JavaExpression {
         }
 
         if (result == null) {
-            result = new Unknown(receiverNode.getType());
+            result = new Unknown(receiverNode);
         }
         return result;
     }
@@ -484,7 +484,7 @@ public abstract class JavaExpression {
         }
 
         if (result == null) {
-            result = new Unknown(TreeUtils.typeOf(tree));
+            result = new Unknown(tree);
         }
         return result;
     }
@@ -649,4 +649,15 @@ public abstract class JavaExpression {
             return new ThisReference(enclosingType);
         }
     }
+
+    /**
+     * Accept method of the visitor pattern.
+     *
+     * @param visitor the visitor to be applied to this JavaExpression
+     * @param p the parameter for this operation
+     * @param <R> result type of the operation
+     * @param <P> parameter type
+     * @return the result of visiting this
+     */
+    public abstract <R, P> R accept(JavaExpressionVisitor<R, P> visitor, P p);
 }

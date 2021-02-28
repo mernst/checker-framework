@@ -77,6 +77,7 @@ import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
+import org.checkerframework.checker.formatter.qual.FormatMethod;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signature.qual.CanonicalName;
 import org.checkerframework.checker.signature.qual.DotSeparatedIdentifiers;
@@ -91,6 +92,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutab
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedTypeVariable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedWildcardType;
 import org.checkerframework.framework.type.AnnotatedTypeReplacer;
+import org.checkerframework.framework.util.element.ElementAnnotationUtil.ErrorTypeKindException;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
@@ -945,11 +947,15 @@ public class AnnotationFileParser {
 
         // Return type, from declaration annotations on the method or constructor
         if (decl.isMethodDeclaration()) {
-            annotate(
-                    methodType.getReturnType(),
-                    ((MethodDeclaration) decl).getType(),
-                    decl.getAnnotations(),
-                    decl);
+            try {
+                annotate(
+                        methodType.getReturnType(),
+                        ((MethodDeclaration) decl).getType(),
+                        decl.getAnnotations(),
+                        decl);
+            } catch (ErrorTypeKindException e) {
+                // Do nothing, per Issue #244.
+            }
         } else {
             assert decl.isConstructorDeclaration();
             annotate(methodType.getReturnType(), decl.getAnnotations(), decl);
@@ -2659,15 +2665,27 @@ public class AnnotationFileParser {
      * @param warning a format string
      * @param args the arguments for {@code warning}
      */
+    @FormatMethod
     private void warn(@Nullable NodeWithRange<?> astNode, String warning, Object... args) {
         if (!isJdkAsStub) {
-            String formatted = String.format(warning, args);
-            if (warnings.add(formatted)) {
+            warn(astNode, String.format(warning, args));
+        }
+    }
+
+    /**
+     * Issues a warning, only if it has not been previously issued.
+     *
+     * @param astNode where to report errors
+     * @param warning a warning message
+     */
+    private void warn(@Nullable NodeWithRange<?> astNode, String warning) {
+        if (!isJdkAsStub) {
+            if (warnings.add(warning)) {
                 processingEnv
                         .getMessager()
                         .printMessage(
                                 javax.tools.Diagnostic.Kind.WARNING,
-                                fileAndLine(astNode) + formatted);
+                                fileAndLine(astNode) + warning);
             }
         }
     }
