@@ -466,10 +466,8 @@ public class InitializationVisitor<
         }
     }
 
-    // TODO: Use method hasFieldInvariantAnnotation(), so that this only issues warnings for fields
-    // that the Initialization Checker tracks.
-    // TODO: Look up in the store or in the types whether the field is initialized yet (using the
-    // Initialization Checker's logic).
+    // This method currently only issues warnings for fields with the invariant annotation
+    // (@NonNull).
     // TODO: In the future, add a feature (controlled by a command-line option) to track all fields,
     // not just @NonNull ones.
     @Override
@@ -480,12 +478,13 @@ public class InitializationVisitor<
         super.checkAccessAllowed(field, receiverType, accessTree);
 
         if (receiverType == null) {
-            return;
+            throw new BugInCF("Why is receiverType null?");
+            // return;
         }
 
         Tree statement = this.enclosingStatement(accessTree);
         if (statement != null) {
-            if ((statement.getKind() == Tree.Kind.ASSIGNMENT // TODO
+            if ((statement.getKind() == Tree.Kind.ASSIGNMENT
                             && ((AssignmentTree) statement).getVariable() == accessTree)
                     || (statement instanceof CompoundAssignmentTree
                             && ((CompoundAssignmentTree) statement).getVariable() == accessTree)) {
@@ -505,7 +504,7 @@ public class InitializationVisitor<
             // The receiver is fully initialized, so all field accesses are legal.
             return;
         }
-        // receiverInitAnno is @UnknownInitialization or @UnderInitialization
+        // receiverInitAnno is @UnknownInitialization or @UnderInitialization, frame is its argument
         DeclaredType frame =
                 AnnotationUtils.getElementValueOrNull(
                         receiverInitAnno, "value", DeclaredType.class, false);
