@@ -15,6 +15,7 @@ import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.DiagnosticSource;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.Log;
+import io.github.classgraph.ClassGraph;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,8 +25,7 @@ import java.lang.management.MemoryPoolMXBean;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -236,6 +236,9 @@ import org.plumelib.util.UtilPlume;
     // Additional stub files to use
     // org.checkerframework.framework.type.AnnotatedTypeFactory.parseStubFiles()
     "stubs",
+    // Additional ajava files to use
+    // org.checkerframework.framework.type.AnnotatedTypeFactory.parserAjavaFiles()
+    "ajava",
     // Whether to print warnings about types/members in a stub file
     // that were not found on the class path
     // org.checkerframework.framework.stub.AnnotationFileParser.warnIfNotFound
@@ -381,6 +384,10 @@ import org.plumelib.util.UtilPlume;
 
     // Parse all JDK files at startup rather than as needed.
     "parseAllJdk",
+
+    // Whenever processing a source file, parse it with JavaParser and check that the AST can be
+    // matched with javac's tree. Crash if not. For testing the class JointJavacJavaParserVisitor.
+    "checkJavaParserVisitor",
 })
 public abstract class SourceChecker extends AbstractTypeProcessor implements OptionConfiguration {
 
@@ -418,12 +425,6 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
 
     /** The source tree that is being scanned. */
     protected @InternedDistinct CompilationUnitTree currentRoot;
-
-    /**
-     * If an error is detected in a CompilationUnitTree, skip all future calls of {@link
-     * #typeProcess} with that same CompilationUnitTree.
-     */
-    private @InternedDistinct CompilationUnitTree previousErrorCompilationUnit;
 
     /** The visitor to use. */
     protected SourceVisitor<?, ?> visitor;
@@ -515,7 +516,7 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
      * in the case of a compound checker, the compound checker is the parent, not the checker that
      * was run prior to this one by the compound checker.
      */
-    protected SourceChecker parentChecker;
+    protected @Nullable SourceChecker parentChecker;
 
     /** List of upstream checker names. Includes the current checker. */
     protected List<@FullyQualifiedName String> upstreamCheckerNames;
@@ -885,6 +886,12 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
     /** Output the warning about source level at most once. */
     private boolean warnedAboutSourceLevel = false;
 
+    /**
+     * If true, javac failed to compile the code or a previously-run annotation processor issued an
+     * error.
+     */
+    protected boolean javacErrored = false;
+
     /** Output the warning about memory at most once. */
     private boolean warnedAboutGarbageCollection = false;
 
@@ -897,12 +904,30 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
     protected int errsOnLastExit = 0;
 
     /**
+     * Report "type.checking.not.run" error.
+     *
+     * @param p error is reported at the leaf of the path
+     */
+    @SuppressWarnings("interning:assignment.type.incompatible") // used in == tests
+    protected void reportJavacError(TreePath p) {
+        // If javac issued any errors, do not type check any file, so that the Checker Framework
+        // does not have to deal with error types.
+        currentRoot = p.getCompilationUnit();
+        reportError(p.getLeaf(), "type.checking.not.run", getClass().getSimpleName());
+    }
+
+    /**
      * Type-check the code using this checker's visitor.
      *
      * @see Processor#process(Set, RoundEnvironment)
      */
     @Override
     public void typeProcess(TypeElement e, TreePath p) {
+        if (javacErrored) {
+            reportJavacError(p);
+            return;
+        }
+
         // Cannot use BugInCF here because it is outside of the try/catch for BugInCF.
         if (e == null) {
             messager.printMessage(Kind.ERROR, "Refusing to process empty TypeElement");
@@ -937,20 +962,11 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
         Log log = Log.instance(context);
         if (log.nerrors > this.errsOnLastExit) {
             this.errsOnLastExit = log.nerrors;
-            @SuppressWarnings("interning:assignment.type.incompatible") // will be compared with ==
-            @InternedDistinct CompilationUnitTree cu = p.getCompilationUnit();
-            previousErrorCompilationUnit = cu;
+            javacErrored = true;
+            reportJavacError(p);
             return;
         }
-        if (p.getCompilationUnit() == previousErrorCompilationUnit) {
-            // If the same compilation unit was seen with an error before,
-            // skip it. This is in particular necessary for Java errors, which
-            // show up once, but further calls to typeProcess will happen.
-            // See Issue 346.
-            return;
-        } else {
-            previousErrorCompilationUnit = null;
-        }
+
         if (visitor == null) {
             // typeProcessingStart invokes initChecker, which should
             // have set the visitor. If the field is still null, an
@@ -2014,7 +2030,8 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
     /**
      * Determines whether all the warnings pertaining to a given tree should be suppressed. Returns
      * true if the tree is within the scope of a @SuppressWarnings annotation, one of whose values
-     * suppresses the checker's warnings.
+     * suppresses the checker's warnings. Also, returns true if the {@code errKey} matches a string
+     * in {@code -AsuppressWarnings}.
      *
      * @param tree the tree that might be a source of a warning
      * @param errKey the error key the checker is emitting
@@ -2029,6 +2046,15 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
                 || (prefixes.contains(SUPPRESS_ALL_PREFIX) && prefixes.size() == 1)) {
             throw new BugInCF(
                     "Checker must provide a SuppressWarnings prefix. SourceChecker#getSuppressWarningsPrefixes was not overridden correctly.");
+        }
+        if (shouldSuppress(getSuppressWarningsStringsFromOption(), errKey)) {
+            return true;
+        }
+
+        if (shouldSuppress(getSuppressWarningsStringsFromOption(), errKey)) {
+            // If the error key matches a warning string in the -AsuppressWarnings, then suppress
+            // the warning.
+            return true;
         }
 
         // trees.getPath might be slow, but this is only used in error reporting
@@ -2498,9 +2524,11 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
         StringJoiner msg = new StringJoiner(LINE_SEPARATOR);
         if (ce.getCause() != null && ce.getCause() instanceof OutOfMemoryError) {
             msg.add(
-                    "The JVM ran out of memory.  Run with a larger max heap size (currently "
-                            + Runtime.getRuntime().maxMemory()
-                            + " bytes).");
+                    String.format(
+                            "The JVM ran out of memory.  Run with a larger max heap size (max memory = %d, total memory = %d, free memory = %d).",
+                            Runtime.getRuntime().maxMemory(),
+                            Runtime.getRuntime().totalMemory(),
+                            Runtime.getRuntime().freeMemory()));
         } else {
 
             msg.add(ce.getMessage());
@@ -2550,20 +2578,9 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
                 }
 
                 if (printClasspath) {
-                    ClassLoader cl = ClassLoader.getSystemClassLoader();
-
-                    if (cl instanceof URLClassLoader) {
-                        msg.add("Classpath:");
-                        URL[] urls = ((URLClassLoader) cl).getURLs();
-                        for (URL url : urls) {
-                            msg.add(url.getFile());
-                        }
-                    } else {
-                        // TODO: Java 9+ use an internal classloader that doesn't support getting
-                        // URLs, so we will need an alternative approach to retrieve the classpath
-                        // on Java 9+.
-                        msg.add(
-                                "Cannot print classpath on Java 9+. To see the classpath, use Java 8.");
+                    msg.add("Classpath:");
+                    for (URI uri : new ClassGraph().getClasspathURIs()) {
+                        msg.add(uri.toString());
                     }
                 }
             }

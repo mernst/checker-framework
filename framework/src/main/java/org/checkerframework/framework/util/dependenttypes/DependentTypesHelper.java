@@ -3,7 +3,6 @@ package org.checkerframework.framework.util.dependenttypes;
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.ExpressionTree;
-import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
@@ -32,7 +31,6 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.expression.ArrayCreation;
-import org.checkerframework.dataflow.expression.FieldAccess;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.framework.source.SourceChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
@@ -52,6 +50,7 @@ import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
+import org.checkerframework.javacutil.SystemUtil;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.plumelib.util.StringsPlume;
@@ -279,7 +278,6 @@ public class DependentTypesHelper {
             ExecutableElement method = TreeUtils.elementFromUse((MethodInvocationTree) tree);
             if (isVarArgsInvocation(method, methodType, argTrees)) {
                 List<JavaExpression> result = new ArrayList<>();
-
                 for (int i = 0; i < method.getParameters().size() - 1; i++) {
                     result.add(JavaExpression.fromTree(argTrees.get(i)));
                 }
@@ -296,11 +294,7 @@ public class DependentTypesHelper {
             }
         }
 
-        List<JavaExpression> result = new ArrayList<>();
-        for (ExpressionTree argTree : argTrees) {
-            result.add(JavaExpression.fromTree(argTree));
-        }
-        return result;
+        return SystemUtil.mapList(JavaExpression::fromTree, argTrees);
     }
 
     /**
@@ -511,17 +505,7 @@ public class DependentTypesHelper {
 
             case FIELD:
             case ENUM_CONSTANT:
-                JavaExpression receiverJe;
-                if (declarationTree.getKind() == Tree.Kind.IDENTIFIER) {
-                    JavaExpression nodeJe =
-                            JavaExpression.fromTree((IdentifierTree) declarationTree);
-                    receiverJe =
-                            nodeJe instanceof FieldAccess
-                                    ? ((FieldAccess) nodeJe).getReceiver()
-                                    : nodeJe;
-                } else {
-                    receiverJe = JavaExpression.getImplicitReceiver(variableElt);
-                }
+                JavaExpression receiverJe = JavaExpression.getImplicitReceiver(variableElt);
                 JavaExpressionContext fieldContext =
                         new JavaExpressionContext(receiverJe, factory.getChecker());
                 viewpointAdaptToContext(fieldContext, type);
@@ -902,7 +886,7 @@ public class DependentTypesHelper {
 
         for (String element : getListOfExpressionElements(am)) {
             List<String> value =
-                    AnnotationUtils.getElementValueArray(am, element, String.class, true);
+                    AnnotationUtils.getElementValueArray(am, element, String.class, false);
             for (String v : value) {
                 if (DependentTypesError.isExpressionError(v)) {
                     errors.add(DependentTypesError.unparse(v));
