@@ -564,11 +564,11 @@ public abstract class InitializationAnnotatedTypeFactory<
         List<VariableTree> uninitWithInvariantAnno = new ArrayList<>();
         List<VariableTree> uninitWithoutInvariantAnno = new ArrayList<>();
         for (VariableTree field : fields) {
-            if (isUnused(field, receiverAnnotations)) {
-                continue; // don't consider unused fields
-            }
             VariableElement fieldElem = TreeUtils.elementFromDeclaration(field);
             if (ElementUtils.isStatic(fieldElem) == isStatic) {
+                if (isUnused(field, receiverAnnotations)) {
+                    continue; // don't consider unused fields
+                }
                 // Has the field been initialized?
                 if (!store.isFieldInitialized(fieldElem)) {
                     // Does this field need to satisfy the invariant?
@@ -581,6 +581,27 @@ public abstract class InitializationAnnotatedTypeFactory<
             }
         }
         return Pair.of(uninitWithInvariantAnno, uninitWithoutInvariantAnno);
+    }
+
+    /**
+     * Returns true if the given field has not yet been initialized in the given store.
+     *
+     * @param identifier the name of the field
+     * @param store a store
+     * @param path the current path, used to determine the current class
+     * @param receiverAnnotations the annotations on the receiver
+     * @return true if the given field has not yet been initialized in the given store
+     */
+    public boolean fieldIsUninitialized(
+            Name identifier,
+            Store store,
+            TreePath path,
+            boolean isStatic,
+            Collection<? extends AnnotationMirror> receiverAnnotations) {
+        // TODO
+        if (isUnused(field, receiverAnnotations)) {
+            continue; // don't consider unused fields
+        }
     }
 
     /**
