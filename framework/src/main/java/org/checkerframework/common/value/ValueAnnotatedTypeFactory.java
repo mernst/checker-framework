@@ -15,7 +15,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -371,91 +370,11 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
      *     the domain of the underlying type (i.e. Integer.MIN_VALUE if the underlying type is int)
      */
     public long getFromValueFromIntRange(AnnotatedTypeMirror atm) {
-        AnnotationMirror anno = atm.getAnnotation(IntRange.class);
-
-        if (AnnotationUtils.hasElementValue(anno, "from")) {
-            return getIntRangeFromValue(anno);
-        }
-
         TypeMirror type = atm.getUnderlyingType();
-        return Range.create(toPrimitiveIntegralTypeKind(type)).from;
-    }
+        long defaultValue = TypeKindUtils.minValue(toPrimitiveIntegralTypeKind(type));
 
-    /**
-     * Gets the from() element/field out of an IntRange annotation. The from() element/field must
-     * exist. Clients should call {@link #getFromValueFromIntRange} if it might not exist.
-     *
-     * @param anno an IntRange annotation
-     * @return its from() element/field
-     */
-    private long getIntRangeFromValue(AnnotationMirror anno) {
-        AnnotationValue v = anno.getElementValues().get(intRangeFromElement);
-        if (v == null) {
-            return Long.MIN_VALUE;
-        } else {
-            return (long) v.getValue();
-        }
-    }
-
-    /**
-     * Gets the to() element/field out of an IntRange annotation. The to() element/field must exist.
-     * Clients should call {@link #getToValueFromIntRange} if it might not exist.
-     *
-     * @param anno an IntRange annotation
-     * @return its to() element/field
-     */
-    private long getIntRangeToValue(AnnotationMirror anno) {
-        AnnotationValue v = anno.getElementValues().get(intRangeToElement);
-        if (v == null) {
-            return Long.MAX_VALUE;
-        } else {
-            return (long) v.getValue();
-        }
-    }
-
-    /**
-     * Gets the from() element/field out of an ArrayLenRange annotation.
-     *
-     * @param anno an ArrayLenRange annotation
-     * @return its from() element/field
-     */
-    private int getArrayLenRangeFromValue(AnnotationMirror anno) {
-        AnnotationValue v = anno.getElementValues().get(arrayLenRangeFromElement);
-        if (v == null) {
-            return 0;
-        } else {
-            return (int) v.getValue();
-        }
-    }
-
-    /**
-     * Gets the to() element/field out of an ArrayLenRange annotation.
-     *
-     * @param anno an ArrayLenRange annotation
-     * @return its to() element/field
-     */
-    private int getArrayLenRangeToValue(AnnotationMirror anno) {
-        AnnotationValue v = anno.getElementValues().get(arrayLenRangeToElement);
-        if (v == null) {
-            return Integer.MAX_VALUE;
-        } else {
-            return (int) v.getValue();
-        }
-    }
-
-    /**
-     * Gets the value() element/field out of a MinLen annotation.
-     *
-     * @param anno a MinLen annotation
-     * @return its value() element/field
-     */
-    private int getMinLenValueValue(AnnotationMirror anno) {
-        AnnotationValue v = anno.getElementValues().get(minLenValueElement);
-        if (v == null) {
-            return 0;
-        } else {
-            return (int) v.getValue();
-        }
+        AnnotationMirror intRangeAnno = atm.getAnnotation(IntRange.class);
+        return getIntRangeFromValue(intRangeAnno, defaultValue);
     }
 
     /**
@@ -467,14 +386,88 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
      *     domain of the underlying type (i.e. Integer.MAX_VALUE if the underlying type is int)
      */
     public long getToValueFromIntRange(AnnotatedTypeMirror atm) {
-        AnnotationMirror anno = atm.getAnnotation(IntRange.class);
-
-        if (AnnotationUtils.hasElementValue(anno, "to")) {
-            return getIntRangeToValue(anno);
-        }
-
         TypeMirror type = atm.getUnderlyingType();
-        return Range.create(toPrimitiveIntegralTypeKind(type)).to;
+        long defaultValue = TypeKindUtils.maxValue(toPrimitiveIntegralTypeKind(type));
+
+        AnnotationMirror intRangeAnno = atm.getAnnotation(IntRange.class);
+        return getIntRangeToValue(intRangeAnno, defaultValue);
+    }
+
+    /**
+     * Gets the from() element/field out of an IntRange annotation. The from() element/field must
+     * exist. Clients should call {@link #getFromValueFromIntRange} if it might not exist.
+     *
+     * @param intRangeAnno an IntRange annotation
+     * @return its from() element/field
+     */
+    protected long getIntRangeFromValue(AnnotationMirror intRangeAnno) {
+        return AnnotationUtils.getElementValueLong(
+                intRangeAnno, intRangeFromElement, Long.MIN_VALUE);
+    }
+
+    /**
+     * Gets the from() element/field out of an IntRange annotation. The from() element/field must
+     * exist. Clients should call {@link #getFromValueFromIntRange} if it might not exist.
+     *
+     * @param intRangeAnno an IntRange annotation
+     * @param defaultValue the value to retur if there is no from() element/field
+     * @return its from() element/field
+     */
+    protected long getIntRangeFromValue(AnnotationMirror intRangeAnno, long defaultValue) {
+        return AnnotationUtils.getElementValueLong(intRangeAnno, intRangeFromElement, defaultValue);
+    }
+
+    /**
+     * Gets the to() element/field out of an IntRange annotation. The to() element/field must exist.
+     * Clients should call {@link #getToValueFromIntRange} if it might not exist.
+     *
+     * @param intRangeAnno an IntRange annotation
+     * @param defaultValue the value to retur if there is no to() element/field
+     * @return its to() element/field
+     */
+    protected long getIntRangeToValue(AnnotationMirror intRangeAnno, long defaultValue) {
+        return AnnotationUtils.getElementValueLong(intRangeAnno, intRangeToElement, defaultValue);
+    }
+
+    /**
+     * Gets the to() element/field out of an IntRange annotation. The to() element/field must exist.
+     * Clients should call {@link #getToValueFromIntRange} if it might not exist.
+     *
+     * @param intRangeAnno an IntRange annotation
+     * @return its to() element/field
+     */
+    protected long getIntRangeToValue(AnnotationMirror intRangeAnno) {
+        return AnnotationUtils.getElementValueLong(intRangeAnno, intRangeToElement, Long.MAX_VALUE);
+    }
+
+    /**
+     * Gets the from() element/field out of an ArrayLenRange annotation.
+     *
+     * @param anno an ArrayLenRange annotation
+     * @return its from() element/field
+     */
+    protected int getArrayLenRangeFromValue(AnnotationMirror anno) {
+        return AnnotationUtils.getElementValueInt(anno, arrayLenRangeFromElement, 0);
+    }
+
+    /**
+     * Gets the to() element/field out of an ArrayLenRange annotation.
+     *
+     * @param anno an ArrayLenRange annotation
+     * @return its to() element/field
+     */
+    protected int getArrayLenRangeToValue(AnnotationMirror anno) {
+        return AnnotationUtils.getElementValueInt(anno, arrayLenRangeToElement, Integer.MAX_VALUE);
+    }
+
+    /**
+     * Gets the value() element/field out of a MinLen annotation.
+     *
+     * @param anno a MinLen annotation
+     * @return its value() element/field
+     */
+    protected int getMinLenValueValue(AnnotationMirror anno) {
+        return AnnotationUtils.getElementValueInt(anno, minLenValueElement, 0);
     }
 
     /**
@@ -885,8 +878,7 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         if (values.size() > MAX_VALUES) {
             return UNKNOWNVAL;
         } else {
-            List<Long> longValues =
-                    SystemUtil.mapList((Character value) -> (long) (char) value, values);
+            List<Long> longValues = SystemUtil.mapList((Character value) -> (long) value, values);
             return createIntValAnnotation(longValues);
         }
     }
@@ -1190,10 +1182,9 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         }
         List<Long> intValues =
                 AnnotationUtils.getElementValueArray(intAnno, "value", Long.class, false);
-        TreeSet<Character> charValues = new TreeSet<>();
-        for (Long i : intValues) {
-            charValues.add((char) i.intValue());
-        }
+        List<Character> charValues = SystemUtil.mapList((Long i) -> (char) i.intValue(), intValues);
+        Collections.sort(charValues);
+        // TODO: Should this be an unmodifiable list?
         return new ArrayList<>(charValues);
     }
 
@@ -1225,14 +1216,18 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
      * constant-value annotation so the argument is null.
      *
      * @param boolAnno a {@code @BoolVal} annotation, or null
-     * @return a list of possible boolean values
+     * @return a singleton or empty list of possible boolean values, or null
      */
-    public static List<Boolean> getBooleanValues(AnnotationMirror boolAnno) {
+    public static @Nullable List<Boolean> getBooleanValues(AnnotationMirror boolAnno) {
         if (boolAnno == null) {
             return Collections.emptyList();
         }
         List<Boolean> boolValues =
                 AnnotationUtils.getElementValueArray(boolAnno, "value", Boolean.class, false);
+        if (boolValues.size() < 2) {
+            return boolValues;
+        }
+        // Remove duplicates.
         Set<Boolean> boolSet = new TreeSet<>(boolValues);
         if (boolSet.size() > 1) {
             // boolSet={true,false};
