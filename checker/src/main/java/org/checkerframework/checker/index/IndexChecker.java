@@ -5,6 +5,7 @@ import org.checkerframework.checker.index.qual.LTEqLengthOf;
 import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.SubstringIndexFor;
 import org.checkerframework.checker.index.upperbound.UpperBoundChecker;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -85,16 +86,16 @@ import org.checkerframework.javacutil.TreeUtils;
 public class IndexChecker extends UpperBoundChecker {
 
     /** The SubstringIndexFor.value argument/element. */
-    public ExecutableElement substringIndexForValueElement;
+    public @MonotonicNonNull ExecutableElement substringIndexForValueElement;
     /** The SubstringIndexFor.offset argument/element. */
-    public ExecutableElement substringIndexForOffsetElement;
+    public @MonotonicNonNull ExecutableElement substringIndexForOffsetElement;
 
     /** The LTLengthOf.value argument/element. */
-    public ExecutableElement ltLengthOfValueElement;
+    public @MonotonicNonNull ExecutableElement ltLengthOfValueElement;
     /** The LTLengthOf.offset argument/element. */
-    public ExecutableElement ltLengthOfOffsetElement;
+    public @MonotonicNonNull ExecutableElement ltLengthOfOffsetElement;
     /** The LTEqLengthOf.value argument/element. */
-    public ExecutableElement ltEqLengthOfValueElement;
+    public @MonotonicNonNull ExecutableElement ltEqLengthOfValueElement;
 
     /** Creates the Index Checker. */
     public IndexChecker() {}
