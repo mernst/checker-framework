@@ -1,12 +1,6 @@
 package org.checkerframework.checker.index;
 
-import javax.lang.model.element.ExecutableElement;
-import org.checkerframework.checker.index.qual.LTEqLengthOf;
-import org.checkerframework.checker.index.qual.LTLengthOf;
-import org.checkerframework.checker.index.qual.SubstringIndexFor;
 import org.checkerframework.checker.index.upperbound.UpperBoundChecker;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.javacutil.TreeUtils;
 
 /**
  * A type checker for preventing out-of-bounds accesses on fixed-length sequences, such as arrays
@@ -85,31 +79,6 @@ import org.checkerframework.javacutil.TreeUtils;
 // @RelevantJavaTypes annotations appear on other checkers.
 public class IndexChecker extends UpperBoundChecker {
 
-    /** The SubstringIndexFor.value argument/element. */
-    public @MonotonicNonNull ExecutableElement substringIndexForValueElement;
-    /** The SubstringIndexFor.offset argument/element. */
-    public @MonotonicNonNull ExecutableElement substringIndexForOffsetElement;
-
-    /** The LTLengthOf.value argument/element. */
-    public @MonotonicNonNull ExecutableElement ltLengthOfValueElement;
-    /** The LTLengthOf.offset argument/element. */
-    public @MonotonicNonNull ExecutableElement ltLengthOfOffsetElement;
-    /** The LTEqLengthOf.value argument/element. */
-    public @MonotonicNonNull ExecutableElement ltEqLengthOfValueElement;
-
     /** Creates the Index Checker. */
     public IndexChecker() {}
-
-    @Override
-    public void initChecker() {
-        super.initChecker();
-        substringIndexForValueElement =
-                TreeUtils.getMethod(SubstringIndexFor.class, "value", 0, processingEnv);
-        substringIndexForOffsetElement =
-                TreeUtils.getMethod(SubstringIndexFor.class, "offset", 0, processingEnv);
-        ltLengthOfValueElement = TreeUtils.getMethod(LTLengthOf.class, "value", 0, processingEnv);
-        ltLengthOfOffsetElement = TreeUtils.getMethod(LTLengthOf.class, "offset", 0, processingEnv);
-        ltEqLengthOfValueElement =
-                TreeUtils.getMethod(LTEqLengthOf.class, "value", 0, processingEnv);
-    }
 }
