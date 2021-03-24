@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
+import org.checkerframework.checker.index.IndexChecker;
 import org.checkerframework.checker.index.qual.LTEqLengthOf;
 import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.LTOMLengthOf;
@@ -17,7 +18,6 @@ import org.checkerframework.checker.index.qual.PolyUpperBound;
 import org.checkerframework.checker.index.qual.SubstringIndexFor;
 import org.checkerframework.checker.index.qual.UpperBoundBottom;
 import org.checkerframework.checker.index.qual.UpperBoundUnknown;
-import org.checkerframework.checker.index.substringindex.SubstringIndexAnnotatedTypeFactory;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.qual.Pure;
@@ -42,15 +42,10 @@ public abstract class UBQualifier {
      * Create a UBQualifier from the given annotation.
      *
      * @param am the annotation to turn into a UBQualifier
-     * @param upperBoundAtypeFactory used to obtain the fields of {@code am}
-     * @param substringIndexAtypeFactory used to obtain the fields of {@code am}
      * @return a UBQualifier that represents the same information as the given annotation
      */
-    public static UBQualifier createUBQualifier(
-            AnnotationMirror am,
-            UpperBoundAnnotatedTypeFactory upperBoundAtypeFactory,
-            SubstringIndexAnnotatedTypeFactory substringIndexAtypeFactory) {
-        return createUBQualifier(am, null, upperBoundAtypeFactory, substringIndexAtypeFactory);
+    public static UBQualifier createUBQualifier(AnnotationMirror am, IndexChecker indexChecker) {
+        return createUBQualifier(am, null, indexChecker);
     }
 
     /**
@@ -58,26 +53,22 @@ public abstract class UBQualifier {
      *
      * @param am the annotation to turn into a UBQualifier
      * @param offset the extra offset; may be null
-     * @param upperBoundAtypeFactory used to obtain the fields of {@code am}
-     * @param substringIndexAtypeFactory used to obtain the fields of {@code am}
+     * @param indexChecker used to obtain the fields of {@code am}
      * @return a UBQualifier that represents the same information as the given annotation (plus an
      *     optional offset)
      */
     public static UBQualifier createUBQualifier(
-            AnnotationMirror am,
-            String offset,
-            UpperBoundAnnotatedTypeFactory upperBoundAtypeFactory,
-            SubstringIndexAnnotatedTypeFactory substringIndexAtypeFactory) {
+            AnnotationMirror am, String offset, IndexChecker indexChecker) {
         if (AnnotationUtils.areSameByClass(am, UpperBoundUnknown.class)) {
             return UpperBoundUnknownQualifier.UNKNOWN;
         } else if (AnnotationUtils.areSameByClass(am, UpperBoundBottom.class)) {
             return UpperBoundBottomQualifier.BOTTOM;
         } else if (AnnotationUtils.areSameByClass(am, LTLengthOf.class)) {
-            return parseLTLengthOf(am, offset, upperBoundAtypeFactory);
+            return parseLTLengthOf(am, offset, indexChecker);
         } else if (AnnotationUtils.areSameByClass(am, SubstringIndexFor.class)) {
-            return parseSubstringIndexFor(am, offset, substringIndexAtypeFactory);
+            return parseSubstringIndexFor(am, offset, indexChecker);
         } else if (AnnotationUtils.areSameByClass(am, LTEqLengthOf.class)) {
-            return parseLTEqLengthOf(am, offset, upperBoundAtypeFactory);
+            return parseLTEqLengthOf(am, offset, indexChecker);
         } else if (AnnotationUtils.areSameByClass(am, LTOMLengthOf.class)) {
             return parseLTOMLengthOf(am, offset);
         } else if (AnnotationUtils.areSameByClass(am, PolyUpperBound.class)) {
@@ -123,20 +114,18 @@ public abstract class UBQualifier {
      *
      * @param ltLengthOfAnno a @LTLengthOf annotation
      * @param extraOffset the extra offset
-     * @param atypeFactory type factory used to read elements/fields of the annotation
+     * @param indexChecker used to obtain the fields of {@code am}
      * @return a UBQualifier created from the @LTLengthOf annotation
      */
     private static UBQualifier parseLTLengthOf(
-            AnnotationMirror ltLengthOfAnno,
-            String extraOffset,
-            UpperBoundAnnotatedTypeFactory atypeFactory) {
+            AnnotationMirror ltLengthOfAnno, String extraOffset, IndexChecker indexChecker) {
         List<String> sequences =
                 AnnotationUtils.getElementValueArray(
-                        ltLengthOfAnno, atypeFactory.ltLengthOfValueElement, String.class);
+                        ltLengthOfAnno, indexChecker.ltLengthOfValueElement, String.class);
         List<String> offsets =
                 AnnotationUtils.getElementValueArray(
                         ltLengthOfAnno,
-                        atypeFactory.ltLengthOfOffsetElement,
+                        indexChecker.ltLengthOfOffsetElement,
                         String.class,
                         nCopiesEmptyString(sequences.size()));
         return createUBQualifier(sequences, offsets, extraOffset);
@@ -147,22 +136,20 @@ public abstract class UBQualifier {
      *
      * @param substringIndexForAnno a @SubstringIndexFor annotation
      * @param extraOffset the extra offset
-     * @param atypeFactory used for obtaining arguments/elements from {@code substringIndexForAnno}
+     * @param indexChecker used for obtaining arguments/elements from {@code substringIndexForAnno}
      * @return a UBQualifier created from the @SubstringIndexFor annotation
      */
     private static UBQualifier parseSubstringIndexFor(
-            AnnotationMirror substringIndexForAnno,
-            String extraOffset,
-            SubstringIndexAnnotatedTypeFactory atypeFactory) {
+            AnnotationMirror substringIndexForAnno, String extraOffset, IndexChecker indexChecker) {
         List<String> sequences =
                 AnnotationUtils.getElementValueArray(
                         substringIndexForAnno,
-                        atypeFactory.substringIndexForValueElement,
+                        indexChecker.substringIndexForValueElement,
                         String.class);
         List<String> offsets =
                 AnnotationUtils.getElementValueArray(
                         substringIndexForAnno,
-                        atypeFactory.substringIndexForOffsetElement,
+                        indexChecker.substringIndexForOffsetElement,
                         String.class);
         if (offsets.isEmpty()) {
             offsets = nCopiesEmptyString(sequences.size());
@@ -175,14 +162,14 @@ public abstract class UBQualifier {
      *
      * @param am a @LTEqLengthOf annotation
      * @param extraOffset the extra offset
-     * @param atypeFactory used for obtaining fields from {@code am}
+     * @param indexChecker used for obtaining fields from {@code am}
      * @return a UBQualifier created from the @LTEqLengthOf annotation
      */
     private static UBQualifier parseLTEqLengthOf(
-            AnnotationMirror am, String extraOffset, UpperBoundAnnotatedTypeFactory atypeFactory) {
+            AnnotationMirror am, String extraOffset, IndexChecker indexChecker) {
         List<String> sequences =
                 AnnotationUtils.getElementValueArray(
-                        am, atypeFactory.ltEqLengthOfValueElement, String.class);
+                        am, indexChecker.ltEqLengthOfValueElement, String.class);
         if (sequences.isEmpty()) {
             // How did this AnnotationMirror even get made?  It seems invalid.
             return UpperBoundUnknownQualifier.UNKNOWN;
@@ -215,19 +202,12 @@ public abstract class UBQualifier {
      *
      * @param type the type from which to obtain an annotation
      * @param top the top annotation in a hierarchy; the annotation in this hierarchy will be used
-     * @param upperBoundAtypeFactory the type factory, to read annotations out of {@code type}
-     * @param substringIndexAtypeFactory used to obtain the fields of {@code am}
+     * @param indexChecker used to obtain the fields of {@code am}
      * @return a new upper bound qualifier
      */
     public static UBQualifier createUBQualifier(
-            AnnotatedTypeMirror type,
-            AnnotationMirror top,
-            UpperBoundAnnotatedTypeFactory upperBoundAtypeFactory,
-            SubstringIndexAnnotatedTypeFactory substringIndexAtypeFactory) {
-        return createUBQualifier(
-                type.getEffectiveAnnotationInHierarchy(top),
-                upperBoundAtypeFactory,
-                substringIndexAtypeFactory);
+            AnnotatedTypeMirror type, AnnotationMirror top, IndexChecker indexChecker) {
+        return createUBQualifier(type.getEffectiveAnnotationInHierarchy(top), indexChecker);
     }
 
     /**

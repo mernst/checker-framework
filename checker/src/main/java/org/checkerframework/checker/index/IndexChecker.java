@@ -1,9 +1,11 @@
 package org.checkerframework.checker.index;
 
-import org.checkerframework.checker.index.substringindex.SubstringIndexAnnotatedTypeFactory;
-import org.checkerframework.checker.index.upperbound.UpperBoundAnnotatedTypeFactory;
+import javax.lang.model.element.ExecutableElement;
+import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.SubstringIndexFor;
 import org.checkerframework.checker.index.upperbound.UpperBoundChecker;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.javacutil.TreeUtils;
 
 /**
  * A type checker for preventing out-of-bounds accesses on fixed-length sequences, such as arrays
@@ -82,44 +84,31 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 // @RelevantJavaTypes annotations appear on other checkers.
 public class IndexChecker extends UpperBoundChecker {
 
-    /** The SubstringIndexAnnotatedTypeFactory associated with this. */
-    private @MonotonicNonNull SubstringIndexAnnotatedTypeFactory substringIndexAtypeFactory;
+    /** The SubstringIndexFor.value argument/element. */
+    public ExecutableElement substringIndexForValueElement;
+    /** The SubstringIndexFor.offset argument/element. */
+    public ExecutableElement substringIndexForOffsetElement;
 
-    /** The UpperBoundAnnotatedTypeFactory associated with this. */
-    private @MonotonicNonNull UpperBoundAnnotatedTypeFactory upperBoundAtypeFactory;
+    /** The LTLengthOf.value argument/element. */
+    public ExecutableElement ltLengthOfValueElement;
+    /** The LTLengthOf.offset argument/element. */
+    public ExecutableElement ltLengthOfOffsetElement;
+    /** The LTEqLengthOf.value argument/element. */
+    public ExecutableElement ltEqLengthOfValueElement;
 
-    /** Creates the Index Chceker. */
+    /** Creates the Index Checker. */
     public IndexChecker() {}
 
-    /**
-     * Sets the SubstringIndexAnnotatedTypeFactory associated with this.
-     *
-     * @param substringIndexAtypeFactory the SubstringIndexAnnotatedTypeFactory associated with this
-     */
-    public void setSubstringIndexAtypeFactory(
-            SubstringIndexAnnotatedTypeFactory substringIndexAtypeFactory) {
-        this.substringIndexAtypeFactory = substringIndexAtypeFactory;
-        introduceSubcheckers();
-    }
-
-    /**
-     * Sets the UpperBoundAnnotatedTypeFactory associated with this.
-     *
-     * @param upperBoundAtypeFactory the UpperBoundAnnotatedTypeFactory associated with this
-     */
-    public void setUpperBoundAtypeFactory(UpperBoundAnnotatedTypeFactory upperBoundAtypeFactory) {
-        this.upperBoundAtypeFactory = upperBoundAtypeFactory;
-        introduceSubcheckers();
-    }
-
-    /**
-     * Introduce the subcheckers to one another: set fields that link between them. Calling this has
-     * no effect until all the needed fields have been set.
-     */
-    private void introduceSubcheckers() {
-        if (upperBoundAtypeFactory != null && substringIndexAtypeFactory != null) {
-            substringIndexAtypeFactory.upperBoundAtypeFactory = upperBoundAtypeFactory;
-            upperBoundAtypeFactory.substringIndexAtypeFactory = substringIndexAtypeFactory;
-        }
+    @Override
+    public void initChecker() {
+        super.initChecker();
+        substringIndexForValueElement =
+                TreeUtils.getMethod(SubstringIndexFor.class, "value", 0, processingEnv);
+        substringIndexForOffsetElement =
+                TreeUtils.getMethod(SubstringIndexFor.class, "offset", 0, processingEnv);
+        ltLengthOfValueElement = TreeUtils.getMethod(LTLengthOf.class, "value", 0, processingEnv);
+        ltLengthOfOffsetElement = TreeUtils.getMethod(LTLengthOf.class, "offset", 0, processingEnv);
+        ltEqLengthOfValueElement =
+                TreeUtils.getMethod(LTEqLengthOf.class, "value", 0, processingEnv);
     }
 }
