@@ -21,6 +21,8 @@ import org.checkerframework.javacutil.TreeUtils;
  * An offset equation is 2 sets of Java expression strings, one set of added terms and one set of
  * subtracted terms, and a single integer constant. The Java expression strings have been
  * standardized and viewpoint-adapted.
+ *
+ * <p>An OffsetEquation is mutable.
  */
 public class OffsetEquation {
     public static final OffsetEquation ZERO = createOffsetForInt(0);
@@ -33,11 +35,16 @@ public class OffsetEquation {
     private String error = null;
 
     private OffsetEquation() {
-        addedTerms = new ArrayList<>();
-        subtractedTerms = new ArrayList<>();
+        addedTerms = new ArrayList<>(1);
+        subtractedTerms = new ArrayList<>(1);
     }
 
-    private OffsetEquation(OffsetEquation other) {
+    /**
+     * Create a new OffsetEquation that is a copy of the given one.
+     *
+     * @param other the OffsetEquation to copy
+     */
+    protected OffsetEquation(OffsetEquation other) {
         this.addedTerms = new ArrayList<>(other.addedTerms);
         this.subtractedTerms = new ArrayList<>(other.subtractedTerms);
         this.error = other.error;
@@ -248,6 +255,10 @@ public class OffsetEquation {
      */
     private void addTerm(char operator, String term) {
         term = term.trim();
+        if (operator == '-' && term.equals("2147483648")) {
+            addInt(-2147483648);
+            return;
+        }
         if (isInt(term)) {
             int literal = parseInt(term);
             addInt(operator == '-' ? -1 * literal : literal);
@@ -426,9 +437,17 @@ public class OffsetEquation {
         return eq;
     }
 
+    /**
+     * Updates an offset equation from a Node.
+     *
+     * @param node the Node from which to create an offset equation
+     * @param factory an AnnotationTypeFactory
+     * @param eq an OffsetEquation to update
+     * @param op '+' or '-'
+     */
     private static void createOffsetFromNode(
             Node node, AnnotationProvider factory, OffsetEquation eq, char op) {
-        JavaExpression je = JavaExpression.fromNode(factory, node);
+        JavaExpression je = JavaExpression.fromNode(node);
         if (je instanceof Unknown || je == null) {
             if (node instanceof NumericalAdditionNode) {
                 createOffsetFromNode(
