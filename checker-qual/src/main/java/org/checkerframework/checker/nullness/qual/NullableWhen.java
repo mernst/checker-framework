@@ -28,12 +28,12 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @QualifierForLiterals(LiteralKind.NULL)
 @DefaultFor(types = Void.class)
 public @interface NullableWhen {
-    /**
-     * Suppose that expression {@emph E} has type {@code @NullableWhen("C")}. When {@emph C}
-     * evaluates to true, then {@emph E} may evaluate to null; otherwise, {@emph E} must evaluate to
-     * a non-null value.
-     *
-     * @checker_framework.manual #java-expressions-as-arguments Syntax of Java expressions
-     */
-    String value() default "?";
+  /**
+   * Suppose that expression {@emph E} has type {@code @NullableWhen("C")}. When {@emph C} evaluates
+   * to true, then {@emph E} may evaluate to null; otherwise, {@emph E} must evaluate to a non-null
+   * value.
+   *
+   * @checker_framework.manual #java-expressions-as-arguments Syntax of Java expressions
+   */
+  String value() default "?";
 }

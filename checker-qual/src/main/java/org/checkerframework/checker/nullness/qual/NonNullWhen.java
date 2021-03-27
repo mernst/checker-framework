@@ -28,13 +28,13 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @QualifierForLiterals(LiteralKind.NULL)
 @DefaultFor(types = Void.class)
 public @interface NonNullWhen {
-    /**
-     * Suppose that expression {@emph E} has type {@code @NonNullWhen("C")}. When {@emph C}
-     * evaluates to true, then {@emph E} must evaluate to a non-null value.
-     *
-     * <p>When this Java expression evaluates to true, a value of the annotated type is non-null.
-     *
-     * @checker_framework.manual #java-expressions-as-arguments Syntax of Java expressions
-     */
-    String value() default "?";
+  /**
+   * Suppose that expression {@emph E} has type {@code @NonNullWhen("C")}. When {@emph C} evaluates
+   * to true, then {@emph E} must evaluate to a non-null value.
+   *
+   * <p>When this Java expression evaluates to true, a value of the annotated type is non-null.
+   *
+   * @checker_framework.manual #java-expressions-as-arguments Syntax of Java expressions
+   */
+  String value() default "?";
 }
