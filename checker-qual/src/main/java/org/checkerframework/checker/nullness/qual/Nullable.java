@@ -17,8 +17,12 @@ import org.checkerframework.framework.qual.SubtypeOf;
  * NonNullWhen} or {@code @}{@link NullableWhen} will provide better documentation and may improve
  * the precision of type-checking.
  *
- * <p>A programmer might write the type {@link Nullable} on an expression even if it never evaluates
- * to {@code null}.
+ * <p>The Nullness Checker issues an error if {@code null} is assigned an an expression of {@link
+ * NonNull} type.
+ *
+ * <p>Programmers typically write {@code @Nullable} to indicate that the value is not known to be
+ * {@link NonNull}. However, since {@code @Nullable} is a supertype of {@code @NonNull}, an
+ * expression that never evaluates to {@code null} can have a declared type of {@code @Nullable}.
  *
  * @see NonNull
  * @see MonotonicNonNull
