@@ -82,11 +82,11 @@ mkdir -p "$TESTDIR"
 cd "$TESTDIR" || (echo "can't do: cd $TESTDIR" && exit 1)
 
 # Get the list of checkers from the project's build.gradle file
-test_wpi_plume_lib bcel-util         "formatter,interning,lock,nullness,regex,signature"
-test_wpi_plume_lib bibtex-clean      "formatter,index,interning,lock,nullness,regex,signature"
-test_wpi_plume_lib html-pretty-print "formatter,index,interning,lock,nullness,regex,signature"
-test_wpi_plume_lib icalavailable     "formatter,index,interning,lock,nullness,regex,signature,initializedfields"
-test_wpi_plume_lib lookup            "formatter,index,interning,lock,nullness,regex,signature"
+# test_wpi_plume_lib bcel-util         "formatter,interning,lock,nullness,regex,signature"
+# test_wpi_plume_lib bibtex-clean      "formatter,index,interning,lock,nullness,regex,signature"
+# test_wpi_plume_lib html-pretty-print "formatter,index,interning,lock,nullness,regex,signature"
+# test_wpi_plume_lib icalavailable     "formatter,index,interning,lock,nullness,regex,signature,initializedfields"
+# test_wpi_plume_lib lookup            "formatter,index,interning,lock,nullness,regex,signature"
 test_wpi_plume_lib plume-util        "formatter,index,interning,lock,nullness,regex,signature,initializedfields"
 
 echo "exiting test-wpi-plumelib.sh"
