@@ -23,15 +23,15 @@ saveIFS="$IFS"
 nl='
 '
 for i in "$@" ; do
-    IFS=
-    # shellcheck disable=SC2027
-    case $i in
-      "-Xmn"*) jvmargs=$jvmargs$nl"'"$i"'" ;;
-      "-Xms"*) jvmargs=$jvmargs$nl"'"$i"'" ;;
-      "-Xmx"*) jvmargs=$jvmargs$nl"'"$i"'" ;;
-      *)       args=$args$nl"'"$i"'" ;;
-    esac
-    IFS="$saveIFS"
+   IFS=
+   # shellcheck disable=SC2027
+   case $i in
+     "-Xmn"*) jvmargs=$jvmargs$nl"'"$i"'" ;;
+     "-Xms"*) jvmargs=$jvmargs$nl"'"$i"'" ;;
+     "-Xmx"*) jvmargs=$jvmargs$nl"'"$i"'" ;;
+     *)       args=$args$nl"'"$i"'" ;;
+   esac
+   IFS="$saveIFS"
 done
 
 # shellcheck disable=SC2086
