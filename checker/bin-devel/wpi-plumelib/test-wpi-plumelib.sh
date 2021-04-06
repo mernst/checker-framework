@@ -64,7 +64,7 @@ test_wpi_plume_lib() {
     java -cp "$CHECKERFRAMEWORK/checker/dist/checker.jar" org.checkerframework.framework.stub.RemoveAnnotationsForInference . || exit 1
     # The project may not build after running RemoveAnnotationsForInference, because some casts
     # may become redundant and javac -Xlint:all yields "warning: [cast] redundant cast to ...".
-    "$CHECKERFRAMEWORK"/checker/bin-devel/.plume-scripts/preplace -- "-Alint:all" "-Alint:all,-cast" build.gradle
+    "$CHECKERFRAMEWORK"/checker/bin-devel/.plume-scripts/preplace -- "-Xlint:" "-Xlint:-cast," build.gradle
 
     "$CHECKERFRAMEWORK/checker/bin/wpi.sh" -b "-PskipCheckerFramework" -- --checker "$checkers" --extraJavacArgs='-AsuppressWarnings=type.checking.not.run'
 
@@ -87,12 +87,12 @@ mkdir -p "$TESTDIR"
 cd "$TESTDIR" || (echo "can't do: cd $TESTDIR" && exit 1)
 
 # Get the list of checkers from the project's build.gradle file
-test_wpi_plume_lib bcel-util         "formatter,interning,lock,nullness,regex,signature"
-test_wpi_plume_lib bibtex-clean      "formatter,index,interning,lock,nullness,regex,signature"
-test_wpi_plume_lib html-pretty-print "formatter,index,interning,lock,nullness,regex,signature"
-test_wpi_plume_lib icalavailable     "formatter,index,interning,lock,nullness,regex,signature,initializedfields"
-test_wpi_plume_lib lookup            "formatter,index,interning,lock,nullness,regex,signature"
+# test_wpi_plume_lib bcel-util         "formatter,interning,lock,nullness,regex,signature"
+# test_wpi_plume_lib bibtex-clean      "formatter,index,interning,lock,nullness,regex,signature"
+# test_wpi_plume_lib html-pretty-print "formatter,index,interning,lock,nullness,regex,signature"
+# test_wpi_plume_lib icalavailable     "formatter,index,interning,lock,nullness,regex,signature,initializedfields"
+# test_wpi_plume_lib lookup            "formatter,index,interning,lock,nullness,regex,signature"
 test_wpi_plume_lib multi-version-control "index,lock,nullness,regex,initializedfields"
-test_wpi_plume_lib options           "formatter,index,interning,lock,nullness,regex,signature,initializedfields"
+# test_wpi_plume_lib options           "formatter,index,interning,lock,nullness,regex,signature,initializedfields"
 
 echo "exiting test-wpi-plumelib.sh"
