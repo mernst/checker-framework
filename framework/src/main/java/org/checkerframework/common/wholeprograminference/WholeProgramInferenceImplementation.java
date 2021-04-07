@@ -215,6 +215,7 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
       VariableElement ve = methodElt.getParameters().get(i);
       AnnotatedTypeMirror paramATM = atypeFactory.getAnnotatedType(ve);
       AnnotatedTypeMirror argATM = atypeFactory.getAnnotatedType(argTree);
+      System.out.printf("updateInferredExecutableParameterTypes: argATM=%s%n", argATM);
       atypeFactory.wpiAdjustForUpdateNonField(argATM);
       T paramAnnotations =
           storage.getParameterAnnotations(methodElt, i, paramATM, ve, atypeFactory);
