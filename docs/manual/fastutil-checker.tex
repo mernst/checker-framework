@@ -1,0 +1,74 @@
+\htmlhr
+\chapterAndLabel{Enhanced For Checker: avoid use of the enhanced \<for> statement}{enhancedfor-checker}
+
+The Enhanced For Checker warns you if you use an enhanced \<for> statement
+(sometimes called a ``foreach loop'') on an iterator that should be
+accessed in a different way.
+
+An example is the fastutil library (\url{https://fastutil.di.unimi.it/}).
+It provides iterators such as
+\href{https://fastutil.di.unimi.it/docs/it/unimi/dsi/fastutil/ints/IntListIterator.html}{\<IntListIterator\>}
+in the \< next()> method is deprecated:  you should use \<nextInt> instead,
+which avoids an unnecessary boxing and perhaps unboxing operation.  If you use the
+method \<next()> explicitly in your code, the Java compiler will warn you
+about use of the deprecated method.  However, if you use an enhanced for
+statement (sometimes called a ``foreach loop''), there is no warning:
+
+\begin{Verbatim}
+  foreach (int i : myIntList) { ... }
+\end{Verbatim}
+
+\noindent
+This construct is unnecessarily inefficient because of extra boxing and unboxing.
+The Enhanced For Checker will warn you about this usage.
+
+To run the Enhanced For Checker, supply the
+\code{-processor org.checkerframework.checker.enhancedfor.EnhancedForChecker}
+command-line option to javac.
+
+
+\sectionAndLabel{Enhanced For annotations}{enhancedfor-annotations}
+
+These qualifiers make up the Enhanced For type system.
+
+\begin{description}
+
+\item[\refqualclass{checker/enhancedfor/qual}{EnhancedForOk}]
+  applies to an \<Iterator> that is acceptable to use in an enhanced \<for>
+  statement.
+  It also applies to an \<Iterable> whose iterator is \<@EnhancedForOk>.
+  It is the default annotation for \<Iterable>s and \<Iterator>s.
+
+\item[\refqualclass{checker/enhancedfor/qual}{EnhancedForForbidden}]
+  applies to an \<Iterator> that is not acceptable to use in an enhanced \<for>
+  statement.
+  It also applies to an \<Iterable> whose iterator is \<@EnhancedForForbidden>.
+  It applies to collections from the fastutil library.
+
+\item[\refqualclass{checker/enhancedfor/qual}{EnhancedForUnknown}]
+  indicates that it is not known at compile time whether it is acceptable
+  to use the iterator in an enhanced \<for> statement.
+
+\item[\refqualclass{checker/enhancedfor/qual}{EnhancedForBottom}]
+  is the bottom qualifier.  It represents the \<null> value.  Programmers
+  should rarely write it.
+
+\end{description}
+
+TODO:
+Figure~\ref{fig-enhancedfor-hierarchy} shows the subtyping hierarchy of the
+Enhanced For Checker's qualifiers.
+
+\begin{figure}
+\includeimage{enhancedfor}{9cm}
+\caption{The subtyping relationship of the Enhanced For Checker's qualifiers.
+  The type qualifiers are applicable to \<Iterable>, \<Iterator>, and
+  their subtypes.  Qualifiers in gray are used internally by the type
+  system but should never be written by a programmer.}
+\label{fig-enhancedfor-hierarchy}
+\end{figure}
+
+
+% LocalWords:  enhancedfor foreach loop'' fastutil IntListIterator nextInt
+% LocalWords:  unboxing EnhancedForOk EnhancedForForbidden
+% LocalWords:  EnhancedForUnknown EnhancedForBottom
