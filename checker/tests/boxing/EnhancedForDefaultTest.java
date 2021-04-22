@@ -1,9 +1,9 @@
 import java.util.Collection;
 import java.util.Iterator;
-import org.checkerframework.checker.enhancedfor.qual.EnhancedForBottom;
-import org.checkerframework.checker.enhancedfor.qual.EnhancedForForbidden;
-import org.checkerframework.checker.enhancedfor.qual.EnhancedForOk;
-import org.checkerframework.checker.enhancedfor.qual.EnhancedForUnknown;
+import org.checkerframework.checker.boxing.qual.EnhancedForBottom;
+import org.checkerframework.checker.boxing.qual.EnhancedForForbidden;
+import org.checkerframework.checker.boxing.qual.EnhancedForOk;
+import org.checkerframework.checker.boxing.qual.EnhancedForUnknown;
 
 public class EnhancedForDefaultTest {
 

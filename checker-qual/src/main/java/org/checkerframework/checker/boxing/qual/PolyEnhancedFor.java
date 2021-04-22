@@ -1,4 +1,4 @@
-package org.checkerframework.checker.enhancedfor.qual;
+package org.checkerframework.checker.boxing.qual;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -15,7 +15,7 @@ import org.checkerframework.framework.qual.PolymorphicQualifier;
  * of @PolyEnhancedFor has been replaced by @EnhancedForForbidden. (And also versions
  * for @EnhancedForUnknown and @EnhancedForBottom.)
  *
- * @checker_framework.manual #enhancedfor-checker Enhanced For Checker
+ * @checker_framework.manual #boxing-checker Boxing Checker
  * @checker_framework.manual #qualifier-polymorphism Qualifier polymorphism
  */
 @Documented

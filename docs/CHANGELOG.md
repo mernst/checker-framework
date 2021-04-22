@@ -3,7 +3,7 @@ Version 3.13.0 (May 3, 2021)
 
 **User-visible changes:**
 
-The new Enhanced For Checker warns when an iterator is used in an enhanced for
+The new Boxing Checker warns when an iterator is used in an enhanced for
 statement (a foreach loop) but should not be.
 
 Command-line argument -AassumeKeyFor makes the Nullness Checker and Map Key
