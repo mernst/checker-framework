@@ -3,7 +3,6 @@ package org.checkerframework.framework.stub;
 import com.github.javaparser.ParseProblemException;
 import com.github.javaparser.Position;
 import com.github.javaparser.Problem;
-import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.AccessSpecifier;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
@@ -82,13 +81,13 @@ import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
+import javax.tools.Diagnostic;
 import org.checkerframework.checker.formatter.qual.FormatMethod;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signature.qual.CanonicalName;
 import org.checkerframework.checker.signature.qual.DotSeparatedIdentifiers;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 import org.checkerframework.framework.ajava.DefaultJointVisitor;
-import org.checkerframework.framework.ajava.JavaParserUtils;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.FromStubFile;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
@@ -98,6 +97,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclared
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedTypeVariable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedWildcardType;
+import org.checkerframework.framework.util.JavaParserUtil;
 import org.checkerframework.framework.util.element.ElementAnnotationUtil.ErrorTypeKindException;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
@@ -160,6 +160,9 @@ public class AnnotationFileParser {
    */
   private final boolean warnIfStubRedundantWithBytecode;
 
+  /** The diagnostic kind for stub file warnings: NOTE or WARNING. */
+  private final Diagnostic.Kind stubWarnDiagnosticKind;
+
   /** Whether to print verbose debugging messages. */
   private final boolean debugAnnotationFileParser;
 
@@ -213,8 +216,7 @@ public class AnnotationFileParser {
   @Nullable List<AnnotationExpr> packageAnnos;
 
   // The following variables are stored in the AnnotationFileParser because otherwise they would
-  // need to be
-  // passed through everywhere, which would be verbose.
+  // need to be passed through everywhere, which would be verbose.
 
   /**
    * The name of the type that is currently being parsed. After processing a package declaration but
@@ -258,7 +260,7 @@ public class AnnotationFileParser {
      * than in the real files. So, map keys are the verbose element name, as returned by
      * ElementUtils.getQualifiedName.
      */
-    public final Map<String, Set<AnnotationMirror>> declAnnos = new HashMap<>();
+    public final Map<String, Set<AnnotationMirror>> declAnnos = new HashMap<>(1);
 
     /**
      * Map from a method element to all the fake overrides of it. Given a key {@code ee}, the fake
@@ -266,7 +268,7 @@ public class AnnotationFileParser {
      * {@code ee.getReceiverType()}.
      */
     public final Map<ExecutableElement, List<Pair<TypeMirror, AnnotatedTypeMirror>>> fakeOverrides =
-        new HashMap<>();
+        new HashMap<>(1);
   }
 
   /**
@@ -301,6 +303,8 @@ public class AnnotationFileParser {
     this.warnIfStubRedundantWithBytecode =
         options.containsKey("stubWarnIfRedundantWithBytecode")
             && atypeFactory.shouldWarnIfStubRedundantWithBytecode();
+    this.stubWarnDiagnosticKind =
+        options.containsKey("stubWarnNote") ? Diagnostic.Kind.NOTE : Diagnostic.Kind.WARNING;
     this.debugAnnotationFileParser = options.containsKey("stubDebug");
 
     this.fromStubFileAnno = AnnotationBuilder.fromClass(elements, FromStubFile.class);
@@ -324,7 +328,7 @@ public class AnnotationFileParser {
    * @param packageElement a package
    * @return a map from annotation name to TypeElement
    */
-  private Map<String, TypeElement> annosInPackage(PackageElement packageElement) {
+  public static Map<String, TypeElement> annosInPackage(PackageElement packageElement) {
     return createNameToAnnotationMap(ElementFilter.typesIn(packageElement.getEnclosedElements()));
   }
 
@@ -335,7 +339,7 @@ public class AnnotationFileParser {
    * @param typeElement a type
    * @return a map from annotation name to TypeElement
    */
-  private Map<String, TypeElement> annosInType(TypeElement typeElement) {
+  public static Map<String, TypeElement> annosInType(TypeElement typeElement) {
     return createNameToAnnotationMap(ElementFilter.typesIn(typeElement.getEnclosedElements()));
   }
 
@@ -345,7 +349,7 @@ public class AnnotationFileParser {
    * @param typeElements the elements whose annotations to retrieve
    * @return a map from annotation names (both fully-qualified and simple names) to TypeElement
    */
-  private Map<String, TypeElement> createNameToAnnotationMap(List<TypeElement> typeElements) {
+  public static Map<String, TypeElement> createNameToAnnotationMap(List<TypeElement> typeElements) {
     Map<String, TypeElement> result = new HashMap<>();
     for (TypeElement typeElm : typeElements) {
       if (typeElm.getKind() == ElementKind.ANNOTATION_TYPE) {
@@ -539,7 +543,7 @@ public class AnnotationFileParser {
         new AnnotationFileParser(filename, atypeFactory, processingEnv, false, false);
     try {
       afp.parseStubUnit(inputStream);
-      JavaParserUtils.concatenateAddedStringLiterals(afp.stubUnit);
+      JavaParserUtil.concatenateAddedStringLiterals(afp.stubUnit);
       afp.setRoot(root);
       afp.process(ajavaAnnos);
     } catch (ParseProblemException e) {
@@ -608,7 +612,7 @@ public class AnnotationFileParser {
     if (debugAnnotationFileParser) {
       stubDebug(String.format("parsing stub file %s", filename));
     }
-    stubUnit = StaticJavaParser.parseStubUnit(inputStream);
+    stubUnit = JavaParserUtil.parseStubUnit(inputStream);
 
     // getAllAnnotations() also modifies importedConstants and importedTypes. This should
     // be refactored to be nicer.
@@ -1359,8 +1363,7 @@ public class AnnotationFileParser {
     }
     recordDeclAnnotationFromAnnotationFile(elt);
     recordDeclAnnotation(elt, decl.getAnnotations(), decl);
-    // AnnotationFileParser parses all annotations in type annotation position as type
-    // annotations
+    // AnnotationFileParser parses all annotations in type annotation position as type annotations
     recordDeclAnnotation(elt, decl.getElementType().getAnnotations(), decl);
     AnnotatedTypeMirror fieldType = atypeFactory.fromElement(elt);
 
@@ -1626,11 +1629,8 @@ public class AnnotationFileParser {
           // Didn't find the element and it isn't a fake override.  Issue a warning.
           findElement(typeElt, method, /*noWarn=*/ false);
         } else {
-          List<BodyDeclaration<?>> l = fakeOverrideDecls.get(overriddenMethod);
-          if (l == null) {
-            l = new ArrayList<>();
-            fakeOverrideDecls.put(overriddenMethod, l);
-          }
+          List<BodyDeclaration<?>> l =
+              fakeOverrideDecls.computeIfAbsent(overriddenMethod, __ -> new ArrayList<>());
           l.add(member);
         }
       }
@@ -1818,11 +1818,8 @@ public class AnnotationFileParser {
     NodeList<AnnotationExpr> annotations = decl.getAnnotations();
     annotate(methodType.getReturnType(), ((MethodDeclaration) decl).getType(), annotations, decl);
 
-    List<Pair<TypeMirror, AnnotatedTypeMirror>> l = annotationFileAnnos.fakeOverrides.get(element);
-    if (l == null) {
-      l = new ArrayList<>();
-      annotationFileAnnos.fakeOverrides.put(element, l);
-    }
+    List<Pair<TypeMirror, AnnotatedTypeMirror>> l =
+        annotationFileAnnos.fakeOverrides.computeIfAbsent(element, __ -> new ArrayList<>());
     l.add(Pair.of(fakeLocation.asType(), methodType));
   }
 
@@ -2154,8 +2151,7 @@ public class AnnotationFileParser {
     TypeElement annoTypeElt = allAnnotations.get(annoNameFq);
     if (annoTypeElt == null) {
       // If the annotation was not imported, then #getAllAnnotations did not add it to the
-      // allAnnotations field. This code adds the annotation when it is encountered
-      // (i.e. here).
+      // allAnnotations field. This code adds the annotation when it is encountered (i.e. here).
       // Note that this does not call AnnotationFileParser#getTypeElement to avoid a spurious
       // diagnostic if the annotation is actually unknown.
       annoTypeElt = elements.getTypeElement(annoNameFq);
@@ -2580,7 +2576,7 @@ public class AnnotationFileParser {
    * @param key a key
    * @param value the value to associate with the key, if the key isn't already in the map
    */
-  private static <K, V> void putIfAbsent(Map<K, V> m, K key, V value) {
+  public static <K, V> void putIfAbsent(Map<K, V> m, K key, V value) {
     if (key == null) {
       throw new BugInCF("AnnotationFileParser: key is null for value " + value);
     }
@@ -2639,7 +2635,7 @@ public class AnnotationFileParser {
    * @param <K> the key type for the maps
    * @param <V> the value type for the maps
    */
-  private static <K, V> void putAllNew(Map<K, V> m, Map<K, V> m2) {
+  public static <K, V> void putAllNew(Map<K, V> m, Map<K, V> m2) {
     for (Map.Entry<K, V> e2 : m2.entrySet()) {
       putIfAbsent(m, e2.getKey(), e2.getValue());
     }
@@ -2716,7 +2712,7 @@ public class AnnotationFileParser {
       if (warnings.add(warning)) {
         processingEnv
             .getMessager()
-            .printMessage(javax.tools.Diagnostic.Kind.WARNING, fileAndLine(astNode) + warning);
+            .printMessage(stubWarnDiagnosticKind, fileAndLine(astNode) + warning);
       }
     }
   }
