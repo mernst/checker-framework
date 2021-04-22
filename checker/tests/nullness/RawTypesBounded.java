@@ -6,59 +6,58 @@ import org.checkerframework.checker.nullness.qual.*;
 @org.checkerframework.framework.qual.DefaultQualifier(Nullable.class)
 public class RawTypesBounded {
 
-    class Bad {
-        @NonNull String field;
+  class Bad {
+    @NonNull String field;
 
-        public Bad() {
-            // :: error: (method.invocation.invalid)
-            this.init(); // error
-            // :: error: (method.invocation.invalid)
-            init(); // error
+    public Bad() {
+      // :: error: (method.invocation.invalid)
+      this.init(); // error
+      // :: error: (method.invocation.invalid)
+      init(); // error
 
-            this.field = "field"; // valid
-            // :: error: (assignment.type.incompatible)
-            this.field = null; // error
-            field = "field"; // valid
-            // :: error: (assignment.type.incompatible)
-            field = null; // error
-        }
-
-        void init() {
-            output(this.field.length()); // valid
-        }
+      this.field = "field"; // valid
+      // :: error: (assignment.type.incompatible)
+      this.field = null; // error
+      field = "field"; // valid
+      // :: error: (assignment.type.incompatible)
+      field = null; // error
     }
 
-    class A {
-        @NonNull String field;
+    void init() {
+      output(this.field.length()); // valid
+    }
+  }
 
-        public A() {
-            this.field = "field"; // valid
-            field = "field"; // valid
-            this.init(); // valid
-            init(); // valid
-        }
+  class A {
+    @NonNull String field;
 
-        public void init(@UnknownInitialization A this) {
-            // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
-            output(this.field.length());
-        }
+    public A() {
+      this.field = "field"; // valid
+      field = "field"; // valid
+      this.init(); // valid
+      init(); // valid
+    }
 
-        public void initExpl2(@UnknownInitialization A this) {
-            // :: error: (argument.type.incompatible) :: error:
-            // (initialization.invalid.field.access)
-            output(this.field);
-        }
+    public void init(@UnknownInitialization A this) {
+      // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
+      output(this.field.length());
+    }
 
-        public void initImpl1(@UnknownInitialization A this) {
-            // :: error: (dereference.of.nullable)
-            output(field.length());
-        }
+    public void initExpl2(@UnknownInitialization A this) {
+      // :: error: (argument.type.incompatible) :: error:
+      // (initialization.invalid.field.access)
+      output(this.field);
+    }
 
-        public void initImpl2(@UnknownInitialization A this) {
-            // :: error: (argument.type.incompatible) :: error:
-            // (initialization.invalid.field.access)
-            output(field);
-        }
+    public void initImpl1(@UnknownInitialization A this) {
+      // :: error: (dereference.of.nullable)
+      output(field.length());
+    }
+
+    public void initImpl2(@UnknownInitialization A this) {
+      // :: error: (argument.type.incompatible) :: error:
+      // (initialization.invalid.field.access)
+      output(field);
     }
   }
 
@@ -82,10 +81,10 @@ public class RawTypesBounded {
       output(this.field);
     }
 
-        public void initExpl2(@UnknownInitialization B this) {
-            // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
-            output(this.otherField.length()); // error
-        }
+    public void initExpl2(@UnknownInitialization B this) {
+      // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
+      output(this.otherField.length()); // error
+    }
 
     public void initImpl2(@UnknownInitialization A this) {
       // :: error: (argument.type.incompatible)

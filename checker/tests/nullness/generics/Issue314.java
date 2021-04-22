@@ -19,13 +19,12 @@ public class Issue314 {
     S f1;
     @NonNull S f2;
 
-        {
-            // :: error: (assignment.type.incompatible)
-            // :: error: (initialization.invalid.field.access)
-            f1 = f2;
-            // :: error: (assignment.type.incompatible)
-            f2 = f1;
-        }
+    {
+      // :: error: (assignment.type.incompatible)
+      // :: error: (initialization.invalid.field.access)
+      f1 = f2;
+      // :: error: (assignment.type.incompatible)
+      f2 = f1;
     }
   }
 }

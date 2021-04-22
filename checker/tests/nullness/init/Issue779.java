@@ -19,10 +19,10 @@ class A {
 class B extends A {
   Object f = new Object();
 
-    void foo(@UnderInitialization(A.class) B this) {
-        // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
-        System.out.println("foo B " + this.f.toString());
-    }
+  void foo(@UnderInitialization(A.class) B this) {
+    // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
+    System.out.println("foo B " + this.f.toString());
+  }
 }
 
 public class Issue779 {

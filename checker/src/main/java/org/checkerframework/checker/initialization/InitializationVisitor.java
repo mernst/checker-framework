@@ -462,83 +462,77 @@ public class InitializationVisitor<
             atypeFactory.getDefaultValueAnnotatedType(elt.asType()));
       }
     }
+  }
 
-    // This method currently only issues warnings for fields with the invariant annotation
-    // (@NonNull).
-    // TODO: In the future, add a feature (controlled by a command-line option) to track all fields,
-    // not just @NonNull ones.
-    @Override
-    protected void checkAccessAllowed(
-            Element field,
-            AnnotatedTypeMirror receiverType,
-            @FindDistinct ExpressionTree accessTree) {
-        super.checkAccessAllowed(field, receiverType, accessTree);
+  // This method currently only issues warnings for fields with the invariant annotation
+  // (@NonNull).
+  // TODO: In the future, add a feature (controlled by a command-line option) to track all fields,
+  // not just @NonNull ones.
+  @Override
+  protected void checkAccessAllowed(
+      Element field, AnnotatedTypeMirror receiverType, @FindDistinct ExpressionTree accessTree) {
+    super.checkAccessAllowed(field, receiverType, accessTree);
 
-        if (receiverType == null) {
-            // Field is static
-            return;
-        }
-
-        Tree statement = this.enclosingStatement(accessTree);
-        if (statement != null) {
-            if ((statement.getKind() == Tree.Kind.ASSIGNMENT
-                            && ((AssignmentTree) statement).getVariable() == accessTree)
-                    || (statement instanceof CompoundAssignmentTree
-                            && ((CompoundAssignmentTree) statement).getVariable() == accessTree)) {
-                // This is an lvalue use.
-                return;
-            }
-        }
-
-        // enclosingType is the type that declares the field.
-        TypeMirror enclosingType = field.getEnclosingElement().asType();
-
-        AnnotationMirror receiverInitAnno =
-                receiverType.getAnnotationInHierarchy(
-                        ((InitializationAnnotatedTypeFactory) atypeFactory).INITIALIZED);
-        if (receiverInitAnno == null
-                || atypeFactory.areSameByClass(receiverInitAnno, Initialized.class)) {
-            // The receiver is fully initialized, so all field accesses are legal.
-            return;
-        }
-        // receiverInitAnno is @UnknownInitialization or @UnderInitialization, frame is its argument
-        DeclaredType frame =
-                AnnotationUtils.getElementValueOrNull(
-                        receiverInitAnno, "value", DeclaredType.class, false);
-
-        if (frame == null || !atypeFactory.types.isSubtype(frame, enclosingType)) {
-            // The receiver is not initialized enough for the field to be accessed.
-
-            Name identifier;
-            switch (accessTree.getKind()) {
-                case MEMBER_SELECT:
-                    identifier = ((MemberSelectTree) accessTree).getIdentifier();
-                    break;
-                case IDENTIFIER:
-                    identifier = ((IdentifierTree) accessTree).getName();
-                    break;
-                default:
-                    throw new BugInCF(
-                            "Unexpected accessTree (%s): %s", accessTree.getKind(), accessTree);
-            }
-
-            Store store = atypeFactory.getStoreBefore(accessTree);
-            Pair<List<VariableTree>, List<VariableTree>> uninitializedFields =
-                    atypeFactory.getUninitializedFields(
-                            store, getCurrentPath(), false, receiverType.getAnnotations());
-            // TODO: Add a method like uninitializedFields that takes a single field as an argument
-            // and returns a boolean, to avoid having to make so many lists.
-            for (VariableTree uninitVar : uninitializedFields.first) {
-                if (uninitVar.getName().contentEquals(identifier)) {
-                    checker.reportError(
-                            accessTree,
-                            "initialization.invalid.field.access",
-                            identifier,
-                            receiverType);
-                }
-            }
-        }
-
-        return;
+    if (receiverType == null) {
+      // Field is static
+      return;
     }
+
+    Tree statement = this.enclosingStatement(accessTree);
+    if (statement != null) {
+      if ((statement.getKind() == Tree.Kind.ASSIGNMENT
+              && ((AssignmentTree) statement).getVariable() == accessTree)
+          || (statement instanceof CompoundAssignmentTree
+              && ((CompoundAssignmentTree) statement).getVariable() == accessTree)) {
+        // This is an lvalue use.
+        return;
+      }
+    }
+
+    // enclosingType is the type that declares the field.
+    TypeMirror enclosingType = field.getEnclosingElement().asType();
+
+    AnnotationMirror receiverInitAnno =
+        receiverType.getAnnotationInHierarchy(
+            ((InitializationAnnotatedTypeFactory) atypeFactory).INITIALIZED);
+    if (receiverInitAnno == null
+        || atypeFactory.areSameByClass(receiverInitAnno, Initialized.class)) {
+      // The receiver is fully initialized, so all field accesses are legal.
+      return;
+    }
+    // receiverInitAnno is @UnknownInitialization or @UnderInitialization, frame is its argument
+    DeclaredType frame =
+        AnnotationUtils.getElementValueOrNull(receiverInitAnno, "value", DeclaredType.class, false);
+
+    if (frame == null || !atypeFactory.types.isSubtype(frame, enclosingType)) {
+      // The receiver is not initialized enough for the field to be accessed.
+
+      Name identifier;
+      switch (accessTree.getKind()) {
+        case MEMBER_SELECT:
+          identifier = ((MemberSelectTree) accessTree).getIdentifier();
+          break;
+        case IDENTIFIER:
+          identifier = ((IdentifierTree) accessTree).getName();
+          break;
+        default:
+          throw new BugInCF("Unexpected accessTree (%s): %s", accessTree.getKind(), accessTree);
+      }
+
+      Store store = atypeFactory.getStoreBefore(accessTree);
+      Pair<List<VariableTree>, List<VariableTree>> uninitializedFields =
+          atypeFactory.getUninitializedFields(
+              store, getCurrentPath(), false, receiverType.getAnnotations());
+      // TODO: Add a method like uninitializedFields that takes a single field as an argument
+      // and returns a boolean, to avoid having to make so many lists.
+      for (VariableTree uninitVar : uninitializedFields.first) {
+        if (uninitVar.getName().contentEquals(identifier)) {
+          checker.reportError(
+              accessTree, "initialization.invalid.field.access", identifier, receiverType);
+        }
+      }
+    }
+
+    return;
+  }
 }

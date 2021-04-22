@@ -2,8 +2,6 @@ package org.checkerframework.checker.initialization;
 
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.ExpressionTree;
-import com.sun.source.tree.LiteralTree;
-import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
@@ -46,8 +44,6 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
-import org.checkerframework.framework.type.MostlyNoElementQualifierHierarchy;
-import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
@@ -791,33 +787,33 @@ public abstract class InitializationAnnotatedTypeFactory<
      * @param path a path
      */
     protected void setSelfTypeInInitializationCode(
-            Tree tree, AnnotatedDeclaredType selfType, TreePath path) {
-        ClassTree enclosingClass = TreePathUtil.enclosingClass(path);
-        Type classType = ((JCTree) enclosingClass).type;
-        AnnotationMirror annotation = null;
+        Tree tree, AnnotatedDeclaredType selfType, TreePath path) {
+      ClassTree enclosingClass = TreePathUtil.enclosingClass(path);
+      Type classType = ((JCTree) enclosingClass).type;
+      AnnotationMirror annotation = null;
 
-        // If all fields are initialized-only, and they are all initialized,
-        // then:
-        // - if the class is final, this is @Initialized
-        // - otherwise, this is @UnderInitialization(CurrentClass) as
-        // there might still be subclasses that need initialization.
-        if (areAllFieldsInitializedOnly(enclosingClass)) {
-            Store store = getStoreBefore(tree);
-            if (store != null
-                    && getUninitializedInvariantFields(store, path, false, Collections.emptyList())
-                            .isEmpty()) {
-                if (classType.isFinal()) {
-                    annotation = INITIALIZED;
-                } else {
-                    annotation = createUnderInitializationAnnotation(classType);
-                }
-            }
+      // If all fields are initialized-only, and they are all initialized,
+      // then:
+      // - if the class is final, this is @Initialized
+      // - otherwise, this is @UnderInitialization(CurrentClass) as
+      // there might still be subclasses that need initialization.
+      if (areAllFieldsInitializedOnly(enclosingClass)) {
+        Store store = getStoreBefore(tree);
+        if (store != null
+            && getUninitializedInvariantFields(store, path, false, Collections.emptyList())
+                .isEmpty()) {
+          if (classType.isFinal()) {
+            annotation = INITIALIZED;
+          } else {
+            annotation = createUnderInitializationAnnotation(classType);
+          }
         }
+      }
 
-        if (annotation == null) {
-            annotation = getUnderInitializationAnnotationOfSuperType(classType);
-        }
-        selfType.replaceAnnotation(annotation);
+      if (annotation == null) {
+        annotation = getUnderInitializationAnnotationOfSuperType(classType);
+      }
+      selfType.replaceAnnotation(annotation);
     }
 
     /**
@@ -828,25 +824,25 @@ public abstract class InitializationAnnotatedTypeFactory<
      * @return true an {@link UnderInitialization} for the supertype of {@code type}
      */
     protected AnnotationMirror getUnderInitializationAnnotationOfSuperType(TypeMirror type) {
-        // Find supertype if possible.
-        AnnotationMirror annotation;
-        List<? extends TypeMirror> superTypes = types.directSupertypes(type);
-        TypeMirror superClass = null;
-        for (TypeMirror superType : superTypes) {
-            ElementKind kind = types.asElement(superType).getKind();
-            if (kind == ElementKind.CLASS) {
-                superClass = superType;
-                break;
-            }
+      // Find supertype if possible.
+      AnnotationMirror annotation;
+      List<? extends TypeMirror> superTypes = types.directSupertypes(type);
+      TypeMirror superClass = null;
+      for (TypeMirror superType : superTypes) {
+        ElementKind kind = types.asElement(superType).getKind();
+        if (kind == ElementKind.CLASS) {
+          superClass = superType;
+          break;
         }
-        // Create annotation.
-        if (superClass != null) {
-            annotation = createUnderInitializationAnnotation(superClass);
-        } else {
-            // Use Object as a valid super-class.
-            annotation = createUnderInitializationAnnotation(Object.class);
-        }
-        return annotation;
+      }
+      // Create annotation.
+      if (superClass != null) {
+        annotation = createUnderInitializationAnnotation(superClass);
+      } else {
+        // Use Object as a valid super-class.
+        annotation = createUnderInitializationAnnotation(Object.class);
+      }
+      return annotation;
     }
 
     /**
@@ -865,32 +861,32 @@ public abstract class InitializationAnnotatedTypeFactory<
      * @return the fields that are not yet initialized in a given store (a pair of lists)
      */
     public Pair<List<VariableTree>, List<VariableTree>> getUninitializedFields(
-            Store store,
-            TreePath path,
-            boolean isStatic,
-            Collection<? extends AnnotationMirror> receiverAnnotations) {
-        ClassTree currentClass = TreePathUtil.enclosingClass(path);
-        List<VariableTree> fields = InitializationChecker.getAllFields(currentClass);
-        List<VariableTree> uninitWithInvariantAnno = new ArrayList<>();
-        List<VariableTree> uninitWithoutInvariantAnno = new ArrayList<>();
-        for (VariableTree field : fields) {
-            VariableElement fieldElem = TreeUtils.elementFromDeclaration(field);
-            if (ElementUtils.isStatic(fieldElem) == isStatic) {
-                if (isUnused(field, receiverAnnotations)) {
-                    continue; // don't consider unused fields
-                }
-                // Has the field been initialized?
-                if (!store.isFieldInitialized(fieldElem)) {
-                    // Does this field need to satisfy the invariant?
-                    if (hasFieldInvariantAnnotation(field)) {
-                        uninitWithInvariantAnno.add(field);
-                    } else {
-                        uninitWithoutInvariantAnno.add(field);
-                    }
-                }
+        Store store,
+        TreePath path,
+        boolean isStatic,
+        Collection<? extends AnnotationMirror> receiverAnnotations) {
+      ClassTree currentClass = TreePathUtil.enclosingClass(path);
+      List<VariableTree> fields = InitializationChecker.getAllFields(currentClass);
+      List<VariableTree> uninitWithInvariantAnno = new ArrayList<>();
+      List<VariableTree> uninitWithoutInvariantAnno = new ArrayList<>();
+      for (VariableTree field : fields) {
+        VariableElement fieldElem = TreeUtils.elementFromDeclaration(field);
+        if (ElementUtils.isStatic(fieldElem) == isStatic) {
+          if (isUnused(field, receiverAnnotations)) {
+            continue; // don't consider unused fields
+          }
+          // Has the field been initialized?
+          if (!store.isFieldInitialized(fieldElem)) {
+            // Does this field need to satisfy the invariant?
+            if (hasFieldInvariantAnnotation(field)) {
+              uninitWithInvariantAnno.add(field);
+            } else {
+              uninitWithoutInvariantAnno.add(field);
             }
+          }
         }
-        return Pair.of(uninitWithInvariantAnno, uninitWithoutInvariantAnno);
+      }
+      return Pair.of(uninitWithInvariantAnno, uninitWithoutInvariantAnno);
     }
 
     /**
@@ -903,15 +899,15 @@ public abstract class InitializationAnnotatedTypeFactory<
      * @return true if the given field has not yet been initialized in the given store
      */
     public boolean fieldIsUninitialized(
-            Name identifier,
-            Store store,
-            TreePath path,
-            boolean isStatic,
-            Collection<? extends AnnotationMirror> receiverAnnotations) {
-        // TODO
-        if (isUnused(field, receiverAnnotations)) {
-            continue; // don't consider unused fields
-        }
+        Name identifier,
+        Store store,
+        TreePath path,
+        boolean isStatic,
+        Collection<? extends AnnotationMirror> receiverAnnotations) {
+      // TODO
+      if (isUnused(field, receiverAnnotations)) {
+        continue; // don't consider unused fields
+      }
     }
 
     /**
@@ -926,11 +922,11 @@ public abstract class InitializationAnnotatedTypeFactory<
      *     store (a pair of lists)
      */
     public final List<VariableTree> getUninitializedInvariantFields(
-            Store store,
-            TreePath path,
-            boolean isStatic,
-            List<? extends AnnotationMirror> receiverAnnotations) {
-        return getUninitializedFields(store, path, isStatic, receiverAnnotations).first;
+        Store store,
+        TreePath path,
+        boolean isStatic,
+        List<? extends AnnotationMirror> receiverAnnotations) {
+      return getUninitializedFields(store, path, isStatic, receiverAnnotations).first;
     }
 
     /**

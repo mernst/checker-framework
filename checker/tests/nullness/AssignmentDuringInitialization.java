@@ -10,18 +10,18 @@ public class AssignmentDuringInitialization {
   String f5;
   String f6;
 
-    {
-        // :: error:  (assignment.type.incompatible) :: error: (initialization.invalid.field.access)
-        f1 = f2;
-        f2 = f1;
-        f2.toString(); // Null pointer exception here
-    }
+  {
+    // :: error:  (assignment.type.incompatible) :: error: (initialization.invalid.field.access)
+    f1 = f2;
+    f2 = f1;
+    f2.toString(); // Null pointer exception here
+  }
 
-    public AssignmentDuringInitialization() {
-        // :: error:  (assignment.type.incompatible) :: error: (initialization.invalid.field.access)
-        f3 = f4;
-        f4 = f3;
-        f4.toString(); // Null pointer exception here
+  public AssignmentDuringInitialization() {
+    // :: error:  (assignment.type.incompatible) :: error: (initialization.invalid.field.access)
+    f3 = f4;
+    f4 = f3;
+    f4.toString(); // Null pointer exception here
 
     f5 = "hello";
     f6 = f5;

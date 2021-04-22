@@ -25,80 +25,36 @@ public class RawTypesInit {
     }
 
     class A {
-        @NonNull String field;
+      @NonNull String field;
 
-        public A() {
-            this.field = "field"; // valid
-            field = "field"; // valid
-            this.init(); // valid
-            init(); // valid
-        }
+      public A() {
+        this.field = "field"; // valid
+        field = "field"; // valid
+        this.init(); // valid
+        init(); // valid
+      }
 
-        public void init(@UnknownInitialization A this) {
-            // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
-            output(this.field.length());
-        }
+      public void init(@UnknownInitialization A this) {
+        // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
+        output(this.field.length());
+      }
 
-        public void initExpl2(@UnknownInitialization A this) {
-            // :: error: (argument.type.incompatible) :: error:
-            // (initialization.invalid.field.access)
-            output(this.field);
-        }
+      public void initExpl2(@UnknownInitialization A this) {
+        // :: error: (argument.type.incompatible) :: error:
+        // (initialization.invalid.field.access)
+        output(this.field);
+      }
 
-        public void initImpl1(@UnknownInitialization A this) {
-            // :: error: (dereference.of.nullable)
-            output(field.length());
-        }
+      public void initImpl1(@UnknownInitialization A this) {
+        // :: error: (dereference.of.nullable)
+        output(field.length());
+      }
 
-        public void initImpl2(@UnknownInitialization A this) {
-            // :: error: (argument.type.incompatible) :: error:
-            // (initialization.invalid.field.access)
-            output(field);
-        }
-    }
-  }
-
-    class B extends A {
-        @NonNull String otherField;
-
-        public B() {
-            super();
-            // :: error: (assignment.type.incompatible)
-            this.otherField = null; // error
-            this.otherField = "otherField"; // valid
-        }
-
-        @Override
-        public void init(@UnknownInitialization B this) {
-            // :: error: (dereference.of.nullable)
-            output(this.field.length()); // error (TODO: substitution)
-            super.init(); // valid
-        }
-
-        public void initImpl1(@UnknownInitialization B this) {
-            // :: error: (dereference.of.nullable)
-            output(field.length()); // error (TODO: substitution)
-        }
-
-        public void initExpl2(@UnknownInitialization B this) {
-            // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
-            output(this.otherField.length()); // error
-        }
-
-        public void initImpl2(@UnknownInitialization B this) {
-            // :: error: (dereference.of.nullable)
-            output(otherField.length()); // error
-        }
-
-        void other() {
-            init(); // valid
-            this.init(); // valid
-        }
-
-        void otherRaw(@UnknownInitialization B this) {
-            init(); // valid
-            this.init(); // valid
-        }
+      public void initImpl2(@UnknownInitialization A this) {
+        // :: error: (argument.type.incompatible) :: error:
+        // (initialization.invalid.field.access)
+        output(field);
+      }
     }
   }
 
@@ -112,12 +68,11 @@ public class RawTypesInit {
       this.otherField = "otherField"; // valid
     }
 
-        @Override
-        public void init(@UnknownInitialization C this) {
-            // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
-            output(this.strings.length); // error
-            System.out.println(); // valid
-        }
+    @Override
+    public void init(@UnknownInitialization B this) {
+      // :: error: (dereference.of.nullable)
+      output(this.field.length()); // error (TODO: substitution)
+      super.init(); // valid
     }
 
     public void initImpl1(@UnknownInitialization B this) {
@@ -126,7 +81,7 @@ public class RawTypesInit {
     }
 
     public void initExpl2(@UnknownInitialization B this) {
-      // :: error: (dereference.of.nullable)
+      // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
       output(this.otherField.length()); // error
     }
 
@@ -140,11 +95,53 @@ public class RawTypesInit {
       this.init(); // valid
     }
 
-        void myTest(@UnknownInitialization MyTest this) {
-            // :: error: (unboxing.of.nullable) :: error: (initialization.invalid.field.access)
-            i = i + 1;
-        }
+    void otherRaw(@UnknownInitialization B this) {
+      init(); // valid
+      this.init(); // valid
     }
+  }
+
+  class B extends A {
+    @NonNull String otherField;
+
+    public B() {
+      super();
+      // :: error: (assignment.type.incompatible)
+      this.otherField = null; // error
+      this.otherField = "otherField"; // valid
+    }
+
+    @Override
+    public void init(@UnknownInitialization C this) {
+      // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
+      output(this.strings.length); // error
+      System.out.println(); // valid
+    }
+  }
+
+  public void initImpl1(@UnknownInitialization B this) {
+    // :: error: (dereference.of.nullable)
+    output(field.length()); // error (TODO: substitution)
+  }
+
+  public void initExpl2(@UnknownInitialization B this) {
+    // :: error: (dereference.of.nullable)
+    output(this.otherField.length()); // error
+  }
+
+  public void initImpl2(@UnknownInitialization B this) {
+    // :: error: (dereference.of.nullable)
+    output(otherField.length()); // error
+  }
+
+  void other() {
+    init(); // valid
+    this.init(); // valid
+  }
+
+  void myTest(@UnknownInitialization MyTest this) {
+    // :: error: (unboxing.of.nullable) :: error: (initialization.invalid.field.access)
+    i = i + 1;
   }
 
   class C extends B {

@@ -4040,63 +4040,61 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         // precondition or the postcondition.
 
         checkAccessAllowed(elem, receiver, tree);
-    }
-
-    /**
-     * Issues an error if access not allowed, based on an @Unused annotation.
-     *
-     * @param field the field to be accessed, whose declaration might be annotated by @Unused. It
-     *     can also be (for example) {@code this}, in which case {@code receiverType} is null.
-     * @param receiverType the type of the expression whose field is accessed; null if the field is
-     *     static
-     * @param accessTree the access expression
-     */
-    protected void checkAccessAllowed(
-            Element field,
-            AnnotatedTypeMirror receiverType,
-            @FindDistinct ExpressionTree accessTree) {
-        AnnotationMirror unused = atypeFactory.getDeclAnnotation(field, Unused.class);
-        if (unused == null) {
-            return;
-        }
-
-        String when = AnnotationUtils.getElementValueClassName(unused, "when", false).toString();
-        System.out.printf("  when=%s%n", when);
-        System.out.printf("  receiverType=%s%n", receiverType);
-        System.out.printf("  receiverType.getAnnotations()=%s%n", receiverType.getAnnotations());
-
-        // TODO: Don't just look at the receiver type, but at the declaration annotations on the
-        // receiver.  (That will enable handling type annotations that are not part of the type
-        // system being checked.)
-
-        // TODO: This requires exactly the same type qualifier, but it should permit subqualifiers.
-        if (!AnnotationUtils.containsSameByName(receiverType.getAnnotations(), when)) {
-            return;
-        }
-
-        Tree tree = this.enclosingStatement(accessTree);
-
-        System.out.printf("  tree=%s %s%n", tree.getKind(), tree);
-
-        if (tree != null
-                && tree.getKind() == Tree.Kind.ASSIGNMENT
-                && ((AssignmentTree) tree).getVariable() == accessTree
-                && ((AssignmentTree) tree).getExpression().getKind() == Tree.Kind.NULL_LITERAL) {
-            // Assigning unused to null is OK.
-            return;
-        }
-
-        checker.reportError(
-            methodDeclTree,
-            messageKey,
-            weak.first,
-            methodDeclTree.getName(),
-            overriddenTypeString,
-            overriddenAnno,
-            overriderTypeString,
-            overriderAnno);
       }
     }
+  }
+
+  /**
+   * Issues an error if access not allowed, based on an @Unused annotation.
+   *
+   * @param field the field to be accessed, whose declaration might be annotated by @Unused. It can
+   *     also be (for example) {@code this}, in which case {@code receiverType} is null.
+   * @param receiverType the type of the expression whose field is accessed; null if the field is
+   *     static
+   * @param accessTree the access expression
+   */
+  protected void checkAccessAllowed(
+      Element field, AnnotatedTypeMirror receiverType, @FindDistinct ExpressionTree accessTree) {
+    AnnotationMirror unused = atypeFactory.getDeclAnnotation(field, Unused.class);
+    if (unused == null) {
+      return;
+    }
+
+    String when = AnnotationUtils.getElementValueClassName(unused, "when", false).toString();
+    System.out.printf("  when=%s%n", when);
+    System.out.printf("  receiverType=%s%n", receiverType);
+    System.out.printf("  receiverType.getAnnotations()=%s%n", receiverType.getAnnotations());
+
+    // TODO: Don't just look at the receiver type, but at the declaration annotations on the
+    // receiver.  (That will enable handling type annotations that are not part of the type
+    // system being checked.)
+
+    // TODO: This requires exactly the same type qualifier, but it should permit subqualifiers.
+    if (!AnnotationUtils.containsSameByName(receiverType.getAnnotations(), when)) {
+      return;
+    }
+
+    Tree tree = this.enclosingStatement(accessTree);
+
+    System.out.printf("  tree=%s %s%n", tree.getKind(), tree);
+
+    if (tree != null
+        && tree.getKind() == Tree.Kind.ASSIGNMENT
+        && ((AssignmentTree) tree).getVariable() == accessTree
+        && ((AssignmentTree) tree).getExpression().getKind() == Tree.Kind.NULL_LITERAL) {
+      // Assigning unused to null is OK.
+      return;
+    }
+
+    checker.reportError(
+        methodDeclTree,
+        messageKey,
+        weak.first,
+        methodDeclTree.getName(),
+        overriddenTypeString,
+        overriddenAnno,
+        overriderTypeString,
+        overriderAnno);
   }
 
   /**
