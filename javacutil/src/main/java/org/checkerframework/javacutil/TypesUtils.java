@@ -96,7 +96,7 @@ public final class TypesUtils {
 
   /**
    * Returns the {@link Class} for a given {@link TypeMirror}. Returns {@code Object.class} if it
-   * cannot determine anything more specific.
+   * cannot determine anything more specific, including if the class is not on the classpath.
    *
    * @param typeMirror a TypeMirror
    * @return the class for {@code typeMirror}
