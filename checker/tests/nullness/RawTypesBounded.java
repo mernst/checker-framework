@@ -60,176 +60,208 @@ public class RawTypesBounded {
             output(field);
         }
     }
+  }
 
-    class B extends A {
-        @NonNull String otherField;
+  class A {
+    @NonNull String field;
 
-        public B() {
-            super();
-            // :: error: (assignment.type.incompatible)
-            this.otherField = null; // error
-            this.otherField = "otherField"; // valid
-        }
+    public A() {
+      this.field = "field"; // valid
+      field = "field"; // valid
+      this.init(); // valid
+      init(); // valid
+    }
 
-        @Override
-        public void init(@UnknownInitialization B this) {
-            // :: error: (dereference.of.nullable)
-            output(this.field.length()); // error (TODO: substitution)
-            super.init(); // valid
-        }
+    public void init(@UnknownInitialization A this) {
+      // :: error: (dereference.of.nullable)
+      output(this.field.length());
+    }
 
-        public void initImpl1(@UnknownInitialization B this) {
-            // :: error: (dereference.of.nullable)
-            output(field.length()); // error (TODO: substitution)
-        }
+    public void initExpl2(@UnknownInitialization A this) {
+      // :: error: (argument.type.incompatible)
+      output(this.field);
+    }
 
         public void initExpl2(@UnknownInitialization B this) {
             // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
             output(this.otherField.length()); // error
         }
 
-        public void initImpl2(@UnknownInitialization B this) {
-            // :: error: (dereference.of.nullable)
-            output(otherField.length()); // error
-        }
+    public void initImpl2(@UnknownInitialization A this) {
+      // :: error: (argument.type.incompatible)
+      output(field);
+    }
+  }
 
-        void other() {
-            init(); // valid
-            this.init(); // valid
-        }
+  class B extends A {
+    @NonNull String otherField;
 
-        void otherRaw(@UnknownInitialization B this) {
-            init(); // valid
-            this.init(); // valid
-        }
+    public B() {
+      super();
+      // :: error: (assignment.type.incompatible)
+      this.otherField = null; // error
+      this.otherField = "otherField"; // valid
     }
 
-    class C extends B {
-
-        @NonNull String[] strings;
-
-        @Override
-        public void init(@UnknownInitialization C this) {
-            // :: error: (dereference.of.nullable)
-            output(this.strings.length); // error
-            System.out.println(); // valid
-        }
+    @Override
+    public void init(@UnknownInitialization B this) {
+      // :: error: (dereference.of.nullable)
+      output(this.field.length()); // error (TODO: substitution)
+      super.init(); // valid
     }
 
-    // To test whether the argument is @NonNull and @Initialized
-    static void output(@NonNull Object o) {}
-
-    class D extends C {
-        @Override
-        public void init(@UnknownInitialization D this) {
-            this.field = "s";
-            output(this.field.length());
-        }
+    public void initImpl1(@UnknownInitialization B this) {
+      // :: error: (dereference.of.nullable)
+      output(field.length()); // error (TODO: substitution)
     }
 
-    class MyTest {
-        int i;
-
-        MyTest(int i) {
-            this.i = i;
-        }
-
-        void myTest(@UnknownInitialization MyTest this) {
-            i++;
-        }
+    public void initExpl2(@UnknownInitialization B this) {
+      // :: error: (dereference.of.nullable)
+      output(this.otherField.length()); // error
     }
 
-    class AllFieldsInitialized {
-        long elapsedMillis = 0;
-        long startTime = 0;
-
-        // If all fields have an initializer, then the type of "this"
-        // should still not be non-raw (there might be uninitilized subclasses)
-        public AllFieldsInitialized() {
-            // :: error: (method.invocation.invalid)
-            nonRawMethod();
-        }
-
-        public void nonRawMethod() {}
+    public void initImpl2(@UnknownInitialization B this) {
+      // :: error: (dereference.of.nullable)
+      output(otherField.length()); // error
     }
 
-    class AFSIICell {
-        AllFieldsSetInInitializer afsii;
+    void other() {
+      init(); // valid
+      this.init(); // valid
     }
 
-    class AllFieldsSetInInitializer {
-        long elapsedMillis;
-        long startTime;
+    void otherRaw(@UnknownInitialization B this) {
+      init(); // valid
+      this.init(); // valid
+    }
+  }
 
-        public AllFieldsSetInInitializer() {
-            elapsedMillis = 0;
-            // :: error: (method.invocation.invalid)
-            nonRawMethod();
-            startTime = 0;
-            // :: error: (method.invocation.invalid)
-            nonRawMethod(); // still error (subclasses...)
-        }
+  class C extends B {
 
-        public AllFieldsSetInInitializer(boolean b) {
-            // :: error: (method.invocation.invalid)
-            nonRawMethod();
-        }
+    @NonNull String[] strings;
 
-        public void nonRawMethod() {}
+    @Override
+    public void init(@UnknownInitialization C this) {
+      // :: error: (dereference.of.nullable)
+      output(this.strings.length); // error
+      System.out.println(); // valid
+    }
+  }
+
+  // To test whether the argument is @NonNull and @Initialized
+  static void output(@NonNull Object o) {}
+
+  class D extends C {
+    @Override
+    public void init(@UnknownInitialization D this) {
+      this.field = "s";
+      output(this.field.length());
+    }
+  }
+
+  class MyTest {
+    int i;
+
+    MyTest(int i) {
+      this.i = i;
     }
 
-    class ConstructorInvocations {
-        int v;
+    void myTest(@UnknownInitialization MyTest this) {
+      i++;
+    }
+  }
 
-        public ConstructorInvocations(int v) {
-            this.v = v;
-        }
+  class AllFieldsInitialized {
+    long elapsedMillis = 0;
+    long startTime = 0;
 
-        public ConstructorInvocations() {
-            this(0);
-            // :: error: (method.invocation.invalid)
-            nonRawMethod();
-        }
-
-        public void nonRawMethod() {}
+    // If all fields have an initializer, then the type of "this"
+    // should still not be non-raw (there might be uninitilized subclasses)
+    public AllFieldsInitialized() {
+      // :: error: (method.invocation.invalid)
+      nonRawMethod();
     }
 
-    class MethodAccess {
-        public MethodAccess() {
-            @NonNull String s = string();
-        }
+    public void nonRawMethod() {}
+  }
 
-        public @NonNull String string(@UnknownInitialization MethodAccess this) {
-            return "nonnull";
-        }
+  class AFSIICell {
+    AllFieldsSetInInitializer afsii;
+  }
+
+  class AllFieldsSetInInitializer {
+    long elapsedMillis;
+    long startTime;
+
+    public AllFieldsSetInInitializer() {
+      elapsedMillis = 0;
+      // :: error: (method.invocation.invalid)
+      nonRawMethod();
+      startTime = 0;
+      // :: error: (method.invocation.invalid)
+      nonRawMethod(); // still error (subclasses...)
     }
 
-    void cast(@UnknownInitialization Object... args) {
-
-        @SuppressWarnings("rawtypes")
-        // :: error: (assignment.type.incompatible)
-        Object[] argsNonRaw1 = args;
-
-        @SuppressWarnings("cast")
-        Object[] argsNonRaw2 = (Object[]) args;
+    public AllFieldsSetInInitializer(boolean b) {
+      // :: error: (method.invocation.invalid)
+      nonRawMethod();
     }
 
-    // default qualifier is @Nullable, so this is OK.
-    class RawAfterConstructorBad {
-        Object o;
+    public void nonRawMethod() {}
+  }
 
-        RawAfterConstructorBad() {}
+  class ConstructorInvocations {
+    int v;
+
+    public ConstructorInvocations(int v) {
+      this.v = v;
     }
 
-    class RawAfterConstructorOK1 {
-        @Nullable Object o;
-
-        RawAfterConstructorOK1() {}
+    public ConstructorInvocations() {
+      this(0);
+      // :: error: (method.invocation.invalid)
+      nonRawMethod();
     }
 
-    class RawAfterConstructorOK2 {
-        int a;
+    public void nonRawMethod() {}
+  }
 
-        RawAfterConstructorOK2() {}
+  class MethodAccess {
+    public MethodAccess() {
+      @NonNull String s = string();
     }
+
+    public @NonNull String string(@UnknownInitialization MethodAccess this) {
+      return "nonnull";
+    }
+  }
+
+  void cast(@UnknownInitialization Object... args) {
+
+    @SuppressWarnings("rawtypes")
+    // :: error: (assignment.type.incompatible)
+    Object[] argsNonRaw1 = args;
+
+    @SuppressWarnings("cast")
+    Object[] argsNonRaw2 = (Object[]) args;
+  }
+
+  // default qualifier is @Nullable, so this is OK.
+  class RawAfterConstructorBad {
+    Object o;
+
+    RawAfterConstructorBad() {}
+  }
+
+  class RawAfterConstructorOK1 {
+    @Nullable Object o;
+
+    RawAfterConstructorOK1() {}
+  }
+
+  class RawAfterConstructorOK2 {
+    int a;
+
+    RawAfterConstructorOK2() {}
+  }
 }

@@ -1,6 +1,6 @@
 public class Options {
 
-    private Class main_class;
+  private Class main_class;
 
     @SuppressWarnings("initialization.invalid.field.access")
     public Options() {

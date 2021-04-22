@@ -5,19 +5,19 @@ import org.checkerframework.checker.initialization.qual.*;
 import org.checkerframework.checker.nullness.qual.*;
 
 class A {
-    Object g = new Object();
+  Object g = new Object();
 
-    A() {
-        foo();
-    }
+  A() {
+    foo();
+  }
 
-    void foo(@UnderInitialization(A.class) A this) {
-        System.out.println("foo A " + g.toString());
-    }
+  void foo(@UnderInitialization(A.class) A this) {
+    System.out.println("foo A " + g.toString());
+  }
 }
 
 class B extends A {
-    Object f = new Object();
+  Object f = new Object();
 
     void foo(@UnderInitialization(A.class) B this) {
         // :: error: (dereference.of.nullable) :: error: (initialization.invalid.field.access)
@@ -26,7 +26,7 @@ class B extends A {
 }
 
 public class Issue779 {
-    public static void main(String[] args) {
-        new B();
-    }
+  public static void main(String[] args) {
+    new B();
+  }
 }
