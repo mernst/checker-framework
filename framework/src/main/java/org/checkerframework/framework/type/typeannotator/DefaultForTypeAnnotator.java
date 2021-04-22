@@ -160,11 +160,11 @@ public class DefaultForTypeAnnotator extends TypeAnnotator {
       qname = null;
     }
 
-    System.out.printf("type=%s qname=%s%n", type, qname);
+    // System.out.printf("type=%s qname=%s%n", type, qname);
 
     if (qname != null) {
       Set<AnnotationMirror> fromQname = types.get(qname);
-      System.out.printf("type=%s qname=%s fromQname=%s%n", type, qname, fromQname);
+      // System.out.printf("type=%s qname=%s fromQname=%s%n", type, qname, fromQname);
       if (fromQname != null) {
         type.addMissingAnnotations(fromQname);
       }
