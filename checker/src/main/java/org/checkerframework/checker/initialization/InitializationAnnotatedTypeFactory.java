@@ -21,6 +21,7 @@ import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
@@ -85,6 +86,16 @@ public abstract class InitializationAnnotatedTypeFactory<
   /** {@link FBCBottom}. */
   protected final AnnotationMirror FBCBOTTOM;
 
+  /** The java.lang.Object type. */
+  protected final TypeMirror objectTypeMirror;
+
+  /** The Unused.when field/element. */
+  protected final ExecutableElement unusedWhenElement;
+  /** The UnderInitialization.value field/element. */
+  protected final ExecutableElement underInitializationValueElement;
+  /** The UnknownInitialization.value field/element. */
+  protected final ExecutableElement unknownInitializationValueElement;
+
   /** Cache for the initialization annotations. */
   protected final Set<Class<? extends Annotation>> initAnnos;
 
@@ -107,11 +118,18 @@ public abstract class InitializationAnnotatedTypeFactory<
   protected InitializationAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker, true);
 
+    UNKNOWN_INITIALIZATION = AnnotationBuilder.fromClass(elements, UnknownInitialization.class);
     INITIALIZED = AnnotationBuilder.fromClass(elements, Initialized.class);
     UNDER_INITALIZATION = AnnotationBuilder.fromClass(elements, UnderInitialization.class);
     NOT_ONLY_INITIALIZED = AnnotationBuilder.fromClass(elements, NotOnlyInitialized.class);
     FBCBOTTOM = AnnotationBuilder.fromClass(elements, FBCBottom.class);
-    UNKNOWN_INITIALIZATION = AnnotationBuilder.fromClass(elements, UnknownInitialization.class);
+
+    objectTypeMirror = processingEnv.getElementUtils().getTypeElement("java.lang.Object").asType();
+    unusedWhenElement = TreeUtils.getMethod(Unused.class, "when", 0, processingEnv);
+    underInitializationValueElement =
+        TreeUtils.getMethod(UnderInitialization.class, "value", 0, processingEnv);
+    unknownInitializationValueElement =
+        TreeUtils.getMethod(UnknownInitialization.class, "value", 0, processingEnv);
 
     Set<Class<? extends Annotation>> tempInitAnnos = new LinkedHashSet<>(4);
     tempInitAnnos.add(UnderInitialization.class);
@@ -264,8 +282,14 @@ public abstract class InitializationAnnotatedTypeFactory<
    * @return the annotation's argument
    */
   public TypeMirror getTypeFrameFromAnnotation(AnnotationMirror annotation) {
-    TypeMirror name = AnnotationUtils.getElementValue(annotation, "value", TypeMirror.class, true);
-    return name;
+    if (AnnotationUtils.areSameByName(
+        annotation, "org.checkerframework.checker.initialization.qual.UnderInitialization")) {
+      return AnnotationUtils.getElementValue(
+          annotation, underInitializationValueElement, TypeMirror.class, objectTypeMirror);
+    } else {
+      return AnnotationUtils.getElementValue(
+          annotation, unknownInitializationValueElement, TypeMirror.class, objectTypeMirror);
+    }
   }
 
   /**
@@ -477,9 +501,9 @@ public abstract class InitializationAnnotatedTypeFactory<
 
     // If all fields are initialized-only, and they are all initialized,
     // then:
-    // - if the class is final, this is @Initialized
-    // - otherwise, this is @UnderInitialization(CurrentClass) as
-    // there might still be subclasses that need initialization.
+    //  - if the class is final, this is @Initialized
+    //  - otherwise, this is @UnderInitialization(CurrentClass) as
+    //    there might still be subclasses that need initialization.
     if (areAllFieldsInitializedOnly(enclosingClass)) {
       Store store = getStoreBefore(tree);
       if (store != null
@@ -632,7 +656,7 @@ public abstract class InitializationAnnotatedTypeFactory<
       return false;
     }
 
-    Name when = AnnotationUtils.getElementValueClassName(unused, "when", false);
+    Name when = AnnotationUtils.getElementValueClassName(unused, unusedWhenElement);
     for (AnnotationMirror anno : receiverAnnos) {
       Name annoName = ((TypeElement) anno.getAnnotationType().asElement()).getQualifiedName();
       if (annoName.contentEquals(when)) {
@@ -693,14 +717,12 @@ public abstract class InitializationAnnotatedTypeFactory<
         // anything can be assigned to this field.
         type.replaceAnnotation(UNKNOWN_INITIALIZATION);
       } else if (computingAnnotatedTypeMirrorOfLHS) {
-        // The receiver is not initialized for this frame, but the type of a lhs is being
-        // computed.
+        // The receiver is not initialized for this frame, but the type of a lhs is being computed.
         // Change the type of the field to @UnknownInitialization so that
         // anything can be assigned to this field.
         type.replaceAnnotation(UNKNOWN_INITIALIZATION);
       } else {
-        // The receiver is not initialized for this frame and the type being computed is not
-        // a LHS.
+        // The receiver is not initialized for this frame and the type being computed is not a LHS.
         // Replace all annotations with the top annotation for that hierarchy.
         type.clearAnnotations();
         type.addAnnotations(qualHierarchy.getTopAnnotations());
