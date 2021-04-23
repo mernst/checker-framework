@@ -1,7 +1,7 @@
 import java.util.Collection;
 import java.util.Collections;
-import org.checkerframework.checker.enhancedfor.qual.EnhancedForForbidden;
-import org.checkerframework.checker.enhancedfor.qual.EnhancedForOk;
+import org.checkerframework.checker.boxing.qual.EnhancedForForbidden;
+import org.checkerframework.checker.boxing.qual.EnhancedForOk;
 
 public class EnhancedForJdkTest {
 
