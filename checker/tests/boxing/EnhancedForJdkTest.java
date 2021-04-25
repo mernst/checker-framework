@@ -6,8 +6,8 @@ import org.checkerframework.checker.boxing.qual.RefCollection;
 public class EnhancedForJdkTest {
 
   void jdkClient(@RefCollection Collection<String> o, @PrimCollection Collection<String> f) {
-    Collections.addAll(o);
-    Collections.addAll(f);
+    Collections.addAll(o, new String[] {});
+    Collections.addAll(f, new String[] {});
 
     o.toString();
     f.toString();
