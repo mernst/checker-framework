@@ -1,11 +1,11 @@
 import java.util.Collection;
 import java.util.Collections;
-import org.checkerframework.checker.boxing.qual.EnhancedForForbidden;
-import org.checkerframework.checker.boxing.qual.EnhancedForOk;
+import org.checkerframework.checker.boxing.qual.PrimCollection;
+import org.checkerframework.checker.boxing.qual.RefCollection;
 
 public class EnhancedForJdkTest {
 
-  void jdkClient(@EnhancedForOk Collection<String> o, @EnhancedForForbidden Collection<String> f) {
+  void jdkClient(@RefCollection Collection<String> o, @PrimCollection Collection<String> f) {
     Collections.addAll(o);
     Collections.addAll(f);
 

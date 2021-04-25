@@ -15,5 +15,5 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf({EnhancedForUnknown.class})
-public @interface EnhancedForForbidden {}
+@SubtypeOf({UnknownRepCollection.class})
+public @interface PrimCollection {}

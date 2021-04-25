@@ -10,10 +10,10 @@ import org.checkerframework.framework.qual.PolymorphicQualifier;
 /**
  * A polymorphic qualifier for the Enhanced For type system.
  *
- * <p>Any method written using @PolyEnhancedFor conceptually has two versions: one in which every
- * instance of @PolyEnhancedFor has been replaced by @EnhancedForOk, and one in which every instance
- * of @PolyEnhancedFor has been replaced by @EnhancedForForbidden. (And also versions
- * for @EnhancedForUnknown and @EnhancedForBottom.)
+ * <p>Any method written using @PolyRepCollection conceptually has two versions: one in which every
+ * instance of @PolyRepCollection has been replaced by @RefCollection, and one in which every instance
+ * of @PolyRepCollection has been replaced by @PrimCollection. (And also versions
+ * for @UnknownRepCollection and @CollectionRepBottom.)
  *
  * @checker_framework.manual #boxing-checker Boxing Checker
  * @checker_framework.manual #qualifier-polymorphism Qualifier polymorphism
@@ -21,5 +21,5 @@ import org.checkerframework.framework.qual.PolymorphicQualifier;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@PolymorphicQualifier(EnhancedForUnknown.class)
-public @interface PolyEnhancedFor {}
+@PolymorphicQualifier(UnknownRepCollection.class)
+public @interface PolyRepCollection {}

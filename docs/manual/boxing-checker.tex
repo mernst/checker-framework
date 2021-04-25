@@ -1,4 +1,4 @@
-rg\htmlhr
+\htmlhr
 \chapterAndLabel{Boxing Checker: avoid use of the enhanced \<for> statement}{boxing-checker}
 
 The Boxing Checker warns you if you use an enhanced \<for> statement
@@ -10,7 +10,7 @@ unnecessary boxing.
 An example is the JDK's
 \sunjavadoc{java.base/java/util/PrimitiveIterator.html}{\code{PrimitiveIterator}}
 and libraries that use or extend it such as the fastutil library (\url{https://fastutil.di.unimi.it/}).
-In iterators such as 
+In iterators such as
 \href{https://fastutil.di.unimi.it/docs/it/unimi/dsi/fastutil/ints/IntListIterator.html}{\<IntListIterator\>}
 in the \<next()> method is deprecated:  you should use \<nextInt()> instead,
 which avoids an unnecessary boxing and perhaps unboxing operation.  If you use the
@@ -39,23 +39,23 @@ These qualifiers make up the Enhanced For type system.
 
 \begin{description}
 
-\item[\refqualclass{checker/boxing/qual}{EnhancedForOk}]
+\item[\refqualclass{checker/boxing/qual}{RefCollection}]
   applies to an \<Iterator> that is acceptable to use in an enhanced \<for>
   statement.
-  It also applies to an \<Iterable> whose iterator is \<@EnhancedForOk>.
+  It also applies to an \<Iterable> whose iterator is \<@RefCollection>.
   It is the default annotation for \<Iterable>s and \<Iterator>s.
 
-\item[\refqualclass{checker/boxing/qual}{EnhancedForForbidden}]
+\item[\refqualclass{checker/boxing/qual}{PrimCollection}]
   applies to an \<Iterator> that is not acceptable to use in an enhanced \<for>
   statement.
-  It also applies to an \<Iterable> whose iterator is \<@EnhancedForForbidden>.
+  It also applies to an \<Iterable> whose iterator is \<@PrimCollection>.
   It applies to collections from the fastutil library.
 
-\item[\refqualclass{checker/boxing/qual}{EnhancedForUnknown}]
+\item[\refqualclass{checker/boxing/qual}{UnknownRepCollection}]
   indicates that it is not known at compile time whether it is acceptable
   to use the iterator in an enhanced \<for> statement.
 
-\item[\refqualclass{checker/boxing/qual}{EnhancedForBottom}]
+\item[\refqualclass{checker/boxing/qual}{CollectionRepBottom}]
   is the bottom qualifier.  It represents the \<null> value.  Programmers
   should rarely write it.
 
@@ -93,5 +93,5 @@ misuses, including misuses in your own code.
 
 
 % LocalWords:  enhancedfor foreach loop'' fastutil IntListIterator nextInt
-% LocalWords:  unboxing EnhancedForOk EnhancedForForbidden
-% LocalWords:  EnhancedForUnknown EnhancedForBottom
+% LocalWords:  unboxing RefCollection PrimCollection
+% LocalWords:  UnknownRepCollection CollectionRepBottom

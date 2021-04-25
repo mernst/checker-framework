@@ -1,39 +1,39 @@
 import java.util.Collection;
 import java.util.Iterator;
-import org.checkerframework.checker.boxing.qual.EnhancedForBottom;
-import org.checkerframework.checker.boxing.qual.EnhancedForForbidden;
-import org.checkerframework.checker.boxing.qual.EnhancedForOk;
-import org.checkerframework.checker.boxing.qual.EnhancedForUnknown;
+import org.checkerframework.checker.boxing.qual.CollectionRepBottom;
+import org.checkerframework.checker.boxing.qual.PrimCollection;
+import org.checkerframework.checker.boxing.qual.RefCollection;
+import org.checkerframework.checker.boxing.qual.UnknownRepCollection;
 
 public class EnhancedForDefaultTest {
 
   void testDefaults(Collection<String> c, Iterator<String> itor, Iterable<String> ible) {
 
-    @EnhancedForUnknown Collection<String> uc = c;
-    @EnhancedForOk Collection<String> oc = c;
+    @UnknownRepCollection Collection<String> uc = c;
+    @RefCollection Collection<String> oc = c;
     // :: error: (assignment.type.incompatible)
-    @EnhancedForForbidden Collection<String> fc = c;
+    @PrimCollection Collection<String> fc = c;
     // :: error: (assignment.type.incompatible)
-    @EnhancedForBottom Collection<String> bc = c;
+    @CollectionRepBottom Collection<String> bc = c;
 
-    @EnhancedForUnknown Iterator<String> uitor = itor;
-    @EnhancedForOk Iterator<String> oitor = itor;
+    @UnknownRepCollection Iterator<String> uitor = itor;
+    @RefCollection Iterator<String> oitor = itor;
     // :: error: (assignment.type.incompatible)
-    @EnhancedForForbidden Iterator<String> fitor = itor;
+    @PrimCollection Iterator<String> fitor = itor;
     // :: error: (assignment.type.incompatible)
-    @EnhancedForBottom Iterator<String> bitor = itor;
+    @CollectionRepBottom Iterator<String> bitor = itor;
 
-    @EnhancedForUnknown Iterable<String> uible = ible;
-    @EnhancedForOk Iterable<String> oible = ible;
+    @UnknownRepCollection Iterable<String> uible = ible;
+    @RefCollection Iterable<String> oible = ible;
     // :: error: (assignment.type.incompatible)
-    @EnhancedForForbidden Iterable<String> fible = ible;
+    @PrimCollection Iterable<String> fible = ible;
     // :: error: (assignment.type.incompatible)
-    @EnhancedForBottom Iterable<String> bible = ible;
-
-    // :: error: (anno.on.irrelevant)
-    @EnhancedForUnknown String us;
+    @CollectionRepBottom Iterable<String> bible = ible;
 
     // :: error: (anno.on.irrelevant)
-    @EnhancedForUnknown int ui;
+    @UnknownRepCollection String us;
+
+    // :: error: (anno.on.irrelevant)
+    @UnknownRepCollection int ui;
   }
 }
