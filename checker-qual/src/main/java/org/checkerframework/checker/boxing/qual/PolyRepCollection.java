@@ -11,8 +11,8 @@ import org.checkerframework.framework.qual.PolymorphicQualifier;
  * A polymorphic qualifier for the Enhanced For type system.
  *
  * <p>Any method written using @PolyRepCollection conceptually has two versions: one in which every
- * instance of @PolyRepCollection has been replaced by @RefCollection, and one in which every instance
- * of @PolyRepCollection has been replaced by @PrimCollection. (And also versions
+ * instance of @PolyRepCollection has been replaced by @RefCollection, and one in which every
+ * instance of @PolyRepCollection has been replaced by @PrimCollection. (And also versions
  * for @UnknownRepCollection and @CollectionRepBottom.)
  *
  * @checker_framework.manual #boxing-checker Boxing Checker
