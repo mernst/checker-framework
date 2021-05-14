@@ -1,6 +1,8 @@
 #!/bin/sh
 
 # Run wpi.sh on plume-lib projects.
+# This script is run by `./gradlew wpiPlumeLibTests` at the top level.
+
 # For each project:
 #  * clone it
 #  * remove its annotations
@@ -10,8 +12,6 @@
 # Afterward, the inferred annotations can be found in a directory named /tmp/wpi-stubs-XXXXXX .
 # The exact directory name is the last directory in the -Astubs= argument in file
 # checker-framework/checker/build/wpi-plumelib-tests/PROJECTNAME/dljc-out/typecheck.out .
-
-# This script is run by `./gradlew wpiPlumeLibTests` at the top level.
 
 # wpi.sh may exit with non-zero status.
 set +e
