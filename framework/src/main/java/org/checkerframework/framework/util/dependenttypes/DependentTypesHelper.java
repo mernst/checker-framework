@@ -282,7 +282,7 @@ public class DependentTypesHelper {
    * @param methodType type of the method or constructor invocation; is side-effected by this method
    * @param tree invocation of the method or constructor
    */
-  private void atInvocation(AnnotatedExecutableType methodType, ExpressionTree tree) {
+  private void atInvocation(AnnotatedTypeMirror methodType, ExpressionTree tree) {
     assert hasDependentAnnotations();
     Element methodElt = TreeUtils.elementFromUse(tree);
     // Because methodType is the type post type variable substitution, it has annotations from
@@ -303,40 +303,53 @@ public class DependentTypesHelper {
     // before type variable substitution.)
 
     // The annotations on `declaredMethodType` will be copied to `methodType`.
-    AnnotatedExecutableType declaredMethodType =
+    AnnotatedTypeMirror declaredMethodType =
         (AnnotatedExecutableType) factory.getAnnotatedType(methodElt);
     if (!hasDependentType(declaredMethodType)) {
       return;
     }
 
-    StringToJavaExpression stringToJavaExpr;
-    if (tree instanceof MethodInvocationTree) {
-      stringToJavaExpr =
-          stringExpr ->
-              StringToJavaExpression.atMethodInvocation(
-                  stringExpr, (MethodInvocationTree) tree, factory.getChecker());
-      if (debugStringToJavaExpression) {
-        System.out.printf(
-            "atInvocation(%s, %s) 1 created %s%n",
-            methodType, TreeUtils.toStringTruncated(tree, 65), stringToJavaExpr);
-      }
-    } else if (tree instanceof NewClassTree) {
-      stringToJavaExpr =
-          stringExpr ->
-              StringToJavaExpression.atConstructorInvocation(
-                  stringExpr, (NewClassTree) tree, factory.getChecker());
-      if (debugStringToJavaExpression) {
-        System.out.printf(
-            "atInvocation(%s, %s) 2 created %s%n",
-            methodType, TreeUtils.toStringTruncated(tree, 65), stringToJavaExpr);
-      }
-    } else {
-      throw new BugInCF("Unexpected tree: %s kind: %s", tree, tree.getKind());
-    }
+    StringToJavaExpression stringToJavaExpr = stringToJavaExprForAtInvocation(methodType, tree);
     convertAnnotatedTypeMirror(stringToJavaExpr, declaredMethodType);
     // Copies annotations that might have been viewpoint adapted from declaredMethodType to
     // methodType.
     this.viewpointAdaptedCopier.visit(declaredMethodType, methodType);
+  }
+
+  /**
+   * Returns the StringToJavaExpr for viewpoint-adapting to a method invocation.
+   *
+   * @param atm a type to convert; used only for diagnostics
+   * @param invocationTree a method or constructor invocation
+   * @return the StringToJavaExpr for viewpoint-adapting to a method invocation
+   */
+  private StringToJavaExpression stringToJavaExprForAtInvocation(
+      AnnotatedTypeMirror atm, Tree invocationTree) {
+    if (invocationTree instanceof MethodInvocationTree) {
+      StringToJavaExpression stringToJavaExpr =
+          stringExpr ->
+              StringToJavaExpression.atMethodInvocation(
+                  stringExpr, (MethodInvocationTree) invocationTree, factory.getChecker());
+      if (debugStringToJavaExpression) {
+        System.out.printf(
+            "atInvocation(%s, %s) 1 created %s%n",
+            atm, TreeUtils.toStringTruncated(invocationTree, 65), stringToJavaExpr);
+      }
+      return stringToJavaExpr;
+    } else if (invocationTree instanceof NewClassTree) {
+      StringToJavaExpression stringToJavaExpr =
+          stringExpr ->
+              StringToJavaExpression.atConstructorInvocation(
+                  stringExpr, (NewClassTree) invocationTree, factory.getChecker());
+      if (debugStringToJavaExpression) {
+        System.out.printf(
+            "atInvocation(%s, %s) 2 created %s%n",
+            atm, TreeUtils.toStringTruncated(invocationTree, 65), stringToJavaExpr);
+      }
+      return stringToJavaExpr;
+    } else {
+      throw new BugInCF("Unexpected tree: %s kind: %s", invocationTree, invocationTree.getKind());
+    }
   }
 
   /**

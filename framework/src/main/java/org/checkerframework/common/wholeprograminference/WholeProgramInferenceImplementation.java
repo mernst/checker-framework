@@ -207,10 +207,17 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
       VariableElement ve = methodElt.getParameters().get(i);
       AnnotatedTypeMirror paramATM = atypeFactory.getAnnotatedType(ve);
       AnnotatedTypeMirror argATM = atypeFactory.getAnnotatedType(argTree);
-      System.out.printf("updateInferredExecutableParameterTypes: argATM=%s%n", argATM);
+      System.out.printf(
+          "updateInferredExecutableParameterTypes:%n  ve = %s%n  paramATM = %s%n  argATM=%s%n",
+          ve, paramATM, argATM);
       atypeFactory.wpiAdjustForUpdateNonField(argATM);
+      System.out.printf("adjusted: %s%n", argATM);
+      DependentTypesHelper dependentTypesHelper =
+          ((GenericAnnotatedTypeFactory) atypeFactory).getDependentTypesHelper();
+      dependentTypesHelper.atMethodInvocation(argATM, methodDeclTree);
       T paramAnnotations =
           storage.getParameterAnnotations(methodElt, i, paramATM, ve, atypeFactory);
+      System.out.printf("paramAnnotations: %s%n", paramAnnotations);
       updateAnnotationSet(paramAnnotations, TypeUseLocation.PARAMETER, argATM, paramATM, file);
     }
   }

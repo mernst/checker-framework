@@ -986,6 +986,7 @@ public abstract class CFAbstractTransfer<
     // Perform WPI before the store has been side-effected.
     if (shouldPerformWholeProgramInference(n.getTree(), method)) {
       // Updates the inferred parameter types of the invoked method.
+      System.out.printf("about to call updateFromMethodInvocation(%s, %s, %s)%n", n, method, store);
       analysis.atypeFactory.getWholeProgramInference().updateFromMethodInvocation(n, method, store);
     }
 
