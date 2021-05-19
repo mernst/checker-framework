@@ -212,9 +212,10 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
           ve, paramATM, argATM);
       atypeFactory.wpiAdjustForUpdateNonField(argATM);
       System.out.printf("adjusted: %s%n", argATM);
-      DependentTypesHelper dependentTypesHelper =
-          ((GenericAnnotatedTypeFactory) atypeFactory).getDependentTypesHelper();
-      // TODO: dependentTypesHelper.atMethodInvocation(argATM, methodDeclTree);
+      // TODO:
+      // DependentTypesHelper dependentTypesHelper =
+      //     ((GenericAnnotatedTypeFactory) atypeFactory).getDependentTypesHelper();
+      // dependentTypesHelper.atMethodInvocation(argATM, methodDeclTree);
       T paramAnnotations =
           storage.getParameterAnnotations(methodElt, i, paramATM, ve, atypeFactory);
       System.out.printf("paramAnnotations: %s%n", paramAnnotations);
