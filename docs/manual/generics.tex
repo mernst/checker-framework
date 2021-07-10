@@ -825,7 +825,9 @@ use collections.
 
 \subsubsectionAndLabel{Don't use a single polymorphic qualifier on a formal parameter type}{qualifier-polymorphism-formal-parameter}
 
-There is no point to writing
+There is no point to writing just one polymorphic qualifier in a method
+signature, as the main type qualifier on a formal parameter type.
+This signature:
 
 \begin{Verbatim}
   void m(@PolyNull Object obj)
@@ -845,6 +847,19 @@ type-check) than writing just
 \begin{Verbatim}
   void m(@Nullable Object obj)
 \end{Verbatim}
+
+However, it does make sense to write a single polymorphic qualifier
+\emph{within} a formal parameter type, as in
+\begin{Verbatim}
+  void m2a(List<@PolyNull MySubClass> strings)
+\end{Verbatim}
+which is similar to
+\begin{Verbatim}
+  void m2b(List<? extends @Nullable MySubClass> strings)
+\end{Verbatim}
+Method \<m2b()> can be called on (for example) \code{List<@Nullable
+  MySubClass>} and \code{List<@NonNull MySubClass>}, which are not legal
+arguments to method \<m2a()>.
 
 
 \subsectionAndLabel{Defining a polymorphic qualifier}{qualifier-polymorphism-define}
@@ -956,7 +971,7 @@ the receiver expression at call sites to \<append>. For example,
 \begin{Verbatim}
 @Untainted Buffer untaintedBuffer = ...;
 @Tainted String taintedString = ...;
-untaintedBuffer.append(taintedString); // error: argument.type.incompatible
+untaintedBuffer.append(taintedString); // error: argument
 \end{Verbatim}
 The above \<append> call is illegal because the \<@PolyTainted> is instantiated to \<@Untainted> and
 the type of the argument is \<@Tainted> which is a supertype of \<@Untainted>.  If the type of

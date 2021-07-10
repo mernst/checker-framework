@@ -11,7 +11,6 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.UnaryTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
@@ -114,7 +113,6 @@ import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.CollectionUtils;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
-import org.checkerframework.javacutil.SystemUtil;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypeSystemError;
@@ -356,7 +354,7 @@ public abstract class GenericAnnotatedTypeFactory<
       Types types = getChecker().getTypeUtils();
       Elements elements = getElementUtils();
       Class<?>[] classes = relevantJavaTypesAnno.value();
-      this.relevantJavaTypes = new HashSet<>(SystemUtil.mapCapacity(classes.length));
+      this.relevantJavaTypes = new HashSet<>(CollectionsPlume.mapCapacity(classes.length));
       this.arraysAreRelevant = false;
       for (Class<?> clazz : classes) {
         if (clazz == Object[].class) {
@@ -1275,7 +1273,7 @@ public abstract class GenericAnnotatedTypeFactory<
     }
 
     // no need to scan annotations
-    if (classTree.getKind() == Kind.ANNOTATION_TYPE) {
+    if (classTree.getKind() == Tree.Kind.ANNOTATION_TYPE) {
       // Mark finished so that default annotations will be applied.
       scannedClasses.put(classTree, ScanState.FINISHED);
       return;
@@ -1405,7 +1403,8 @@ public abstract class GenericAnnotatedTypeFactory<
         while (!lambdaQueue.isEmpty()) {
           Pair<LambdaExpressionTree, Store> lambdaPair = lambdaQueue.poll();
           MethodTree mt =
-              (MethodTree) TreePathUtil.enclosingOfKind(getPath(lambdaPair.first), Kind.METHOD);
+              (MethodTree)
+                  TreePathUtil.enclosingOfKind(getPath(lambdaPair.first), Tree.Kind.METHOD);
           analyze(
               queue,
               lambdaQueue,
@@ -1817,10 +1816,23 @@ public abstract class GenericAnnotatedTypeFactory<
 
   /**
    * Returns the inferred value (by the org.checkerframework.dataflow analysis) for a given tree.
+   *
+   * @param tree the tree
+   * @return the value for the tree, if one has been computed by dataflow. If no value has been
+   *     computed, null is returned (this does not mean that no value will ever be computed for the
+   *     given tree).
    */
-  public Value getInferredValueFor(Tree tree) {
+  public @Nullable Value getInferredValueFor(Tree tree) {
     if (tree == null) {
       throw new BugInCF("GenericAnnotatedTypeFactory.getInferredValueFor called with null tree");
+    }
+    if (stubTypes.isParsing()
+        || ajavaTypes.isParsing()
+        || (currentFileAjavaTypes != null && currentFileAjavaTypes.isParsing())) {
+      // When parsing stub or ajava files, the analysis is not running (it has not yet started),
+      // and flowResult is null (no analysis has occurred). Instead of attempting to find a
+      // non-existent inferred type, return null.
+      return null;
     }
     Value as = null;
     if (analysis.isRunning()) {
@@ -1929,7 +1941,7 @@ public abstract class GenericAnnotatedTypeFactory<
     }
 
     Tree declTree = declarationFromElement(elt);
-    if (declTree == null || declTree.getKind() != Kind.VARIABLE) {
+    if (declTree == null || declTree.getKind() != Tree.Kind.VARIABLE) {
       return;
     }
 
@@ -2022,17 +2034,29 @@ public abstract class GenericAnnotatedTypeFactory<
   }
 
   /**
-   * Returns the AnnotatedTypeFactory of the subchecker and copies the current visitor state to the
-   * sub-factory so that the types are computed properly. Because the visitor state is copied, call
-   * this method each time a subfactory is needed rather than store the returned subfactory in a
-   * field.
+   * Returns the type factory used by a subchecker. Returns null if no matching subchecker was found
+   * or if the type factory is null. The caller must know the exact checker class to request.
    *
-   * @see BaseTypeChecker#getTypeFactoryOfSubchecker(Class)
+   * <p>Because the visitor state is copied, call this method each time a subfactory is needed
+   * rather than store the returned subfactory in a field.
+   *
+   * @param subCheckerClass the exact class of the subchecker
+   * @param <T> the type of {@code subCheckerClass}'s {@link AnnotatedTypeFactory}
+   * @return the AnnotatedTypeFactory of the subchecker or null if no subchecker exists
    */
   @SuppressWarnings("TypeParameterUnusedInFormals") // Intentional abuse
-  public <T extends GenericAnnotatedTypeFactory<?, ?, ?, ?>, U extends BaseTypeChecker>
-      T getTypeFactoryOfSubchecker(Class<U> checkerClass) {
-    T subFactory = checker.getTypeFactoryOfSubchecker(checkerClass);
+  public <T extends GenericAnnotatedTypeFactory<?, ?, ?, ?>> @Nullable T getTypeFactoryOfSubchecker(
+      Class<? extends BaseTypeChecker> subCheckerClass) {
+    BaseTypeChecker subchecker = checker.getSubchecker(subCheckerClass);
+    if (subchecker == null) {
+      return null;
+    }
+
+    @SuppressWarnings(
+        "unchecked" // This might not be safe, but the caller of the method should use the correct
+    // type.
+    )
+    T subFactory = (T) subchecker.getTypeFactory();
     if (subFactory != null && subFactory.getVisitorState() != null) {
       // Copy the visitor state so that the types are computed properly.
       VisitorState subFactoryVisitorState = subFactory.getVisitorState();
@@ -2301,10 +2325,12 @@ public abstract class GenericAnnotatedTypeFactory<
    */
   // TODO: Cache results to avoid recomputation.
   public AnnotatedTypeMirror getDefaultValueAnnotatedType(TypeMirror typeMirror) {
-    AnnotatedTypeMirror defaultValue = AnnotatedTypeMirror.createType(typeMirror, this, false);
-    addComputedTypeAnnotations(
-        TreeUtils.getDefaultValueTree(typeMirror, processingEnv), defaultValue, false);
-    return defaultValue;
+    Tree defaultValueTree = TreeUtils.getDefaultValueTree(typeMirror, processingEnv);
+    TypeMirror defaultValueTM = TreeUtils.typeOf(defaultValueTree);
+    AnnotatedTypeMirror defaultValueATM =
+        AnnotatedTypeMirror.createType(defaultValueTM, this, false);
+    addComputedTypeAnnotations(defaultValueTree, defaultValueATM, false);
+    return defaultValueATM;
   }
 
   /**
