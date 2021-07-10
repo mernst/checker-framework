@@ -5,7 +5,7 @@ public class Issue345 {
   String f2;
 
   {
-    // :: error: (assignment.type.incompatible) :: error: (initialization.invalid.field.access)
+    // :: error: (assignment) :: error: (initialization.invalid.field.access)
     f1 = f2;
     f2 = f1;
     f2.toString(); // Null pointer exception here

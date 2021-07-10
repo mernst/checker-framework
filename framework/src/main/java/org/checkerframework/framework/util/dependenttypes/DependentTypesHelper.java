@@ -10,7 +10,6 @@ import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.ModifiersTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import java.lang.annotation.Annotation;
@@ -208,6 +207,9 @@ public class DependentTypesHelper {
   /// Methods that convert annotations
   ///
 
+  /** If true, log information about where lambdas are created. */
+  private static boolean debugStringToJavaExpression = false;
+
   /**
    * Viewpoint-adapts the dependent type annotations on the bounds of the type parameters of the
    * declaration of {@code typeUse} to {@code typeUse}.
@@ -224,6 +226,10 @@ public class DependentTypesHelper {
 
     StringToJavaExpression stringToJavaExpr =
         stringExpr -> StringToJavaExpression.atTypeDecl(stringExpr, typeUse, factory.getChecker());
+    if (debugStringToJavaExpression) {
+      System.out.printf(
+          "atParameterizedTypeUse(%s, %s) created %s%n", bounds, typeUse, stringToJavaExpr);
+    }
     for (AnnotatedTypeParameterBounds bound : bounds) {
       convertAnnotatedTypeMirror(stringToJavaExpr, bound.getUpperBound());
       convertAnnotatedTypeMirror(stringToJavaExpr, bound.getLowerBound());
@@ -307,11 +313,21 @@ public class DependentTypesHelper {
           stringExpr ->
               StringToJavaExpression.atMethodInvocation(
                   stringExpr, (MethodInvocationTree) tree, factory.getChecker());
+      if (debugStringToJavaExpression) {
+        System.out.printf(
+            "atInvocation(%s, %s) 1 created %s%n",
+            methodType, TreeUtils.toStringTruncated(tree, 65), stringToJavaExpr);
+      }
     } else if (tree instanceof NewClassTree) {
       stringToJavaExpr =
           stringExpr ->
               StringToJavaExpression.atConstructorInvocation(
                   stringExpr, (NewClassTree) tree, factory.getChecker());
+      if (debugStringToJavaExpression) {
+        System.out.printf(
+            "atInvocation(%s, %s) 2 created %s%n",
+            methodType, TreeUtils.toStringTruncated(tree, 65), stringToJavaExpr);
+      }
     } else {
       throw new BugInCF("Unexpected tree: %s kind: %s", tree, tree.getKind());
     }
@@ -331,10 +347,15 @@ public class DependentTypesHelper {
       return;
     }
 
-    convertAnnotatedTypeMirror(
+    StringToJavaExpression stringToJavaExpr =
         stringExpr ->
-            StringToJavaExpression.atFieldAccess(stringExpr, fieldAccess, factory.getChecker()),
-        type);
+            StringToJavaExpression.atFieldAccess(stringExpr, fieldAccess, factory.getChecker());
+    if (debugStringToJavaExpression) {
+      System.out.printf(
+          "atFieldAccess(%s, %s) created %s%n",
+          type, TreeUtils.toStringTruncated(fieldAccess, 65), stringToJavaExpr);
+    }
+    convertAnnotatedTypeMirror(stringToJavaExpr, type);
   }
 
   /**
@@ -350,10 +371,15 @@ public class DependentTypesHelper {
       return;
     }
 
-    convertAnnotatedTypeMirror(
+    StringToJavaExpression stringToJavaExpr =
         stringExpr ->
-            StringToJavaExpression.atMethodBody(stringExpr, methodDeclTree, factory.getChecker()),
-        atm);
+            StringToJavaExpression.atMethodBody(stringExpr, methodDeclTree, factory.getChecker());
+    if (debugStringToJavaExpression) {
+      System.out.printf(
+          "atMethodBody(%s, %s) 1 created %s%n",
+          atm, TreeUtils.toStringTruncated(methodDeclTree, 65), stringToJavaExpr);
+    }
+    convertAnnotatedTypeMirror(stringToJavaExpr, atm);
   }
 
   /**
@@ -367,9 +393,12 @@ public class DependentTypesHelper {
       return;
     }
 
-    convertAnnotatedTypeMirror(
-        stringExpr -> StringToJavaExpression.atTypeDecl(stringExpr, typeElt, factory.getChecker()),
-        type);
+    StringToJavaExpression stringToJavaExpr =
+        stringExpr -> StringToJavaExpression.atTypeDecl(stringExpr, typeElt, factory.getChecker());
+    if (debugStringToJavaExpression) {
+      System.out.printf("atTypeDecl(%s, %s) created %s%n", type, typeElt, stringToJavaExpr);
+    }
+    convertAnnotatedTypeMirror(stringToJavaExpr, type);
   }
 
   /** A set containing {@link Tree.Kind#METHOD} and {@link Tree.Kind#LAMBDA_EXPRESSION}. */
@@ -404,42 +433,74 @@ public class DependentTypesHelper {
         }
         Tree enclTree = pathTillEnclTree.getLeaf();
 
-        if (enclTree.getKind() == Kind.METHOD) {
+        if (enclTree.getKind() == Tree.Kind.METHOD) {
           MethodTree methodDeclTree = (MethodTree) enclTree;
-          convertAnnotatedTypeMirror(
+          StringToJavaExpression stringToJavaExpr =
               stringExpr ->
                   StringToJavaExpression.atMethodBody(
-                      stringExpr, methodDeclTree, factory.getChecker()),
-              type);
+                      stringExpr, methodDeclTree, factory.getChecker());
+          if (debugStringToJavaExpression) {
+            System.out.printf(
+                "atVariableDeclaration(%s, %s, %s) 1 created %s%n",
+                type,
+                TreeUtils.toStringTruncated(declarationTree, 65),
+                variableElt,
+                stringToJavaExpr);
+          }
+          convertAnnotatedTypeMirror(stringToJavaExpr, type);
         } else {
           // Lambdas can use local variables defined in the enclosing method, so allow
           // identifiers to be locals in scope at the location of the lambda.
-          convertAnnotatedTypeMirror(
+          StringToJavaExpression stringToJavaExpr =
               stringExpr ->
                   StringToJavaExpression.atLambdaParameter(
                       stringExpr,
                       (LambdaExpressionTree) enclTree,
                       pathToVariableDecl.getParentPath(),
-                      factory.getChecker()),
-              type);
+                      factory.getChecker());
+          if (debugStringToJavaExpression) {
+            System.out.printf(
+                "atVariableDeclaration(%s, %s, %s) 2 created %s%n",
+                type,
+                TreeUtils.toStringTruncated(declarationTree, 65),
+                variableElt,
+                stringToJavaExpr);
+          }
+          convertAnnotatedTypeMirror(stringToJavaExpr, type);
         }
         break;
 
       case LOCAL_VARIABLE:
       case RESOURCE_VARIABLE:
       case EXCEPTION_PARAMETER:
-        convertAnnotatedTypeMirror(
+        StringToJavaExpression stringToJavaExprVar =
             stringExpr ->
-                StringToJavaExpression.atPath(stringExpr, pathToVariableDecl, factory.getChecker()),
-            type);
+                StringToJavaExpression.atPath(stringExpr, pathToVariableDecl, factory.getChecker());
+        if (debugStringToJavaExpression) {
+          System.out.printf(
+              "atVariableDeclaration(%s, %s, %s) 3 created %s%n",
+              type,
+              TreeUtils.toStringTruncated(declarationTree, 65),
+              variableElt,
+              stringToJavaExprVar);
+        }
+        convertAnnotatedTypeMirror(stringToJavaExprVar, type);
         break;
 
       case FIELD:
       case ENUM_CONSTANT:
-        convertAnnotatedTypeMirror(
+        StringToJavaExpression stringToJavaExprField =
             stringExpr ->
-                StringToJavaExpression.atFieldDecl(stringExpr, variableElt, factory.getChecker()),
-            type);
+                StringToJavaExpression.atFieldDecl(stringExpr, variableElt, factory.getChecker());
+        if (debugStringToJavaExpression) {
+          System.out.printf(
+              "atVariableDeclaration(%s, %s, %s) 4 created %s%n",
+              type,
+              TreeUtils.toStringTruncated(declarationTree, 65),
+              variableElt,
+              stringToJavaExprField);
+        }
+        convertAnnotatedTypeMirror(stringToJavaExprField, type);
         break;
 
       default:
@@ -470,9 +531,14 @@ public class DependentTypesHelper {
     if (path == null) {
       return;
     }
-    convertAnnotatedTypeMirror(
-        stringExpr -> StringToJavaExpression.atPath(stringExpr, path, factory.getChecker()),
-        annotatedType);
+    StringToJavaExpression stringToJavaExpr =
+        stringExpr -> StringToJavaExpression.atPath(stringExpr, path, factory.getChecker());
+    if (debugStringToJavaExpression) {
+      System.out.printf(
+          "atExpression(%s, %s) created %s%n",
+          annotatedType, TreeUtils.toStringTruncated(expressionTree, 65), stringToJavaExpr);
+    }
+    convertAnnotatedTypeMirror(stringToJavaExpr, annotatedType);
   }
 
   /**
@@ -573,6 +639,11 @@ public class DependentTypesHelper {
             return null;
           }
         };
+    if (debugStringToJavaExpression) {
+      System.out.printf(
+          "delocalize(%s, %s) created %s%n",
+          atm, TreeUtils.toStringTruncated(methodDeclTree, 65), stringToJavaExpr);
+    }
     convertAnnotatedTypeMirror(stringToJavaExpr, atm);
   }
 
@@ -738,7 +809,7 @@ public class DependentTypesHelper {
    *
    * @param expression an expression that caused {@code e} when parsed
    * @param e the exception thrown when parsing {@code expression}
-   * @return a java expression
+   * @return a Java expression
    */
   protected PassThroughExpression createError(String expression, JavaExpressionParseException e) {
     return new PassThroughExpression(objectTM, new DependentTypesError(expression, e).toString());
@@ -749,7 +820,7 @@ public class DependentTypesHelper {
    *
    * @param expression an expression that caused {@code error} when parsed
    * @param error the error message caused by {@code expression}
-   * @return a java expression
+   * @return a Java expression
    */
   protected PassThroughExpression createError(String expression, String error) {
     return new PassThroughExpression(
@@ -815,8 +886,8 @@ public class DependentTypesHelper {
   ///
 
   /**
-   * Reports an expression.unparsable.type.invalid error for each Java expression in the given type
-   * that is an expression error string.
+   * Reports an expression.unparsable error for each Java expression in the given type that is an
+   * expression error string.
    *
    * @param atm annotated type to check for expression errors
    * @param errorTree the tree at which to report any found errors
@@ -831,7 +902,7 @@ public class DependentTypesHelper {
       return;
     }
 
-    if (errorTree.getKind() == Kind.VARIABLE) {
+    if (errorTree.getKind() == Tree.Kind.VARIABLE) {
       ModifiersTree modifiers = ((VariableTree) errorTree).getModifiers();
       errorTree = ((VariableTree) errorTree).getType();
       for (AnnotationTree annoTree : modifiers.getAnnotations()) {
@@ -850,7 +921,7 @@ public class DependentTypesHelper {
   }
 
   /**
-   * Report the given errors as "expression.unparsable.type.invalid".
+   * Report the given errors as "expression.unparsable".
    *
    * @param errorTree where to report the errors
    * @param errors the errors to report
@@ -858,7 +929,7 @@ public class DependentTypesHelper {
   protected void reportErrors(Tree errorTree, List<DependentTypesError> errors) {
     SourceChecker checker = factory.getChecker();
     for (DependentTypesError dte : errors) {
-      checker.reportError(errorTree, "expression.unparsable.type.invalid", dte.format());
+      checker.reportError(errorTree, "expression.unparsable", dte.format());
     }
   }
 
@@ -911,9 +982,9 @@ public class DependentTypesHelper {
   }
 
   /**
-   * Reports an expression.unparsable.type.invalid error for each Java expression in the given class
-   * declaration AnnotatedTypeMirror that is an expression error string. Note that this reports
-   * errors in the class declaration itself, not the body or extends/implements clauses.
+   * Reports an expression.unparsable error for each Java expression in the given class declaration
+   * AnnotatedTypeMirror that is an expression error string. Note that this reports errors in the
+   * class declaration itself, not the body or extends/implements clauses.
    *
    * @param classTree class to check
    * @param type annotated type of the class
@@ -929,8 +1000,8 @@ public class DependentTypesHelper {
   }
 
   /**
-   * Reports an expression.unparsable.type.invalid error for each Java expression in the method
-   * declaration AnnotatedTypeMirror that is an expression error string.
+   * Reports an expression.unparsable error for each Java expression in the method declaration
+   * AnnotatedTypeMirror that is an expression error string.
    *
    * @param methodDeclTree method to check
    * @param type annotated type of the method
@@ -955,8 +1026,8 @@ public class DependentTypesHelper {
   }
 
   /**
-   * Reports an expression.unparsable.type.invalid error for each Java expression in the given type
-   * variables that is an expression error string.
+   * Reports an expression.unparsable error for each Java expression in the given type variables
+   * that is an expression error string.
    *
    * @param node a method declaration
    * @param methodType annotated type of the method
@@ -965,9 +1036,14 @@ public class DependentTypesHelper {
       MethodTree node, AnnotatedExecutableType methodType) {
     for (int i = 0; i < methodType.getTypeVariables().size(); i++) {
       AnnotatedTypeMirror atm = methodType.getTypeVariables().get(i);
-      convertAnnotatedTypeMirror(
-          stringExpr -> StringToJavaExpression.atMethodBody(stringExpr, node, factory.getChecker()),
-          atm);
+      StringToJavaExpression stringToJavaExpr =
+          stringExpr -> StringToJavaExpression.atMethodBody(stringExpr, node, factory.getChecker());
+      if (debugStringToJavaExpression) {
+        System.out.printf(
+            "checkTypeVariablesForErrorExpressions(%s, %s) created %s%n",
+            node, methodType, stringToJavaExpr);
+      }
+      convertAnnotatedTypeMirror(stringToJavaExpr, atm);
       checkTypeForErrorExpressions(atm, node.getTypeParameters().get(i));
     }
   }

@@ -28,11 +28,11 @@ import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.SynchronizedTree;
 import com.sun.source.tree.ThrowTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.TypeCastTree;
 import com.sun.source.tree.UnaryTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.tree.WhileLoopTree;
+import com.sun.source.util.TreePath;
 import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Set;
@@ -60,6 +60,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutab
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedPrimitiveType;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
+import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -131,7 +132,7 @@ public class NullnessVisitor
   @Override
   public boolean isValidUse(AnnotatedPrimitiveType type, Tree tree) {
     // The Nullness Checker issues a more comprehensible "nullness.on.primitive" error rather
-    // than the "type.invalid.annotations.on.use" error this method would issue.
+    // than the "annotations.on.use" error this method would issue.
     return true;
   }
 
@@ -152,17 +153,57 @@ public class NullnessVisitor
       @CompilerMessageKey String errorKey,
       Object... extraArgs) {
 
-    // allow MonotonicNonNull to be initialized to null at declaration
-    if (varTree.getKind() == Tree.Kind.VARIABLE) {
-      Element elem = TreeUtils.elementFromDeclaration((VariableTree) varTree);
-      if (atypeFactory.fromElement(elem).hasEffectiveAnnotation(MONOTONIC_NONNULL)
-          && !checker.getLintOption(
-              NullnessChecker.LINT_NOINITFORMONOTONICNONNULL,
-              NullnessChecker.LINT_DEFAULT_NOINITFORMONOTONICNONNULL)) {
-        return;
-      }
+    // Allow a MonotonicNonNull field to be initialized to null at its declaration, in a
+    // constructor, or in an initializer block.  (The latter two are, strictly speaking, unsound
+    // because the constructor or initializer block might have previously set the field to a
+    // non-null value.  Maybe add an option to disable that behavior.)
+    Element elem = initializedElement(varTree);
+    if (elem != null
+        && atypeFactory.fromElement(elem).hasEffectiveAnnotation(MONOTONIC_NONNULL)
+        && !checker.getLintOption(
+            NullnessChecker.LINT_NOINITFORMONOTONICNONNULL,
+            NullnessChecker.LINT_DEFAULT_NOINITFORMONOTONICNONNULL)) {
+      return;
     }
     super.commonAssignmentCheck(varTree, valueExp, errorKey, extraArgs);
+  }
+
+  /**
+   * Returns the variable element, if the argument is an initialization; otherwise returns null.
+   *
+   * @param varTree an assignment LHS
+   * @return the initialized element, or null
+   */
+  @SuppressWarnings("UnusedMethod")
+  private Element initializedElement(Tree varTree) {
+    switch (varTree.getKind()) {
+      case VARIABLE:
+        // It's a variable declaration.
+        return TreeUtils.elementFromDeclaration((VariableTree) varTree);
+
+      case MEMBER_SELECT:
+        MemberSelectTree mst = (MemberSelectTree) varTree;
+        ExpressionTree receiver = mst.getExpression();
+        // This recognizes "this.fieldname = ..." but not "MyClass.fieldname = ..." or
+        // "MyClass.this.fieldname = ...".  The latter forms are probably rare in a constructor.
+        // Note that this method should return non-null only for fields of this class, not fields of
+        // any other class, including outer classes.
+        if (receiver.getKind() != Tree.Kind.IDENTIFIER
+            || !((IdentifierTree) receiver).getName().contentEquals("this")) {
+          return null;
+        }
+        // fallthrough
+      case IDENTIFIER:
+        TreePath path = getCurrentPath();
+        if (TreePathUtil.inConstructor(path)) {
+          return TreeUtils.elementFromUse((ExpressionTree) varTree);
+        } else {
+          return null;
+        }
+
+      default:
+        return null;
+    }
   }
 
   @Override
@@ -206,7 +247,7 @@ public class NullnessVisitor
         checker.reportError(node, "nullness.on.outer");
       }
     } else if (!(TreeUtils.isSelfAccess(node)
-        || node.getExpression().getKind() == Kind.PARAMETERIZED_TYPE
+        || node.getExpression().getKind() == Tree.Kind.PARAMETERIZED_TYPE
         // case 8. static member access
         || ElementUtils.isStatic(e))) {
       checkForNullability(node.getExpression(), DEREFERENCE_OF_NULLABLE);
@@ -240,8 +281,7 @@ public class NullnessVisitor
         && (checker.getLintOption("soundArrayCreationNullness", false)
             // temporary, for backward compatibility
             || checker.getLintOption("forbidnonnullarraycomponents", false))) {
-      checker.reportError(
-          node, "new.array.type.invalid", componentType.getAnnotations(), type.toString());
+      checker.reportError(node, "new.array", componentType.getAnnotations(), type.toString());
     }
 
     return super.visitNewArray(node, p);
@@ -362,7 +402,7 @@ public class NullnessVisitor
   public Void visitInstanceOf(InstanceOfTree node, Void p) {
     // The "reference type" is the type after "instanceof".
     Tree refTypeTree = node.getType();
-    if (refTypeTree.getKind() == Kind.ANNOTATED_TYPE) {
+    if (refTypeTree.getKind() == Tree.Kind.ANNOTATED_TYPE) {
       List<? extends AnnotationMirror> annotations =
           TreeUtils.annotationsFromTree((AnnotatedTypeTree) refTypeTree);
       if (AnnotationUtils.containsSame(annotations, NULLABLE)) {
@@ -582,6 +622,11 @@ public class NullnessVisitor
   @Override
   protected void checkMethodInvocability(
       AnnotatedExecutableType method, MethodInvocationTree node) {
+    if (method.getReceiverType() == null) {
+      // Static methods don't have a receiver to check.
+      return;
+    }
+
     if (!TreeUtils.isSelfAccess(node)
         &&
         // Static methods don't have a receiver
@@ -602,7 +647,12 @@ public class NullnessVisitor
     super.checkMethodInvocability(method, node);
   }
 
-  /** @return true if binary operation could cause an unboxing operation */
+  /**
+   * Returns true if the binary operation could cause an unboxing operation.
+   *
+   * @param tree a binary operation
+   * @return true if the binary operation could cause an unboxing operation
+   */
   private final boolean isUnboxingOperation(BinaryTree tree) {
     if (tree.getKind() == Tree.Kind.EQUAL_TO || tree.getKind() == Tree.Kind.NOT_EQUAL_TO) {
       // it is valid to check equality between two reference types, even
@@ -616,13 +666,23 @@ public class NullnessVisitor
     }
   }
 
-  /** @return true if the type of the tree is a super of String */
+  /**
+   * Returns true if the type of the tree is a super of String.
+   *
+   * @param tree a tree
+   * @return true if the type of the tree is a super of String
+   */
   private final boolean isString(ExpressionTree tree) {
     TypeMirror type = TreeUtils.typeOf(tree);
     return types.isAssignable(stringType, type);
   }
 
-  /** @return true if the type of the tree is a primitive */
+  /**
+   * Returns true if the type of the tree is a primitive.
+   *
+   * @param tree a tree
+   * @return true if the type of the tree is a primitive
+   */
   private static final boolean isPrimitive(ExpressionTree tree) {
     return TreeUtils.typeOf(tree).getKind().isPrimitive();
   }
@@ -653,14 +713,14 @@ public class NullnessVisitor
         boolean nullnessCheckerAnno = containsSameByName(atypeFactory.getNullnessAnnotations(), a);
         if (nullnessCheckerAnno && !AnnotationUtils.areSame(NONNULL, a)) {
           // The type is not non-null => warning
-          checker.reportWarning(node, "new.class.type.invalid", type.getAnnotations());
+          checker.reportWarning(node, "new.class", type.getAnnotations());
           // Note that other consistency checks are made by isValid.
         }
       }
       if (t.toString().contains("@PolyNull")) {
         // TODO: this is a hack, but PolyNull gets substituted
         // afterwards
-        checker.reportWarning(node, "new.class.type.invalid", type.getAnnotations());
+        checker.reportWarning(node, "new.class", type.getAnnotations());
       }
     }
     // TODO: It might be nicer to introduce a framework-level
