@@ -28,7 +28,7 @@ import org.checkerframework.javacutil.TreeUtils;
 
 /**
  * A testing class that can be used to test {@link TypeElement}. In particular it tests that the
- * types read from classfiles are the same to the ones from java files.
+ * types read from classfiles are the same to the ones from Java files.
  *
  * <p>For testing, you need to do the following:
  *
@@ -102,7 +102,7 @@ public class TypeOutputtingChecker extends BaseTypeChecker {
    *
    * @param args command-line arguments
    */
-  @SuppressWarnings("signature:argument.type.incompatible") // user-supplied input, uncheckable
+  @SuppressWarnings("signature:argument") // user-supplied input, uncheckable
   public static void main(String[] args) {
     new TypeOutputtingChecker().run(args);
   }

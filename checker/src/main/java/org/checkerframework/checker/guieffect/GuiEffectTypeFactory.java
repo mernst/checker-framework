@@ -451,7 +451,7 @@ public class GuiEffectTypeFactory extends BaseAnnotatedTypeFactory {
       AnnotatedTypeMirror.AnnotatedExecutableType overriddenMethod =
           AnnotatedTypes.asMemberOf(types, this, overriddenType, pair.getValue());
       ExecutableElement overriddenMethodElt = pair.getValue();
-      if (debugSpew)
+      if (debugSpew) {
         System.err.println(
             "Found "
                 + declaringType
@@ -461,13 +461,14 @@ public class GuiEffectTypeFactory extends BaseAnnotatedTypeFactory {
                 + overriddenType
                 + "::"
                 + overriddenMethod);
+      }
       Effect eff = getDeclaredEffect(overriddenMethodElt);
       if (eff.isSafe()) {
         safeOverriden = overriddenMethodElt;
         if (isUI) {
           checker.reportError(
               errorNode,
-              "override.effect.invalid",
+              "override.effect",
               declaringType,
               overridingMethod,
               overriddenType,
@@ -475,7 +476,7 @@ public class GuiEffectTypeFactory extends BaseAnnotatedTypeFactory {
         } else if (isPolyUI) {
           checker.reportError(
               errorNode,
-              "override.effect.invalid.polymorphic",
+              "override.effect.polymorphic",
               declaringType,
               overridingMethod,
               overriddenType,
@@ -496,7 +497,7 @@ public class GuiEffectTypeFactory extends BaseAnnotatedTypeFactory {
           if (!isAnonInstantiation && !overriddenType.hasAnnotation(UI.class)) {
             checker.reportError(
                 errorNode,
-                "override.effect.invalid.nonui",
+                "override.effect.nonui",
                 declaringType,
                 overridingMethod,
                 overriddenType,

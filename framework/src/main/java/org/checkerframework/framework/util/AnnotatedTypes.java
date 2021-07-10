@@ -153,14 +153,14 @@ public class AnnotatedTypes {
         && AnnotatedTypes.isEnum(asSuperType)
         && AnnotatedTypes.isDeclarationOfJavaLangEnum(types, elements, supertype)) {
       final AnnotatedDeclaredType resultAtd = ((AnnotatedDeclaredType) supertype).deepCopy();
-      resultAtd.clearAnnotations();
+      resultAtd.clearPrimaryAnnotations();
       resultAtd.addAnnotations(asSuperType.getAnnotations());
 
       final AnnotatedDeclaredType asSuperAdt = (AnnotatedDeclaredType) asSuperType;
       if (!resultAtd.getTypeArguments().isEmpty() && !asSuperAdt.getTypeArguments().isEmpty()) {
         final AnnotatedTypeMirror sourceTypeArg = asSuperAdt.getTypeArguments().get(0);
         final AnnotatedTypeMirror resultTypeArg = resultAtd.getTypeArguments().get(0);
-        resultTypeArg.clearAnnotations();
+        resultTypeArg.clearPrimaryAnnotations();
         if (resultTypeArg.getKind() == TypeKind.TYPEVAR) {
           // Only change the upper bound of a type variable.
           AnnotatedTypeVariable resultTypeArgTV = (AnnotatedTypeVariable) resultTypeArg;
@@ -204,7 +204,7 @@ public class AnnotatedTypes {
     final AnnotatedDeclaredType declaredAsSuper = (AnnotatedDeclaredType) asSuperType;
     final AnnotatedDeclaredType declaredSubtype = (AnnotatedDeclaredType) originalSubtype;
 
-    if (!declaredAsSuper.wasRaw()
+    if (!declaredAsSuper.isUnderlyingTypeRaw()
         || !declaredAsSuper.getTypeArguments().isEmpty()
         || declaredSubtype.getTypeArguments().isEmpty()) {
       return;
@@ -536,14 +536,14 @@ public class AnnotatedTypes {
     }
 
     List<AnnotatedTypeMirror> baseParams = base.getTypeArguments();
-    if (ownerParams.size() != baseParams.size() && !base.wasRaw()) {
+    if (ownerParams.size() != baseParams.size() && !base.isUnderlyingTypeRaw()) {
       throw new BugInCF(
           StringsPlume.joinLines(
               "Unexpected number of parameters.",
               "enclosingType=" + enclosingType,
               "baseType=" + base));
     }
-    if (!ownerParams.isEmpty() && baseParams.isEmpty() && base.wasRaw()) {
+    if (!ownerParams.isEmpty() && baseParams.isEmpty() && base.isUnderlyingTypeRaw()) {
       // If base type was raw and the type arguments are missing, set them to the erased
       // type of the type variable (which is the erased type of the upper bound).
       baseParams = CollectionsPlume.mapList(AnnotatedTypeVariable::getErased, ownerParams);
@@ -782,7 +782,7 @@ public class AnnotatedTypes {
    * @param args the arguments to the method invocation
    * @return the types that the method invocation arguments need to be subtype of
    */
-  public static List<AnnotatedTypeMirror> expandVarArgs(
+  public static List<AnnotatedTypeMirror> expandVarArgsParameters(
       AnnotatedTypeFactory atypeFactory,
       AnnotatedExecutableType method,
       List<? extends ExpressionTree> args) {
@@ -796,8 +796,9 @@ public class AnnotatedTypes {
     if (parameters.size() == args.size()) {
       // Check if one sent an element or an array
       AnnotatedTypeMirror lastArg = atypeFactory.getAnnotatedType(args.get(args.size() - 1));
-      if (lastArg.getKind() == TypeKind.ARRAY
-          && getArrayDepth(varargs) == getArrayDepth((AnnotatedArrayType) lastArg)) {
+      if (lastArg.getKind() == TypeKind.NULL
+          || (lastArg.getKind() == TypeKind.ARRAY
+              && getArrayDepth(varargs) == getArrayDepth((AnnotatedArrayType) lastArg))) {
         return parameters;
       }
     }
@@ -810,7 +811,15 @@ public class AnnotatedTypes {
     return parameters;
   }
 
-  public static List<AnnotatedTypeMirror> expandVarArgsFromTypes(
+  /**
+   * Returns the method parameters for the invoked method, with the same number of formal parameters
+   * as the arguments in the given list.
+   *
+   * @param method the method's type
+   * @param args the types of the arguments at the call site
+   * @return the method parameters, with varargs replaced by instances of its component type
+   */
+  public static List<AnnotatedTypeMirror> expandVarArgsParametersFromTypes(
       AnnotatedExecutableType method, List<AnnotatedTypeMirror> args) {
     List<AnnotatedTypeMirror> parameters = method.getParameterTypes();
     if (!method.getElement().isVarArgs()) {
@@ -1174,7 +1183,7 @@ public class AnnotatedTypes {
    * When comparing types against the bounds of a type variable, we may encounter other type
    * variables, wildcards, and intersections in those bounds. This method traverses the lower bounds
    * until it finds a concrete type from which it can pull an annotation. This occurs for every
-   * hierarchy in QualifierHierarchy
+   * hierarchy in QualifierHierarchy.
    *
    * @return the set of effective annotation mirrors in all hierarchies
    */
@@ -1218,7 +1227,7 @@ public class AnnotatedTypes {
    * When comparing types against the bounds of a type variable, we may encounter other type
    * variables, wildcards, and intersections in those bounds. This method traverses the bounds until
    * it finds a concrete type from which it can pull an annotation. This occurs for every hierarchy
-   * in QualifierHierarchy
+   * in QualifierHierarchy.
    *
    * @return the set of effective annotation mirrors in all hierarchies
    */

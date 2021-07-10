@@ -19,23 +19,29 @@ import com.sun.source.tree.NewArrayTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.ReturnTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.TypeCastTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import com.sun.source.util.Trees;
 import com.sun.tools.javac.code.Type;
+import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import com.sun.tools.javac.tree.JCTree.JCNewClass;
+import com.sun.tools.javac.util.Options;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Target;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +50,7 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -727,6 +734,35 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
+   * Returns the names of the annotation processors that are being run.
+   *
+   * @return the names of the annotation processors that are being run
+   */
+  @SuppressWarnings("JdkObsolete") // ClassLoader.getResources returns an Enumeration
+  public String[] getCheckerNames() {
+    com.sun.tools.javac.util.Context context =
+        ((JavacProcessingEnvironment) processingEnv).getContext();
+    String processorArg = Options.instance(context).get("-processor");
+    if (processorArg != null) {
+      return processorArg.split(",");
+    }
+    try {
+      String filename = "META-INF/services/javax.annotation.processing.Processor";
+      List<String> lines = new ArrayList<>();
+      Enumeration<URL> urls = getClass().getClassLoader().getResources(filename);
+      while (urls.hasMoreElements()) {
+        URL url = urls.nextElement();
+        BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+        lines.addAll(in.lines().collect(Collectors.toList()));
+      }
+      String[] result = lines.toArray(new String[0]);
+      return result;
+    } catch (IOException e) {
+      throw new BugInCF(e);
+    }
+  }
+
+  /**
    * Creates {@link QualifierUpperBounds} for this type factory.
    *
    * @return a new {@link QualifierUpperBounds} for this type factory
@@ -776,7 +812,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   public void setRoot(@Nullable CompilationUnitTree root) {
     if (root != null && wholeProgramInference != null) {
       for (Tree typeDecl : root.getTypeDecls()) {
-        if (typeDecl.getKind() == Kind.CLASS) {
+        if (typeDecl.getKind() == Tree.Kind.CLASS) {
           ClassTree classTree = (ClassTree) typeDecl;
           wholeProgramInference.preprocessClassTree(classTree);
         }
@@ -900,7 +936,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    *     or {@link MostlyNoElementQualifierHierarchy} instead. This method will be removed in a
    *     future release.
    */
-  @Deprecated
+  @Deprecated // 2020-09-10
   public QualifierHierarchy createQualifierHierarchyWithMultiGraphFactory(
       org.checkerframework.framework.util.MultiGraphQualifierHierarchy.MultiGraphFactory factory) {
     throw new TypeSystemError(
@@ -1521,8 +1557,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
     if (shouldCache
         && tree.getKind() != Tree.Kind.NEW_CLASS
-        && tree.getKind() != Kind.NEW_ARRAY
-        && tree.getKind() != Kind.CONDITIONAL_EXPRESSION) {
+        && tree.getKind() != Tree.Kind.NEW_ARRAY
+        && tree.getKind() != Tree.Kind.CONDITIONAL_EXPRESSION) {
       // Don't cache the type of some expressions, because incorrect annotations would be
       // cached during dataflow analysis. See Issue #602.
       fromExpressionTreeCache.put(tree, result.deepCopy());
@@ -1623,7 +1659,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     Set<AnnotationMirror> annotations = type.getEffectiveAnnotations();
     for (AnnotatedTypeMirror supertype : supertypes) {
       if (!annotations.equals(supertype.getEffectiveAnnotations())) {
-        supertype.clearAnnotations();
+        supertype.clearPrimaryAnnotations();
         // TODO: is this correct for type variables and wildcards?
         supertype.addAnnotations(annotations);
       }
@@ -1826,7 +1862,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
     // System.err.printf("TVFU%n  type: %s%n  generic: %s%n", type, generic);
 
-    Map<TypeVariable, AnnotatedTypeMirror> mapping = new HashMap<>();
+    Map<TypeVariable, AnnotatedTypeMirror> typeParamToTypeArg = new HashMap<>();
 
     AnnotatedDeclaredType enclosing = type;
     while (enclosing != null) {
@@ -1836,7 +1872,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       List<AnnotatedTypeMirror> enclosingTVars = declaredType.getTypeArguments();
       for (int i = 0; i < enclosingTArgs.size(); i++) {
         AnnotatedTypeVariable enclosingTVar = (AnnotatedTypeVariable) enclosingTVars.get(i);
-        mapping.put(enclosingTVar.getUnderlyingType(), enclosingTArgs.get(i));
+        typeParamToTypeArg.put(enclosingTVar.getUnderlyingType(), enclosingTArgs.get(i));
       }
       enclosing = enclosing.getEnclosingType();
     }
@@ -1845,8 +1881,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
     for (AnnotatedTypeMirror atm : tvars) {
       AnnotatedTypeVariable atv = (AnnotatedTypeVariable) atm;
-      AnnotatedTypeMirror upper = typeVarSubstitutor.substitute(mapping, atv.getUpperBound());
-      AnnotatedTypeMirror lower = typeVarSubstitutor.substitute(mapping, atv.getLowerBound());
+      AnnotatedTypeMirror upper =
+          typeVarSubstitutor.substitute(typeParamToTypeArg, atv.getUpperBound());
+      AnnotatedTypeMirror lower =
+          typeVarSubstitutor.substitute(typeParamToTypeArg, atv.getLowerBound());
       res.add(new AnnotatedTypeParameterBounds(upper, lower));
     }
     return res;
@@ -1901,7 +1939,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     }
 
     TypeElement elementOfImplicitReceiver = ElementUtils.enclosingTypeElement(element);
-    if (tree.getKind() == Kind.NEW_CLASS) {
+    if (tree.getKind() == Tree.Kind.NEW_CLASS) {
       if (elementOfImplicitReceiver.getEnclosingElement() != null) {
         elementOfImplicitReceiver =
             ElementUtils.enclosingTypeElement(elementOfImplicitReceiver.getEnclosingElement());
@@ -1948,7 +1986,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     if (enclosingTree == null) {
       // tree is inside an annotation, where "this" is not allowed. So, no self type exists.
       return null;
-    } else if (enclosingTree.getKind() == Kind.METHOD) {
+    } else if (enclosingTree.getKind() == Tree.Kind.METHOD) {
       MethodTree enclosingMethod = (MethodTree) enclosingTree;
       if (TreeUtils.isConstructor(enclosingMethod)) {
         return (AnnotatedDeclaredType) getAnnotatedType(enclosingMethod).getReturnType();
@@ -1966,9 +2004,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       EnumSet.copyOf(TreeUtils.classTreeKinds());
 
   static {
-    classMethodAnnotationKinds.add(Kind.METHOD);
-    classMethodAnnotationKinds.add(Kind.TYPE_ANNOTATION);
-    classMethodAnnotationKinds.add(Kind.ANNOTATION);
+    classMethodAnnotationKinds.add(Tree.Kind.METHOD);
+    classMethodAnnotationKinds.add(Tree.Kind.TYPE_ANNOTATION);
+    classMethodAnnotationKinds.add(Tree.Kind.ANNOTATION);
   }
 
   /**
@@ -1986,7 +2024,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     TreePath path = getPath(tree);
     Tree enclosing = TreePathUtil.enclosingOfKind(path, classMethodAnnotationKinds);
     if (enclosing != null) {
-      if (enclosing.getKind() == Kind.ANNOTATION || enclosing.getKind() == Kind.TYPE_ANNOTATION) {
+      if (enclosing.getKind() == Tree.Kind.ANNOTATION
+          || enclosing.getKind() == Tree.Kind.TYPE_ANNOTATION) {
         return null;
       }
       return enclosing;
@@ -2147,7 +2186,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       if (ignoreUninferredTypeArguments) {
         // Remove the annotations so that default annotations are used instead.
         // (See call to addDefaultAnnotations below.)
-        t.clearAnnotations();
+        t.clearPrimaryAnnotations();
       } else {
         t.replaceAnnotations(wildcard.getExtendsBound().getAnnotations());
       }
@@ -2182,24 +2221,24 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         AnnotatedTypes.asMemberOf(types, this, receiverType, methodElt, memberTypeWithOverrides);
     List<AnnotatedTypeMirror> typeargs = new ArrayList<>(methodType.getTypeVariables().size());
 
-    Map<TypeVariable, AnnotatedTypeMirror> typeVarMapping =
+    Map<TypeVariable, AnnotatedTypeMirror> typeParamToTypeArg =
         AnnotatedTypes.findTypeArguments(processingEnv, this, tree, methodElt, methodType);
 
-    if (!typeVarMapping.isEmpty()) {
+    if (!typeParamToTypeArg.isEmpty()) {
       for (AnnotatedTypeVariable tv : methodType.getTypeVariables()) {
-        if (typeVarMapping.get(tv.getUnderlyingType()) == null) {
+        if (typeParamToTypeArg.get(tv.getUnderlyingType()) == null) {
           throw new BugInCF(
               "AnnotatedTypeFactory.methodFromUse:mismatch between declared method type variables"
                   + " and the inferred method type arguments. Method type variables: "
                   + methodType.getTypeVariables()
                   + "; "
                   + "Inferred method type arguments: "
-                  + typeVarMapping);
+                  + typeParamToTypeArg);
         }
-        typeargs.add(typeVarMapping.get(tv.getUnderlyingType()));
+        typeargs.add(typeParamToTypeArg.get(tv.getUnderlyingType()));
       }
       methodType =
-          (AnnotatedExecutableType) typeVarSubstitutor.substitute(typeVarMapping, methodType);
+          (AnnotatedExecutableType) typeVarSubstitutor.substitute(typeParamToTypeArg, methodType);
     }
 
     if (tree.getKind() == Tree.Kind.METHOD_INVOCATION
@@ -2413,18 +2452,18 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
     con = AnnotatedTypes.asMemberOf(types, this, type, ctor, con);
 
-    Map<TypeVariable, AnnotatedTypeMirror> typeVarMapping =
+    Map<TypeVariable, AnnotatedTypeMirror> typeParamToTypeArg =
         AnnotatedTypes.findTypeArguments(processingEnv, this, tree, ctor, con);
 
-    List<AnnotatedTypeMirror> typeargs = new ArrayList<>(con.getTypeVariables().size());
-    if (typeVarMapping.isEmpty()) {
+    List<AnnotatedTypeMirror> typeargs;
+    if (typeParamToTypeArg.isEmpty()) {
       typeargs = Collections.emptyList();
     } else {
       typeargs =
           CollectionsPlume.mapList(
-              (AnnotatedTypeVariable tv) -> typeVarMapping.get(tv.getUnderlyingType()),
+              (AnnotatedTypeVariable tv) -> typeParamToTypeArg.get(tv.getUnderlyingType()),
               con.getTypeVariables());
-      con = (AnnotatedExecutableType) typeVarSubstitutor.substitute(typeVarMapping, con);
+      con = (AnnotatedExecutableType) typeVarSubstitutor.substitute(typeParamToTypeArg, con);
     }
 
     return new ParameterizedExecutableType(con, typeargs);
@@ -2500,7 +2539,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
             fromNewClassContextHelper(type, ctxtype);
           } else {
             // give up trying and set to raw.
-            type.setWasRaw();
+            type.setIsUnderlyingTypeRaw();
           }
         }
       }
@@ -3000,7 +3039,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * @param type the canonical annotation
    * @deprecated use {@code addAliasedTypeAnnotation}
    */
-  @Deprecated // use addAliasedTypeAnnotation
+  @Deprecated // 2020-12-15
   protected void addAliasedAnnotation(Class<?> aliasClass, AnnotationMirror type) {
     addAliasedTypeAnnotation(aliasClass, type);
   }
@@ -3037,11 +3076,11 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    *
    * @param aliasName the canonical name of the aliased annotation
    * @param canonicalAnno the canonical annotation
-   * @deprecated use {@code addAliasedTypeAnnotation}
+   * @deprecated use {@link #addAliasedTypeAnnotation}
    */
   // aliasName is annotated as @FullyQualifiedName because there is no way to confirm that the
   // name of an external annotation is a canoncal name.
-  @Deprecated // use addAliasedTypeAnnotation
+  @Deprecated // 2020-12-15
   protected void addAliasedAnnotation(
       @FullyQualifiedName String aliasName, AnnotationMirror canonicalAnno) {
     addAliasedTypeAnnotation(aliasName, canonicalAnno);
@@ -3095,7 +3134,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    *     being copied over
    * @deprecated use {@code addAliasedTypeAnnotation}
    */
-  @Deprecated // use addAliasedTypeAnnotation
+  @Deprecated // 2020-12-15
   protected void addAliasedAnnotation(
       Class<?> aliasClass, Class<?> canonical, boolean copyElements, String... ignorableElements) {
     addAliasedTypeAnnotation(aliasClass, canonical, copyElements, ignorableElements);
@@ -3359,7 +3398,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     if (res == null) {
       TreePath path = getPath(tree);
       if (path != null) {
-        @SuppressWarnings("interning:assignment.type.incompatible") // used for == test
+        @SuppressWarnings("interning:assignment") // used for == test
         @InternedDistinct MethodTree enclosingMethod = TreePathUtil.enclosingMethod(path);
         ClassTree enclosingClass = TreePathUtil.enclosingClass(path);
 
@@ -3553,10 +3592,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    *       exists and ignorejdkastub option is not supplied <br>
    *   <li>Stub files listed in @StubFiles annotation on the checker; must be in same directory as
    *       the checker<br>
-   *   <li>Stub files provide via stubs system property <br>
-   *   <li>Stub files provide via stubs environment variable <br>
-   *   <li>Stub files provide via stubs compiler option
-   *   <li>Ajava files provided via ajava compiler option
+   *   <li>Stub files provided via -Astubs compiler option
+   *   <li>Ajava files provided via -Aajava compiler option
    * </ol>
    *
    * <p>If a type is annotated with a qualifier from the same hierarchy in more than one stub file,
@@ -3738,10 +3775,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     }
 
     // Add annotations from annotation files.
-    results.addAll(stubTypes.getDeclAnnotation(elt));
-    results.addAll(ajavaTypes.getDeclAnnotation(elt));
+    results.addAll(stubTypes.getDeclAnnotations(elt));
+    results.addAll(ajavaTypes.getDeclAnnotations(elt));
     if (currentFileAjavaTypes != null) {
-      results.addAll(currentFileAjavaTypes.getDeclAnnotation(elt));
+      results.addAll(currentFileAjavaTypes.getDeclAnnotations(elt));
     }
 
     if (elt.getKind() == ElementKind.METHOD) {
@@ -4595,7 +4632,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         } else if (isExtendsWildcard(wildcardType)) {
           TypeMirror correctArgType;
           if (sizesDiffer) {
-            // The java type is raw.
+            // The Java type is raw.
             TypeMirror typeParamUbType = bounds.get(i).getUpperBound().getUnderlyingType();
             correctArgType =
                 TypesUtils.greatestLowerBound(
