@@ -2199,6 +2199,7 @@ public class CFGTranslationPhaseOne extends TreePathScanner<Node, Void> {
 
   @Override
   public Node visitCase(CaseTree tree, Void p) {
+    // TODO: This assertion assumes that `case` appears only within a switch statement,
     throw new AssertionError("case visitor is implemented in SwitchBuilder");
   }
 
