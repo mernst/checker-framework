@@ -21,6 +21,8 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.checkerframework.checker.nullness.NullnessAnnotatedTypeFactory;
+import org.checkerframework.checker.nullness.NullnessChecker;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.regex.qual.Regex;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
@@ -184,6 +186,9 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** Helper class that holds references to special methods. */
   private final ValueMethodIdentifier methods;
 
+  /** The nullness type factory, or null if the Nullness Checker is not being run. */
+  @Nullable NullnessAnnotatedTypeFactory nullnessAtypeFactory;
+
   @SuppressWarnings("StaticAssignmentInConstructor") // static Range.ignoreOverflow is gross
   public ValueAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
@@ -231,6 +236,17 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     addAliasedTypeAnnotation(EnumVal.class, StringVal.class, true);
 
     methods = new ValueMethodIdentifier(processingEnv);
+
+    nullnessAtypeFactory = null;
+    for (String checkerName : getCheckerNames()) {
+      if (checkerName.equals(NullnessChecker.class.getCanonicalName())) {
+        @SuppressWarnings("signature:argument") // -processor is a binary name
+        NullnessAnnotatedTypeFactory nullnessATF =
+            (NullnessAnnotatedTypeFactory) getTypeFactory(checkerName);
+        nullnessAtypeFactory = nullnessATF;
+        break;
+      }
+    }
 
     if (this.getClass() == ValueAnnotatedTypeFactory.class) {
       this.postInit();

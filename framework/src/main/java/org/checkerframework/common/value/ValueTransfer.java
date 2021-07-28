@@ -628,13 +628,15 @@ public class ValueTransfer extends CFTransfer {
   }
 
   /**
-   * Checks whether or not the passed node is nullable. This superficial check assumes that every
-   * node is nullable unless it is a primitive, String literal, or compile-time constant.
+   * Checks whether or not the passed node is nullable. If the Nullness Checker is running, its type
+   * factory is used. Otherwise, this conservatively assumes that every node is nullable unless it
+   * is a primitive, String literal, or compile-time constant.
    *
    * @return false if the node's run-time can't be null; true if the node's run-time value may be
    *     null, or if this method is not precise enough
    */
   private boolean isNullable(Node node) {
+    // First, do tests that do not require querying the Nullness Checker.
     if (node instanceof StringConversionNode) {
       if (((StringConversionNode) node).getOperand().getType().getKind().isPrimitive()) {
         return false;
@@ -646,7 +648,13 @@ public class ValueTransfer extends CFTransfer {
     }
 
     Element element = TreeUtils.elementFromUse((ExpressionTree) node.getTree());
-    return !ElementUtils.isCompileTimeConstant(element);
+    if (ElementUtils.isCompileTimeConstant(element)) {
+      return false;
+    }
+
+    if (atypeFactory.nullnessAtypefactory != null) {
+      // TODO: query atypeFactory.nullnessAtypefactory
+    }
   }
 
   /** Creates an annotation for a result of string concatenation. */

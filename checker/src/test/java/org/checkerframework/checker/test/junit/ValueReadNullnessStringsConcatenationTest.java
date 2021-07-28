@@ -1,6 +1,7 @@
 package org.checkerframework.framework.test.junit;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.checkerframework.common.value.ValueChecker;
@@ -13,14 +14,13 @@ public class ValueReadNullnessStringsConcatenationTest extends CheckerFrameworkP
   public ValueReadNullnessStringsConcatenationTest(List<File> testFiles) {
     super(
         testFiles,
-        List.of(
+        Arrays.asList(
             org.checkerframework.common.value.ValueChecker.class.getCanonicalName(),
             org.checkerframework.checker.nullness.NullnessChecker.class.getCanonicalName()),
-        "value-and-nullness-strings-concatenation",
+        "value-read-nullness-strings-concatenation",
         Collections.emptyList(),
         "-Anomsgtext",
         "-A" + ValueChecker.REPORT_EVAL_WARNS);
-    new Error().printStackTrace(System.out);
   }
 
   @Parameters
@@ -29,7 +29,7 @@ public class ValueReadNullnessStringsConcatenationTest extends CheckerFrameworkP
       // Not "all-systems" because This runs two type-checkers and the second one won't run if the
       // first one issues any (expected) warnings.
       // "all-systems",
-      "value-and-nullness-strings-concatenation"
+      "value-read-nullness-strings-concatenation"
     };
   }
 }
