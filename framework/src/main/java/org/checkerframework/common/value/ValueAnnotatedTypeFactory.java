@@ -241,9 +241,9 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     for (String checkerName : getCheckerNames()) {
       if (checkerName.equals(NullnessChecker.class.getCanonicalName())) {
         @SuppressWarnings("signature:argument") // -processor is a binary name
-        NullnessAnnotatedTypeFactory nullnessATF =
+        NullnessAnnotatedTypeFactory _nullnessAtypeFactory =
             (NullnessAnnotatedTypeFactory) getTypeFactory(checkerName);
-        nullnessAtypeFactory = nullnessATF;
+        nullnessAtypeFactory = _nullnessAtypeFactory;
         break;
       }
     }
