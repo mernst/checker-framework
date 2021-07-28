@@ -652,9 +652,11 @@ public class ValueTransfer extends CFTransfer {
       return false;
     }
 
+    // Query the Nullness Checker.
     if (atypeFactory.nullnessAtypefactory != null) {
       // TODO: query atypeFactory.nullnessAtypefactory
     }
+    return true;
   }
 
   /** Creates an annotation for a result of string concatenation. */
