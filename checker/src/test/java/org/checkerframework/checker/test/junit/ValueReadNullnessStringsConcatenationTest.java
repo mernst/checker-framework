@@ -15,8 +15,9 @@ public class ValueReadNullnessStringsConcatenationTest extends CheckerFrameworkP
     super(
         testFiles,
         Arrays.asList(
-            org.checkerframework.common.value.ValueChecker.class.getCanonicalName(),
-            org.checkerframework.checker.nullness.NullnessChecker.class.getCanonicalName()),
+            // Run the Nullness Checker first, since it issues no warnings.
+            org.checkerframework.checker.nullness.NullnessChecker.class.getCanonicalName(),
+            org.checkerframework.common.value.ValueChecker.class.getCanonicalName()),
         "value-read-nullness-strings-concatenation",
         Collections.emptyList(),
         "-Anomsgtext",

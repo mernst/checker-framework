@@ -638,9 +638,7 @@ public class ValueTransfer extends CFTransfer {
   private boolean isNullable(Node node) {
     // First, do tests that do not require querying the Nullness Checker.
     if (node instanceof StringConversionNode) {
-      if (((StringConversionNode) node).getOperand().getType().getKind().isPrimitive()) {
-        return false;
-      }
+      return false;
     } else if (node instanceof StringLiteralNode) {
       return false;
     } else if (node instanceof StringConcatenateNode) {
@@ -653,9 +651,14 @@ public class ValueTransfer extends CFTransfer {
     }
 
     // Query the Nullness Checker.
-    if (atypeFactory.nullnessAtypefactory != null) {
-      // TODO: query atypeFactory.nullnessAtypefactory
+    if (atypeFactory.nullnessAtypeFactory != null) {
+      if (element == null) {
+        System.out.printf("null element for node " + node);
+        return true;
+      }
+      return !atypeFactory.nullnessAtypeFactory.isNonNull(element);
     }
+
     return true;
   }
 

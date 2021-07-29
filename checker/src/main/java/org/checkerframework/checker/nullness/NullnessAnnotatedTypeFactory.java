@@ -45,6 +45,7 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 import org.checkerframework.common.basetype.BaseTypeChecker;
+import org.checkerframework.common.util.IIsNonNull;
 import org.checkerframework.dataflow.analysis.Analysis;
 import org.checkerframework.dataflow.analysis.Analysis.BeforeOrAfter;
 import org.checkerframework.dataflow.expression.JavaExpression;
@@ -80,7 +81,8 @@ import org.checkerframework.javacutil.TypesUtils;
 /** The annotated type factory for the nullness type-system. */
 public class NullnessAnnotatedTypeFactory
     extends InitializationAnnotatedTypeFactory<
-        NullnessValue, NullnessStore, NullnessTransfer, NullnessAnalysis> {
+        NullnessValue, NullnessStore, NullnessTransfer, NullnessAnalysis>
+    implements IIsNonNull {
 
   /** The @{@link NonNull} annotation. */
   protected final AnnotationMirror NONNULL = AnnotationBuilder.fromClass(elements, NonNull.class);
@@ -866,5 +868,17 @@ public class NullnessAnnotatedTypeFactory
     builder.setValue("value", new String[] {expression});
     AnnotationMirror am = builder.build();
     return am;
+  }
+
+  @Override
+  public boolean isNonNull(Element element) {
+    AnnotatedTypeMirror atm = getAnnotatedType(element);
+    for (AnnotationMirror anno : atm.getAnnotations()) {
+      System.out.printf("isNonNull(%s) comparing %s, %s%n", element, anno, NONNULL);
+      if (AnnotationUtils.areSameByName(anno, NONNULL)) {
+        return true;
+      }
+    }
+    return false;
   }
 }
