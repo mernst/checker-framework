@@ -653,7 +653,7 @@ public class ValueTransfer extends CFTransfer {
     // Query the Nullness Checker.
     if (atypeFactory.nullnessAtypeFactory != null) {
       if (element == null) {
-        System.out.printf("null element for node " + node);
+        System.out.println("null element for node " + node);
         return true;
       }
       return !atypeFactory.nullnessAtypeFactory.isNonNull(element);
