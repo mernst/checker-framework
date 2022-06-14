@@ -18,6 +18,7 @@ import java.util.Queue;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.Types;
@@ -183,7 +184,7 @@ public class DefaultTypeArgumentInference implements TypeArgumentInference {
     }
     try {
       return TypeArgInferenceUtil.correctResults(
-          inferredArgs, expressionTree, methodType.getUnderlyingType(), typeFactory);
+          inferredArgs, expressionTree, (ExecutableType) methodElem.asType(), typeFactory);
     } catch (Throwable ex) {
       // Ignore any exceptions
       return inferredArgs;
@@ -286,8 +287,8 @@ public class DefaultTypeArgumentInference implements TypeArgumentInference {
    *       In the above example, the null argument requires that T must be @Nullable String. But the
    *       assignment context requires that the T must be @NonNull String. But, in this case if we
    *       use @NonNull String the argument "null" is invalid. In this case, we use @Nullable String
-   *       and report an assignment.type.incompatible because we ALWAYS favor the arguments over the
-   *       assignment context.
+   *       and report an assignment because we ALWAYS favor the arguments over the assignment
+   *       context.
    *   <li>5. Combine the result from 2.a and step 4, if there is a conflict use the result from
    *       step 2.a
    *       <p>Suppose we have the following:
@@ -477,7 +478,7 @@ public class DefaultTypeArgumentInference implements TypeArgumentInference {
       final Set<TypeVariable> targets,
       boolean useNullArguments) {
     final List<AnnotatedTypeMirror> paramTypes =
-        AnnotatedTypes.expandVarArgsFromTypes(methodType, argTypes);
+        AnnotatedTypes.expandVarArgsParametersFromTypes(methodType, argTypes);
 
     if (argTypes.size() != paramTypes.size()) {
       throw new BugInCF(
@@ -860,12 +861,9 @@ public class DefaultTypeArgumentInference implements TypeArgumentInference {
       TypeVariable target,
       AnnotatedTypeFactory typeFactory,
       Map<TypeVariable, AnnotatedTypeVariable> declarations) {
-    AnnotatedTypeVariable atv = declarations.get(target);
-    if (atv == null) {
-      atv = (AnnotatedTypeVariable) typeFactory.getAnnotatedType(target.asElement());
-      declarations.put(target, atv);
-    }
-
+    AnnotatedTypeVariable atv =
+        declarations.computeIfAbsent(
+            target, __ -> (AnnotatedTypeVariable) typeFactory.getAnnotatedType(target.asElement()));
     return atv;
   }
 }

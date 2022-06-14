@@ -30,13 +30,23 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.SystemUtil;
 import org.junit.Assert;
+import org.plumelib.util.CollectionsPlume;
 import org.plumelib.util.StringsPlume;
+import org.plumelib.util.SystemPlume;
 
 /** Utilities for testing. */
 public class TestUtilities {
 
+  /** True if the JVM is version 9 or above. */
   public static final boolean IS_AT_LEAST_9_JVM = SystemUtil.getJreVersion() >= 9;
+  /** True if the JVM is version 11 or above. */
   public static final boolean IS_AT_LEAST_11_JVM = SystemUtil.getJreVersion() >= 11;
+  /** True if the JVM is version 11 or lower. */
+  public static final boolean IS_AT_MOST_11_JVM = SystemUtil.getJreVersion() <= 11;
+  /** True if the JVM is version 17 or above. */
+  public static final boolean IS_AT_LEAST_17_JVM = SystemUtil.getJreVersion() >= 17;
+  /** True if the JVM is version 17 or lower. */
+  public static final boolean IS_AT_MOST_17_JVM = SystemUtil.getJreVersion() <= 17;
 
   static {
     JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -86,11 +96,15 @@ public class TestUtilities {
 
     for (String dirName : dirNames) {
       File dir = new File(parent, dirName).toPath().toAbsolutePath().normalize().toFile();
-      // This fails for the whole-program-inference tests:  their sources do not necessarily
-      // exist yet but will be created by a test that runs earlier than they do.
-      // if (!dir.isDirectory()) {
-      //     throw new BugInCF("test directory does not exist: %s", dir);
-      // }
+      if (!dir.isDirectory()) {
+        // For "ainfer-*" tests, their sources do not necessarily
+        // exist yet but will be created by a test that runs earlier than they do.
+        if (!(dir.getName().equals("annotated")
+            && dir.getParentFile() != null
+            && dir.getParentFile().getName().startsWith("ainfer-"))) {
+          throw new BugInCF("test directory does not exist: %s", dir);
+        }
+      }
       if (dir.isDirectory()) {
         filesPerDirectory.addAll(findJavaTestFilesInDirectory(dir));
       }
@@ -138,7 +152,7 @@ public class TestUtilities {
    * @return the file names, each with {@code parent} prepended
    */
   public static List<Object[]> findFilesInParent(File parent, String... fileNames) {
-    return SystemUtil.mapList(
+    return CollectionsPlume.mapList(
         (String fileName) -> new Object[] {new File(parent, fileName)}, fileNames);
   }
 
@@ -156,7 +170,12 @@ public class TestUtilities {
     return arguments;
   }
 
-  /** Returns all the java files that are descendants of the given directory. */
+  /**
+   * Returns all the Java files that are descendants of the given directory.
+   *
+   * @param directory a directory
+   * @return all the Java files that are descendants of the given directory
+   */
   public static List<File> deeplyEnclosedJavaTestFiles(File directory) {
     if (!directory.exists()) {
       throw new IllegalArgumentException(
@@ -198,12 +217,6 @@ public class TestUtilities {
       return false;
     }
 
-    // We could implement special filtering based on directory names,
-    // but I prefer using @below-java9-jdk-skip-test
-    // if (!IS_AT_LEAST_9_JVM && file.getAbsolutePath().contains("java9")) {
-    //     return false;
-    // }
-
     Scanner in = null;
     try {
       in = new Scanner(file);
@@ -215,7 +228,10 @@ public class TestUtilities {
       String nextLine = in.nextLine();
       if (nextLine.contains("@skip-test")
           || (!IS_AT_LEAST_9_JVM && nextLine.contains("@below-java9-jdk-skip-test"))
-          || (!IS_AT_LEAST_11_JVM && nextLine.contains("@below-java11-jdk-skip-test"))) {
+          || (!IS_AT_LEAST_11_JVM && nextLine.contains("@below-java11-jdk-skip-test"))
+          || (!IS_AT_MOST_11_JVM && nextLine.contains("@above-java11-skip-test"))
+          || (!IS_AT_LEAST_17_JVM && nextLine.contains("@below-java17-jdk-skip-test"))
+          || (!IS_AT_MOST_17_JVM && nextLine.contains("@above-java17-skip-test"))) {
         in.close();
         return false;
       }
@@ -243,13 +259,15 @@ public class TestUtilities {
       // and should be printed in full.
       if (!result.contains("unexpected Throwable")) {
         String firstLine;
-        if (result.contains(System.lineSeparator())) {
-          firstLine = result.substring(0, result.indexOf(System.lineSeparator()));
+        int lineSepPos = result.indexOf(System.lineSeparator());
+        if (lineSepPos != -1) {
+          firstLine = result.substring(0, lineSepPos);
         } else {
           firstLine = result;
         }
-        if (firstLine.contains(".java:")) {
-          firstLine = firstLine.substring(firstLine.indexOf(".java:") + 5).trim();
+        int javaPos = firstLine.indexOf(".java:");
+        if (javaPos != -1) {
+          firstLine = firstLine.substring(javaPos + 5).trim();
         }
         result = firstLine;
       }
@@ -417,11 +435,8 @@ public class TestUtilities {
   }
 
   /**
-   * TODO: REDO COMMENT Compares the result of the compiler against an array of Strings.
-   *
-   * <p>In a checker, a more specific error message is subsumed by a general one. For example,
-   * "new.array.type.invalid" is subsumed by "type.invalid". This is not the case in the test
-   * framework, which must use the exact error message key.
+   * If the given TypecheckResult has unexpected or missing diagnostics, fail the running JUnit
+   * test.
    *
    * @param testResult the result of type-checking
    */
@@ -454,39 +469,11 @@ public class TestUtilities {
   }
 
   /**
-   * Return true if the system property is set to "true". Return false if the system property is not
-   * set or is set to "false". Otherwise, errs.
-   *
-   * @param key system property to check
-   * @return true if the system property is set to "true". Return false if the system property is
-   *     not set or is set to "false". Otherwise, errs.
-   * @deprecated Use {@link SystemUtil#getBooleanSystemProperty(String)} instead.
-   */
-  @Deprecated
-  public static boolean testBooleanProperty(String key) {
-    return testBooleanProperty(key, false);
-  }
-
-  /**
-   * If the system property is set, return its boolean value; otherwise return {@code defaultValue}.
-   * Errs if the system property is set to a non-boolean value.
-   *
-   * @param key system property to check
-   * @param defaultValue value to use if the property is not set
-   * @return the boolean value of {@code key} or {@code defaultValue} if {@code key} is not set
-   * @deprecated Use {@link SystemUtil#getBooleanSystemProperty(String, boolean)} instead.
-   */
-  @Deprecated
-  public static boolean testBooleanProperty(String key, boolean defaultValue) {
-    return SystemUtil.getBooleanSystemProperty(key, defaultValue);
-  }
-
-  /**
    * Returns the value of system property "emit.test.debug".
    *
    * @return the value of system property "emit.test.debug"
    */
   public static boolean getShouldEmitDebugInfo() {
-    return SystemUtil.getBooleanSystemProperty("emit.test.debug");
+    return SystemPlume.getBooleanSystemProperty("emit.test.debug");
   }
 }

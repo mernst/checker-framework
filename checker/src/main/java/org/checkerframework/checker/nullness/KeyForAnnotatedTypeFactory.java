@@ -8,11 +8,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import org.checkerframework.checker.nullness.qual.KeyFor;
 import org.checkerframework.checker.nullness.qual.KeyForBottom;
@@ -33,7 +31,6 @@ import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
-import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 
 public class KeyForAnnotatedTypeFactory
@@ -58,12 +55,29 @@ public class KeyForAnnotatedTypeFactory
   /** The Map.put method. */
   private final ExecutableElement mapPut =
       TreeUtils.getMethod("java.util.Map", "put", 2, processingEnv);
+  /** The KeyFor.value field/element. */
+  protected final ExecutableElement keyForValueElement =
+      TreeUtils.getMethod(KeyFor.class, "value", 0, processingEnv);
 
+  /** Moves annotations from one side of a pseudo-assignment to the other. */
   private final KeyForPropagator keyForPropagator = new KeyForPropagator(UNKNOWNKEYFOR);
 
-  /** Create a new KeyForAnnotatedTypeFactory. */
+  /**
+   * If true, assume the argument to Map.get is always a key for the receiver map. This is set by
+   * the `-AassumeKeyFor` command-line argument. However, if the Nullness Checker is being run, then
+   * `-AassumeKeyFor` disables the Map Key Checker.
+   */
+  private final boolean assumeKeyFor;
+
+  /**
+   * Creates a new KeyForAnnotatedTypeFactory.
+   *
+   * @param checker the associated checker
+   */
   public KeyForAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker, true);
+
+    assumeKeyFor = checker.hasOption("assumeKeyFor");
 
     // Add compatibility annotations:
     addAliasedTypeAnnotation(
@@ -140,10 +154,9 @@ public class KeyForAnnotatedTypeFactory
   }
 
   @Override
-  protected KeyForAnalysis createFlowAnalysis(
-      List<Pair<VariableElement, KeyForValue>> fieldValues) {
+  protected KeyForAnalysis createFlowAnalysis() {
     // Explicitly call the constructor instead of using reflection.
-    return new KeyForAnalysis(checker, this, fieldValues);
+    return new KeyForAnalysis(checker, this);
   }
 
   @Override
@@ -186,11 +199,16 @@ public class KeyForAnnotatedTypeFactory
    * @return whether or not the expression is a key for the map
    */
   public boolean isKeyForMap(String mapExpression, ExpressionTree tree) {
+    // This test only has an effect if the Map Key Checker is being run on its own.  If the Nullness
+    // Checker is being run, then -AassumeKeyFor disables the Map Key Checker.
+    if (assumeKeyFor) {
+      return true;
+    }
     Collection<String> maps = null;
     AnnotatedTypeMirror type = getAnnotatedType(tree);
     AnnotationMirror keyForAnno = type.getAnnotation(KeyFor.class);
     if (keyForAnno != null) {
-      maps = AnnotationUtils.getElementValueArray(keyForAnno, "value", String.class, false);
+      maps = AnnotationUtils.getElementValueArray(keyForAnno, keyForValueElement, String.class);
     } else {
       KeyForValue value = getInferredValueFor(tree);
       if (value != null) {

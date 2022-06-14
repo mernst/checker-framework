@@ -23,8 +23,8 @@ import org.checkerframework.framework.type.ElementQualifierHierarchy;
 import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
-import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypeSystemError;
 
 /**
  * The Search Index Checker is used to help type the results of calls to the JDK's binary search
@@ -92,7 +92,7 @@ public class SearchIndexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     } else if (areSameByClass(am, SearchIndexFor.class)) {
       return AnnotationUtils.getElementValueArray(am, searchIndexForValueElement, String.class);
     } else {
-      throw new BugInCF("indexForValue(%s)", am);
+      throw new TypeSystemError("indexForValue(%s)", am);
     }
   }
 
@@ -171,16 +171,16 @@ public class SearchIndexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
       // Each annotation is either NegativeIndexFor or SearchIndexFor.
       List<String> arrayIntersection = getValueElement(a1);
-      arrayIntersection.retainAll(getValueElement(a2));
+      arrayIntersection.retainAll(getValueElement(a2)); // intersection
 
       if (arrayIntersection.isEmpty()) {
         return UNKNOWN;
       }
 
       if (areSameByClass(a1, SearchIndexFor.class) || areSameByClass(a2, SearchIndexFor.class)) {
-        return createSearchIndexFor(Arrays.asList(arrayIntersection.toArray(new String[0])));
+        return createSearchIndexFor(arrayIntersection);
       } else {
-        return createNegativeIndexFor(Arrays.asList(arrayIntersection.toArray(new String[0])));
+        return createNegativeIndexFor(arrayIntersection);
       }
     }
 

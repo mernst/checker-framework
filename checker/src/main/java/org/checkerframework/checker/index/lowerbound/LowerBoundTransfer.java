@@ -240,10 +240,9 @@ public class LowerBoundTransfer extends IndexAbstractTransfer {
       return result;
     }
 
-    // There is also special processing to look
-    // for literals on one side of the equals and a GTEN1 or NN on the other, so that
-    // those types can be promoted in the branch where their values are not equal to certain
-    // literals.
+    // There is also special processing to look for literals on one side of the equals and a GTEN1
+    // or NN on the other, so that those types can be promoted in the branch where their values are
+    // not equal to certain literals.
     CFStore notEqualsStore = notEqualTo ? rfi.thenStore : rfi.elseStore;
     notEqualToValue(rfi.left, rfi.right, rfi.rightAnno, notEqualsStore);
     notEqualToValue(rfi.right, rfi.left, rfi.leftAnno, notEqualsStore);
@@ -484,10 +483,9 @@ public class LowerBoundTransfer extends IndexAbstractTransfer {
 
       Tree leftExpr = minusNode.getLeftOperand().getTree();
       Integer minLen = null;
-      // Check if the left side is a field access of an array's length,
-      // or invocation of String.length. If so,
-      // try to look up the MinLen of the array, and potentially keep
-      // this either NN or POS instead of GTEN1 or LBU.
+      // Check if the left side is a field access of an array's length, or invocation of
+      // String.length. If so, try to look up the MinLen of the array, and potentially keep this
+      // either NN or POS instead of GTEN1 or LBU.
       if (leftExpr.getKind() == Tree.Kind.MEMBER_SELECT) {
         MemberSelectTree mstree = (MemberSelectTree) leftExpr;
         minLen = aTypeFactory.getMinLenFromMemberSelectTree(mstree);
@@ -787,7 +785,7 @@ public class LowerBoundTransfer extends IndexAbstractTransfer {
    * Returns true if the argument is the @Positive type annotation.
    *
    * @param anm the annotation to test
-   * @return true if the the argument is the @Positive type annotation
+   * @return true if the argument is the @Positive type annotation
    */
   private boolean isPositive(AnnotationMirror anm) {
     return aTypeFactory.areSameByClass(anm, Positive.class);
@@ -797,7 +795,7 @@ public class LowerBoundTransfer extends IndexAbstractTransfer {
    * Returns true if the argument is the @NonNegative type annotation (or a stronger one).
    *
    * @param anm the annotation to test
-   * @return true if the the argument is the @NonNegative type annotation
+   * @return true if the argument is the @NonNegative type annotation
    */
   private boolean isNonNegative(AnnotationMirror anm) {
     return aTypeFactory.areSameByClass(anm, NonNegative.class) || isPositive(anm);
@@ -807,7 +805,7 @@ public class LowerBoundTransfer extends IndexAbstractTransfer {
    * Returns true if the argument is the @GTENegativeOne type annotation (or a stronger one).
    *
    * @param anm the annotation to test
-   * @return true if the the argument is the @GTENegativeOne type annotation
+   * @return true if the argument is the @GTENegativeOne type annotation
    */
   private boolean isGTEN1(AnnotationMirror anm) {
     return aTypeFactory.areSameByClass(anm, GTENegativeOne.class) || isNonNegative(anm);

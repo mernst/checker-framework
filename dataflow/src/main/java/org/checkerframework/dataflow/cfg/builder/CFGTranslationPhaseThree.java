@@ -13,6 +13,7 @@ import org.checkerframework.dataflow.cfg.block.ConditionalBlockImpl;
 import org.checkerframework.dataflow.cfg.block.ExceptionBlockImpl;
 import org.checkerframework.dataflow.cfg.block.RegularBlockImpl;
 import org.checkerframework.dataflow.cfg.block.SingleSuccessorBlockImpl;
+import org.checkerframework.javacutil.BugInCF;
 
 /* --------------------------------------------------------- */
 /* Phase Three */
@@ -288,7 +289,7 @@ public class CFGTranslationPhaseThree {
         if (e.getSuccessor() == cur) {
           return singleSuccessorHolder(e, cur);
         } else {
-          @SuppressWarnings("keyfor:assignment.type.incompatible") // ignore keyfor type
+          @SuppressWarnings("keyfor:assignment") // ignore keyfor type
           Set<Map.Entry<TypeMirror, Set<Block>>> entrySet = e.getExceptionalSuccessors().entrySet();
           for (final Map.Entry<TypeMirror, Set<Block>> entry : entrySet) {
             if (entry.getValue().contains(cur)) {
@@ -307,12 +308,12 @@ public class CFGTranslationPhaseThree {
             }
           }
         }
-        throw new Error("Unreachable");
+        throw new BugInCF("Unreachable");
       case REGULAR_BLOCK:
         RegularBlockImpl r = (RegularBlockImpl) pred;
         return singleSuccessorHolder(r, cur);
       default:
-        throw new Error("Unexpected block type " + pred.getType());
+        throw new BugInCF("Unexpected block type " + pred.getType());
     }
   }
 

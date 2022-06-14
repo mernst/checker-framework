@@ -22,6 +22,7 @@ import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.SystemUtil;
 import org.checkerframework.javacutil.UserError;
+import org.plumelib.util.CollectionsPlume;
 
 /**
  * This class behaves similarly to javac. CheckerMain does the following:
@@ -429,8 +430,32 @@ public class CheckerMain {
       args.add("-Xbootclasspath/p:" + String.join(File.pathSeparator, runtimeClasspath));
     } else {
       args.addAll(
+          // Keep this list in sync with the lists in checker-framework/build.gradle in
+          // compilerArgsForRunningCFs, the sections with labels "javac-jdk11-non-modularized",
+          // "maven", and "sbt" in the manual, and in the checker-framework-gradle-plugin,
+          // CheckerFrameworkPlugin#applyToProject
           Arrays.asList(
-              "--illegal-access=warn",
+              // These are required in Java 17+ because the --illegal-access option is set to deny
+              // by default.  None of these packages are accessed via reflection, so the module
+              // only needs to be exported, but not opened.
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED",
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED",
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+              // Required because the Checker Framework reflectively accesses private members in
+              // com.sun.tools.javac.comp.
               "--add-opens",
               "jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED"));
     }
@@ -490,7 +515,12 @@ public class CheckerMain {
 
   /**
    * Given a path element that might be a wildcard, return a list of the elements it expands to. If
-   * the element isn't a wildcard, return a singleton list containing the argument.
+   * the element isn't a wildcard, return a singleton list containing the argument. Since the
+   * original argument list is placed after 'com.sun.tools.javac.Main' in the new command line, the
+   * JVM doesn't do wildcard expansion of jar files in any classpaths in the original argument list.
+   *
+   * @param pathElement an element of a classpath
+   * @return all elements of a classpath with wildcards expanded
    */
   private List<String> expandWildcards(String pathElement) {
     if (pathElement.equals("*")) {
@@ -512,7 +542,15 @@ public class CheckerMain {
    */
   private List<String> jarFiles(String directory) {
     File dir = new File(directory);
-    return Arrays.asList(dir.list((d, name) -> name.endsWith(".jar") || name.endsWith(".JAR")));
+    String[] jarFiles = dir.list((d, name) -> name.endsWith(".jar") || name.endsWith(".JAR"));
+    if (jarFiles == null) {
+      return Collections.emptyList();
+    }
+    // concat directory with jar file path to give full path
+    for (int i = 0; i < jarFiles.length; i++) {
+      jarFiles[i] = directory + jarFiles[i];
+    }
+    return Arrays.asList(jarFiles);
   }
 
   /** Invoke the compiler with all relevant jars on its classpath and/or bootclasspath. */
@@ -715,7 +753,7 @@ public class CheckerMain {
         }
       }
       List<String> missingAbsoluteFilenames =
-          SystemUtil.mapList(File::getAbsolutePath, missingFiles);
+          CollectionsPlume.mapList(File::getAbsolutePath, missingFiles);
       throw new RuntimeException(
           "The following files could not be located: "
               + String.join(", ", missingAbsoluteFilenames));
@@ -795,8 +833,7 @@ public class CheckerMain {
       ZipEntry entry;
       while ((entry = checkerJarIs.getNextEntry()) != null) {
         final String name = entry.getName();
-        // Checkers ending in "Subchecker" are not included in this list used by
-        // CheckerMain.
+        // Checkers ending in "Subchecker" are not included in this list used by CheckerMain.
         if ((name.startsWith(CHECKER_BASE_DIR_NAME) || name.startsWith(COMMON_BASE_DIR_NAME))
             && name.endsWith("Checker.class")) {
           // Forward slash is used instead of File.separator because checker.jar uses / as
@@ -809,7 +846,6 @@ public class CheckerMain {
       }
       checkerJarIs.close();
     } catch (IOException e) {
-      // When using CheckerDevelMain we might not have a checker.jar file built yet.
       // Issue a warning instead of aborting execution.
       System.err.printf(
           "Could not read %s. Shorthand processor names will not work.%n", checkerJar);

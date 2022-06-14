@@ -4,9 +4,11 @@ import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
+import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.model.JavacTypes;
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import com.sun.tools.javac.util.Context;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,8 +20,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
-import java.util.stream.Collectors;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -35,10 +37,11 @@ import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.JavaFileObject;
-import javax.tools.JavaFileObject.Kind;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signature.qual.BinaryName;
 import org.checkerframework.checker.signature.qual.CanonicalName;
+import org.plumelib.util.CollectionsPlume;
 
 /**
  * Utility methods for analyzing {@code Element}s. This complements {@link Elements}, providing
@@ -59,7 +62,7 @@ public class ElementUtils {
    * @return the innermost type element, or null if no type element encloses {@code elem}
    * @deprecated use {@link #enclosingTypeElement}
    */
-  @Deprecated // use enclosingTypeElement
+  @Deprecated // 2021-01-16
   public static @Nullable TypeElement enclosingClass(final Element elem) {
     return enclosingTypeElement(elem);
   }
@@ -186,9 +189,11 @@ public class ElementUtils {
     // TODO: verify and see whether the change is worth it.
     String fqnstart = elem.getQualifiedName().toString();
     String fqn = fqnstart;
-    if (fqn != null && !fqn.isEmpty() && fqn.contains(".")) {
-      fqn = fqn.substring(0, fqn.lastIndexOf('.'));
-      return e.getPackageElement(fqn);
+    if (fqn != null && !fqn.isEmpty()) {
+      int dotPos = fqn.lastIndexOf('.');
+      if (dotPos != -1) {
+        return e.getPackageElement(fqn.substring(0, dotPos));
+      }
     }
     return null;
   }
@@ -289,7 +294,7 @@ public class ElementUtils {
    * @param te a type
    * @return the binary name of the type
    */
-  @SuppressWarnings("signature:return.type.incompatible") // string manipulation
+  @SuppressWarnings("signature:return") // string manipulation
   public static @BinaryName String getBinaryName(TypeElement te) {
     Element enclosing = te.getEnclosingElement();
     String simpleName = te.getSimpleName().toString();
@@ -433,7 +438,7 @@ public class ElementUtils {
       Symbol.ClassSymbol clss = (Symbol.ClassSymbol) elt;
       if (null != clss.classfile) {
         // The class file could be a .java file
-        return clss.classfile.getKind() == Kind.CLASS;
+        return clss.classfile.getKind() == JavaFileObject.Kind.CLASS;
       } else {
         return elt.asType().getKind().isPrimitive();
       }
@@ -456,7 +461,7 @@ public class ElementUtils {
    *
    * @param type TypeElement to search
    * @param name name of a field
-   * @return The VariableElement for the field if it was found, null otherwise
+   * @return the VariableElement for the field if it was found, null otherwise
    */
   public static @Nullable VariableElement findFieldInType(TypeElement type, String name) {
     for (VariableElement field : ElementFilter.fieldsIn(type.getEnclosedElements())) {
@@ -732,7 +737,7 @@ public class ElementUtils {
    * @return the set of kinds that represent classes
    * @deprecated use {@link #typeElementKinds()}
    */
-  @Deprecated // use typeElementKinds
+  @Deprecated // 2020-12-11
   public static Set<ElementKind> classElementKinds() {
     return typeElementKinds();
   }
@@ -753,7 +758,7 @@ public class ElementUtils {
    * @return true, iff the given kind is a class kind
    * @deprecated use {@link #isTypeElement}
    */
-  @Deprecated // use isTypeElement
+  @Deprecated // 2020-12-11
   public static boolean isClassElement(Element element) {
     return isTypeElement(element);
   }
@@ -776,6 +781,19 @@ public class ElementUtils {
    */
   public static boolean isTypeDeclaration(Element elt) {
     return isClassElement(elt) || elt.getKind() == ElementKind.TYPE_PARAMETER;
+  }
+
+  /**
+   * Return true if the element is a binding variable.
+   *
+   * <p>Note: This is to conditionally support Java 15 instanceof pattern matching. When available,
+   * this should use {@code ElementKind.BINDING_VARIABLE} directly.
+   *
+   * @param element the element to test
+   * @return true if the element is a binding variable
+   */
+  public static boolean isBindingVariable(Element element) {
+    return "BINDING_VARIABLE".equals(element.getKind().name());
   }
 
   /**
@@ -821,13 +839,23 @@ public class ElementUtils {
   /**
    * Given an annotation name, return true if the element has the annotation of that name.
    *
+   * <p>It is more efficient to use {@code Element#getAnnotation(Class)}, but note that both methods
+   * ignore types from annotation files, such as stub or ajava files.
+   *
+   * <p>To include types from annotation files, use {@code AnnotatedTypeFactory#fromElement} or
+   * {@code AnnotatedTypeFactory#getDeclAnnotations}.
+   *
    * @param element the element
    * @param annotName name of the annotation
    * @return true if the element has the annotation of that name
    */
   public static boolean hasAnnotation(Element element, String annotName) {
-    return element.getAnnotationMirrors().stream()
-        .anyMatch(anm -> AnnotationUtils.areSameByName(anm, annotName));
+    for (AnnotationMirror anm : element.getAnnotationMirrors()) {
+      if (AnnotationUtils.areSameByName(anm, annotName)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -857,9 +885,8 @@ public class ElementUtils {
   public static List<TypeElement> getAllSupertypes(TypeElement type, ProcessingEnvironment env) {
     Context ctx = ((JavacProcessingEnvironment) env).getContext();
     com.sun.tools.javac.code.Types javacTypes = com.sun.tools.javac.code.Types.instance(ctx);
-    return javacTypes.closure(((Symbol) type).type).stream()
-        .map(t -> (TypeElement) t.tsym)
-        .collect(Collectors.toList());
+    return CollectionsPlume.<Type, TypeElement>mapList(
+        t -> (TypeElement) t.tsym, javacTypes.closure(((Symbol) type).type));
   }
 
   /**
@@ -885,5 +912,58 @@ public class ElementUtils {
    */
   public static boolean inSameClass(Element e1, Element e2) {
     return e1.getEnclosingElement().equals(e2.getEnclosingElement());
+  }
+
+  /**
+   * Calls getKind() on the given Element, but returns CLASS if the ElementKind is RECORD. This is
+   * needed because the Checker Framework runs on JDKs before the RECORD item was added, so RECORD
+   * can't be used in case statements, and usually we want to treat them the same as classes.
+   *
+   * @param elt the element to get the kind for
+   * @return the kind of the element, but CLASS if the kind was RECORD
+   */
+  public static ElementKind getKindRecordAsClass(Element elt) {
+    ElementKind kind = elt.getKind();
+    if (kind.name().equals("RECORD")) {
+      kind = ElementKind.CLASS;
+    }
+    return kind;
+  }
+
+  /**
+   * Calls getRecordComponents on the given TypeElement. Uses reflection because this method is not
+   * available before JDK 16. On earlier JDKs, which don't support records anyway, an exception is
+   * thrown.
+   *
+   * @param element the type element to call getRecordComponents on
+   * @return the return value of calling getRecordComponents, or empty list if the method is not
+   *     available
+   */
+  @SuppressWarnings({"unchecked", "nullness"}) // because of cast from reflection
+  public static List<? extends Element> getRecordComponents(TypeElement element) {
+    try {
+      return (@NonNull List<? extends Element>)
+          TypeElement.class.getMethod("getRecordComponents").invoke(element);
+    } catch (NoSuchMethodException
+        | IllegalAccessException
+        | IllegalArgumentException
+        | InvocationTargetException e) {
+      throw new Error("Cannot access TypeElement.getRecordComponents", e);
+    }
+  }
+
+  /**
+   * Check if the given element is a compact canonical record constructor.
+   *
+   * @param elt the element to check
+   * @return true if the element is a compact canonical constructor of a record
+   */
+  public static boolean isCompactCanonicalRecordConstructor(Element elt) {
+    if (!(elt instanceof Symbol)) {
+      return false;
+    }
+
+    return elt.getKind() == ElementKind.CONSTRUCTOR
+        && (((Symbol) elt).flags() & TreeUtils.Flags_COMPACT_RECORD_CONSTRUCTOR) != 0;
   }
 }

@@ -32,6 +32,8 @@ import org.checkerframework.checker.index.qual.Positive;
 import org.checkerframework.checker.index.qual.SubstringIndexFor;
 import org.checkerframework.checker.index.searchindex.SearchIndexAnnotatedTypeFactory;
 import org.checkerframework.checker.index.searchindex.SearchIndexChecker;
+import org.checkerframework.checker.signedness.qual.SignedPositive;
+import org.checkerframework.checker.signedness.qual.SignednessGlb;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.ValueAnnotatedTypeFactory;
 import org.checkerframework.common.value.ValueChecker;
@@ -102,13 +104,18 @@ public class LowerBoundAnnotatedTypeFactory extends BaseAnnotatedTypeFactoryForI
   /** The canonical @{@link PolyLowerBound} annotation. */
   public final AnnotationMirror POLY = AnnotationBuilder.fromClass(elements, PolyLowerBound.class);
 
+  /** Predicates about method calls. */
   private final IndexMethodIdentifier imf;
 
+  /**
+   * Create a new LowerBoundAnnotatedTypeFactory.
+   *
+   * @param checker the type-checker
+   */
   public LowerBoundAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
-    // Any annotations that are aliased to @NonNegative, @Positive,
-    // or @GTENegativeOne must also be aliased in the constructor of
-    // ValueAnnotatedTypeFactory to the appropriate @IntRangeFrom*
+    // Any annotations that are aliased to @NonNegative, @Positive, or @GTENegativeOne must also be
+    // aliased in the constructor of ValueAnnotatedTypeFactory to the appropriate @IntRangeFrom*
     // annotation.
     addAliasedTypeAnnotation(IndexFor.class, NN);
     addAliasedTypeAnnotation(IndexOrLow.class, GTEN1);
@@ -116,6 +123,9 @@ public class LowerBoundAnnotatedTypeFactory extends BaseAnnotatedTypeFactoryForI
     addAliasedTypeAnnotation(LengthOf.class, NN);
     addAliasedTypeAnnotation(PolyIndex.class, POLY);
     addAliasedTypeAnnotation(SubstringIndexFor.class, GTEN1);
+
+    addAliasedTypeAnnotation(SignedPositive.class, NN);
+    addAliasedTypeAnnotation(SignednessGlb.class, NN);
 
     imf = new IndexMethodIdentifier(this);
 

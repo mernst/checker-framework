@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Set;
 import javax.lang.model.element.Element;
+import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.interning.qual.FindDistinct;
 import org.checkerframework.checker.interning.qual.InternedDistinct;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
@@ -58,16 +59,16 @@ public abstract class AbstractAnalysis<
    * The transfer inputs of every basic block (assumed to be 'no information' if not present, inputs
    * before blocks in forward analysis, after blocks in backward analysis).
    */
-  protected final IdentityHashMap<Block, TransferInput<V, S>> inputs;
+  protected final IdentityHashMap<Block, TransferInput<V, S>> inputs = new IdentityHashMap<>();
 
   /** The worklist used for the fix-point iteration. */
   protected final Worklist worklist;
 
   /** Abstract values of nodes. */
-  protected final IdentityHashMap<Node, V> nodeValues;
+  protected final IdentityHashMap<Node, V> nodeValues = new IdentityHashMap<>();
 
   /** Map from (effectively final) local variable elements to their abstract value. */
-  protected final HashMap<Element, V> finalLocalValues;
+  protected final HashMap<Element, V> finalLocalValues = new HashMap<>();
 
   /**
    * The node that is currently handled in the analysis (if it is running). The following invariant
@@ -126,10 +127,7 @@ public abstract class AbstractAnalysis<
    */
   protected AbstractAnalysis(Direction direction) {
     this.direction = direction;
-    this.inputs = new IdentityHashMap<>();
     this.worklist = new Worklist(this.direction);
-    this.nodeValues = new IdentityHashMap<>();
-    this.finalLocalValues = new HashMap<>();
   }
 
   /** Initialize the transfer inputs of every basic block before performing the analysis. */
@@ -164,7 +162,7 @@ public abstract class AbstractAnalysis<
   }
 
   @Override
-  @SuppressWarnings("nullness:contracts.precondition.override.invalid") // implementation field
+  @SuppressWarnings("nullness:contracts.precondition.override") // implementation field
   @RequiresNonNull("cfg")
   public AnalysisResult<V, S> getResult() {
     if (isRunning) {
@@ -172,7 +170,7 @@ public abstract class AbstractAnalysis<
           "AbstractAnalysis::getResult() shouldn't be called when the analysis is running.");
     }
     return new AnalysisResult<>(
-        nodeValues, inputs, cfg.getTreeLookup(), cfg.getUnaryAssignNodeLookup(), finalLocalValues);
+        nodeValues, inputs, cfg.getTreeLookup(), cfg.getPostfixNodeLookup(), finalLocalValues);
   }
 
   @Override
@@ -223,7 +221,7 @@ public abstract class AbstractAnalysis<
   }
 
   @Override
-  @SuppressWarnings("nullness:contracts.precondition.override.invalid") // implementation field
+  @SuppressWarnings("nullness:contracts.precondition.override") // implementation field
   @RequiresNonNull("cfg")
   public @Nullable S getRegularExitStore() {
     SpecialBlock regularExitBlock = cfg.getRegularExitBlock();
@@ -235,7 +233,7 @@ public abstract class AbstractAnalysis<
   }
 
   @Override
-  @SuppressWarnings("nullness:contracts.precondition.override.invalid") // implementation field
+  @SuppressWarnings("nullness:contracts.precondition.override") // implementation field
   @RequiresNonNull("cfg")
   public @Nullable S getExceptionalExitStore() {
     SpecialBlock exceptionalExitBlock = cfg.getExceptionalExitBlock();
@@ -263,16 +261,30 @@ public abstract class AbstractAnalysis<
 
   @Override
   public @Nullable V getValue(Tree t) {
-    // we don't have a org.checkerframework.dataflow fact about the current node yet
-    if (t == currentTree) {
+    // Dataflow is analyzing the tree, so no value is available.
+    if (t == currentTree || cfg == null) {
       return null;
     }
-    Set<Node> nodesCorrespondingToTree = getNodesForTree(t);
-    if (nodesCorrespondingToTree == null) {
+    V result = getValue(getNodesForTree(t));
+    if (result == null) {
+      result = getValue(cfg.getTreeLookup().get(t));
+    }
+    return result;
+  }
+
+  /**
+   * Returns the least upper bound of the values of {@code nodes}.
+   *
+   * @param nodes a set of nodes
+   * @return the least upper bound of the values of {@code nodes}
+   */
+  private @Nullable V getValue(@Nullable Set<Node> nodes) {
+    if (nodes == null) {
       return null;
     }
+
     V merged = null;
-    for (Node aNode : nodesCorrespondingToTree) {
+    for (Node aNode : nodes) {
       if (aNode.isLValue()) {
         return null;
       }
@@ -283,6 +295,7 @@ public abstract class AbstractAnalysis<
         merged = merged.leastUpperBound(v);
       }
     }
+
     return merged;
   }
 
@@ -326,9 +339,8 @@ public abstract class AbstractAnalysis<
       Node node, TransferInput<V, S> transferInput) {
     assert transferFunction != null : "@AssumeAssertion(nullness): invariant";
     if (node.isLValue()) {
-      // TODO: should the default behavior return a regular transfer result, a conditional
-      //  transfer result (depending on store.containsTwoStores()), or is the following
-      //  correct?
+      // TODO: should the default behavior return a regular transfer result, a conditional transfer
+      //  result (depending on store.containsTwoStores()), or is the following correct?
       return new RegularTransferResult<>(null, transferInput.getRegularStore());
     }
     transferInput.node = node;
@@ -362,6 +374,20 @@ public abstract class AbstractAnalysis<
   protected final void init(ControlFlowGraph cfg) {
     initFields(cfg);
     initInitialInputs();
+  }
+
+  /**
+   * Should exceptional control flow for a particular exception type be ignored?
+   *
+   * <p>The default implementation always returns {@code false}. Subclasses should override the
+   * method to implement a different policy.
+   *
+   * @param exceptionType the exception type
+   * @return {@code true} if exceptional control flow due to {@code exceptionType} should be
+   *     ignored, {@code false} otherwise
+   */
+  protected boolean isIgnoredExceptionType(TypeMirror exceptionType) {
+    return false;
   }
 
   /**
@@ -430,7 +456,7 @@ public abstract class AbstractAnalysis<
   protected static class Worklist {
 
     /** Map all blocks in the CFG to their depth-first order. */
-    protected final IdentityHashMap<Block, Integer> depthFirstOrder;
+    protected final IdentityHashMap<Block, Integer> depthFirstOrder = new IdentityHashMap<>();
 
     /**
      * Comparators to allow priority queue to order blocks by their depth-first order, using by
@@ -465,8 +491,6 @@ public abstract class AbstractAnalysis<
      * @param direction the direction (forward or backward)
      */
     public Worklist(Direction direction) {
-      depthFirstOrder = new IdentityHashMap<>();
-
       if (direction == Direction.FORWARD) {
         queue = new PriorityQueue<>(new ForwardDFOComparator());
       } else if (direction == Direction.BACKWARD) {
@@ -499,7 +523,7 @@ public abstract class AbstractAnalysis<
      */
     @Pure
     @EnsuresNonNullIf(result = false, expression = "poll()")
-    @SuppressWarnings("nullness:contracts.conditional.postcondition.not.satisfied") // forwarded
+    @SuppressWarnings("nullness:contracts.conditional.postcondition") // forwarded
     public boolean isEmpty() {
       return queue.isEmpty();
     }
@@ -515,7 +539,8 @@ public abstract class AbstractAnalysis<
     }
 
     /**
-     * Add the given block to {@link #queue}.
+     * Add the given block to {@link #queue}. Adds unconditionally: does not check containment
+     * first.
      *
      * @param block the block to add to {@link #queue}
      */
