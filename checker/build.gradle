@@ -1,6 +1,6 @@
 plugins {
     // https://github.com/n0mer/gradle-git-properties ; target is: generateGitProperties
-    id "com.gorylenko.gradle-git-properties" version "2.3.1"
+    id "com.gorylenko.gradle-git-properties" version "2.4.1"
 }
 sourceSets {
     main {
@@ -19,6 +19,7 @@ sourcesJar {
 }
 
 configurations {
+  implementation.extendsFrom(annotatedGuava)
   fatJar {
     canBeConsumed = true
     canBeResolved = false
@@ -44,18 +45,8 @@ dependencies {
     // As of 2019-12-16, the version of reflection-util in the Annotation
     // File Utilities takes priority over this version, in the fat jar
     // file. :-( So update it and re-build it locally when updating this.
-    implementation 'org.plumelib:reflection-util:1.0.3'
-    implementation 'org.plumelib:plume-util:1.5.5'
-
-    // TODO: it's a bug that annotatedlib:guava requires the error_prone_annotations dependency.
-    // Update the next two version numbers in tandem.  Get the Error Prone version from the "compile
-    // dependencies" section of https://mvnrepository.com/artifact/com.google.guava/guava/28.2-jre .
-    // (It isn't at https://mvnrepository.com/artifact/org.checkerframework.annotatedlib/guava/28.2-jre, which is the bug.)
-    implementation 'com.google.errorprone:error_prone_annotations:2.7.1'
-    implementation ('org.checkerframework.annotatedlib:guava:30.1.1-jre') {
-        // So long as Guava only uses annotations from checker-qual, excluding it should not cause problems.
-        exclude group: 'org.checkerframework'
-    }
+    implementation 'org.plumelib:reflection-util:1.0.4'
+    implementation 'org.plumelib:plume-util:1.5.8'
 
     // Dependencies added to "shadow" appear as dependencies in Maven Central.
     shadow project(':checker-qual')
@@ -65,12 +56,12 @@ dependencies {
     testImplementation "com.google.auto.value:auto-value-annotations:1.7.4"
     testImplementation "com.google.auto.value:auto-value:1.7.4"
     testImplementation "com.ryanharter.auto.value:auto-value-parcel:0.2.9"
-    testImplementation "org.projectlombok:lombok:1.18.20"
+    testImplementation "org.projectlombok:lombok:1.18.24"
     // Called Methods Checker support for detecting misuses of AWS APIs
     testImplementation "com.amazonaws:aws-java-sdk-ec2"
     testImplementation "com.amazonaws:aws-java-sdk-kms"
     // The AWS SDK is used for testing the Called Methods Checker.
-    testImplementation platform("com.amazonaws:aws-java-sdk-bom:1.11.964")
+    testImplementation platform("com.amazonaws:aws-java-sdk-bom:1.12.238")
 
     testImplementation group: 'junit', name: 'junit', version: '4.13.2'
     testImplementation project(':framework-test')
@@ -314,7 +305,15 @@ task jtregJdk11Tests(dependsOn: ':downloadJtreg', group: 'Verification') {
                     "-samevm",
                     "-javacoptions:-classpath ${tasks.shadowJar.archiveFile.get()}:${sourceSets.test.output.asPath}",
                     "-vmoptions:-classpath ${tasks.shadowJar.archiveFile.get()}:${sourceSets.test.output.asPath}",
+                    "-vmoptions:--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+                    "-vmoptions:--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
                     "-vmoptions:--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED",
+                    "-vmoptions:--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
+                    "-vmoptions:--add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+                    "-vmoptions:--add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
+                    "-vmoptions:--add-opens=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED",
+                    "-vmoptions:--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+                    "-vmoptions:--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
                     "-javacoptions:-classpath ${sourceSets.testannotations.output.asPath}",
                     // Location of jtreg tests
                     '.'
@@ -391,6 +390,13 @@ task ainferTestCheckerGenerateStubs(type: Test) {
         // The stub file format doesn't support annotations on anonymous inner classes, so
         // this test also expects errors on UsesAnonymous.java.
         delete('tests/ainfer-testchecker/annotated/UsesAnonymous.java')
+
+        // This test causes an error when its corresponding stub file is read, because the test
+        // contains an annotation definition. The stub file parser does not support reading
+        // files that define annotations; this test can be reinstated if the stub parser
+        // is extended to support annotation definitions.
+        delete("tests/ainfer-testchecker/annotated/all-systems/Issue4083.java")
+
         copy {
             from file('tests/ainfer-testchecker/non-annotated/UsesAnonymous.java')
             into file('tests/ainfer-testchecker/annotated')
@@ -435,6 +441,56 @@ task ainferTestCheckerGenerateAjava(type: Test) {
 
     doLast {
         copyNonannotatedToAnnotatedDirectory("ainfer-testchecker")
+
+        // A crash occurs because of a bug in Java Parser when trying to read the .ajava
+        // file produced for these tests. Reinstate them when https://github.com/javaparser/javaparser/pull/3527
+        // has been merged and released, and we've updated to a JavaParser version with that fix.
+        delete("tests/ainfer-testchecker/annotated/all-systems/java8/memberref/Issue946.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/java8/memberref/Receivers.java")
+
+        // This test must be deleted, because otherwise an error about a missing type in an
+        // ajava file is issued. The test itself shouldn't be run as an all-systems test while testing
+        // WPI; see the copy in the non-annotated WPI tests for an explanation.
+        delete("tests/ainfer-testchecker/annotated/all-systems/java8/memberref/Purity.java")
+
+        // These tests cause an error like the following when their corresponding ajava files are read:
+        // :0: warning: Annotations-org.checkerframework.common.value.ValueChecker.ajava:(line 3,col 1): Skipping annotation type: Anno
+        delete("tests/ainfer-testchecker/annotated/all-systems/Annotations.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/Issue4083.java")
+
+        // These tests cause unsuppressable errors from the Annotation File Parser, so they are also
+        // skipped. The errors are of the form:
+        // :0: warning: ConditionalExpressions-org.checkerframework.common.value.ValueChecker.ajava:(line 53,col 10): Annotations on intersection types are not yet supported
+        // These tests can all be reinstated when the Annotation File Parser is enhanced to support
+        // intersection types.
+        delete("tests/ainfer-testchecker/annotated/all-systems/ConditionalExpressions.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/GenericCrazyBounds.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/InferAndIntersection.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/IntersectionTypes.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/Issue1102.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/Issue1690.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/Issue2195.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/Issue2198.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/Issue2739.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/Issue3120.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/Issue3302.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/Issue577.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/Issue717.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/MultipleUnions.java")
+        // TODO: why does this specific ajava file need to be deleted, even though its corresponding source
+        // file has already been removed? This problem does not occur for any of the others.
+        delete("tests/ainfer-testchecker/inference-output/MultipleUnions-org.checkerframework.common.value.ValueChecker.ajava")
+        delete("tests/ainfer-testchecker/annotated/all-systems/TypeVarPrimitives.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/Unions.java")
+        delete("tests/ainfer-testchecker/annotated/all-systems/WildcardBounds.java")
+
+        // There is some kind of bad interaction between the purity checker's inference mode
+        // and method references to constructors: every one of them in this test causes a
+        // purity.methodref warning during validation. This problem only occurs for ajava-based
+        // inference because the relevant purity annotations that seem to trigger it are on
+        // inner classes, which stubs cannot annotate.
+        // TODO: investigate the cause of this error in the Purity checker, fix it, and then reinstate this test.
+        delete("tests/ainfer-testchecker/annotated/all-systems/java8/memberref/MemberReferences.java")
     }
 }
 
@@ -466,7 +522,11 @@ void copyNonannotatedToAnnotatedDirectory(String testdir) {
         from files("tests/${testdir}/non-annotated")
         into file("tests/${testdir}/annotated")
         filter { String line ->
-            line.contains('// :: error:') || line.contains('// :: warning:') ? null : line
+            line.contains('// :: error:')
+                    // Don't remove unchecked cast warnings, because they're genuinely expected in some all-systems
+                    // tests, such as GenericsCasts.java.
+                    || (line.contains('// :: warning:') && !line.contains("// :: warning: [unchecked]"))
+                    ? null : line
         }
     }
     // The only file for which expected errors are maintained is ExpectedErrors.java, so we copy it over.
@@ -497,7 +557,7 @@ task ainferTestCheckerAjavaTest(dependsOn: 'shadowJar', group: 'Verification') {
 }
 
 task ainferTestCheckerGenerateJaifs(type: Test) {
-    description 'Internal task.  Users should run ainferNullnessJaifTest instead.  This type-checks the ainfer-testchecker files with -Ainfer=jaifs to generate .jaif files'
+    description 'Internal task.  Users should run ainferTestCheckerJaifTest instead.  This type-checks the ainfer-testchecker files with -Ainfer=jaifs to generate .jaif files'
 
     dependsOn(compileTestJava)
     dependsOn(':checker-qual:jar')  // For the Value Checker annotations.
@@ -518,10 +578,19 @@ task ainferTestCheckerGenerateJaifs(type: Test) {
     doLast {
         copyNonannotatedToAnnotatedDirectory("ainfer-testchecker")
 
-        // JAIF-based WPI fails these tests, which was added for stub-based WPI.
+        // JAIF-based WPI fails these tests, which were added for stub-based WPI.
         // See issue here: https://github.com/typetools/checker-framework/issues/3009
         delete('tests/ainfer-testchecker/annotated/ConflictingAnnotationsTest.java')
         delete('tests/ainfer-testchecker/annotated/MultiDimensionalArrays.java')
+
+        // JAIF-based WPI also fails this test. It used to pass, but the test was changed
+        // in a way that exposed a bug in the Annotation File Utilities: the AFU
+        // places annotations incorrectly on qualified types. In this test, a failure occurs because
+        // the AFU prints "@Annotation Outer.Inner this", rather than "Outer.@Annotation Inner this"
+        // (see an explanation of the syntax here:
+        // https://checkerframework.org/manual/#common-problems-non-typechecking).
+        // TODO: fix this bug in the AFU, then reinstate this test.
+        delete('tests/ainfer-testchecker/annotated/OverriddenMethodsTest.java')
 
         // Inserting annotations from .jaif files in-place.
         String jaifsDir = "tests/ainfer-testchecker/inference-output";
@@ -542,7 +611,8 @@ task ainferTestCheckerGenerateJaifs(type: Test) {
             executable "${afu}/scripts/insert-annotations-to-source"
             // Script argument -cp must precede Java program argument -i.
             // checker-qual is needed for Constant Value Checker annotations.
-            args = ['-cp', "${sourceSets.test.output.asPath}:${project(':checker-qual').tasks.jar.archivePath}"]
+            // Note that "/" works on Windows as well as on Linux.
+            args = ['-cp', "${sourceSets.test.output.asPath}:${project(':checker-qual').tasks.jar.archivePath}:" + file("tests/build/testclasses")]
             args += ['-i']
             for (File jaif : jaifs) {
                 args += [jaif.toString()]
@@ -555,7 +625,7 @@ task ainferTestCheckerGenerateJaifs(type: Test) {
 }
 
 task ainferTestCheckerValidateJaifs(type: Test) {
-    description 'Internal task.  Users should run ainferNullnessJaifTest instead.  This type-checks the ainfer-testchecker files using the .jaif files generated by ainferTestCheckerGenerateJaifs'
+    description 'Internal task.  Users should run ainferTestCheckerJaifTest instead.  This type-checks the ainfer-testchecker files using the .jaif files generated by ainferTestCheckerGenerateJaifs'
 
     dependsOn(ainferTestCheckerGenerateJaifs)
     outputs.upToDateWhen { false }
@@ -621,7 +691,8 @@ task ainferNullnessGenerateJaifs(type: Test) {
         exec {
             executable "${afu}/scripts/insert-annotations-to-source"
             // Script argument -cp must precede Java program argument -i.
-            args = ['-cp', "${sourceSets.test.output.asPath}"]
+            // Note that "/" works on Windows as well as on Linux.
+            args = ['-cp', "${sourceSets.test.output.asPath}:${project(':checker-qual').tasks.jar.archivePath}:" + file("tests/build/testclasses")]
             args += ['-i']
             for (File jaif : jaifs) {
                 args += [jaif.toString()]
@@ -692,7 +763,7 @@ task wpiManyTest(group: "Verification") {
                         '-i', "${project.projectDir}/tests/wpi-many/testin.txt",
                         '-o', "${project.projectDir}/build/wpi-many-tests",
                         '-s',
-                        '--', '--checker', 'nullness,interning,lock,regex,signature,calledmethods'
+                        '--', '--checker', 'nullness,interning,lock,regex,signature,calledmethods,resourceleak'
             }
         } catch (Exception e) {
             println("Failure: Running wpi-many.sh failed with a non-zero exit code.")
@@ -710,7 +781,9 @@ task wpiManyTest(group: "Verification") {
         def typecheckFiles = fileTree(typecheckFilesDir).matching {
             include "**/*-typecheck.out"
         }
-        def expectedTypecheckFileCount = file("${project.projectDir}/tests/wpi-many/testin.txt").text.readLines().size()
+        def testinLines = file("${project.projectDir}/tests/wpi-many/testin.txt").text.readLines()
+        testinLines.removeIf { it.startsWith("#") }
+        def expectedTypecheckFileCount = testinLines.size()
         def actualTypecheckFileCount = typecheckFiles.size()
         if (actualTypecheckFileCount != expectedTypecheckFileCount) {
             println("Failure: Too few *-typecheck.out files in ${typecheckFilesDir}: " +
@@ -746,7 +819,14 @@ task wpiManyTest(group: "Verification") {
                         line.startsWith("Running ")
                         // Warnings about bad path elements aren't related to WPI and are ignored.
                         || line.startsWith("warning: [path]")
-                        // Ignore the summary line that reports the total number of warnings.
+                        // Ignore bootstrap classpath warning:
+                        || line.startsWith("warning: [options] bootstrap")
+                        // Ignore warnings about illegal access:
+                        || line.contains("Option --illegal-access is deprecated")
+                        // Ignore the warnings about --add-opens arguments to the JVM
+                        || line.contains("warning: [options] --add-opens has no effect at compile time")
+                        // Ignore the summary line that reports the total number of warnings (which can be single or plural).
+                        || line.endsWith("warning")
                         || line.endsWith("warnings")) {
                   return;
                 }
