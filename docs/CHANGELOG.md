@@ -1,3 +1,9 @@
+**User-visible changes:**
+
+The new Boxing Checker warns when an iterator is used in an enhanced for
+statement (a foreach loop) but should not be.
+
+
 Version 3.22.3 (July 1, 2022)
 -----------------------------
 
@@ -310,9 +316,6 @@ https://docs.google.com/forms/d/1Bbt34c_3nDItHsBnmEfumoyrR-Zxhvo3VTHucXwfMcQ .
 Thanks!
 
 **User-visible changes:**
-
-The new Boxing Checker warns when an iterator is used in an enhanced for
-statement (a foreach loop) but should not be.
 
 Command-line argument -AassumeKeyFor makes the Nullness Checker and Map Key
 Checker unsoundly assume that the argument to `Map.get` is a key for the
