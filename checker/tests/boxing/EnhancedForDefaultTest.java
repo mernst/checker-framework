@@ -11,23 +11,23 @@ public class EnhancedForDefaultTest {
 
     @UnknownRepCollection Collection<String> uc = c;
     @RefCollection Collection<String> oc = c;
-    // :: error: (assignment.type.incompatible)
+    // :: error: (assignment)
     @PrimCollection Collection<String> fc = c;
-    // :: error: (assignment.type.incompatible)
+    // :: error: (assignment)
     @CollectionRepBottom Collection<String> bc = c;
 
     @UnknownRepCollection Iterator<String> uitor = itor;
     @RefCollection Iterator<String> oitor = itor;
-    // :: error: (assignment.type.incompatible)
+    // :: error: (assignment)
     @PrimCollection Iterator<String> fitor = itor;
-    // :: error: (assignment.type.incompatible)
+    // :: error: (assignment)
     @CollectionRepBottom Iterator<String> bitor = itor;
 
     @UnknownRepCollection Iterable<String> uible = ible;
     @RefCollection Iterable<String> oible = ible;
-    // :: error: (assignment.type.incompatible)
+    // :: error: (assignment)
     @PrimCollection Iterable<String> fible = ible;
-    // :: error: (assignment.type.incompatible)
+    // :: error: (assignment)
     @CollectionRepBottom Iterable<String> bible = ible;
 
     // :: error: (anno.on.irrelevant)
