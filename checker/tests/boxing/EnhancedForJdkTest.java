@@ -7,12 +7,14 @@ public class EnhancedForJdkTest {
 
   void jdkClient(@RefCollection Collection<String> o, @PrimCollection Collection<String> f) {
     Collections.addAll(o, new String[] {});
+    // :: error: (argument)
     Collections.addAll(f, new String[] {});
 
     o.toString();
     f.toString();
 
     o.size();
+    // :: error: (method.invocation)
     f.size();
   }
 }
