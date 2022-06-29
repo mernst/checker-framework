@@ -12,6 +12,7 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
+import com.sun.tools.javac.tree.JCTree;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -52,6 +53,7 @@ import org.checkerframework.framework.util.StringToJavaExpression;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
+import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
@@ -424,7 +426,12 @@ public class DependentTypesHelper {
       // If this is a synthetic created by dataflow, the path will be null.
       return;
     }
-    switch (variableElt.getKind()) {
+    ElementKind variableKind = variableElt.getKind();
+    if (ElementUtils.isBindingVariable(variableElt)) {
+      // Treat binding variables the same as local variables.
+      variableKind = ElementKind.LOCAL_VARIABLE;
+    }
+    switch (variableKind) {
       case PARAMETER:
         TreePath pathTillEnclTree =
             TreePathUtil.pathTillOfKind(pathToVariableDecl, METHOD_OR_LAMBDA);
@@ -902,17 +909,22 @@ public class DependentTypesHelper {
       return;
     }
 
+    // Report the error at the type rather than at the variable.
     if (errorTree.getKind() == Tree.Kind.VARIABLE) {
-      ModifiersTree modifiers = ((VariableTree) errorTree).getModifiers();
-      errorTree = ((VariableTree) errorTree).getType();
-      for (AnnotationTree annoTree : modifiers.getAnnotations()) {
-        String annoString = annoTree.toString();
-        for (String annoName : annoToElements.keySet()) {
-          // TODO: Simple string containment seems too simplistic.  At least check for a word
-          // boundary.
-          if (annoString.contains(annoName)) {
-            errorTree = annoTree;
-            break;
+      Tree typeTree = ((VariableTree) errorTree).getType();
+      // Don't report the error at the type if the type is not present in source code.
+      if (((JCTree) typeTree).getPreferredPosition() != -1) {
+        ModifiersTree modifiers = ((VariableTree) errorTree).getModifiers();
+        errorTree = typeTree;
+        for (AnnotationTree annoTree : modifiers.getAnnotations()) {
+          String annoString = annoTree.toString();
+          for (String annoName : annoToElements.keySet()) {
+            // TODO: Simple string containment seems too simplistic.  At least check for a word
+            // boundary.
+            if (annoString.contains(annoName)) {
+              errorTree = annoTree;
+              break;
+            }
           }
         }
       }

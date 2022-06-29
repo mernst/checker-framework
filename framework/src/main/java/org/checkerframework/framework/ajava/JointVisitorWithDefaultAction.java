@@ -7,12 +7,14 @@ import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.AnnotationDeclaration;
 import com.github.javaparser.ast.body.AnnotationMemberDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.CompactConstructorDeclaration;
 import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.EnumConstantDeclaration;
 import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.ReceiverParameter;
+import com.github.javaparser.ast.body.RecordDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.ArrayAccessExpr;
 import com.github.javaparser.ast.expr.AssignExpr;
@@ -32,9 +34,11 @@ import com.github.javaparser.ast.expr.Name;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.expr.PatternExpr;
 import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import com.github.javaparser.ast.expr.SuperExpr;
+import com.github.javaparser.ast.expr.SwitchExpr;
 import com.github.javaparser.ast.expr.ThisExpr;
 import com.github.javaparser.ast.expr.UnaryExpr;
 import com.github.javaparser.ast.modules.ModuleDeclaration;
@@ -63,6 +67,7 @@ import com.github.javaparser.ast.stmt.SynchronizedStmt;
 import com.github.javaparser.ast.stmt.ThrowStmt;
 import com.github.javaparser.ast.stmt.TryStmt;
 import com.github.javaparser.ast.stmt.WhileStmt;
+import com.github.javaparser.ast.stmt.YieldStmt;
 import com.github.javaparser.ast.type.ArrayType;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.IntersectionType;
@@ -191,6 +196,11 @@ public abstract class JointVisitorWithDefaultAction extends JointJavacJavaParser
   }
 
   @Override
+  public void processBindingPattern(Tree javacTree, PatternExpr javaParserNode) {
+    defaultJointAction(javacTree, javaParserNode);
+  }
+
+  @Override
   public void processBlock(BlockTree javacTree, BlockStmt javaParserNode) {
     defaultJointAction(javacTree, javaParserNode);
   }
@@ -222,6 +232,11 @@ public abstract class JointVisitorWithDefaultAction extends JointJavacJavaParser
 
   @Override
   public void processClass(ClassTree javacTree, EnumDeclaration javaParserNode) {
+    defaultJointAction(javacTree, javaParserNode);
+  }
+
+  @Override
+  public void processClass(ClassTree javacTree, RecordDeclaration javaParserNode) {
     defaultJointAction(javacTree, javaParserNode);
   }
 
@@ -396,6 +411,11 @@ public abstract class JointVisitorWithDefaultAction extends JointJavacJavaParser
   }
 
   @Override
+  public void processMethod(MethodTree javacTree, CompactConstructorDeclaration javaParserNode) {
+    defaultJointAction(javacTree, javaParserNode);
+  }
+
+  @Override
   public void processMethod(MethodTree javacTree, AnnotationMemberDeclaration javaParserNode) {
     defaultJointAction(javacTree, javaParserNode);
   }
@@ -479,6 +499,11 @@ public abstract class JointVisitorWithDefaultAction extends JointJavacJavaParser
   }
 
   @Override
+  public void processSwitchExpression(Tree javacTree, SwitchExpr javaParserNode) {
+    defaultJointAction(javacTree, javaParserNode);
+  }
+
+  @Override
   public void processSynchronized(SynchronizedTree javacTree, SynchronizedStmt javaParserNode) {
     defaultJointAction(javacTree, javaParserNode);
   }
@@ -545,6 +570,11 @@ public abstract class JointVisitorWithDefaultAction extends JointJavacJavaParser
 
   @Override
   public void processWildcard(WildcardTree javacTree, WildcardType javaParserNode) {
+    defaultJointAction(javacTree, javaParserNode);
+  }
+
+  @Override
+  public void processYield(Tree javacTree, YieldStmt javaParserNode) {
     defaultJointAction(javacTree, javaParserNode);
   }
 

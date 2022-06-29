@@ -68,8 +68,7 @@ import org.checkerframework.javacutil.TypesUtils;
 public class NullnessVisitor
     extends InitializationVisitor<NullnessAnnotatedTypeFactory, NullnessValue, NullnessStore> {
   // Error message keys
-  // private static final @CompilerMessageKey String ASSIGNMENT_TYPE_INCOMPATIBLE =
-  // "assignment.type.incompatible";
+  // private static final @CompilerMessageKey String ASSIGNMENT_TYPE_INCOMPATIBLE = "assignment";
   private static final @CompilerMessageKey String UNBOXING_OF_NULLABLE = "unboxing.of.nullable";
   private static final @CompilerMessageKey String LOCKING_NULLABLE = "locking.nullable";
   private static final @CompilerMessageKey String THROWING_NULLABLE = "throwing.nullable";
@@ -399,20 +398,21 @@ public class NullnessVisitor
   }
 
   @Override
-  public Void visitInstanceOf(InstanceOfTree node, Void p) {
+  public Void visitInstanceOf(InstanceOfTree tree, Void p) {
     // The "reference type" is the type after "instanceof".
-    Tree refTypeTree = node.getType();
+    Tree refTypeTree = tree.getType();
     if (refTypeTree.getKind() == Tree.Kind.ANNOTATED_TYPE) {
       List<? extends AnnotationMirror> annotations =
           TreeUtils.annotationsFromTree((AnnotatedTypeTree) refTypeTree);
       if (AnnotationUtils.containsSame(annotations, NULLABLE)) {
-        checker.reportError(node, "instanceof.nullable");
+        checker.reportError(tree, "instanceof.nullable");
       }
       if (AnnotationUtils.containsSame(annotations, NONNULL)) {
-        checker.reportWarning(node, "instanceof.nonnull.redundant");
+        checker.reportWarning(tree, "instanceof.nonnull.redundant");
       }
     }
-    return super.visitInstanceOf(node, p);
+    // Don't call super because it will issue an incorrect instanceof.unsafe warning.
+    return null;
   }
 
   /**
