@@ -1693,7 +1693,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
     } else {
       // `tree` lacks an explicit reciever.
       Element ele = TreeUtils.elementFromUse(tree);
-      if (ElementUtils.isStatic(ele)) {
+      if (classTree == null || ElementUtils.isStatic(ele)) {
         TypeElement declaringClass = ElementUtils.enclosingTypeElement(ele);
         TypeMirror type = ElementUtils.getType(declaringClass);
         ClassNameNode node = new ClassNameNode(type, declaringClass);
