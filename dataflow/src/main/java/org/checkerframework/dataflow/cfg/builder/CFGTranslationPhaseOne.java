@@ -1692,15 +1692,54 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
       return scan(mtree.getExpression(), null);
     } else {
       // `tree` lacks an explicit reciever.
-      Element ele = TreeUtils.elementFromUse(tree);
-      if (classTree == null || ElementUtils.isStatic(ele)) {
-        TypeElement declaringClass = ElementUtils.enclosingTypeElement(ele);
+      Element memberElt = TreeUtils.elementFromUse(tree); // a member element
+      System.out.printf("element = %s %s%n", memberElt, memberElt.getKind());
+      if (ElementUtils.isStatic(memberElt)) {
+        TypeElement declaringClass = ElementUtils.enclosingTypeElement(memberElt);
         TypeMirror type = ElementUtils.getType(declaringClass);
         ClassNameNode node = new ClassNameNode(type, declaringClass);
         extendWithClassNameNode(node);
         return node;
       } else {
-        TypeMirror type = TreeUtils.typeOf(classTree);
+        TypeMirror type; // the type that contains the member
+        if (classTree == null) {
+          ClassTree enclosingClass = TreePathUtil.enclosingClass(getCurrentPath());
+          TypeElement classElem = TreeUtils.elementFromDeclaration(enclosingClass);
+          type = classElem.asType();
+        } else {
+          DeclaredType classTreeType = (DeclaredType) TreeUtils.typeOf(classTree);
+          System.out.printf(
+              "no explicit receiver, non-static: %s [%s] classTree = %s, classTreeType = %s %s"
+                  + " %s%n",
+              tree,
+              tree.getKind(),
+              TreeUtils.toStringTruncated(classTree, 50),
+              classTreeType,
+              classTreeType.getKind(),
+              classTreeType.getClass());
+          if (tree.getKind() == Tree.Kind.IDENTIFIER
+              && ((IdentifierTree) tree).getName().contentEquals("super")) {
+            // It's a super() call in a constructor.
+            type = classTreeType;
+          } else {
+            // Find the type that contains the member.  This might just be classTreeType where it is
+            // used with an implicit receiver.  If not, then this must be a use in an inner class,
+            // and the receiver is of the form "Outer.this".
+            // This algorithm looks upward & outward until finding a class that does contain the
+            // member.
+            type = null;
+            for (TypeElement declTypeElement = TypesUtils.getTypeElement(classTreeType);
+                type == null;
+                declTypeElement = ElementUtils.strictEnclosingTypeElement(declTypeElement)) {
+              System.out.printf(
+                  "declTypeElement = %s %s%n", declTypeElement, declTypeElement.getKind());
+              List<? extends Element> allMembers = elements.getAllMembers(declTypeElement);
+              if (allMembers.contains(memberElt)) {
+                type = declTypeElement.asType();
+              }
+            }
+          }
+        }
         Node node = new ImplicitThisNode(type);
         extendWithNode(node);
         return node;
@@ -2523,10 +2562,12 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
     return null;
   }
 
-  // This is not invoked for top-level classes.  Maybe it is, for classes defined within method
-  // bodies.
+  // This is not invoked for top-level classes.
+  // It is called for anonymous classes.
+  // I'm not sure whether it is called for (non-anonymous) classes defined within method bodies.
   @Override
   public Node visitClass(ClassTree tree, Void p) {
+    System.out.printf("visitClass() %s%n", TreeUtils.toStringTruncated(tree, 60));
     ClassTree oldClassTree = classTree;
     this.classTree = tree;
     declaredClasses.add(tree);
@@ -3263,7 +3304,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
     List<Node> arguments = convertCallArguments(constructor, actualExprs);
 
     // TODO: for anonymous classes, don't use the identifier alone.
-    // See Issue 890.
+    // See https://github.com/typetools/checker-framework/issues/890 .
     Node constructorNode = scan(tree.getIdentifier(), p);
 
     // Handle anonymous classes in visitClass.

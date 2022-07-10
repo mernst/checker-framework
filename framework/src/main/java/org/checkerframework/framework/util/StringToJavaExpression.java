@@ -191,8 +191,9 @@ public interface StringToJavaExpression {
       String expression, MethodInvocationTree methodInvocationTree, SourceChecker checker)
       throws JavaExpressionParseException {
     ExecutableElement ee = TreeUtils.elementFromUse(methodInvocationTree);
-    JavaExpression javaExpr = StringToJavaExpression.atMethodDecl(expression, ee, checker);
-    return javaExpr.atMethodInvocation(methodInvocationTree);
+    JavaExpression atDecl = StringToJavaExpression.atMethodDecl(expression, ee, checker);
+    JavaExpression atUse = atDecl.atMethodInvocation(methodInvocationTree);
+    return atUse;
   }
 
   /**
@@ -211,8 +212,9 @@ public interface StringToJavaExpression {
       String expression, MethodInvocationNode methodInvocationNode, SourceChecker checker)
       throws JavaExpressionParseException {
     ExecutableElement ee = TreeUtils.elementFromUse(methodInvocationNode.getTree());
-    JavaExpression javaExpr = StringToJavaExpression.atMethodDecl(expression, ee, checker);
-    return javaExpr.atMethodInvocation(methodInvocationNode);
+    JavaExpression atDecl = StringToJavaExpression.atMethodDecl(expression, ee, checker);
+    JavaExpression atUse = atDecl.atMethodInvocation(methodInvocationNode);
+    return atUse;
   }
 
   /**

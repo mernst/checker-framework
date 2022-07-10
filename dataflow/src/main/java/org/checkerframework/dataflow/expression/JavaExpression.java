@@ -720,10 +720,17 @@ public abstract class JavaExpression {
    * @return viewpoint-adapted version of this
    */
   public final JavaExpression atMethodInvocation(MethodInvocationNode invocationNode) {
-    JavaExpression receiverJe = JavaExpression.fromNode(invocationNode.getTarget().getReceiver());
+    Node receiver = invocationNode.getTarget().getReceiver();
+    // I think this conversion is only valid if the caller is
+
+    // If converting "this" AND the invocation is within an inner (or anonymous) class, need to
+    // change "this" to "Outer.this" instead.
+    JavaExpression receiverJe = JavaExpression.fromNode(receiver);
     List<JavaExpression> argumentsJe =
         CollectionsPlume.mapList(JavaExpression::fromNode, invocationNode.getArguments());
-    return ViewpointAdaptJavaExpression.viewpointAdapt(this, receiverJe, argumentsJe);
+    JavaExpression adapted =
+        ViewpointAdaptJavaExpression.viewpointAdapt(this, receiverJe, argumentsJe);
+    return adapted;
   }
 
   /**
