@@ -437,6 +437,8 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
     // Set class variables
     this.path = bodyPath;
 
+    System.out.printf("process: %s%n", TreeUtils.toStringTruncated(bodyPath.getLeaf(), 60));
+
     // Traverse AST of the method body.
     try { // "finally" clause is "this.path = null"
       Node finalNode = scan(path.getLeaf(), null);
@@ -458,6 +460,10 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
       // as it will just generate a degenerate control graph case that will be removed in a later
       // phase.
       nodeList.add(new UnconditionalJump(regularExitLabel));
+
+      System.out.printf(
+          "process: finally declaredClasses (len %d) = %s%n",
+          declaredClasses.size(), declaredClasses);
 
       return new PhaseOneResult(
           underlyingAST,
@@ -1399,7 +1405,8 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
     // Third, test the receiver, if any, for nullness (15.12.4.4).
     // Fourth, convert the arguments to the type of the formal parameters (15.12.4.5).
     // Fifth, if the method is synchronized, lock the receiving object or class (15.12.4.5).
-    ExecutableElement method = TreeUtils.elementFromUse(tree);
+    // TODO the call is from here.  But is fixing just this one call enough??
+    ExecutableElement method = TreeUtils.elementFromUse(tree, trees, path, elements);
     if (method == null) {
       // The method wasn't found, e.g. because of a compilation error.
       return null;
@@ -2516,6 +2523,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
   // bodies.
   @Override
   public Node visitClass(ClassTree tree, Void p) {
+    System.out.printf("visitClass %s%n", TreeUtils.toStringTruncated(tree, 60));
     declaredClasses.add(tree);
     Node classbody = new ClassDeclarationNode(tree);
     extendWithNode(classbody);
