@@ -104,6 +104,7 @@ public interface StringToJavaExpression {
       // Can't use "this" on a static fieldElement
       thisReference = null;
     } else {
+      // THIS IS PROBABLY WRONG.
       thisReference = new ThisReference(enclosingType);
     }
     List<FormalParameter> parameters = null;
@@ -140,7 +141,11 @@ public interface StringToJavaExpression {
       // Can't use "this" on a static method
       thisReference = null;
     } else {
+      // TODO: This is probably WRONG!
       thisReference = new ThisReference(enclosingType);
+      System.out.printf(
+          "StringToJavaExpression.atMethodDecl(%s [String], %s) thisReference = %s of type %s%n",
+          expression, method, thisReference, thisReference.getType());
     }
     List<FormalParameter> parameters = JavaExpression.getFormalParameters(method);
     return JavaExpressionParseUtil.parse(
@@ -171,8 +176,21 @@ public interface StringToJavaExpression {
       String expression, MethodTree methodTree, SourceChecker checker)
       throws JavaExpressionParseException {
     ExecutableElement ee = TreeUtils.elementFromDeclaration(methodTree);
+    System.out.printf(
+        "called StringToJavaExpression.atMethodBody(%s [String], %s) ee = %s%n",
+        expression, methodTree, ee);
+    System.out.printf(
+        "about to call StringToJavaExpression.atMethodDecl(%s [String], %s)%n", expression, ee);
     JavaExpression javaExpr = StringToJavaExpression.atMethodDecl(expression, ee, checker);
-    return javaExpr.atMethodBody(methodTree);
+    System.out.printf(
+        "StringToJavaExpression.atMethodDecl(%s [String], %s) => %s of type %s%n",
+        expression, ee, javaExpr, javaExpr.getType());
+    JavaExpression result = javaExpr.atMethodBody(methodTree);
+    System.out.printf(
+        "called StringToJavaExpression.atMethodBody(%s [String], %s) ee = %s javaExpr = %s of type"
+            + " %s => %s of type %s%n",
+        expression, methodTree, ee, javaExpr, javaExpr.getType(), result, result.getType());
+    return result;
   }
 
   /**
@@ -192,7 +210,12 @@ public interface StringToJavaExpression {
       throws JavaExpressionParseException {
     ExecutableElement ee = TreeUtils.elementFromUse(methodInvocationTree);
     JavaExpression atDecl = StringToJavaExpression.atMethodDecl(expression, ee, checker);
+    System.out.printf(
+        "    STJE.atMethodInvocation (Node):%n      ee = %s%n      expression = %s%n      atDecl ="
+            + " %s of type %s%n",
+        ee, expression, atDecl, atDecl.getType());
     JavaExpression atUse = atDecl.atMethodInvocation(methodInvocationTree);
+    System.out.printf("      atUse = %s of type %s%n", atUse, atUse.getType());
     return atUse;
   }
 
@@ -213,7 +236,12 @@ public interface StringToJavaExpression {
       throws JavaExpressionParseException {
     ExecutableElement ee = TreeUtils.elementFromUse(methodInvocationNode.getTree());
     JavaExpression atDecl = StringToJavaExpression.atMethodDecl(expression, ee, checker);
+    System.out.printf(
+        "    atMethodInvocation (Node):%n      ee = %s%n      expression = %s%n      atDecl = %s"
+            + " of type %s%n",
+        ee, expression, atDecl, atDecl.getType());
     JavaExpression atUse = atDecl.atMethodInvocation(methodInvocationNode);
+    System.out.printf("      atUse = %s of type %s%n", atUse, atUse.getType());
     return atUse;
   }
 
@@ -309,6 +337,7 @@ public interface StringToJavaExpression {
             parentPath,
             checker.getPathToCompilationUnit(),
             checker.getProcessingEnvironment());
+    // "this" expressions are not viewpoint-adapted
     return ViewpointAdaptJavaExpression.viewpointAdapt(javaExpr, paramsAsLocals);
   }
 
@@ -354,6 +383,7 @@ public interface StringToJavaExpression {
             checker.getPathToCompilationUnit(),
             checker.getProcessingEnvironment());
     List<JavaExpression> paramsAsLocals = JavaExpression.getParametersAsLocalVariables(methodEle);
+    // "this" expressions are not viewpoint-adapted
     return ViewpointAdaptJavaExpression.viewpointAdapt(javaExpr, paramsAsLocals);
   }
 }

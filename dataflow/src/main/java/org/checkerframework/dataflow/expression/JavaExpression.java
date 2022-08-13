@@ -696,7 +696,12 @@ public abstract class JavaExpression {
         CollectionsPlume.mapList(
             (VariableTree param) -> new LocalVariable(TreeUtils.elementFromDeclaration(param)),
             methodTree.getParameters());
-    return ViewpointAdaptJavaExpression.viewpointAdapt(this, parametersJe);
+    // Does not viewpoint-adapt "this" expressions.  Why not?
+    JavaExpression result = ViewpointAdaptJavaExpression.viewpointAdapt(this, parametersJe);
+    System.out.printf(
+        "[%s of type %s].atMethodBody(%s) => %s of type %s%n",
+        this, this.getType(), methodTree, result, result.getType());
+    return result;
   }
 
   /**
@@ -730,6 +735,16 @@ public abstract class JavaExpression {
         CollectionsPlume.mapList(JavaExpression::fromNode, invocationNode.getArguments());
     JavaExpression adapted =
         ViewpointAdaptJavaExpression.viewpointAdapt(this, receiverJe, argumentsJe);
+    System.out.printf(
+        "JE.atMethodInvocation: this = %s of type %s, receiver = %s, receiverJe = %s of type %s,"
+            + " adapted = %s of type %s%n",
+        this,
+        this.getType(),
+        receiver,
+        receiverJe,
+        receiverJe.getType(),
+        adapted,
+        adapted.getType());
     return adapted;
   }
 
@@ -744,7 +759,9 @@ public abstract class JavaExpression {
     List<JavaExpression> argumentsJe =
         argumentTreesToJavaExpressions(
             TreeUtils.elementFromUse(newClassTree), newClassTree.getArguments());
-    return ViewpointAdaptJavaExpression.viewpointAdapt(this, receiverJe, argumentsJe);
+    JavaExpression adapted =
+        ViewpointAdaptJavaExpression.viewpointAdapt(this, receiverJe, argumentsJe);
+    return adapted;
   }
 
   /**

@@ -443,6 +443,9 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
     if (isMethod) {
       this.classTree = ((UnderlyingAST.CFGMethod) underlyingAST).getClassTree();
     }
+    System.out.printf(
+        "process: [%s] %s%n%s%n",
+        underlyingAST.getKind(), underlyingAST, TreePathUtil.leafToStringTruncated(path, 50));
 
     // Traverse AST of the method body.
     try { // "finally" clause is "this.path = null"

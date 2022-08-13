@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -78,7 +79,6 @@ import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypeSystemError;
 import org.checkerframework.javacutil.TypesUtils;
-import org.plumelib.util.StringsPlume;
 
 /**
  * An analyzer that checks consistency of {@link MustCall} and {@link CalledMethods} types, thereby
@@ -583,16 +583,29 @@ class MustCallConsistencyAnalyzer {
   private void checkCreatesMustCallForInvocation(
       Set<Obligation> obligations, MethodInvocationNode node) {
 
+    System.out.printf("checkCreatesMustCallForInvocation %s %s%n", obligations, node);
+
     TreePath currentPath = typeFactory.getPath(node.getTree());
+    // Problem: the expressions must be viewpoint-adapted to the current context, but they are not.
     List<JavaExpression> cmcfExpressions =
         CreatesMustCallForElementSupplier.getCreatesMustCallForExpressions(
             node, typeFactory, typeFactory);
+
+    System.out.printf("cmcfExpressions = %s%n", cmcfExpressions);
+    if (cmcfExpressions.size() > 0) {
+      JavaExpression cmcfExpression = cmcfExpressions.get(0);
+      System.out.printf(
+          "cmcfExpressions[0] = %s [%s] of type %s%n",
+          cmcfExpression, cmcfExpression.getClass(), cmcfExpression.getType());
+    }
     List<JavaExpression> missing = new ArrayList<>(0);
     for (JavaExpression expression : cmcfExpressions) {
       if (!isValidCreatesMustCallForExpression(obligations, expression, currentPath)) {
         missing.add(expression);
       }
     }
+
+    System.out.printf("  missing = %s%n", missing);
 
     if (missing.isEmpty()) {
       // All expressions matched one of the rules, so the invocation is valid.
@@ -603,16 +616,22 @@ class MustCallConsistencyAnalyzer {
     if (missing.size() == 1) {
       JavaExpression expression = missing.get(0);
       if (expression instanceof ThisReference && TreePathUtil.inConstructor(currentPath)) {
+        System.out.printf("  in constructor!%n");
         return;
       }
     }
 
-    String missingStrs = StringsPlume.join(", ", missing);
+    StringJoiner missingStrs = new StringJoiner(",");
+    for (JavaExpression m : missing) {
+      String s = m.toString();
+      missingStrs.add(s.equals("this") ? s + " of type " + m.getType() : s);
+    }
+    // String nodeString = node.getTree().toString();
     checker.reportError(
         node.getTree(),
         "reset.not.owning",
         node.getTarget().getMethod().getSimpleName().toString(),
-        missingStrs);
+        missingStrs.toString());
   }
 
   /**
@@ -620,26 +639,38 @@ class MustCallConsistencyAnalyzer {
    * org.checkerframework.checker.mustcall.qual.CreatesMustCallFor} annotation. Helper method for
    * {@link #checkCreatesMustCallForInvocation(Set, MethodInvocationNode)}.
    *
-   * <p>An expression is valid if one of the following conditions is true: 1) the expression is an
-   * owning pointer, 2) the expression already has a tracked Obligation (i.e. there is already a
-   * resource alias in some Obligation's resource alias set that refers to the expression), or 3)
-   * the method in which the invocation occurs also has an @CreatesMustCallFor annotation, with the
-   * same expression.
+   * <p>An expression is valid if one of the following conditions is true:
+   *
+   * <ul>
+   *   <li>1) the expression is an owning pointer,
+   *   <li>2) the expression already has a tracked Obligation (i.e. there is already a resource
+   *       alias in some Obligation's resource alias set that refers to the expression), or
+   *   <li>3) the method in which the invocation occurs also has an @CreatesMustCallFor annotation,
+   *       with the same expression.
+   * </ul>
    *
    * @param obligations the currently-tracked Obligations; this value is side-effected if there is
    *     an Obligation in it which tracks {@code expression} as one of its resource aliases
    * @param expression an element of a method's @CreatesMustCallFor annotation
-   * @param path the path to the invocation of the method from whose @CreateMustCallFor annotation
-   *     {@code expression} came
+   * @param invocationPath the path to the invocation of the method from whose @CreateMustCallFor
+   *     annotation {@code expression} came
    * @return true iff the expression is valid, as defined above
    */
   private boolean isValidCreatesMustCallForExpression(
-      Set<Obligation> obligations, JavaExpression expression, TreePath path) {
+      Set<Obligation> obligations, JavaExpression expression, TreePath invocationPath) {
+    System.out.printf(
+        "isValidCreatesMustCallForExpression(%s, %s [%s] of type %s, %s)%n",
+        obligations,
+        expression,
+        expression.getClass(),
+        expression.getType(),
+        TreePathUtil.leafToStringTruncated(invocationPath, 60));
     if (expression instanceof FieldAccess) {
       Element elt = ((FieldAccess) expression).getField();
       if (!checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
           && typeFactory.getDeclAnnotation(elt, Owning.class) != null) {
         // The expression is an Owning field.  This satisfies case 1.
+        System.out.printf("isValidCreatesMustCallForExpression => true case 1.1%n");
         return true;
       }
     } else if (expression instanceof LocalVariable) {
@@ -651,6 +682,7 @@ class MustCallConsistencyAnalyzer {
         // the @Owning annotation can only be written on methods, parameters, and fields;
         // formal parameters are also represented by LocalVariable in the bodies of methods.
         // This satisfies case 1.
+        System.out.printf("isValidCreatesMustCallForExpression => true case 1.2%n");
         return true;
       } else {
         Obligation toRemove = null;
@@ -671,6 +703,7 @@ class MustCallConsistencyAnalyzer {
         if (toRemove != null) {
           obligations.remove(toRemove);
           obligations.add(toAdd);
+          System.out.printf("isValidCreatesMustCallForExpression => true case 2%n");
           // This satisfies case 2.
           return true;
         }
@@ -679,35 +712,43 @@ class MustCallConsistencyAnalyzer {
 
     // TODO: Getting this every time is inefficient if a method has many @CreatesMustCallFor
     // annotations, but that should be rare.
-    MethodTree enclosingMethodTree = TreePathUtil.enclosingMethod(path);
-    if (enclosingMethodTree == null) {
+    MethodTree callerMethodTree = TreePathUtil.enclosingMethod(invocationPath);
+    if (callerMethodTree == null) {
       return false;
     }
-    ExecutableElement enclosingMethodElt = TreeUtils.elementFromDeclaration(enclosingMethodTree);
+    ExecutableElement callerMethodElt = TreeUtils.elementFromDeclaration(callerMethodTree);
     MustCallAnnotatedTypeFactory mcAtf =
         typeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
-    List<String> enclosingCmcfValues =
-        ResourceLeakVisitor.getCreatesMustCallForValues(enclosingMethodElt, mcAtf, typeFactory);
-    if (enclosingCmcfValues.isEmpty()) {
+    List<String> callerCmcfValues =
+        ResourceLeakVisitor.getCreatesMustCallForValues(callerMethodElt, mcAtf, typeFactory);
+    if (callerCmcfValues.isEmpty()) {
       return false;
     }
-    for (String enclosingCmcfValue : enclosingCmcfValues) {
-      JavaExpression enclosingTarget;
+    for (String callerCmcfValue : callerCmcfValues) {
+      JavaExpression callerTarget;
       try {
-        enclosingTarget =
-            StringToJavaExpression.atMethodBody(enclosingCmcfValue, enclosingMethodTree, checker);
+        callerTarget =
+            StringToJavaExpression.atMethodBody(callerCmcfValue, callerMethodTree, checker);
+        System.out.printf(
+            "atMethodBody(%s [String], %s) => %s of type %s%n",
+            callerCmcfValue, callerMethodTree, callerTarget, callerTarget.getType());
       } catch (JavaExpressionParseException e) {
         // Do not issue an error here, because it would be a duplicate.
         // The error will be issued by the Transfer class of the checker,
         // via the CreatesMustCallForElementSupplier interface.
-        enclosingTarget = null;
+        callerTarget = null;
       }
 
-      if (areSame(expression, enclosingTarget)) {
+      System.out.printf(
+          "about to call areSame(%s of type %s, %s of type %s)%n",
+          expression, expression.getType(), callerTarget, callerTarget.getType());
+      if (areSame(expression, callerTarget)) {
         // This satisfies case 3.
+        System.out.printf("isValidCreatesMustCallForExpression => true case 3%n");
         return true;
       }
     }
+    System.out.printf("isValidCreatesMustCallForExpression => false%n");
     return false;
   }
 

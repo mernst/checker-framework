@@ -118,9 +118,12 @@ public interface CreatesMustCallForElementSupplier {
     // should improve the quality of the error messages we give.
     JavaExpression targetExpr;
     try {
+      System.out.printf("getCreatesMustCallForExpression(%s)%n", n);
+      System.out.printf("  targetStrWithoutAdaptation = %s%n", n);
       targetExpr =
           StringToJavaExpression.atMethodInvocation(
               targetStrWithoutAdaptation, n, atypeFactory.getChecker());
+      System.out.printf("  targetExpr = %s%n", n);
       if (targetExpr instanceof Unknown) {
         issueUnparseableError(n, atypeFactory, targetStrWithoutAdaptation);
         return null;
@@ -129,6 +132,8 @@ public interface CreatesMustCallForElementSupplier {
       issueUnparseableError(n, atypeFactory, targetStrWithoutAdaptation);
       return null;
     }
+    System.out.printf(
+        "  getCreatesMustCallForExpression => %s of type %s%n", targetExpr, targetExpr.getType());
     return targetExpr;
   }
 

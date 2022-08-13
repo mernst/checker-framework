@@ -180,11 +180,7 @@ public final class TreeUtils {
     if (tree.getKind() == Tree.Kind.METHOD_INVOCATION) {
       tr = ((MethodInvocationTree) tree).getMethodSelect();
     }
-    tr = TreeUtils.withoutParens(tr);
-    if (tr.getKind() == Tree.Kind.TYPE_CAST) {
-      tr = ((TypeCastTree) tr).getExpression();
-    }
-    tr = TreeUtils.withoutParens(tr);
+    tr = TreeUtils.withoutParensOrCasts(tr);
 
     if (tr.getKind() == Tree.Kind.IDENTIFIER) {
       return true;

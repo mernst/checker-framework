@@ -16,6 +16,7 @@ import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.IntegerLiteralExpr;
 import com.github.javaparser.ast.expr.LongLiteralExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.Name;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.NullLiteralExpr;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
@@ -35,6 +36,7 @@ import com.sun.tools.javac.code.Type.ClassType;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -351,11 +353,19 @@ public class JavaExpressionParseUtil {
 
     @Override
     public JavaExpression visit(ThisExpr n, Void aVoid) {
-      if (thisReference == null) {
-        throw new ParseRuntimeException(
-            constructJavaExpressionParseError("this", "\"this\" isn't allowed here"));
+      System.out.printf(
+          "JavaExpressionParseUtil.visit(ThisExpr %s of type %s)%n", n, n.getTypeName());
+      Optional<Name> oTypeName = n.getTypeName();
+      if (oTypeName.isPresent()) {
+        Name typeName = oTypeName.get();
+        throw new Error("Need a TypeMirror for the name " + typeName);
+      } else {
+        if (thisReference == null) {
+          throw new ParseRuntimeException(
+              constructJavaExpressionParseError("this", "\"this\" isn't allowed here"));
+        }
+        return thisReference;
       }
-      return thisReference;
     }
 
     @Override
