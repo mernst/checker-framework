@@ -191,7 +191,7 @@ import org.plumelib.util.CollectionsPlume;
  * <p>Every {@code visit*} method is assumed to add at least one extended node to the list of nodes
  * (which might only be a jump).
  *
- * <p>The entry point to process a single body (e.g., method) is {@link process(TreePath,
+ * <p>The entry point to process a single body (e.g., method) is {@link #process(TreePath,
  * UnderlyingAST)}.
  */
 @SuppressWarnings("nullness") // TODO
@@ -3826,7 +3826,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
    * @param unaryTree increment or decrement tree
    * @param expr expression node to be incremented or decremented
    * @param isIncrement true when it's increment
-   * @param isPostfix true if {@code expr} is a postfix increment or decrement.
+   * @param isPostfix true if {@code expr} is a postfix increment or decrement
    * @return assignment node for corresponding increment or decrement
    */
   private AssignmentNode createIncrementOrDecrementAssign(

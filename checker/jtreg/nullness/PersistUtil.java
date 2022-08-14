@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -40,9 +41,9 @@ public class PersistUtil {
 
   public static File writeTestFile(String fullFile) throws IOException {
     File f = new File("Test.java");
-    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(f)));
-    out.println(fullFile);
-    out.close();
+    try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(f)))) {
+      out.println(fullFile);
+    }
     return f;
   }
 
@@ -81,7 +82,7 @@ public class PersistUtil {
         Files.copy(result.toPath(), resultCopy.toPath(), StandardCopyOption.REPLACE_EXISTING);
         System.out.printf("comileTestFile: copied to %s %s%n", fCopy, resultCopy);
       } catch (IOException e) {
-        throw new Error(e);
+        throw new UncheckedIOException(e);
       }
     }
 

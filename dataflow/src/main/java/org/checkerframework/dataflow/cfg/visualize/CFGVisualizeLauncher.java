@@ -226,10 +226,11 @@ public class CFGVisualizeLauncher {
 
     PrintStream err = System.err;
     try {
-      // redirect syserr to nothing (and prevent the compiler from issuing
-      // warnings about our exception.
+      // Redirect syserr to nothing (and prevent the compiler from issuing
+      // warnings about our exception).
       System.setErr(
           new PrintStream(
+              // In JDK 11+, this can be just "OutputStream.nullOutputStream()".
               new OutputStream() {
                 @Override
                 public void write(int b) throws IOException {}

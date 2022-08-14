@@ -155,8 +155,7 @@ public class PropertyKeyAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
         ClassLoader cl = this.getClass().getClassLoader();
         if (cl == null) {
-          // the class loader is null if the system class loader was
-          // used
+          // The class loader is null if the system class loader was used.
           cl = ClassLoader.getSystemClassLoader();
         }
         InputStream in = cl.getResourceAsStream(name);
@@ -181,9 +180,8 @@ public class PropertyKeyAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         prop.load(in);
         result.addAll(prop.stringPropertyNames());
       } catch (Exception e) {
-        // TODO: is there a nicer way to report messages, that are not
-        // connected to an AST node?
-        // One cannot use report, because it needs a node.
+        // TODO: is there a nicer way to report messages, that are not connected to an AST node?
+        // One cannot use `report`, because it needs a node.
         checker.message(Kind.WARNING, "Exception in PropertyKeyChecker.keysOfPropertyFile: " + e);
         e.printStackTrace();
       }

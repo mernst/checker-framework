@@ -128,8 +128,12 @@ public class I18nFormatterAnnotatedTypeFactory extends BaseAnnotatedTypeFactory 
             }
           } catch (Exception e) {
             // TODO: is there a nicer way to report messages, that are not connected to
-            // an AST node?  One cannot use report, because it needs a node.
-            System.err.println("Exception in PropertyKeyChecker.keysOfPropertyFile: " + e);
+            // an AST node?  One cannot use `report`, because it needs a node.
+            System.err.println(
+                "Exception in PropertyKeyChecker.keysOfPropertyFile while processing "
+                    + name
+                    + ": "
+                    + e);
             e.printStackTrace();
           }
         }
