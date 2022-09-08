@@ -1,9 +1,14 @@
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 
-interface UniqueIdTest {
+interface UniqueIdInterface {
+  public default String className(
+      @UnknownInitialization(UniqueIdInterface.class) UniqueIdInterface this) {
+    return this.getClass().getSimpleName() + "#";
+  }
+}
 
-  public default String getClassAndUid(
-      @UnknownInitialization(UniqueIdTest.class) UniqueIdTest this) {
+class UniqueIdClass {
+  public String className(@UnknownInitialization(UniqueIdClass.class) UniqueIdClass this) {
     return this.getClass().getSimpleName() + "#";
   }
 }
