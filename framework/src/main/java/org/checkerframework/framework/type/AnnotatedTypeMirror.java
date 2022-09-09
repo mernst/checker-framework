@@ -39,6 +39,7 @@ import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TypeKindUtils;
 import org.plumelib.util.CollectionsPlume;
+import org.plumelib.util.SystemPlume;
 
 /**
  * Represents an annotated type in the Java programming language. Types include primitive types,
@@ -1253,16 +1254,25 @@ public abstract class AnnotatedTypeMirror {
      *     of top-level classes
      */
     public @Nullable AnnotatedDeclaredType getReceiverType() {
-      if (receiverType == null && ElementUtils.hasReceiver(getElement())) {
-
-        TypeElement encl = ElementUtils.enclosingTypeElement(getElement());
-        if (getElement().getKind() == ElementKind.CONSTRUCTOR) {
-          // Can only reach this branch if we're the constructor of a nested class
-          encl = ElementUtils.enclosingTypeElement(encl.getEnclosingElement());
+      if (receiverType == null) {
+        Element element = getElement();
+        if (element == null) {
+          System.out.println();
+          System.out.printf("No element for [%s]%n", this.getClass());
+          System.out.flush();
+          SystemPlume.sleep(1);
+          // ...
         }
-        AnnotatedTypeMirror type = createType(encl.asType(), atypeFactory, false);
-        assert type instanceof AnnotatedDeclaredType;
-        receiverType = (AnnotatedDeclaredType) type;
+        if (ElementUtils.hasReceiver(element)) {
+          TypeElement encl = ElementUtils.enclosingTypeElement(element);
+          if (element.getKind() == ElementKind.CONSTRUCTOR) {
+            // Can only reach this branch if we're the constructor of a nested class
+            encl = ElementUtils.enclosingTypeElement(encl.getEnclosingElement());
+          }
+          AnnotatedTypeMirror type = createType(encl.asType(), atypeFactory, false);
+          assert type instanceof AnnotatedDeclaredType;
+          receiverType = (AnnotatedDeclaredType) type;
+        }
       }
       return receiverType;
     }
