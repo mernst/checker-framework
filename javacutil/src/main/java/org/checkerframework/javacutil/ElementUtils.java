@@ -88,9 +88,62 @@ public class ElementUtils {
    */
   public static @Nullable TypeElement enclosingTypeElement(final Element elem) {
     Element result = elem;
+    System.out.printf(
+        "EU.enclosingTypeElement(%s [%s %s extends %s]), isTypeElement = %s%n",
+        elem,
+        elem.getKind(),
+        elem.getClass(),
+        elem.getClass().getSuperclass(),
+        isTypeElement(result));
+    // Consider a method, such as `getClass()` or `hashCode()`, that is called within a default
+    // method implementation in an interface.
+    // In JDK 17 and earlier, the method is resolved to an ExecutableElement whose owner/enclosing
+    // is the class that declares the method, such as java.lang.Object.
+    // In JDK 18, the method is resolved to an ExecutableElement whose owner/enclosing is the
+    // interface within which the call appears.  This is not what we want.
+    // We will change that to java.lang.Object if the method appears in java.lang.Object.
+    // If the method doesn't appear in java.lang.Object, fail for now.
+    if (elem.getKind() == ElementKind.METHOD) {
+      TypeMirror receiverType = ((ExecutableElement) elem).getReceiverType();
+      // TODO: why is getReceiverType() none/NoType for getClass()??
+      System.out.printf(
+          "  receiver = %s [%s extends %s]%n",
+          receiverType, receiverType.getClass(), receiverType.getClass().getSuperclass());
+      MethodSymbol methodSymbol = (MethodSymbol) elem;
+      System.out.printf(
+          "MethodSymbol %s%n  modifiers (from flags): %s%n  name: %s%n  type: %s%n  owner: %s%n "
+              + " baseSymbol: %s%n",
+          methodSymbol,
+          methodSymbol.getModifiers(),
+          methodSymbol.name,
+          methodSymbol.type,
+          methodSymbol.owner,
+          methodSymbol.baseSymbol());
+    }
     while (result != null && !isTypeElement(result)) {
       result = result.getEnclosingElement();
+      System.out.printf(
+          "EU.enclosingTypeElement(%s), new result = %s [%s %s extends %s], isTypeElement = %s%n",
+          elem,
+          result,
+          result == null ? "[null]" : result.getKind(),
+          result == null ? "[null]" : result.getClass(),
+          result == null ? "[null]" : result.getClass().getSuperclass(),
+          result == null ? "[null]" : isTypeElement(result));
     }
+    if (elem.getKind() == ElementKind.METHOD && result.getKind() == ElementKind.INTERFACE) {
+      System.out.printf("I'm here. %s %s%n", elem, result);
+      System.out.printf("  %s%n", ((TypeElement) result).getEnclosedElements());
+      if (!((TypeElement) result).getEnclosedElements().contains(elem)) {
+        System.out.printf("Trouble here. %s %s%n", elem, result);
+        // TODO: how to get the TypeElement for java.lang.object?  This appreach requires an
+        // Elements instance, which is available most but not all places that enclosingTypeElement()
+        // is called.
+        // TypeElement jlobject = elements.getTypeElement("java.lang.Object");
+        // System.out.printf("  %s%n", jlobject.getEnclosedElements().contains(elem));
+      }
+    }
+
     return (TypeElement) result;
   }
 
@@ -164,7 +217,8 @@ public class ElementUtils {
    * @param elem the enclosed element of a package
    * @return the innermost package element
    */
-  public static PackageElement enclosingPackage(final Element elem) {
+  // This implementation may not work for within interface methods in JDK 18.
+  public static PackageElement enclosingPackage(Element elem) {
     Element result = elem;
     while (result != null && result.getKind() != ElementKind.PACKAGE) {
       @Nullable Element encl = result.getEnclosingElement();
@@ -184,8 +238,7 @@ public class ElementUtils {
    * @param elem the package to start from
    * @return the parent package element or {@code null}
    */
-  public static @Nullable PackageElement parentPackage(
-      final PackageElement elem, final Elements e) {
+  public static @Nullable PackageElement parentPackage(PackageElement elem, final Elements e) {
     // The following might do the same thing:
     //   ((Symbol) elt).owner;
     // TODO: verify and see whether the change is worth it.
