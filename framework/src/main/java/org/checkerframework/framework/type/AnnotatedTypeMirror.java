@@ -39,7 +39,6 @@ import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TypeKindUtils;
 import org.plumelib.util.CollectionsPlume;
-import org.plumelib.util.SystemPlume;
 
 /**
  * Represents an annotated type in the Java programming language. Types include primitive types,
@@ -1257,11 +1256,7 @@ public abstract class AnnotatedTypeMirror {
       if (receiverType == null) {
         Element element = getElement();
         if (element == null) {
-          System.out.println();
-          System.out.printf("No element for [%s]%n", this.getClass());
-          System.out.flush();
-          SystemPlume.sleep(1);
-          // ...
+          throw new NullPointerException();
         }
         if (ElementUtils.hasReceiver(element)) {
           TypeElement encl = ElementUtils.enclosingTypeElement(element);
