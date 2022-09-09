@@ -38,11 +38,15 @@ import org.plumelib.util.SystemPlume;
 public class TestUtilities {
 
   /** True if the JVM is version 9 or above. */
-  public static final boolean IS_AT_LEAST_9_JVM = SystemUtil.getJreVersion() >= 9;
+  public static final boolean IS_AT_LEAST_9_JVM = SystemUtil.jreVersion >= 9;
   /** True if the JVM is version 11 or above. */
-  public static final boolean IS_AT_LEAST_11_JVM = SystemUtil.getJreVersion() >= 11;
+  public static final boolean IS_AT_LEAST_11_JVM = SystemUtil.jreVersion >= 11;
   /** True if the JVM is version 11 or lower. */
-  public static final boolean IS_AT_MOST_11_JVM = SystemUtil.getJreVersion() <= 11;
+  public static final boolean IS_AT_MOST_11_JVM = SystemUtil.jreVersion <= 11;
+  /** True if the JVM is version 17 or above. */
+  public static final boolean IS_AT_LEAST_17_JVM = SystemUtil.jreVersion >= 17;
+  /** True if the JVM is version 17 or lower. */
+  public static final boolean IS_AT_MOST_17_JVM = SystemUtil.jreVersion <= 17;
 
   static {
     JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -92,11 +96,15 @@ public class TestUtilities {
 
     for (String dirName : dirNames) {
       File dir = new File(parent, dirName).toPath().toAbsolutePath().normalize().toFile();
-      // This fails for the whole-program-inference tests:  their sources do not necessarily
-      // exist yet but will be created by a test that runs earlier than they do.
-      // if (!dir.isDirectory()) {
-      //     throw new BugInCF("test directory does not exist: %s", dir);
-      // }
+      if (!dir.isDirectory()) {
+        // For "ainfer-*" tests, their sources do not necessarily
+        // exist yet but will be created by a test that runs earlier than they do.
+        if (!(dir.getName().equals("annotated")
+            && dir.getParentFile() != null
+            && dir.getParentFile().getName().startsWith("ainfer-"))) {
+          throw new BugInCF("test directory does not exist: %s", dir);
+        }
+      }
       if (dir.isDirectory()) {
         filesPerDirectory.addAll(findJavaTestFilesInDirectory(dir));
       }
@@ -209,31 +217,21 @@ public class TestUtilities {
       return false;
     }
 
-    // We could implement special filtering based on directory names,
-    // but I prefer using @below-java9-jdk-skip-test
-    // if (!IS_AT_LEAST_9_JVM && file.getAbsolutePath().contains("java9")) {
-    //     return false;
-    // }
-
-    Scanner in = null;
-    try {
-      in = new Scanner(file);
+    try (Scanner in = new Scanner(file)) {
+      while (in.hasNext()) {
+        String nextLine = in.nextLine();
+        if (nextLine.contains("@skip-test")
+            || (!IS_AT_LEAST_9_JVM && nextLine.contains("@below-java9-jdk-skip-test"))
+            || (!IS_AT_LEAST_11_JVM && nextLine.contains("@below-java11-jdk-skip-test"))
+            || (!IS_AT_MOST_11_JVM && nextLine.contains("@above-java11-jdk-skip-test"))
+            || (!IS_AT_LEAST_17_JVM && nextLine.contains("@below-java17-jdk-skip-test"))
+            || (!IS_AT_MOST_17_JVM && nextLine.contains("@above-java17-jdk-skip-test"))) {
+          return false;
+        }
+      }
     } catch (FileNotFoundException e) {
       throw new RuntimeException(e);
     }
-
-    while (in.hasNext()) {
-      String nextLine = in.nextLine();
-      if (nextLine.contains("@skip-test")
-          || (!IS_AT_LEAST_9_JVM && nextLine.contains("@below-java9-jdk-skip-test"))
-          || (!IS_AT_LEAST_11_JVM && nextLine.contains("@below-java11-jdk-skip-test"))
-          || (!IS_AT_MOST_11_JVM && nextLine.contains("@above-java11-skip-test"))) {
-        in.close();
-        return false;
-      }
-    }
-
-    in.close();
     return true;
   }
 
@@ -324,9 +322,14 @@ public class TestUtilities {
     return optionList;
   }
 
+  /**
+   * Write all the lines in the given Iterable to the given File.
+   *
+   * @param file where to write the lines
+   * @param lines what lines to write
+   */
   public static void writeLines(File file, Iterable<?> lines) {
-    try {
-      final BufferedWriter bw = new BufferedWriter(new FileWriter(file, true));
+    try (final BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
       Iterator<?> iter = lines.iterator();
       while (iter.hasNext()) {
         Object next = iter.next();
@@ -338,8 +341,6 @@ public class TestUtilities {
         bw.newLine();
       }
       bw.flush();
-      bw.close();
-
     } catch (IOException io) {
       throw new RuntimeException(io);
     }
@@ -385,15 +386,18 @@ public class TestUtilities {
     }
   }
 
+  /**
+   * Append a test configuration to the end of a file.
+   *
+   * @param file the file to write to
+   * @param config the configuration to append to the end of the file
+   */
   public static void writeTestConfiguration(File file, TestConfiguration config) {
-    try {
-      final BufferedWriter bw = new BufferedWriter(new FileWriter(file, true));
+    try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
       bw.write(config.toString());
       bw.newLine();
       bw.newLine();
       bw.flush();
-      bw.close();
-
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -462,34 +466,6 @@ public class TestUtilities {
     } catch (IOException e) {
       throw new RuntimeException("Could not make directory: " + dir + ": " + e.getMessage());
     }
-  }
-
-  /**
-   * Return true if the system property is set to "true". Return false if the system property is not
-   * set or is set to "false". Otherwise, errs.
-   *
-   * @param key system property to check
-   * @return true if the system property is set to "true". Return false if the system property is
-   *     not set or is set to "false". Otherwise, errs.
-   * @deprecated Use {@link SystemUtil#getBooleanSystemProperty(String)} instead.
-   */
-  @Deprecated // 2020-04-30
-  public static boolean testBooleanProperty(String key) {
-    return testBooleanProperty(key, false);
-  }
-
-  /**
-   * If the system property is set, return its boolean value; otherwise return {@code defaultValue}.
-   * Errs if the system property is set to a non-boolean value.
-   *
-   * @param key system property to check
-   * @param defaultValue value to use if the property is not set
-   * @return the boolean value of {@code key} or {@code defaultValue} if {@code key} is not set
-   * @deprecated Use {@link SystemUtil#getBooleanSystemProperty(String, boolean)} instead.
-   */
-  @Deprecated // 2020-04-30
-  public static boolean testBooleanProperty(String key, boolean defaultValue) {
-    return SystemUtil.getBooleanSystemProperty(key, defaultValue);
   }
 
   /**

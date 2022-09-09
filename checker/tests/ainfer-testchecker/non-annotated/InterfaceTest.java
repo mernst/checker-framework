@@ -3,7 +3,7 @@
 import org.checkerframework.checker.testchecker.ainfer.qual.Sibling1;
 
 @SuppressWarnings("cast.unsafe")
-interface InterfaceTest {
+public interface InterfaceTest {
   public String toaster = getSibling1();
 
   public static @Sibling1 String getSibling1() {
@@ -13,7 +13,7 @@ interface InterfaceTest {
   default void requireSibling1(@Sibling1 String x) {}
 
   default void testX() {
-    // :: warning: argument
+    // :: warning: (argument)
     requireSibling1(toaster);
   }
 }

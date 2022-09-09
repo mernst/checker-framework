@@ -15,7 +15,7 @@ import com.sun.source.util.TreePathScanner;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.dataflow.qual.Deterministic;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.Pure.Kind;
@@ -218,7 +218,7 @@ public class PurityChecker {
 
     @Override
     public Void visitMethodInvocation(MethodInvocationTree node, Void ignore) {
-      Element elt = TreeUtils.elementFromUse(node);
+      ExecutableElement elt = TreeUtils.elementFromUse(node);
       if (!PurityUtils.hasPurityAnnotation(annoProvider, elt)) {
         purityResult.addNotBothReason(node, "call");
       } else {
@@ -271,7 +271,7 @@ public class PurityChecker {
       Tree parent = getCurrentPath().getParentPath().getLeaf();
       boolean okThrowDeterministic = parent.getKind() == Tree.Kind.THROW;
 
-      Element ctorElement = TreeUtils.elementFromUse(node);
+      ExecutableElement ctorElement = TreeUtils.elementFromUse(node);
       boolean deterministic = assumeDeterministic || okThrowDeterministic;
       boolean sideEffectFree =
           assumeSideEffectFree || PurityUtils.isSideEffectFree(annoProvider, ctorElement);
@@ -321,6 +321,7 @@ public class PurityChecker {
      * @param variable the lhs to check
      */
     protected void assignmentCheck(ExpressionTree variable) {
+      variable = TreeUtils.withoutParens(variable);
       if (TreeUtils.isFieldAccess(variable)) {
         // lhs is a field access
         purityResult.addNotBothReason(variable, "assign.field");

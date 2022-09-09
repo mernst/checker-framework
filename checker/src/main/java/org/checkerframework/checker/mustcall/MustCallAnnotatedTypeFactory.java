@@ -11,6 +11,7 @@ import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,9 +47,9 @@ import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
 import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
-import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypeSystemError;
 
 /**
  * The annotated type factory for the Must Call Checker. Primarily responsible for the subtyping
@@ -87,7 +88,8 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
    * shared in the same way that subcheckers share CFG structure; see {@link
    * #getSharedCFGForTree(Tree)}.
    */
-  /* package-private */ final HashMap<Tree, LocalVariableNode> tempVars = new HashMap<>();
+  /* package-private */ final IdentityHashMap<Tree, LocalVariableNode> tempVars =
+      new IdentityHashMap<>(100);
 
   /** The MustCall.value field/element. */
   final ExecutableElement mustCallValueElement =
@@ -160,8 +162,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
    * @return a MustCall annotation that does not have "close" as one of its values, but is otherwise
    *     identical to anno
    */
-  // Package private to permit usage from the visitor in the common assignment check.
-  /* package-private */ AnnotationMirror withoutClose(@Nullable AnnotationMirror anno) {
+  public AnnotationMirror withoutClose(@Nullable AnnotationMirror anno) {
     if (anno == null || AnnotationUtils.areSame(anno, BOTTOM)) {
       return BOTTOM;
     } else if (!AnnotationUtils.areSameByName(
@@ -197,7 +198,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
     } else if (tree instanceof MemberReferenceTree) {
       declaration = (ExecutableElement) TreeUtils.elementFromTree(tree);
     } else {
-      throw new BugInCF("unexpected type of method tree: " + tree.getKind());
+      throw new TypeSystemError("unexpected type of method tree: " + tree.getKind());
     }
     changeNonOwningParameterTypesToTop(declaration, type);
     super.methodFromUsePreSubstitution(tree, type);
@@ -396,8 +397,8 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
    * <p>This tree annotator treats non-owning method parameters as bottom, regardless of their
    * declared type, when they appear in the body of the method. Doing so is safe because being
    * non-owning means, by definition, that their must-call obligations are only relevant in the
-   * callee. (This behavior is disabled if the -AnoLightweightOwnership option is passed to the
-   * checker.)
+   * callee. (This behavior is disabled if the {@code -AnoLightweightOwnership} option is passed to
+   * the checker.)
    *
    * <p>The tree annotator also changes the type of resource variables to remove "close" from their
    * must-call types, because the try-with-resources statement guarantees that close() is called on

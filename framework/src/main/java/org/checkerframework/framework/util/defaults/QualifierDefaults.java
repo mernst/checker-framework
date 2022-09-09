@@ -428,7 +428,11 @@ public class QualifierDefaults {
     Tree prev = null;
 
     for (Tree t : path) {
-      switch (t.getKind()) {
+      switch (TreeUtils.getKindRecordAsClass(t)) {
+        case ANNOTATED_TYPE:
+        case ANNOTATION:
+          // If the tree is in an annotation, then there is no relevant scope.
+          return null;
         case VARIABLE:
           VariableTree vtree = (VariableTree) t;
           ExpressionTree vtreeInit = vtree.getInitializer();
@@ -452,7 +456,7 @@ public class QualifierDefaults {
           return TreeUtils.elementFromDeclaration((VariableTree) t);
         case METHOD:
           return TreeUtils.elementFromDeclaration((MethodTree) t);
-        case CLASS:
+        case CLASS: // Including RECORD
         case ENUM:
         case INTERFACE:
         case ANNOTATION_TYPE:

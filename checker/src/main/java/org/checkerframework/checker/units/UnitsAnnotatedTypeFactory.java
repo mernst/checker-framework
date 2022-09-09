@@ -336,6 +336,10 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     return areSameByClass(metaAnno, UnitsMultiple.class);
   }
 
+  /** A class loader for looking up annotations. */
+  private static ClassLoader classLoader =
+      InternalUtils.getClassLoaderForClass(AnnotationUtils.class);
+
   /**
    * Look for an @UnitsRelations annotation on the qualifier and add it to the list of
    * UnitsRelations.
@@ -356,7 +360,6 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         }
         Class<?> valueElement;
         try {
-          ClassLoader classLoader = InternalUtils.getClassLoaderForClass(AnnotationUtils.class);
           valueElement = Class.forName(theclassname, true, classLoader);
         } catch (ClassNotFoundException e) {
           String msg =
@@ -383,7 +386,7 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 classname,
                 unitsRelationsClass.getDeclaredConstructor().newInstance().init(processingEnv));
           } catch (Throwable e) {
-            throw new BugInCF("Throwable when instantiating UnitsRelations", e);
+            throw new TypeSystemError("Throwable when instantiating UnitsRelations", e);
           }
         }
       }
@@ -604,10 +607,14 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
           return lub;
         }
       }
-      throw new BugInCF("Unexpected QualifierKinds: %s %s", qualifierKind1, qualifierKind2);
+      throw new TypeSystemError("Unexpected QualifierKinds: %s %s", qualifierKind1, qualifierKind2);
     }
 
     @Override
+    @SuppressWarnings(
+        "nullness:return" // This class UnitsQualifierHierarchy is annotated for nullness, but the
+    // outer class UnitsAnnotatedTypeFactory is not, so the type of fields is @Nullable.
+    )
     protected AnnotationMirror greatestLowerBoundWithElements(
         AnnotationMirror a1,
         QualifierKind qualifierKind1,
@@ -685,7 +692,7 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         }
         superQuals.removeAll(lowest);
       }
-      throw new BugInCF("No direct super qualifier found for %s", qualifierKind);
+      throw new TypeSystemError("No direct super qualifier found for %s", qualifierKind);
     }
   }
 

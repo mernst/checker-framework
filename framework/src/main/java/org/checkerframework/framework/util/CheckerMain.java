@@ -155,7 +155,7 @@ public class CheckerMain {
 
   /** Assert that required jars exist. */
   protected void assertValidState() {
-    if (SystemUtil.getJreVersion() < 9) {
+    if (SystemUtil.jreVersion == 8) {
       assertFilesExist(Arrays.asList(javacJar, checkerJar, checkerQualJar, checkerUtilJar));
     } else {
       assertFilesExist(Arrays.asList(checkerJar, checkerQualJar, checkerUtilJar));
@@ -426,12 +426,36 @@ public class CheckerMain {
     final String java = "java";
     args.add(java);
 
-    if (SystemUtil.getJreVersion() == 8) {
+    if (SystemUtil.jreVersion == 8) {
       args.add("-Xbootclasspath/p:" + String.join(File.pathSeparator, runtimeClasspath));
     } else {
       args.addAll(
+          // Keep this list in sync with the lists in checker-framework/build.gradle in
+          // compilerArgsForRunningCFs, the sections with labels "javac-jdk11-non-modularized",
+          // "maven", and "sbt" in the manual, and in the checker-framework-gradle-plugin,
+          // CheckerFrameworkPlugin#applyToProject
           Arrays.asList(
-              "--illegal-access=warn",
+              // These are required in Java 17+ because the --illegal-access option is set to deny
+              // by default.  None of these packages are accessed via reflection, so the module
+              // only needs to be exported, but not opened.
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED",
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED",
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+              "--add-exports",
+              "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+              // Required because the Checker Framework reflectively accesses private members in
+              // com.sun.tools.javac.comp.
               "--add-opens",
               "jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED"));
     }
@@ -455,7 +479,7 @@ public class CheckerMain {
       args.add(quote(concatenatePaths(ppOpts)));
     }
 
-    if (SystemUtil.getJreVersion() == 8) {
+    if (SystemUtil.jreVersion == 8) {
       // No classes on the compilation bootclasspath will be loaded
       // during compilation, but the classes are read by the compiler
       // without loading them.  The compiler assumes that any class on
@@ -491,7 +515,12 @@ public class CheckerMain {
 
   /**
    * Given a path element that might be a wildcard, return a list of the elements it expands to. If
-   * the element isn't a wildcard, return a singleton list containing the argument.
+   * the element isn't a wildcard, return a singleton list containing the argument. Since the
+   * original argument list is placed after 'com.sun.tools.javac.Main' in the new command line, the
+   * JVM doesn't do wildcard expansion of jar files in any classpaths in the original argument list.
+   *
+   * @param pathElement an element of a classpath
+   * @return all elements of a classpath with wildcards expanded
    */
   private List<String> expandWildcards(String pathElement) {
     if (pathElement.equals("*")) {
@@ -513,7 +542,15 @@ public class CheckerMain {
    */
   private List<String> jarFiles(String directory) {
     File dir = new File(directory);
-    return Arrays.asList(dir.list((d, name) -> name.endsWith(".jar") || name.endsWith(".JAR")));
+    String[] jarFiles = dir.list((d, name) -> name.endsWith(".jar") || name.endsWith(".JAR"));
+    if (jarFiles == null) {
+      return Collections.emptyList();
+    }
+    // concat directory with jar file path to give full path
+    for (int i = 0; i < jarFiles.length; i++) {
+      jarFiles[i] = directory + jarFiles[i];
+    }
+    return Arrays.asList(jarFiles);
   }
 
   /** Invoke the compiler with all relevant jars on its classpath and/or bootclasspath. */
@@ -539,11 +576,10 @@ public class CheckerMain {
     if (outputFilename != null) {
       String errorMessage = null;
 
-      try {
-        PrintWriter writer =
-            (outputFilename.equals("-")
-                ? new PrintWriter(System.out)
-                : new PrintWriter(outputFilename, "UTF-8"));
+      try (PrintWriter writer =
+          (outputFilename.equals("-")
+              ? new PrintWriter(System.out)
+              : new PrintWriter(outputFilename, "UTF-8"))) {
         for (int i = 0; i < args.size(); i++) {
           String arg = args.get(i);
 
@@ -557,19 +593,18 @@ public class CheckerMain {
             // Read argfile and include its parameters in the output file.
             String inputFilename = arg.substring(1);
 
-            BufferedReader br = new BufferedReader(new FileReader(inputFilename));
-            String line;
-            while ((line = br.readLine()) != null) {
-              writer.print(line);
-              writer.print(" ");
+            try (BufferedReader br = new BufferedReader(new FileReader(inputFilename))) {
+              String line;
+              while ((line = br.readLine()) != null) {
+                writer.print(line);
+                writer.print(" ");
+              }
             }
-            br.close();
           } else {
             writer.print(arg);
             writer.print(" ");
           }
         }
-        writer.close();
       } catch (IOException e) {
         errorMessage = e.toString();
       }
@@ -791,8 +826,8 @@ public class CheckerMain {
    */
   private List<@FullyQualifiedName String> getAllCheckerClassNames() {
     ArrayList<@FullyQualifiedName String> checkerClassNames = new ArrayList<>();
-    try {
-      final JarInputStream checkerJarIs = new JarInputStream(new FileInputStream(checkerJar));
+    try (FileInputStream fis = new FileInputStream(checkerJar);
+        JarInputStream checkerJarIs = new JarInputStream(fis)) {
       ZipEntry entry;
       while ((entry = checkerJarIs.getNextEntry()) != null) {
         final String name = entry.getName();
@@ -807,7 +842,6 @@ public class CheckerMain {
           checkerClassNames.add(fqName);
         }
       }
-      checkerJarIs.close();
     } catch (IOException e) {
       // Issue a warning instead of aborting execution.
       System.err.printf(

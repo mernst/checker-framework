@@ -1,3 +1,5 @@
+JAVA_VER := $(shell java -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^1\./s///' | cut -d'.' -f1)
+
 .PHONY: all
 
 # Delomboking seems to mess up line numbers. The actual error is on line 13, but the error appears on line 12.
