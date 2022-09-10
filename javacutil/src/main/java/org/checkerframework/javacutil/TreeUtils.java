@@ -348,7 +348,7 @@ public final class TreeUtils {
    * @return the Element for the given tree, or null if one could not be found
    */
   @Pure
-  public static @Nullable VariableElement elementFromTree(VariableTree tree) {
+  public static VariableElement elementFromTree(VariableTree tree) {
     return (VariableElement) elementFromTreeImpl(tree, null);
   }
 
