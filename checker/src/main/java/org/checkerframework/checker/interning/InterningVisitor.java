@@ -202,7 +202,7 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
    */
   @Override
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
-    if (isInvocationOfEquals(node)) {
+    if (isInvocationOfEquals(node, elements)) {
       AnnotatedTypeMirror receiverType = atypeFactory.getReceiverType(node);
       AnnotatedTypeMirror comp = atypeFactory.getAnnotatedType(node.getArguments().get(0));
 
@@ -428,8 +428,8 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
    * @param node a method invocation node
    * @return true iff {@code node} is a invocation of {@code equals()}
    */
-  public static boolean isInvocationOfEquals(MethodInvocationTree node, Elements elements) {
-    ExecutableElement method = TreeUtils.elementFromUse(node, elements);
+  public static boolean isInvocationOfEquals(MethodInvocationTree node) {
+    ExecutableElement method = TreeUtils.elementFromUseNoCorrection(node);
     return (method.getParameters().size() == 1
         && method.getReturnType().getKind() == TypeKind.BOOLEAN
         // method symbols only have simple names
@@ -520,8 +520,8 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
     ExecutableElement enclosingMethod = TreeUtils.elementFromDeclaration(methodTree);
     assert enclosingMethod != null;
 
-    final Element lhs = TreeUtils.elementFromUse((IdentifierTree) left);
-    final Element rhs = TreeUtils.elementFromUse((IdentifierTree) right);
+    final VariableElement lhs = TreeUtils.elementFromUse((IdentifierTree) left);
+    final VariableElement rhs = TreeUtils.elementFromUse((IdentifierTree) right);
 
     // Matcher to check for if statement that returns zero
     Heuristics.Matcher matcherIfReturnsZero =
@@ -756,8 +756,8 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
       return false;
     }
 
-    final Element lhs = TreeUtils.elementFromUse((IdentifierTree) left);
-    final Element rhs = TreeUtils.elementFromUse((IdentifierTree) right);
+    final VariableElement lhs = TreeUtils.elementFromUse((IdentifierTree) left);
+    final VariableElement rhs = TreeUtils.elementFromUse((IdentifierTree) right);
 
     // looking for ((a == b || a.compareTo(b) == 0)
     Heuristics.Matcher matcherEqOrCompareTo =
@@ -811,7 +811,7 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
             if (arg.getKind() != Tree.Kind.IDENTIFIER) {
               return false;
             }
-            Element argElt = TreeUtils.elementFromUse(arg);
+            Element argElt = TreeUtils.elementFromUse(arg, elements);
 
             ExpressionTree exp = tree.getMethodSelect();
             if (exp.getKind() != Tree.Kind.MEMBER_SELECT) {
@@ -822,7 +822,8 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
               return false;
             }
 
-            Element refElt = TreeUtils.elementFromUse(member.getExpression());
+            // no correction because it will be compared against a VariableElement.
+            Element refElt = TreeUtils.elementFromUseNoCorrection(member.getExpression());
 
             if (!((refElt.equals(lhs) && argElt.equals(rhs))
                 || (refElt.equals(rhs) && argElt.equals(lhs)))) {

@@ -561,6 +561,17 @@ public final class TreeUtils {
    * @return the ExecutableElement for the called method
    */
   @Pure
+  public static VariableElement elementFromUse(IdentifierTree node) {
+    return TreeUtils.elementFromTree(node);
+  }
+
+  /**
+   * Returns the ExecutableElement for the called method, from a call.
+   *
+   * @param node a method call
+   * @return the ExecutableElement for the called method
+   */
+  @Pure
   public static ExecutableElement elementFromUse(MethodInvocationTree node, Elements elements) {
     return TreeUtils.elementFromTree(node, elements);
   }
