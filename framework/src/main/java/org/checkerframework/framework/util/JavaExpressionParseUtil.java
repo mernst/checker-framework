@@ -46,6 +46,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic.Kind;
 import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
@@ -254,7 +255,6 @@ public class JavaExpressionParseUtil {
       this.localVarPath = localVarPath;
       this.env = env;
       this.elements = env.getElementUtils();
-      ;
       this.types = env.getTypeUtils();
       this.stringTypeMirror = elements.getTypeElement("java.lang.String").asType();
       this.enclosingType = enclosingType;
@@ -765,7 +765,7 @@ public class JavaExpressionParseUtil {
       if (receiverType.getKind() == TypeKind.ARRAY) {
         ExecutableElement element =
             resolver.findMethod(methodName, receiverType, pathToCompilationUnit, argumentTypes);
-        element = correctExecutableElementWithinDefaultMethod(element, elements);
+        element = Resolver.correctExecutableElementWithinDefaultMethod(element, elements);
         if (element == null) {
           throw constructJavaExpressionParseError(methodName, "no such method");
         }

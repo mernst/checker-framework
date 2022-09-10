@@ -113,7 +113,7 @@ class TypeFromTypeTreeVisitor extends TypeFromTreeVisitor {
   public AnnotatedTypeMirror visitParameterizedType(
       ParameterizedTypeTree node, AnnotatedTypeFactory f) {
 
-    ClassSymbol baseType = (ClassSymbol) TreeUtils.elementFromTree(node.getType());
+    ClassSymbol baseType = (ClassSymbol) TreeUtils.elementFromTreeNoCorrection(node.getType());
     updateWildcardBounds(node.getTypeArguments(), baseType.getTypeParameters());
 
     List<AnnotatedTypeMirror> args =

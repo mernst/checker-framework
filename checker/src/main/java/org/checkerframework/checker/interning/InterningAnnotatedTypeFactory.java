@@ -145,7 +145,7 @@ public class InterningAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   @Override
   public void addComputedTypeAnnotations(Tree tree, AnnotatedTypeMirror type, boolean useFlow) {
-    Element element = TreeUtils.elementFromTree(tree);
+    Element element = TreeUtils.elementFromTreeNoCorrection(tree);
     if (!type.isAnnotatedInHierarchy(INTERNED) && ElementUtils.isCompileTimeConstant(element)) {
       type.addAnnotation(INTERNED);
     }
@@ -201,7 +201,7 @@ public class InterningAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
     @Override
     public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror type) {
-      Element e = TreeUtils.elementFromTree(node);
+      Element e = TreeUtils.elementFromTree(node, elements);
       if (atypeFactory.getDeclAnnotation(e, FindDistinct.class) != null) {
         // TODO: See note above about this being a poor implementation.
         type.replaceAnnotation(INTERNED_DISTINCT);

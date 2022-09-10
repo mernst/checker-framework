@@ -39,6 +39,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
+import javax.lang.model.util.Elements;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.reflection.qual.Invoke;
 import org.checkerframework.common.reflection.qual.MethodVal;
@@ -70,6 +71,7 @@ public class DefaultReflectionResolver implements ReflectionResolver {
   private final BaseTypeChecker checker;
   private final AnnotationProvider provider;
   private final ProcessingEnvironment processingEnv;
+  private final Elements elements;
   private final Trees trees;
   private final boolean debug;
 
@@ -78,14 +80,16 @@ public class DefaultReflectionResolver implements ReflectionResolver {
     this.checker = checker;
     this.provider = methodValProvider;
     this.processingEnv = checker.getProcessingEnvironment();
+    this.elements = processingEnv.getElementUtils();
     this.trees = Trees.instance(processingEnv);
     this.debug = debug;
   }
 
   @Override
   public boolean isReflectiveMethodInvocation(MethodInvocationTree tree) {
-    return (provider.getDeclAnnotation(TreeUtils.elementFromTree(tree), Invoke.class) != null
-        || provider.getDeclAnnotation(TreeUtils.elementFromTree(tree), NewInstance.class) != null);
+    ExecutableElement methodElt = TreeUtils.elementFromTree(tree, elements);
+    return (provider.getDeclAnnotation(methodElt, Invoke.class) != null
+        || provider.getDeclAnnotation(methodElt, NewInstance.class) != null);
   }
 
   @Override
@@ -94,7 +98,8 @@ public class DefaultReflectionResolver implements ReflectionResolver {
       MethodInvocationTree tree,
       ParameterizedExecutableType origResult) {
     assert isReflectiveMethodInvocation(tree);
-    if (provider.getDeclAnnotation(TreeUtils.elementFromTree(tree), NewInstance.class) != null) {
+    if (provider.getDeclAnnotation(TreeUtils.elementFromTree(tree, elements), NewInstance.class)
+        != null) {
       return resolveConstructorCall(factory, tree, origResult);
     } else {
       return resolveMethodCall(factory, tree, origResult);
@@ -202,7 +207,7 @@ public class DefaultReflectionResolver implements ReflectionResolver {
    */
   private boolean checkMethodArguments(MethodInvocationTree resolvedTree) {
     // type.getKind() == actualType.getKind()
-    ExecutableElement methodDecl = TreeUtils.elementFromUse(resolvedTree);
+    ExecutableElement methodDecl = TreeUtils.elementFromUse(resolvedTree, elements);
     return checkArguments(methodDecl.getParameters(), resolvedTree.getArguments());
   }
 

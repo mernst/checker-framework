@@ -1918,7 +1918,7 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
   protected void warnUnneededSuppressions(
       Set<Element> elementsSuppress, Set<String> prefixes, Set<String> allErrorKeys) {
     for (Tree tree : getVisitor().treesWithSuppressWarnings) {
-      Element elt = TreeUtils.elementFromTree(tree, elements);
+      Element elt = TreeUtils.elementFromTree(tree, getElementUtils());
       // TODO: This test is too coarse.  The fact that this @SuppressWarnings suppressed
       // *some* warning doesn't mean that every value in it did so.
       if (elementsSuppress.contains(elt)) {
@@ -2074,7 +2074,7 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
           return true;
         }
       } else if (decl.getKind() == Tree.Kind.METHOD) {
-        Element elt = TreeUtils.elementFromTree((MethodTree) decl, elements);
+        Element elt = TreeUtils.elementFromTree((MethodTree) decl, getElementUtils());
         if (shouldSuppressWarnings(elt, errKey)) {
           return true;
         }

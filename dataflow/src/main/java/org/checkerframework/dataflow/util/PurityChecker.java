@@ -218,7 +218,7 @@ public class PurityChecker {
 
     @Override
     public Void visitMethodInvocation(MethodInvocationTree node, Void ignore) {
-      ExecutableElement elt = TreeUtils.elementFromUse(node);
+      ExecutableElement elt = TreeUtils.elementFromUse(node, null /* TODO: elements */);
       if (!PurityUtils.hasPurityAnnotation(annoProvider, elt)) {
         purityResult.addNotBothReason(node, "call");
       } else {

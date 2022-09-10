@@ -284,7 +284,7 @@ public class DependentTypesHelper {
    */
   private void atInvocation(AnnotatedExecutableType methodType, ExpressionTree tree) {
     assert hasDependentAnnotations();
-    Element methodElt = TreeUtils.elementFromUse(tree);
+    Element methodElt = TreeUtils.elementFromUse(tree, factory.getElementUtils());
     // Because methodType is the type post type variable substitution, it has annotations from
     // both the method declaration and the type arguments at the use of the method. Annotations
     // from type arguments must not be viewpoint-adapted to the call site. For example:

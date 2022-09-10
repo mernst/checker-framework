@@ -161,7 +161,8 @@ public class TypeArgInferenceUtil {
               == path.getLeaf()) {
         return null;
       }
-      ExecutableElement methodElt = TreeUtils.elementFromUse(methodInvocation);
+      ExecutableElement methodElt =
+          TreeUtils.elementFromUse(methodInvocation, atypeFactory.getElementUtils());
       AnnotatedTypeMirror receiver = atypeFactory.getReceiverType(methodInvocation);
       if (TreeUtils.isSuperConstructorCall(methodInvocation)) {
         receiver = atypeFactory.getSelfType(methodInvocation);

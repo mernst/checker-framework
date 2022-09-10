@@ -16,6 +16,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.ElementFilter;
+import javax.lang.model.util.Elements;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.dataflow.analysis.Analysis;
 import org.checkerframework.dataflow.cfg.node.FieldAccessNode;
@@ -96,6 +97,9 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
   /** The type factory associated with this. */
   protected final AnnotatedTypeFactory atypeFactory;
 
+  /** The javac element utilities. */
+  protected final Elements elements;
+
   /**
    * Whether to print debugging information when an inference is attempted, but cannot be completed.
    * An inference can be attempted without success for example because the current storage system
@@ -124,6 +128,7 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
       WholeProgramInferenceStorage<T> storage,
       boolean showWpiFailedInferences) {
     this.atypeFactory = atypeFactory;
+    this.elements = atypeFactory.getElementUtils();
     this.storage = storage;
     boolean isNullness =
         atypeFactory.getClass().getSimpleName().equals("NullnessAnnotatedTypeFactory");
@@ -212,7 +217,7 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
     if (enclosingMethod == null) {
       return false;
     }
-    ExecutableElement methodInvocEle = TreeUtils.elementFromUse(methodInvNode.getTree());
+    ExecutableElement methodInvocEle = TreeUtils.elementFromUse(methodInvNode.getTree(), elements);
     ExecutableElement methodDeclEle = TreeUtils.elementFromDeclaration(enclosingMethod);
     return methodDeclEle.equals(methodInvocEle);
   }

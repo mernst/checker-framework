@@ -190,7 +190,8 @@ public interface StringToJavaExpression {
   static JavaExpression atMethodInvocation(
       String expression, MethodInvocationTree methodInvocationTree, SourceChecker checker)
       throws JavaExpressionParseException {
-    ExecutableElement ee = TreeUtils.elementFromUse(methodInvocationTree);
+    ExecutableElement ee =
+        TreeUtils.elementFromUse(methodInvocationTree, checker.getElementUtils());
     JavaExpression javaExpr = StringToJavaExpression.atMethodDecl(expression, ee, checker);
     return javaExpr.atMethodInvocation(methodInvocationTree);
   }
@@ -210,7 +211,8 @@ public interface StringToJavaExpression {
   static JavaExpression atMethodInvocation(
       String expression, MethodInvocationNode methodInvocationNode, SourceChecker checker)
       throws JavaExpressionParseException {
-    ExecutableElement ee = TreeUtils.elementFromUse(methodInvocationNode.getTree());
+    ExecutableElement ee =
+        TreeUtils.elementFromUse(methodInvocationNode.getTree(), checker.getElementUtils());
     JavaExpression javaExpr = StringToJavaExpression.atMethodDecl(expression, ee, checker);
     return javaExpr.atMethodInvocation(methodInvocationNode);
   }
@@ -251,7 +253,7 @@ public interface StringToJavaExpression {
       String expression, MemberSelectTree fieldAccess, SourceChecker checker)
       throws JavaExpressionParseException {
 
-    Element ele = TreeUtils.elementFromUse(fieldAccess);
+    Element ele = TreeUtils.elementFromUseNoCorrection(fieldAccess);
     if (ele.getKind() != ElementKind.FIELD && ele.getKind() != ElementKind.ENUM_CONSTANT) {
       throw new BugInCF("Expected a field, but found %s for %s", ele.getKind(), fieldAccess);
     }

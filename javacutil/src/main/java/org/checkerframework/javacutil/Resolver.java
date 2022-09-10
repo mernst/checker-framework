@@ -398,6 +398,18 @@ public class Resolver {
     return methodElt;
   }
 
+  public static Element correctExecutableElementWithinDefaultMethod(
+      Element elt, Elements elements) {
+    if (elt == null) {
+      return elt;
+    } else if (elt.getKind() == ElementKind.METHOD) {
+      // only METHOD, not CONSTRUCTOR
+      return correctExecutableElementWithinDefaultMethod((ExecutableElement) elt, elements);
+    } else {
+      return elt;
+    }
+  }
+
   /** Build an instance of {@code Resolve$MethodResolutionContext}. */
   protected Object buildMethodContext()
       throws ClassNotFoundException, InstantiationException, IllegalAccessException,

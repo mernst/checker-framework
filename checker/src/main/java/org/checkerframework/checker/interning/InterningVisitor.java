@@ -382,7 +382,7 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
         Tree parent = parentPath.getParentPath().getLeaf();
         if (parent.getKind() == Tree.Kind.METHOD_INVOCATION) {
           // Allow new MyInternType().intern(), where "intern" is any method marked @InternMethod.
-          ExecutableElement elt = TreeUtils.elementFromUse((MethodInvocationTree) parent);
+          ExecutableElement elt = TreeUtils.elementFromUse((MethodInvocationTree) parent, elements);
           if (atypeFactory.getDeclAnnotation(elt, InternMethod.class) != null) {
             return true;
           }
@@ -429,7 +429,7 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
    * @return true iff {@code node} is a invocation of {@code equals()}
    */
   public static boolean isInvocationOfEquals(MethodInvocationTree node) {
-    ExecutableElement method = TreeUtils.elementFromUse(node);
+    ExecutableElement method = TreeUtils.elementFromUse(node, elements);
     return (method.getParameters().size() == 1
         && method.getReturnType().getKind() == TypeKind.BOOLEAN
         // method symbols only have simple names

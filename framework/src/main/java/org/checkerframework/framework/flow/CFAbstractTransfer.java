@@ -23,6 +23,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import org.checkerframework.checker.interning.qual.InternedDistinct;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.analysis.ConditionalTransferResult;
@@ -101,6 +102,9 @@ public abstract class CFAbstractTransfer<
   /** The analysis used by this transfer function. */
   protected final CFAbstractAnalysis<V, S, T> analysis;
 
+  /** The javac Element utilities. */
+  protected final Elements elements;
+
   /**
    * Should the analysis use sequential Java semantics (i.e., assume that only one thread is running
    * at all times)?
@@ -131,6 +135,7 @@ public abstract class CFAbstractTransfer<
   protected CFAbstractTransfer(
       CFAbstractAnalysis<V, S, T> analysis, boolean forceConcurrentSemantics) {
     this.analysis = analysis;
+    this.elements = analysis.atypeFactory.getElementUtils();
     this.sequentialSemantics =
         !(forceConcurrentSemantics || analysis.checker.hasOption("concurrentSemantics"));
     this.infer = analysis.checker.hasOption("infer");
@@ -310,7 +315,7 @@ public abstract class CFAbstractTransfer<
       Element enclosingElement = null;
       if (enclosingTree.getKind() == Tree.Kind.METHOD) {
         // If it is in an initializer, we need to use locals from the initializer.
-        enclosingElement = TreeUtils.elementFromTree(enclosingTree);
+        enclosingElement = TreeUtils.elementFromTree((MethodTree) enclosingTree);
 
       } else if (TreeUtils.isClassTree(enclosingTree)) {
 
@@ -322,7 +327,7 @@ public abstract class CFAbstractTransfer<
         TreePath loopTree = factory.getPath(lambda.getLambdaTree()).getParentPath();
         Element anEnclosingElement = null;
         while (loopTree.getLeaf() != enclosingTree) {
-          Element sym = TreeUtils.elementFromTree(loopTree.getLeaf());
+          Element sym = TreeUtils.elementFromTreeNoCorrection(loopTree.getLeaf());
           if (sym != null) {
             anEnclosingElement = sym;
             break;
@@ -330,7 +335,7 @@ public abstract class CFAbstractTransfer<
           loopTree = loopTree.getParentPath();
         }
         while (anEnclosingElement != null
-            && !anEnclosingElement.equals(TreeUtils.elementFromTree(enclosingTree))) {
+            && !anEnclosingElement.equals(TreeUtils.elementFromTreeNoCorrection(enclosingTree))) {
           if (anEnclosingElement.getKind() == ElementKind.INSTANCE_INIT
               || anEnclosingElement.getKind() == ElementKind.STATIC_INIT) {
             enclosingElement = anEnclosingElement;
@@ -808,7 +813,7 @@ public abstract class CFAbstractTransfer<
       } else if (lhs instanceof LocalVariableNode
           && ((LocalVariableNode) lhs).getElement().getKind() == ElementKind.PARAMETER) {
         // lhs is a formal parameter of some method
-        VariableElement param = (VariableElement) ((LocalVariableNode) lhs).getElement();
+        VariableElement param = ((LocalVariableNode) lhs).getElement();
         analysis
             .atypeFactory
             .getWholeProgramInference()
@@ -1013,7 +1018,7 @@ public abstract class CFAbstractTransfer<
     if (!shouldPerformWholeProgramInference(expressionTree)) {
       return false;
     }
-    Element elt = TreeUtils.elementFromTree(lhsTree);
+    Element elt = TreeUtils.elementFromTree(lhsTree, elements);
     return !analysis.checker.shouldSuppressWarnings(elt, "");
   }
 
@@ -1120,7 +1125,8 @@ public abstract class CFAbstractTransfer<
         if (e.isFlowParseError()) {
           Object[] args = new Object[e.args.length + 1];
           args[0] =
-              ElementUtils.getSimpleSignature(TreeUtils.elementFromUse(invocationNode.getTree()));
+              ElementUtils.getSimpleSignature(
+                  TreeUtils.elementFromUse(invocationNode.getTree(), elements));
           System.arraycopy(e.args, 0, args, 1, e.args.length);
           analysis.checker.reportError(invocationTree, "flowexpr.parse.error.postcondition", args);
         } else {

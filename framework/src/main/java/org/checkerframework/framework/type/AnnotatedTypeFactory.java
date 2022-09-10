@@ -1535,7 +1535,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    */
   private AnnotatedTypeMirror mergeAnnotationFileAnnosIntoType(
       @Nullable AnnotatedTypeMirror type, Tree tree, AnnotationFileElementTypes source) {
-    Element elt = TreeUtils.elementFromTree(tree);
+    Element elt = TreeUtils.elementFromTree(tree, elements);
     return mergeAnnotationFileAnnosIntoType(type, elt, source);
   }
 
@@ -1952,7 +1952,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         : "Unexpected tree kind: " + tree.getKind();
 
     // Return null if the element kind has no receiver.
-    Element element = TreeUtils.elementFromTree(tree);
+    Element element = TreeUtils.elementFromTree(tree, elements);
     assert element != null : "Unexpected null element for tree: " + tree;
     if (!ElementUtils.hasReceiver(element)) {
       return null;
@@ -2121,7 +2121,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       return getAnnotatedType(receiver);
     }
 
-    Element element = TreeUtils.elementFromUse(expression);
+    Element element = TreeUtils.elementFromUse(expression, elements);
     if (element != null && ElementUtils.hasReceiver(element)) {
       // The tree references an element that has a receiver, but the tree does not have an explicit
       // receiver. So, the tree must have an implicit receiver of "this" or "Outer.this".
@@ -2186,7 +2186,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * @return the method type being invoked with tree and the (inferred) type arguments
    */
   public ParameterizedExecutableType methodFromUse(MethodInvocationTree tree) {
-    ExecutableElement methodElt = TreeUtils.elementFromUse(tree);
+    ExecutableElement methodElt = TreeUtils.elementFromUse(tree, elements);
     AnnotatedTypeMirror receiverType = getReceiverType(tree);
     if (receiverType == null && TreeUtils.isSuperConstructorCall(tree)) {
       // super() calls don't have a receiver, but they should be view-point adapted as if

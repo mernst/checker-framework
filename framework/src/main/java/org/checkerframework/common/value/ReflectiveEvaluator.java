@@ -15,6 +15,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import org.checkerframework.checker.signature.qual.CanonicalNameOrEmpty;
 import org.checkerframework.checker.signature.qual.ClassGetName;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -31,7 +32,10 @@ import org.plumelib.util.StringsPlume;
 public class ReflectiveEvaluator {
 
   /** The checker that is using this ReflectiveEvaluator. */
-  private BaseTypeChecker checker;
+  private final BaseTypeChecker checker;
+
+  /** The javac element utilities. */
+  private final Elements elements;
 
   /**
    * Whether to report warnings about problems with evaluation. Controlled by the -AreportEvalWarns
@@ -42,6 +46,7 @@ public class ReflectiveEvaluator {
   public ReflectiveEvaluator(
       BaseTypeChecker checker, ValueAnnotatedTypeFactory factory, boolean reportWarnings) {
     this.checker = checker;
+    this.elements = checker.getElementUtils();
     this.reportWarnings = reportWarnings;
   }
 
@@ -162,7 +167,7 @@ public class ReflectiveEvaluator {
    * @return the Method object corresponding to the method invocation tree
    */
   private Method getMethodObject(MethodInvocationTree tree) {
-    final ExecutableElement ele = TreeUtils.elementFromUse(tree);
+    final ExecutableElement ele = TreeUtils.elementFromUse(tree, elements);
     List<Class<?>> paramClasses = null;
     try {
       @CanonicalNameOrEmpty String className =

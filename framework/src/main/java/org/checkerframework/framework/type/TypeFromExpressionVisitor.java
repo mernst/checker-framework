@@ -213,7 +213,7 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
       return res;
     }
 
-    Element elt = TreeUtils.elementFromUse(node);
+    Element elt = TreeUtils.elementFromUse(node, null /* TODO: elements */);
     AnnotatedTypeMirror selfType = f.getImplicitReceiverType(node);
     if (selfType != null) {
       AnnotatedTypeMirror type = AnnotatedTypes.asMemberOf(f.types, f, selfType, elt).asUse();
@@ -227,7 +227,7 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
 
   @Override
   public AnnotatedTypeMirror visitMemberSelect(MemberSelectTree node, AnnotatedTypeFactory f) {
-    Element elt = TreeUtils.elementFromUse(node);
+    Element elt = TreeUtils.elementFromUse(node, null /* TODO: elements */);
 
     if (TreeUtils.isClassLiteral(node)) {
       // the type of a class literal is the type of the "class" element.

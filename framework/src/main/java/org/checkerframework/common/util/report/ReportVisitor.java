@@ -22,6 +22,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeValidator;
@@ -165,7 +166,7 @@ public class ReportVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFactory> {
 
   @Override
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
-    ExecutableElement method = TreeUtils.elementFromUse(node);
+    ExecutableElement method = TreeUtils.elementFromUse(node, elements);
     checkReportUse(node, method);
     boolean report = this.atypeFactory.getDeclAnnotation(method, ReportCall.class) != null;
 
@@ -195,7 +196,7 @@ public class ReportVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFactory> {
 
   @Override
   public Void visitMemberSelect(MemberSelectTree node, Void p) {
-    Element member = TreeUtils.elementFromUse(node);
+    Element member = TreeUtils.elementFromUse(node, elements);
     checkReportUse(node, member);
     boolean report = this.atypeFactory.getDeclAnnotation(member, ReportReadWrite.class) != null;
 
@@ -207,7 +208,7 @@ public class ReportVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFactory> {
 
   @Override
   public Void visitIdentifier(IdentifierTree node, Void p) {
-    Element member = TreeUtils.elementFromUse(node);
+    Element member = TreeUtils.elementFromUse(node, elements);
     boolean report = this.atypeFactory.getDeclAnnotation(member, ReportReadWrite.class) != null;
 
     if (report) {
@@ -218,7 +219,8 @@ public class ReportVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFactory> {
 
   @Override
   public Void visitAssignment(AssignmentTree node, Void p) {
-    Element member = TreeUtils.elementFromUse(node.getVariable());
+    VariableElement member =
+        (VariableElement) TreeUtils.elementFromUseNoCorrection(node.getVariable());
     boolean report = this.atypeFactory.getDeclAnnotation(member, ReportWrite.class) != null;
 
     if (report) {

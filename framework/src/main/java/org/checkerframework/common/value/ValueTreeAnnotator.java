@@ -23,6 +23,7 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import org.checkerframework.checker.signature.qual.BinaryName;
 import org.checkerframework.checker.signature.qual.Identifier;
 import org.checkerframework.common.value.qual.ArrayLen;
@@ -44,6 +45,9 @@ class ValueTreeAnnotator extends TreeAnnotator {
   /** The type factory to use. Shadows the field from the superclass with a more specific type. */
   @SuppressWarnings("HidingField")
   protected final ValueAnnotatedTypeFactory atypeFactory;
+
+  /** The javac element utilities. */
+  private final Elements elements;
 
   /** The domain of the Constant Value Checker: the types for which it estimates possible values. */
   protected static final Set<String> COVERED_CLASS_STRINGS =
@@ -77,6 +81,7 @@ class ValueTreeAnnotator extends TreeAnnotator {
   public ValueTreeAnnotator(ValueAnnotatedTypeFactory atypeFactory) {
     super(atypeFactory);
     this.atypeFactory = atypeFactory;
+    this.elements = atypeFactory.getElementUtils();
   }
 
   @Override
@@ -403,7 +408,7 @@ class ValueTreeAnnotator extends TreeAnnotator {
       }
     }
 
-    if (!methodIsStaticallyExecutable(TreeUtils.elementFromUse(tree))
+    if (!methodIsStaticallyExecutable(TreeUtils.elementFromUse(tree, elements))
         || !handledByValueChecker(type)) {
       return null;
     }
@@ -453,7 +458,7 @@ class ValueTreeAnnotator extends TreeAnnotator {
     AnnotatedTypeMirror receiver = atypeFactory.getReceiverType(tree);
     List<?> receiverValues;
 
-    if (receiver != null && !ElementUtils.isStatic(TreeUtils.elementFromUse(tree))) {
+    if (receiver != null && !ElementUtils.isStatic(TreeUtils.elementFromUse(tree, elements))) {
       receiverValues = getValues(receiver, receiver.getUnderlyingType());
       if (receiverValues == null || receiverValues.isEmpty()) {
         // Values aren't known, so don't try to evaluate the method.
@@ -544,7 +549,7 @@ class ValueTreeAnnotator extends TreeAnnotator {
       return;
     }
 
-    VariableElement fieldElement = (VariableElement) TreeUtils.elementFromTree(tree);
+    VariableElement fieldElement = (VariableElement) TreeUtils.elementFromTreeNoCorrection(tree);
     Object value = fieldElement.getConstantValue();
     if (value != null) {
       // The field is a compile-time constant.
@@ -614,7 +619,7 @@ class ValueTreeAnnotator extends TreeAnnotator {
    * @param type the type of that tree
    */
   private void visitEnumConstant(ExpressionTree tree, AnnotatedTypeMirror type) {
-    Element decl = TreeUtils.elementFromTree(tree);
+    Element decl = TreeUtils.elementFromTreeNoCorrection(tree);
     if (decl.getKind() != ElementKind.ENUM_CONSTANT) {
       return;
     }
