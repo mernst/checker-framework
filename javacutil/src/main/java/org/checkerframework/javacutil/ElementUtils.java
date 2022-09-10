@@ -217,7 +217,7 @@ public class ElementUtils {
    * @param elem the enclosed element of a package
    * @return the innermost package element
    */
-  // This implementation may not work for within interface methods in JDK 18.
+  // This implementation may not work within interface methods in JDK 18.
   public static PackageElement enclosingPackage(Element elem) {
     Element result = elem;
     while (result != null && result.getKind() != ElementKind.PACKAGE) {
@@ -236,9 +236,10 @@ public class ElementUtils {
    * again.
    *
    * @param elem the package to start from
+   * @param elements the element
    * @return the parent package element or {@code null}
    */
-  public static @Nullable PackageElement parentPackage(PackageElement elem, final Elements e) {
+  public static @Nullable PackageElement parentPackage(PackageElement elem, Elements elements) {
     // The following might do the same thing:
     //   ((Symbol) elt).owner;
     // TODO: verify and see whether the change is worth it.
@@ -247,7 +248,7 @@ public class ElementUtils {
     if (fqn != null && !fqn.isEmpty()) {
       int dotPos = fqn.lastIndexOf('.');
       if (dotPos != -1) {
-        return e.getPackageElement(fqn.substring(0, dotPos));
+        return elements.getPackageElement(fqn.substring(0, dotPos));
       }
     }
     return null;
