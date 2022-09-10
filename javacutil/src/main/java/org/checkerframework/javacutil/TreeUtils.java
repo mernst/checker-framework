@@ -290,7 +290,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node, which is a javac {@link Symbol}.
+   * Gets the {@link Element} for the given Tree API node.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @return the Element for the given tree, or null if one could not be found
@@ -301,7 +301,6 @@ public final class TreeUtils {
     return elementFromTreeImpl(tree, null);
   }
 
-  // TODO: What should the return type be here?
   /**
    * Gets the {@link Element} for the given Tree API node, which is a javac {@link Symbol}.
    *
@@ -309,24 +308,23 @@ public final class TreeUtils {
    * @return the Element for the given tree, or null if one could not be found
    */
   @Pure
-  public static @Nullable ExecutableElement elementFromTree(
-      MethodInvocationTree tree, Elements elements) {
+  public static ExecutableElement elementFromTree(MethodInvocationTree tree, Elements elements) {
     ExecutableElement result = (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
     result = Resolver.correctExecutableElementWithinDefaultMethod(result, elements);
     return result;
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node, which is a javac {@link Symbol}.
+   * Gets the {@link Element} for the given Tree API node.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @return the Element for the given tree, or null if one could not be found
    */
   @Pure
-  public static @Nullable ExecutableElement elementFromTree(MethodTree tree) {
+  public static ExecutableElement elementFromTree(MethodTree tree) {
     // This is a method DECLARATION, so no special handling with
     // correctExecutableElementWithinDefaultMethod is required.
-    return (ExecutableElement) elementFromTreeImpl(tree, null);
+    return (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
   }
 
   /**
@@ -344,7 +342,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node, which is a javac {@link Symbol}.
+   * Gets the {@link Element} for the given Tree API node.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @return the Element for the given tree, or null if one could not be found
