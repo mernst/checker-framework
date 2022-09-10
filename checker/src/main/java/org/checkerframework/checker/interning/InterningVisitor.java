@@ -428,7 +428,7 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
    * @param node a method invocation node
    * @return true iff {@code node} is a invocation of {@code equals()}
    */
-  public static boolean isInvocationOfEquals(MethodInvocationTree node) {
+  public static boolean isInvocationOfEquals(MethodInvocationTree node, Elements elements) {
     ExecutableElement method = TreeUtils.elementFromUse(node, elements);
     return (method.getParameters().size() == 1
         && method.getReturnType().getKind() == TypeKind.BOOLEAN

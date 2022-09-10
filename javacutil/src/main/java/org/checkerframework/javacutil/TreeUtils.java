@@ -277,14 +277,16 @@ public final class TreeUtils {
   // There is no elementFromTree(Tree tree), only overloads with subclasses.
 
   /**
-   * Gets the {@link Element} for the given Tree API node, which is a javac {@link Symbol}.
+   * Gets the {@link Element} for the given Tree API node.
    *
    * @param tree the {@link Tree} node to get the symbol for
-   * @return the Element for the given tree, or null if one could not be found
+   * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
+   *     (JCTree)
+   * @return the {@link Symbol} for the given tree, or null if one could not be found
    */
   @Pure
-  public static @Nullable TypeElement elementFromTree(ClassTree tree) {
-    return (TypeElement) elementFromTreeImpl(tree, null);
+  public static TypeElement elementFromTree(ClassTree tree) {
+    return (TypeElement) TreeInfo.symbolFor((JCTree) tree);
   }
 
   /**
@@ -299,41 +301,7 @@ public final class TreeUtils {
     return elementFromTreeImpl(tree, null);
   }
 
-  // This is a method DECLARATION, so no special handling is required.
-  /**
-   * Gets the {@link Element} for the given Tree API node, which is a javac {@link Symbol}.
-   *
-   * @param tree the {@link Tree} node to get the symbol for
-   * @return the Element for the given tree, or null if one could not be found
-   */
-  @Pure
-  public static @Nullable ExecutableElement elementFromTree(MethodTree tree) {
-    return (ExecutableElement) elementFromTreeImpl(tree, null);
-  }
-
-  /**
-   * Gets the {@link Element} for the given Tree API node, which is a javac {@link Symbol}.
-   *
-   * @param tree the {@link Tree} node to get the symbol for
-   * @return the Element for the given tree, or null if one could not be found
-   */
-  @Pure
-  public static @Nullable Element elementFromTree(NewClassTree tree) {
-    return elementFromTreeImpl(tree, null);
-  }
-
-  /**
-   * Gets the {@link Element} for the given Tree API node, which is a javac {@link Symbol}.
-   *
-   * @param tree the {@link Tree} node to get the symbol for
-   * @return the Element for the given tree, or null if one could not be found
-   */
-  @Pure
-  public static @Nullable VariableElement elementFromTree(VariableTree tree) {
-    return (VariableElement) elementFromTreeImpl(tree, null);
-  }
-
-  // TODO: What should the type be here?
+  // TODO: What should the return type be here?
   /**
    * Gets the {@link Element} for the given Tree API node, which is a javac {@link Symbol}.
    *
@@ -349,47 +317,16 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link VariableElement} for the given Tree API node. For an object instantiation
-   * returns the value of the {@link JCNewClass#constructor} field.
+   * Gets the {@link Element} for the given Tree API node, which is a javac {@link Symbol}.
    *
    * @param tree the {@link Tree} node to get the symbol for
-   * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
-   *     (JCTree)
-   * @return the {@link Symbol} for the given tree, or null if one could not be found
+   * @return the Element for the given tree, or null if one could not be found
    */
   @Pure
-  public static VariableElement variableElementFromTree(Tree tree) {
-    VariableElement result = (VariableElement) elementFromTree(tree);
-    if (result == null) {
-      throw new BugInCF("no element for tree of type %s: %s", tree.getClass(), tree);
-    }
-    return result;
-  }
-
-  /**
-   * Gets the {@link Element} for the given Tree API node.
-   *
-   * @param tree the {@link Tree} node to get the symbol for
-   * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
-   *     (JCTree)
-   * @return the {@link Symbol} for the given tree, or null if one could not be found
-   */
-  @Pure
-  public static TypeElement elementFromTree(ClassTree tree) {
-    return (TypeElement) TreeInfo.symbolFor((JCTree) tree);
-  }
-
-  /**
-   * Gets the {@link Element} for the given Tree API node.
-   *
-   * @param tree the {@link Tree} node to get the symbol for
-   * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
-   *     (JCTree)
-   * @return the {@link Symbol} for the given tree, or null if one could not be found
-   */
-  @Pure
-  public static ExecutableElement elementFromTree(MethodInvocationTree tree) {
-    return (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
+  public static @Nullable ExecutableElement elementFromTree(MethodTree tree) {
+    // This is a method DECLARATION, so no special handling with
+    // correctExecutableElementWithinDefaultMethod is required.
+    return (ExecutableElement) elementFromTreeImpl(tree, null);
   }
 
   /**
@@ -402,11 +339,24 @@ public final class TreeUtils {
    */
   @Pure
   public static ExecutableElement elementFromTree(NewClassTree tree) {
+    // No need for correctExecutableElementWithinDefaultMethod; this is a constructor, not a method.
     return (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node.
+   * Gets the {@link Element} for the given Tree API node, which is a javac {@link Symbol}.
+   *
+   * @param tree the {@link Tree} node to get the symbol for
+   * @return the Element for the given tree, or null if one could not be found
+   */
+  @Pure
+  public static @Nullable VariableElement elementFromTree(VariableTree tree) {
+    return (VariableElement) elementFromTreeImpl(tree, null);
+  }
+
+  /**
+   * Gets the {@link VariableElement} for the given Tree API node. For an object instantiation
+   * returns the value of the {@link JCNewClass#constructor} field.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
@@ -414,8 +364,12 @@ public final class TreeUtils {
    * @return the {@link Symbol} for the given tree, or null if one could not be found
    */
   @Pure
-  public static ExecutableElement elementFromTree(MethodTree tree) {
-    return (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
+  public static VariableElement variableElementFromTree(Tree tree) {
+    VariableElement result = (VariableElement) TreeInfo.symbolFor((JCTree) tree);
+    if (result == null) {
+      throw new BugInCF("no element for tree of type %s: %s", tree.getClass(), tree);
+    }
+    return result;
   }
 
   /**
@@ -555,7 +509,7 @@ public final class TreeUtils {
    */
   @Pure
   public static VariableElement variableElementFromUse(ExpressionTree node) {
-    VariableElement result = (VariableElement) TreeUtils.elementFromTree(node);
+    VariableElement result = (VariableElement) TreeUtils.elementFromTreeImpl(node, null);
     if (result == null) {
       throw new BugInCF("null element for %s [%s]", node, node.getClass());
     }
@@ -623,7 +577,7 @@ public final class TreeUtils {
   @Pure
   public static ExecutableElement elementFromUse(NewClassTree node) {
     // No need for correctExecutableElementWithinDefaultMethod; this is a constructor, not a method.
-    return (ExecutableElement) TreeUtils.elementFromTree(node);
+    return TreeUtils.elementFromTree(node);
   }
 
   /**
