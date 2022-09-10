@@ -423,9 +423,9 @@ public abstract class CFAbstractTransfer<
    */
   private void addFinalLocalValues(S store, Element enclosingElement) {
     // add information about effectively final variables (from outer scopes)
-    for (Map.Entry<Element, V> e : analysis.atypeFactory.getFinalLocalValues().entrySet()) {
+    for (Map.Entry<VariableElement, V> e : analysis.atypeFactory.getFinalLocalValues().entrySet()) {
 
-      Element elem = e.getKey();
+      VariableElement elem = e.getKey();
 
       // TODO: There is a design flaw where the values of final local values leaks
       // into other methods of the same class. For example, in

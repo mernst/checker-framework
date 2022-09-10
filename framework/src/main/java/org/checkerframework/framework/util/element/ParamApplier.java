@@ -23,9 +23,15 @@ import org.checkerframework.javacutil.Pair;
 /** Adds annotations to one formal parameter of a method or lambda within a method. */
 public class ParamApplier extends IndexedElementAnnotationApplier {
 
-  /** Apply annotations from {@code element} to {@code type}. */
+  /**
+   * Apply annotations from {@code element} to {@code type}.
+   *
+   * @param type the type whose annotations to change
+   * @param element where to get annotations from
+   * @param typeFactory the type factory
+   */
   public static void apply(
-      AnnotatedTypeMirror type, Element element, AnnotatedTypeFactory typeFactory)
+      AnnotatedTypeMirror type, VariableElement element, AnnotatedTypeFactory typeFactory)
       throws UnexpectedAnnotationLocationException {
     new ParamApplier(type, element, typeFactory).extractAndApply();
   }
@@ -41,7 +47,8 @@ public class ParamApplier extends IndexedElementAnnotationApplier {
   private final Integer lambdaParamIndex;
   private final LambdaExpressionTree lambdaTree;
 
-  ParamApplier(AnnotatedTypeMirror type, Element element, AnnotatedTypeFactory typeFactory) {
+  ParamApplier(
+      AnnotatedTypeMirror type, VariableElement element, AnnotatedTypeFactory typeFactory) {
     super(type, element);
     enclosingMethod = getParentMethod(element);
 
@@ -54,7 +61,7 @@ public class ParamApplier extends IndexedElementAnnotationApplier {
 
     } else {
       Pair<VariableTree, LambdaExpressionTree> paramToEnclosingLambda =
-          ElementAnnotationApplier.getParamAndLambdaTree((VariableElement) element, typeFactory);
+          ElementAnnotationApplier.getParamAndLambdaTree(element, typeFactory);
 
       if (paramToEnclosingLambda != null) {
         VariableTree paramDecl = paramToEnclosingLambda.first;

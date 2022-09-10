@@ -54,12 +54,17 @@ public class LocalVariableNode extends Node {
     this.receiver = receiver;
   }
 
+  /**
+   * Returns the element associated with this local variable.
+   *
+   * @return the element associated with this local variable
+   */
   public VariableElement getElement() {
     VariableElement el;
     if (tree instanceof IdentifierTree) {
       IdentifierTree itree = (IdentifierTree) tree;
       assert TreeUtils.isUseOfElement(itree) : "@AssumeAssertion(nullness): tree kind";
-      el = (VariableElement) TreeUtils.elementFromUseNoCorrection(itree);
+      el = TreeUtils.variableElementFromUse(itree);
     } else {
       assert tree instanceof VariableTree;
       el = TreeUtils.elementFromDeclaration((VariableTree) tree);
