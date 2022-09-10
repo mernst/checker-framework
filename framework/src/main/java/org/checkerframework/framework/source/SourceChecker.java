@@ -542,7 +542,7 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
     // Keep in sync with check in checker-framework/build.gradle and text in installation
     // section of manual.
     int jreVersion = SystemUtil.jreVersion;
-    if (jreVersion != 8 && jreVersion != 11 && jreVersion != 17) {
+    if (jreVersion != 8 && jreVersion != 11 && jreVersion != 17 && jreVersion != 18) {
       message(
           (hasOption("permitUnsupportedJdkVersion") ? Kind.NOTE : Kind.WARNING),
           "Use JDK 8, 11, or 17 to run the Checker Framework.  You are using version %d.",
@@ -1918,7 +1918,7 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
   protected void warnUnneededSuppressions(
       Set<Element> elementsSuppress, Set<String> prefixes, Set<String> allErrorKeys) {
     for (Tree tree : getVisitor().treesWithSuppressWarnings) {
-      Element elt = TreeUtils.elementFromTree(tree);
+      Element elt = TreeUtils.elementFromTree(tree, elements);
       // TODO: This test is too coarse.  The fact that this @SuppressWarnings suppressed
       // *some* warning doesn't mean that every value in it did so.
       if (elementsSuppress.contains(elt)) {
@@ -2074,7 +2074,7 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
           return true;
         }
       } else if (decl.getKind() == Tree.Kind.METHOD) {
-        Element elt = TreeUtils.elementFromTree((MethodTree) decl);
+        Element elt = TreeUtils.elementFromTree((MethodTree) decl, elements);
         if (shouldSuppressWarnings(elt, errKey)) {
           return true;
         }

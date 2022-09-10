@@ -1283,9 +1283,6 @@ public abstract class AnnotatedTypeMirror {
       if (!receiverTypeComputed) {
         assert receiverType == null;
         Element element = getElement();
-        if (element == null) {
-          throw new NullPointerException();
-        }
         if (ElementUtils.hasReceiver(element)) {
           // Initial value of `encl`; might be updated.
           TypeElement encl = ElementUtils.enclosingTypeElement(element);

@@ -388,7 +388,9 @@ public final class TreeUtils {
     if (!(el instanceof ExecutableElement)) {
       throw new BugInCF("Method elements should be ExecutableElement. Found: %s", el);
     }
-    return (ExecutableElement) el;
+    ExecutableElement result =
+        correctExecutableElementWithinDefaultMethod((ExecutableElement) el, elements);
+    return result;
   }
 
   /**

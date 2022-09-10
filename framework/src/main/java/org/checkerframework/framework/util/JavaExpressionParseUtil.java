@@ -203,6 +203,9 @@ public class JavaExpressionParseUtil {
     /** The processing environment. */
     private final ProcessingEnvironment env;
 
+    /** The element utilities. */
+    private final Elements elements;
+
     /** The resolver. Computed from the environment, but lazily initialized. */
     private @MonotonicNonNull Resolver resolver = null;
 
@@ -250,8 +253,10 @@ public class JavaExpressionParseUtil {
       this.pathToCompilationUnit = pathToCompilationUnit;
       this.localVarPath = localVarPath;
       this.env = env;
+      this.elements = env.getElementUtils();
+      ;
       this.types = env.getTypeUtils();
-      this.stringTypeMirror = env.getElementUtils().getTypeElement("java.lang.String").asType();
+      this.stringTypeMirror = elements.getTypeElement("java.lang.String").asType();
       this.enclosingType = enclosingType;
       this.thisReference = thisReference;
       this.parameters = parameters;
@@ -760,6 +765,7 @@ public class JavaExpressionParseUtil {
       if (receiverType.getKind() == TypeKind.ARRAY) {
         ExecutableElement element =
             resolver.findMethod(methodName, receiverType, pathToCompilationUnit, argumentTypes);
+        element = correctExecutableElementWithinDefaultMethod(element, elements);
         if (element == null) {
           throw constructJavaExpressionParseError(methodName, "no such method");
         }
@@ -1105,6 +1111,7 @@ public class JavaExpressionParseUtil {
     /** The error message key. */
     private @CompilerMessageKey String errorKey;
     /** The arguments to the error message key. */
+    @SuppressWarnings("serial")
     public final Object[] args;
 
     /**

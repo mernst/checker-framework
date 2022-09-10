@@ -31,6 +31,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -43,6 +44,7 @@ public class Resolver {
   private final Resolve resolve;
   private final Names names;
   private final Trees trees;
+  private final Elements elements;
   private final Log log;
 
   private static final Method FIND_METHOD;
@@ -141,6 +143,7 @@ public class Resolver {
     this.resolve = Resolve.instance(context);
     this.names = Names.instance(context);
     this.trees = Trees.instance(env);
+    this.elements = env.getElementUtils();
     this.log = Log.instance(context);
   }
 
@@ -369,7 +372,9 @@ public class Resolver {
         } else {
           methodResult = null;
         }
-        return methodResult;
+        ExecutableElement result =
+            correctExecutableElementWithinDefaultMethod(methodResult, elements);
+        return result;
       } catch (Throwable t) {
         Error err =
             new AssertionError(
@@ -385,6 +390,12 @@ public class Resolver {
     } finally {
       log.popDiagnosticHandler(discardDiagnosticHandler);
     }
+  }
+
+  public static ExecutableElement correctExecutableElementWithinDefaultMethod(
+      ExecutableElement methodElt, Elements elements) {
+    // TODO
+    return methodElt;
   }
 
   /** Build an instance of {@code Resolve$MethodResolutionContext}. */
