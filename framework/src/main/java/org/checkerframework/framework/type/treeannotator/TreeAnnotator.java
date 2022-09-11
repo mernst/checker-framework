@@ -22,11 +22,17 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
  */
 public abstract class TreeAnnotator extends SimpleTreeVisitor<Void, AnnotatedTypeMirror> {
 
+  /** The type factory. */
   protected final @Nullable AnnotatedTypeFactory atypeFactory;
 
   /** The javac element utilities. */
   protected final @Nullable Elements elements;
 
+  /**
+   * Create a new TreeAnnotator.
+   *
+   * @param atypeFactory the type factory
+   */
   protected TreeAnnotator(AnnotatedTypeFactory atypeFactory) {
     this.atypeFactory = atypeFactory;
     this.elements = atypeFactory == null ? null : atypeFactory.getElementUtils();

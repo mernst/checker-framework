@@ -433,6 +433,13 @@ public final class TreeUtils {
     return result;
   }
 
+  /**
+   * Like elementFromTree, but without correction because the resulting method is not a method on
+   * Object.
+   *
+   * @param tree the {@link Tree} node to get the symbol for
+   * @return the {@link Symbol} for the given tree, or null if one could not be found
+   */
   @Pure
   public static @Nullable ExecutableElement elementFromTreeNotObject(MethodInvocationTree tree) {
     return (ExecutableElement) elementFromTreeNotObject((Tree) tree);
@@ -468,6 +475,17 @@ public final class TreeUtils {
     return (VariableElement) elementFromTreeImpl(tree, null);
   }
 
+  /**
+   * Use to get the Element for the lhs of an assignment. It is never an ExecutableElement.
+   *
+   * <p>Gets the {@link Element} for the given Tree API node. Does no correction for
+   * ExecutableElements within default methods. Use with care.
+   *
+   * @param node the {@link Tree} node to get the symbol for
+   * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
+   *     (JCTree)
+   * @return the {@link Symbol} for the given tree, or null if one could not be found
+   */
   @Pure
   public static @Nullable Element lhsElementFromUse(ExpressionTree node) {
     return TreeUtils.elementFromTreeNoCorrection(node);

@@ -97,14 +97,6 @@ public class ElementUtils {
           elem.getClass().getSuperclass(),
           isTypeElement(result));
     }
-    // Consider a method, such as `getClass()` or `hashCode()`, that is called within a default
-    // method implementation in an interface.
-    // In JDK 17 and earlier, the method is resolved to an ExecutableElement whose owner/enclosing
-    // is the class that declares the method, such as java.lang.Object.
-    // In JDK 18, the method is resolved to an ExecutableElement whose owner/enclosing is the
-    // interface within which the call appears.  This is not what we want.
-    // We will change that to java.lang.Object if the method appears in java.lang.Object.
-    // If the method doesn't appear in java.lang.Object, fail for now.
     if (elem.getKind() == ElementKind.METHOD) {
       TypeMirror receiverType = ((ExecutableElement) elem).getReceiverType();
       // TODO: why is getReceiverType() none/NoType for getClass()??

@@ -285,7 +285,10 @@ public class ClassValAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
     /**
      * Return true if this is an invocation of a method annotated with @ForName. An example of such
-     * a method is Class.forName.
+     * a method is {@link Class#forName}.
+     *
+     * @param tree a method invocation
+     * @return true if this is an invocation of a method annotated with @ForName
      */
     private boolean isForNameMethodInvocation(MethodInvocationTree tree) {
       return getDeclAnnotation(TreeUtils.elementFromTree(tree, elements), ForName.class) != null;
@@ -293,7 +296,10 @@ public class ClassValAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
     /**
      * Return true if this is an invocation of a method annotated with @GetClass. An example of such
-     * a method is Object.getClassName.
+     * a method is {@link Object#getClassName}.
+     *
+     * @param tree a method invocation
+     * @return true if this is an invocation of a method annotated with @GetClass
      */
     private boolean isGetClassMethodInvocation(MethodInvocationTree tree) {
       return getDeclAnnotation(TreeUtils.elementFromTree(tree, elements), GetClass.class) != null;

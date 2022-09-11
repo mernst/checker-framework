@@ -26,6 +26,13 @@ public class MethodAccessNode extends Node {
 
   // TODO: add method to get modifiers (static, access level, ..)
 
+  /**
+   * Create a new MethodAccessNode.
+   *
+   * @param tree the expression that is a method access
+   * @param receiver the receiver
+   * @param elements the javac element utilities
+   */
   public MethodAccessNode(ExpressionTree tree, Node receiver, Elements elements) {
     super(TreeUtils.typeOf(tree));
     assert TreeUtils.isMethodAccess(tree);
