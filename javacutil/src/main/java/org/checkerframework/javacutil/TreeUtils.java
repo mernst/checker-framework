@@ -446,6 +446,21 @@ public final class TreeUtils {
   }
 
   /**
+   * Like elementFromTree, but without correction.
+   *
+   * @param tree the {@link Tree} node to get the symbol for
+   * @return the {@link Symbol} for the given tree, or null if one could not be found
+   */
+  @Pure
+  public static ExecutableElement elementFromTreeNoCorrection(MethodInvocationTree tree) {
+    ExecutableElement result = (ExecutableElement) elementFromTreeNoCorrection((Tree) tree);
+    if (result == null) {
+      throw new BugInCF("tree = " + tree);
+    }
+    return result;
+  }
+
+  /**
    * Gets the {@link Element} for the given Tree API node. Does no correction for ExecutableElements
    * within default methods. Use with care.
    *
@@ -699,8 +714,8 @@ public final class TreeUtils {
   }
 
   @Pure
-  public static @Nullable ExecutableElement elementFromUseNoCorrection(MethodInvocationTree node) {
-    return (ExecutableElement) TreeUtils.elementFromTreeNoCorrection(node);
+  public static ExecutableElement elementFromUseNoCorrection(MethodInvocationTree node) {
+    return TreeUtils.elementFromTreeNoCorrection(node);
   }
 
   @Pure
