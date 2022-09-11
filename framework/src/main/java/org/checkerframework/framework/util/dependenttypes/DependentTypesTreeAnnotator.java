@@ -56,7 +56,7 @@ public class DependentTypesTreeAnnotator extends TreeAnnotator {
 
   @Override
   public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror annotatedTypeMirror) {
-    Element ele = TreeUtils.elementFromUse(node, atypeFactory.getElementUtils());
+    Element ele = TreeUtils.elementFromUse(node, elements);
     if (ele.getKind() == ElementKind.FIELD || ele.getKind() == ElementKind.ENUM_CONSTANT) {
       helper.atVariableDeclaration(annotatedTypeMirror, node, (VariableElement) ele);
     }
@@ -65,7 +65,7 @@ public class DependentTypesTreeAnnotator extends TreeAnnotator {
 
   @Override
   public Void visitMemberSelect(MemberSelectTree node, AnnotatedTypeMirror type) {
-    Element ele = TreeUtils.elementFromUse(node, atypeFactory.getElementUtils());
+    Element ele = TreeUtils.elementFromUse(node, elements);
     if (ele.getKind() == ElementKind.FIELD || ele.getKind() == ElementKind.ENUM_CONSTANT) {
       helper.atFieldAccess(type, node);
     }

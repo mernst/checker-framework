@@ -373,9 +373,8 @@ public class Resolver {
         } else {
           methodResult = null;
         }
-        ExecutableElement result =
-            correctExecutableElementWithinDefaultMethod(methodResult, elements);
-        return result;
+        methodResult = correctExecutableElementWithinDefaultMethod(methodResult, elements);
+        return methodResult;
       } catch (Throwable t) {
         Error err =
             new AssertionError(

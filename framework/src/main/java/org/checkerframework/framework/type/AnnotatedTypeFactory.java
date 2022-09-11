@@ -763,16 +763,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
-   * Returns the utility class for working with {@link Element}s.
-   *
-   * @return the utility class for working with {@link Element}s
-   */
-  // Exists for use only by MustCallConsistencyAnalyzer.
-  public final Elements getElements() {
-    return elements;
-  }
-
-  /**
    * Returns the names of the annotation processors that are being run.
    *
    * @return the names of the annotation processors that are being run
@@ -5293,8 +5283,14 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     return awt.getUnderlyingType().getSuperBound() == null;
   }
 
-  /** Accessor for the element utilities. */
-  public Elements getElementUtils() {
+  /**
+   * Returns the utility class for working with {@link Element}s.
+   *
+   * @return the utility class for working with {@link Element}s
+   */
+  // Exists for use by MustCallConsistencyAnalyzer and PurityChecker.
+  @Override
+  public final Elements getElementUtils() {
     return this.elements;
   }
 

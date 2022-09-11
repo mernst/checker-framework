@@ -4,6 +4,8 @@ import com.sun.source.tree.BinaryTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.SimpleTreeVisitor;
+import javax.lang.model.util.Elements;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 
@@ -20,10 +22,14 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
  */
 public abstract class TreeAnnotator extends SimpleTreeVisitor<Void, AnnotatedTypeMirror> {
 
-  protected final AnnotatedTypeFactory atypeFactory;
+  protected final @Nullable AnnotatedTypeFactory atypeFactory;
+
+  /** The javac element utilities. */
+  protected final @Nullable Elements elements;
 
   protected TreeAnnotator(AnnotatedTypeFactory atypeFactory) {
     this.atypeFactory = atypeFactory;
+    this.elements = atypeFactory == null ? null : atypeFactory.getElementUtils();
   }
 
   /**

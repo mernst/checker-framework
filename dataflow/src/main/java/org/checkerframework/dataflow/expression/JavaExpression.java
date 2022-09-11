@@ -322,7 +322,7 @@ public abstract class JavaExpression {
         throw new BugInCF("Unexpected null tree for node: " + mn);
       }
       assert TreeUtils.isUseOfElement(t) : "@AssumeAssertion(nullness): tree kind";
-      ExecutableElement invokedMethod = TreeUtils.elementFromUse(t, null /* TODO: elements*/);
+      ExecutableElement invokedMethod = TreeUtils.elementFromUseNoCorrection(t);
 
       // Note that the method might be nondeterministic.
       List<JavaExpression> parameters =
@@ -400,7 +400,7 @@ public abstract class JavaExpression {
       case METHOD_INVOCATION:
         MethodInvocationTree mn = (MethodInvocationTree) tree;
         assert TreeUtils.isUseOfElement(mn) : "@AssumeAssertion(nullness): tree kind";
-        ExecutableElement invokedMethod = TreeUtils.elementFromUse(mn, null /* TODO: elements*/);
+        ExecutableElement invokedMethod = TreeUtils.elementFromUseNoCorrection(mn);
 
         // Note that the method might be nondeterministic.
         List<JavaExpression> parameters =
@@ -432,12 +432,14 @@ public abstract class JavaExpression {
           break;
         }
         assert TreeUtils.isUseOfElement(identifierTree) : "@AssumeAssertion(nullness): tree kind";
-        Element ele = TreeUtils.elementFromUse(identifierTree, null /* TODO: elements*/);
-        if (ElementUtils.isTypeElement(ele)) {
+        Element ele = TreeUtils.elementFromUseNoCorrection(identifierTree);
+        if (ele == null) {
+          result = null;
+        } else if (ElementUtils.isTypeElement(ele)) {
           result = new ClassName(ele.asType());
-          break;
+        } else {
+          result = fromVariableElement(typeOfId, (VariableElement) ele);
         }
-        result = fromVariableElement(typeOfId, (VariableElement) ele);
         break;
 
       case UNARY_PLUS:
@@ -548,7 +550,8 @@ public abstract class JavaExpression {
     }
 
     assert TreeUtils.isUseOfElement(memberSelectTree) : "@AssumeAssertion(nullness): tree kind";
-    Element ele = TreeUtils.elementFromUse(memberSelectTree, null /* TODO: elements*/);
+    Element ele = TreeUtils.elementFromUseNoCorrection(memberSelectTree);
+    assert ele != null : "@AssumeAssertion(nullness): is this true?";
     if (ElementUtils.isTypeElement(ele)) {
       // o instanceof MyClass.InnerClass
       // o instanceof MyClass.InnerInterface
@@ -612,7 +615,7 @@ public abstract class JavaExpression {
     if (receiverTree != null) {
       return fromTree(receiverTree);
     } else {
-      Element ele = TreeUtils.elementFromUse(accessTree, null /* TODO: elements*/);
+      Element ele = TreeUtils.elementFromUseNoCorrection(accessTree);
       if (ele == null) {
         throw new BugInCF("TreeUtils.elementFromUse(" + accessTree + ") => null");
       }
@@ -709,7 +712,7 @@ public abstract class JavaExpression {
     JavaExpression receiverJe = JavaExpression.getReceiver(methodInvocationTree);
     List<JavaExpression> argumentsJe =
         argumentTreesToJavaExpressions(
-            TreeUtils.elementFromUse(methodInvocationTree, null /* TODO: elements*/),
+            TreeUtils.elementFromUseNoCorrection(methodInvocationTree),
             methodInvocationTree.getArguments());
     return ViewpointAdaptJavaExpression.viewpointAdapt(this, receiverJe, argumentsJe);
   }

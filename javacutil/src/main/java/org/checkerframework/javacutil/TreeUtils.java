@@ -352,8 +352,11 @@ public final class TreeUtils {
    * @return the Element for the given tree, or null if one could not be found
    */
   @Pure
-  public static VariableElement elementFromTree(VariableTree tree) {
-    return (VariableElement) elementFromTreeImpl(tree, null);
+  public static @Nullable VariableElement elementFromTree(VariableTree tree) {
+    VariableElement result = variableElementFromTree((Tree) tree);
+    // `result` can be null, for example for this variable declaration:
+    //   PureFunc f1 = TestPure1::myPureMethod;
+    return result;
   }
 
   /**
@@ -769,7 +772,7 @@ public final class TreeUtils {
    * @param node the ExpressionTree to test
    * @return whether the tree refers to an identifier, member select, or method invocation
    */
-  @EnsuresNonNullIf(result = true, expression = "elementFromUse(#1)")
+  @EnsuresNonNullIf(result = true, expression = "elementFromUseNoCorrection(#1)")
   @Pure
   public static boolean isUseOfElement(ExpressionTree node) {
     ExpressionTree realnode = TreeUtils.withoutParens(node);
