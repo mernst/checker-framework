@@ -7,7 +7,7 @@ import com.sun.source.tree.Tree;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
-import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.javacutil.TreeUtils;
@@ -22,8 +22,8 @@ public class ClassNameNode extends Node {
   /** The tree for this node. */
   protected final @Nullable Tree tree;
 
-  /** The class named by this node. */
-  protected final TypeElement element;
+  /** The class named by this node. Either a TypeElement or a TypeParameterElement. */
+  protected final Element element;
 
   /** The parent name, if any. */
   protected final @Nullable Node parent;
@@ -33,7 +33,7 @@ public class ClassNameNode extends Node {
     assert tree.getKind() == Tree.Kind.IDENTIFIER;
     this.tree = tree;
     assert TreeUtils.isUseOfElement(tree) : "@AssumeAssertion(nullness): tree kind";
-    this.element = (TypeElement) TreeUtils.elementFromUseNoCorrection(tree);
+    this.element = TreeUtils.elementFromUseNoCorrection(tree);
     this.parent = null;
   }
 
@@ -53,18 +53,18 @@ public class ClassNameNode extends Node {
     super(TreeUtils.typeOf(tree));
     this.tree = tree;
     assert TreeUtils.isUseOfElement(tree) : "@AssumeAssertion(nullness): tree kind";
-    this.element = (TypeElement) TreeUtils.elementFromUseNoCorrection(tree);
+    this.element = TreeUtils.elementFromUseNoCorrection(tree);
     this.parent = parent;
   }
 
-  public ClassNameNode(TypeMirror type, TypeElement element) {
+  public ClassNameNode(TypeMirror type, Element element) {
     super(type);
     this.tree = null;
     this.element = element;
     this.parent = null;
   }
 
-  public TypeElement getElement() {
+  public Element getElement() {
     return element;
   }
 
