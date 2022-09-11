@@ -539,7 +539,7 @@ public final class TreeUtils {
         return TreeInfo.symbol((JCTree) ((AssignmentTree) tree).getVariable());
 
       case ARRAY_ACCESS:
-        return elementFromTree(((ArrayAccessTree) tree).getExpression(), elements);
+        return elementFromTreeImpl(((ArrayAccessTree) tree).getExpression(), elements);
 
       case NEW_CLASS:
         return ((JCNewClass) tree).constructor;
@@ -548,7 +548,10 @@ public final class TreeUtils {
         // TreeInfo.symbol, which is used in the default case, didn't handle
         // member references until JDK8u20. So handle it here.
         ExecutableElement memberResult = (ExecutableElement) ((JCMemberReference) tree).sym;
-        memberResult = Resolver.correctExecutableElementWithinDefaultMethod(memberResult, elements);
+        if (elements != null) {
+          memberResult =
+              Resolver.correctExecutableElementWithinDefaultMethod(memberResult, elements);
+        }
         return memberResult;
 
       default:
@@ -629,7 +632,7 @@ public final class TreeUtils {
    */
   // TODO: drop "OrNull" from name?
   @Pure
-  public static VariableElement fieldElementOrNullFromUse(ExpressionTree node) {
+  public static @Nullable VariableElement fieldElementOrNullFromUse(ExpressionTree node) {
     VariableElement result = (VariableElement) TreeUtils.elementFromTreeImpl(node, null);
     if (result == null) {
       throw new BugInCF("null element for %s [%s]", node, node.getClass());
@@ -651,6 +654,9 @@ public final class TreeUtils {
   @Pure
   public static @Nullable Element elementFromUse(ExpressionTree node, Elements elements) {
     Element result = TreeUtils.elementFromTree(node, elements);
+    if (result == null) {
+      return null;
+    }
     result = Resolver.correctExecutableElementWithinDefaultMethod(result, elements);
     return result;
   }
@@ -693,7 +699,7 @@ public final class TreeUtils {
   }
 
   @Pure
-  public static ExecutableElement elementFromUseNoCorrection(MethodInvocationTree node) {
+  public static @Nullable ExecutableElement elementFromUseNoCorrection(MethodInvocationTree node) {
     return (ExecutableElement) TreeUtils.elementFromTreeNoCorrection(node);
   }
 
@@ -797,7 +803,7 @@ public final class TreeUtils {
       case MEMBER_SELECT:
       case METHOD_INVOCATION:
       case NEW_CLASS:
-        // assert elementFromUse(node) != null : "@AssumeAssertion(nullness): inspection";
+        assert elementFromUseNoCorrection(node) != null : "@AssumeAssertion(nullness): inspection";
         return true;
       default:
         return false;
@@ -2265,7 +2271,11 @@ public final class TreeUtils {
    * @return true if the given method invocation is a varargs invocation
    */
   public static boolean isVarArgs(MethodInvocationTree invok) {
-    return isVarArgs(elementFromUseNoCorrection(invok), invok.getArguments());
+    ExecutableElement methodElt = elementFromUseNoCorrection(invok);
+    if (methodElt == null) {
+      return false;
+    }
+    return isVarArgs(methodElt, invok.getArguments());
   }
 
   /**

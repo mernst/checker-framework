@@ -370,10 +370,10 @@ public class Resolver {
         if (resolveResult.getKind() == ElementKind.METHOD
             || resolveResult.getKind() == ElementKind.CONSTRUCTOR) {
           methodResult = (ExecutableElement) resolveResult;
+          methodResult = correctExecutableElementWithinDefaultMethod(methodResult, elements);
         } else {
           methodResult = null;
         }
-        methodResult = correctExecutableElementWithinDefaultMethod(methodResult, elements);
         return methodResult;
       } catch (Throwable t) {
         Error err =
