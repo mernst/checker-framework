@@ -168,7 +168,8 @@ public class FormatterTreeUtil {
    * @return true if {@code node} is a call to a method annotated with {@code @FormatMethod}
    */
   public boolean isFormatMethodCall(MethodInvocationTree node, AnnotatedTypeFactory atypeFactory) {
-    ExecutableElement method = TreeUtils.elementFromUseNotObject(node);
+    // "NoCorrection" because Object methods are not format methods.
+    ExecutableElement method = TreeUtils.elementFromUseNoCorrection(node);
     AnnotationMirror anno = atypeFactory.getDeclAnnotation(method, FormatMethod.class);
     return anno != null;
   }

@@ -269,7 +269,8 @@ public class I18nFormatterTreeUtil {
    */
   public @Nullable I18nFormatCall createFormatForCall(
       MethodInvocationTree tree, I18nFormatterAnnotatedTypeFactory atypeFactory) {
-    ExecutableElement method = TreeUtils.elementFromUseNotObject(tree);
+    // "NoCorrection" because formatting is irrelevant to Object methods.
+    ExecutableElement method = TreeUtils.elementFromUseNoCorrection(tree);
     AnnotatedExecutableType methodAnno = atypeFactory.getAnnotatedType(method);
     for (AnnotatedTypeMirror paramType : methodAnno.getParameterTypes()) {
       // find @FormatFor
