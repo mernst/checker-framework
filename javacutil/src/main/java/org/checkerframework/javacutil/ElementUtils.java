@@ -88,13 +88,15 @@ public class ElementUtils {
    */
   public static @Nullable TypeElement enclosingTypeElement(final Element elem) {
     Element result = elem;
-    System.out.printf(
-        "EU.enclosingTypeElement(%s [%s %s extends %s]), isTypeElement = %s%n",
-        elem,
-        elem.getKind(),
-        elem.getClass(),
-        elem.getClass().getSuperclass(),
-        isTypeElement(result));
+    if (false) {
+      System.out.printf(
+          "EU.enclosingTypeElement(%s [%s %s extends %s]), isTypeElement = %s%n",
+          elem,
+          elem.getKind(),
+          elem.getClass(),
+          elem.getClass().getSuperclass(),
+          isTypeElement(result));
+    }
     // Consider a method, such as `getClass()` or `hashCode()`, that is called within a default
     // method implementation in an interface.
     // In JDK 17 and earlier, the method is resolved to an ExecutableElement whose owner/enclosing
@@ -106,30 +108,36 @@ public class ElementUtils {
     if (elem.getKind() == ElementKind.METHOD) {
       TypeMirror receiverType = ((ExecutableElement) elem).getReceiverType();
       // TODO: why is getReceiverType() none/NoType for getClass()??
-      System.out.printf(
-          "  receiver = %s [%s extends %s]%n",
-          receiverType, receiverType.getClass(), receiverType.getClass().getSuperclass());
+      if (false) {
+        System.out.printf(
+            "  receiver = %s [%s extends %s]%n",
+            receiverType, receiverType.getClass(), receiverType.getClass().getSuperclass());
+      }
       MethodSymbol methodSymbol = (MethodSymbol) elem;
-      System.out.printf(
-          "MethodSymbol %s%n  modifiers (from flags): %s%n  name: %s%n  type: %s%n  owner: %s%n "
-              + " baseSymbol: %s%n",
-          methodSymbol,
-          methodSymbol.getModifiers(),
-          methodSymbol.name,
-          methodSymbol.type,
-          methodSymbol.owner,
-          methodSymbol.baseSymbol());
+      if (false) {
+        System.out.printf(
+            "MethodSymbol %s%n  modifiers (from flags): %s%n  name: %s%n  type: %s%n  owner: %s%n "
+                + " baseSymbol: %s%n",
+            methodSymbol,
+            methodSymbol.getModifiers(),
+            methodSymbol.name,
+            methodSymbol.type,
+            methodSymbol.owner,
+            methodSymbol.baseSymbol());
+      }
     }
     while (result != null && !isTypeElement(result)) {
       result = result.getEnclosingElement();
-      System.out.printf(
-          "EU.enclosingTypeElement(%s), new result = %s [%s %s extends %s], isTypeElement = %s%n",
-          elem,
-          result,
-          result == null ? "[null]" : result.getKind(),
-          result == null ? "[null]" : result.getClass(),
-          result == null ? "[null]" : result.getClass().getSuperclass(),
-          result == null ? "[null]" : isTypeElement(result));
+      if (false) {
+        System.out.printf(
+            "EU.enclosingTypeElement(%s), new result = %s [%s %s extends %s], isTypeElement = %s%n",
+            elem,
+            result,
+            result == null ? "[null]" : result.getKind(),
+            result == null ? "[null]" : result.getClass(),
+            result == null ? "[null]" : result.getClass().getSuperclass(),
+            result == null ? "[null]" : isTypeElement(result));
+      }
     }
     if (elem.getKind() == ElementKind.METHOD && result.getKind() == ElementKind.INTERFACE) {
       System.out.printf("I'm here. %s %s%n", elem, result);

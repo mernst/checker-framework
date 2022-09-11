@@ -62,6 +62,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -296,6 +297,17 @@ public final class TreeUtils {
    * @return the Element for the given tree, or null if one could not be found
    */
   @Pure
+  public static VariableElement elementFromTree(IdentifierTree tree) {
+    return (VariableElement) elementFromTreeImpl(tree, null);
+  }
+
+  /**
+   * Gets the {@link Element} for the given Tree API node.
+   *
+   * @param tree the {@link Tree} node to get the symbol for
+   * @return the Element for the given tree, or null if one could not be found
+   */
+  @Pure
   // TODO Is this correct to overload in this way?
   public static @Nullable Element elementFromTree(MemberReferenceTree tree) {
     return elementFromTreeImpl(tree, null);
@@ -371,8 +383,72 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node. For an object instantiation returns the
-   * value of the {@link JCNewClass#constructor} field.
+   * Gets the {@link Element} for the given Tree API node. The returned value must not be an
+   * ExecutableElement.
+   *
+   * @param tree the {@link Tree} node to get the symbol for
+   * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
+   *     (JCTree)
+   * @return the {@link Symbol} for the given tree, or null if one could not be found
+   */
+  @Pure
+  public static @Nullable Element elementFromTreeNotExecutable(Tree tree) {
+    Element result = elementFromTreeImpl(tree, null);
+    if (result instanceof ExecutableElement) {
+      throw new BugInCF(
+          "elementFromTreeNotExecutable(%s [%s]) result = %s [%s]",
+          tree, tree.getClass(), result, result.getClass());
+    }
+    // No correction is necessary because this is not an ExecutableElement.
+    return result;
+  }
+
+  /** The names of all the methods on java.lang.Object. */
+  // The list of names is  from Java 17.
+  private static Set<String> objectMethodNames =
+      new HashSet<>(
+          Arrays.asList(
+              "clone",
+              "equals",
+              "finalize",
+              "getClass",
+              "hashCode",
+              "notify",
+              "notifyAll",
+              "toString",
+              "wait"));
+
+  /**
+   * Gets the {@link Element} for the given Tree API node. The returned value must not have the same
+   * name as a method on Object.
+   *
+   * @param tree the {@link Tree} node to get the symbol for
+   * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
+   *     (JCTree)
+   * @return the {@link Symbol} for the given tree, or null if one could not be found
+   */
+  @Pure
+  public static @Nullable Element elementFromTreeNotObject(Tree tree) {
+    Element result = elementFromTreeImpl(tree, null);
+    if (result instanceof ExecutableElement
+        && objectMethodNames.contains(result.getSimpleName().toString())) {
+      throw new BugInCF(
+          "elementFromTreeNotObject(%s [%s]) result = %s [%s]",
+          tree, tree.getClass(), result, result.getClass());
+    }
+    // No correction is necessary because this is not an ExecutableElement that might need to be
+    // corrected.
+    return result;
+  }
+
+  @Pure
+  public static @Nullable ExecutableElement elementFromTreeNotObject(MethodInvocationTree tree) {
+    return (ExecutableElement) elementFromTreeNotObject((Tree) tree);
+  }
+
+  /**
+   * Gets the {@link Element} for the given Tree API node. Does no correction for ExecutableElements
+   * within default methods. Use with care.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
@@ -382,6 +458,27 @@ public final class TreeUtils {
   @Pure
   public static @Nullable Element elementFromTreeNoCorrection(Tree tree) {
     return elementFromTreeImpl(tree, null);
+  }
+
+  /**
+   * Use to get the Element for the lhs of an assignment. It is never an ExecutableElement.
+   *
+   * <p>Gets the {@link Element} for the given Tree API node. Does no correction for
+   * ExecutableElements within default methods. Use with care.
+   *
+   * @param tree the {@link Tree} node to get the symbol for
+   * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
+   *     (JCTree)
+   * @return the {@link Symbol} for the given tree, or null if one could not be found
+   */
+  @Pure
+  public static @Nullable VariableElement lhsElementFromTree(Tree tree) {
+    return (VariableElement) elementFromTreeImpl(tree, null);
+  }
+
+  @Pure
+  public static @Nullable Element lhsElementFromUse(ExpressionTree node) {
+    return TreeUtils.elementFromTreeNoCorrection(node);
   }
 
   /**
@@ -499,9 +596,6 @@ public final class TreeUtils {
   /**
    * Gets the VariableElement for the declaration corresponding to this use of an element.
    *
-   * <p>This method is just a wrapper around {@link TreeUtils#elementFromTree(Tree)}, but this class
-   * might be the first place someone looks for this functionality.
-   *
    * @param node the tree corresponding to a use of an element
    * @return the element for the corresponding declaration, {@code null} otherwise
    */
@@ -515,12 +609,30 @@ public final class TreeUtils {
   }
 
   /**
+   * Gets the VariableElement for the declaration corresponding to this use of an element.
+   *
+   * <p>Returns null if the element does not have kind FIELD.
+   *
+   * @param node the tree corresponding to a use of an element
+   * @return the element for the corresponding declaration, {@code null} otherwise
+   */
+  // TODO: drop "OrNull" from name?
+  @Pure
+  public static VariableElement fieldElementOrNullFromUse(ExpressionTree node) {
+    VariableElement result = (VariableElement) TreeUtils.elementFromTreeImpl(node, null);
+    if (result == null) {
+      throw new BugInCF("null element for %s [%s]", node, node.getClass());
+    }
+    if (!result.getKind().isField()) {
+      return null;
+    }
+    return result;
+  }
+
+  /**
    * Gets the element for the declaration corresponding to this use of an element. To get the
    * element for a declaration, use {@link #elementFromDeclaration(ClassTree)}, {@link
    * #elementFromDeclaration(MethodTree)}, or {@link #elementFromDeclaration(VariableTree)} instead.
-   *
-   * <p>This method is just a wrapper around {@link TreeUtils#elementFromTree(Tree)}, but this class
-   * might be the first place someone looks for this functionality.
    *
    * @param node the tree corresponding to a use of an element
    * @return the element for the corresponding declaration, {@code null} otherwise
@@ -533,15 +645,11 @@ public final class TreeUtils {
   }
 
   /**
-   * For rare use, when it is known that the result is not a problematic ExecutableElement. Not
-   * named {@link #elementFromUse} to avoid accidental invocation.
+   * Use to get the Element for the lhs of an assignment. It is never an ExecutableElement.
    *
    * <p>Gets the element for the declaration corresponding to this use of an element. To get the
    * element for a declaration, use {@link #elementFromDeclaration(ClassTree)}, {@link
    * #elementFromDeclaration(MethodTree)}, or {@link #elementFromDeclaration(VariableTree)} instead.
-   *
-   * <p>This method is just a wrapper around {@link TreeUtils#elementFromTree(Tree)}, but this class
-   * might be the first place someone looks for this functionality.
    *
    * <p>Differs from {@link #elementFromUseNoCorrection} in that it does not call {@link
    * Resolver#correctExecutableElementWithinDefaultMethod}.
@@ -550,20 +658,51 @@ public final class TreeUtils {
    * @return the element for the corresponding declaration, {@code null} otherwise
    */
   @Pure
-  public static @Nullable Element elementFromUseNoCorrection(ExpressionTree node) {
+  public static @Nullable Element lhsElementFromTree(ExpressionTree node) {
     return TreeUtils.elementFromTreeNoCorrection(node);
   }
 
   /**
-   * Returns the ExecutableElement for the called method, from a call.
+   * For rare use, when it is known that the result is not a problematic ExecutableElement. Not
+   * named {@link #elementFromUse} to avoid accidental invocation.
    *
-   * @param node a method call
-   * @return the ExecutableElement for the called method
+   * <p>Gets the element for the declaration corresponding to this use of an element. To get the
+   * element for a declaration, use {@link #elementFromDeclaration(ClassTree)}, {@link
+   * #elementFromDeclaration(MethodTree)}, or {@link #elementFromDeclaration(VariableTree)} instead.
+   *
+   * <p>Differs from {@link #elementFromUseNoCorrection} in that it does not call {@link
+   * Resolver#correctExecutableElementWithinDefaultMethod}.
+   *
+   * @param node the tree corresponding to a use of an element
+   * @return the element for the corresponding declaration, {@code null} otherwise
    */
   @Pure
-  public static VariableElement elementFromUse(IdentifierTree node) {
-    return TreeUtils.elementFromTree(node);
+  public static @Nullable Element elementFromUseNoCorrection(Tree node) {
+    return TreeUtils.elementFromTreeNoCorrection(node);
   }
+
+  @Pure
+  public static ExecutableElement elementFromUseNoCorrection(MethodInvocationTree node) {
+    return (ExecutableElement) TreeUtils.elementFromTreeNoCorrection(node);
+  }
+
+  @Pure
+  public static @Nullable Element elementFromUseNotObject(Tree tree) {
+    return elementFromTreeNotObject(tree);
+  }
+
+  @Pure
+  public static @Nullable ExecutableElement elementFromUseNotObject(MethodInvocationTree tree) {
+    return elementFromTreeNotObject(tree);
+  }
+
+  @Pure
+  public static @Nullable Element elementFromUseNotExecutable(Tree tree) {
+    return elementFromTreeNotExecutable(tree);
+  }
+
+  // Might return an ExecutableElement.
+  // public static VariableElement elementFromUse(IdentifierTree node) {
 
   /**
    * Returns the ExecutableElement for the called method, from a call.
@@ -1420,7 +1559,7 @@ public final class TreeUtils {
    * @return true if this is a super call to the {@link Enum} constructor
    */
   public static boolean isEnumSuper(MethodInvocationTree node) {
-    ExecutableElement ex = (ExecutableElement) TreeUtils.elementFromUseNoCorrection(node);
+    ExecutableElement ex = TreeUtils.elementFromUseNoCorrection(node);
     assert ex != null : "@AssumeAssertion(nullness): tree kind";
     Name name = ElementUtils.getQualifiedClassName(ex);
     assert name != null : "@AssumeAssertion(nullness): assumption";
@@ -2115,7 +2254,7 @@ public final class TreeUtils {
    * @return true if the given method invocation is a varargs invocation
    */
   public static boolean isVarArgs(MethodInvocationTree invok) {
-    return isVarArgs((ExecutableElement) elementFromUseNoCorrection(invok), invok.getArguments());
+    return isVarArgs(elementFromUseNoCorrection(invok), invok.getArguments());
   }
 
   /**

@@ -9,8 +9,8 @@ import java.util.Collection;
 import java.util.List;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -167,8 +167,8 @@ public class CollectionToArrayHeuristics {
    *     {@code @ArrayLen(0)}
    */
   private boolean isArrayLenZeroFieldAccess(ExpressionTree argument) {
-    Element el = TreeUtils.elementFromUse(argument);
-    if (el != null && el.getKind().isField()) {
+    VariableElement el = TreeUtils.fieldElementOrNullFromUse(argument);
+    if (el != null) {
       TypeMirror t = ElementUtils.getType(el);
       if (t.getKind() == TypeKind.ARRAY) {
         List<? extends AnnotationMirror> ams = t.getAnnotationMirrors();

@@ -92,7 +92,8 @@ public class InitializationTransfer<
   protected List<VariableElement> initializedFieldsAfterCall(MethodInvocationNode node) {
     List<VariableElement> result = new ArrayList<>();
     MethodInvocationTree tree = node.getTree();
-    ExecutableElement method = TreeUtils.elementFromUse(tree);
+    // "NoCorrection" because Object methods set no fields.
+    ExecutableElement method = TreeUtils.elementFromUseNoCorrection(tree);
     boolean isConstructor = method.getSimpleName().contentEquals("<init>");
     Node receiver = node.getTarget().getReceiver();
     String methodString = tree.getMethodSelect().toString();

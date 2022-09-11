@@ -49,7 +49,7 @@ public class Subsequence {
       return null;
     }
 
-    Element element = TreeUtils.elementFromTree(varTree);
+    Element element = TreeUtils.elementFromTreeNoCorrection(varTree);
     AnnotationMirror hasSub = factory.getDeclAnnotation(element, HasSubsequence.class);
     return createSubsequence(hasSub, factory);
   }

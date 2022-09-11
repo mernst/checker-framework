@@ -86,7 +86,7 @@ public class I18nFormatterVisitor extends BaseTypeVisitor<I18nFormatterAnnotated
                   break;
                 default:
                   if (!fc.isValidParameter(formatCat, paramType)) {
-                    ExecutableElement method = TreeUtils.elementFromUse(fc.getTree());
+                    ExecutableElement method = TreeUtils.elementFromUseNotObject(fc.getTree());
                     CharSequence methodName = ElementUtils.getSimpleNameOrDescription(method);
                     tu.failure(
                         param,

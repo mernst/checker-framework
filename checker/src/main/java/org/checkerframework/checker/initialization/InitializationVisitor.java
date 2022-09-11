@@ -106,13 +106,13 @@ public class InitializationVisitor<
       // cast is safe: a field access can only be an IdentifierTree or MemberSelectTree
       ExpressionTree lhs = (ExpressionTree) varTree;
       ExpressionTree y = valueExp;
-      Element el = TreeUtils.elementFromUse(lhs);
+      Element el = TreeUtils.lhsElementFromUse(lhs);
       AnnotatedTypeMirror xType = atypeFactory.getReceiverType(lhs);
       AnnotatedTypeMirror yType = atypeFactory.getAnnotatedType(y);
       // the special FBC rules do not apply if there is an explicit
       // UnknownInitialization annotation
       Set<AnnotationMirror> fieldAnnotations =
-          atypeFactory.getAnnotatedType(TreeUtils.elementFromUse(lhs)).getAnnotations();
+          atypeFactory.getAnnotatedType(TreeUtils.lhsElementFromUse(lhs)).getAnnotations();
       if (!AnnotationUtils.containsSameByName(
           fieldAnnotations, atypeFactory.UNKNOWN_INITIALIZATION)) {
         if (!ElementUtils.isStatic(el)

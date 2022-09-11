@@ -194,9 +194,9 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
   public void methodFromUsePreSubstitution(ExpressionTree tree, AnnotatedExecutableType type) {
     ExecutableElement declaration;
     if (tree instanceof MethodInvocationTree) {
-      declaration = TreeUtils.elementFromUse((MethodInvocationTree) tree);
+      declaration = TreeUtils.elementFromUse((MethodInvocationTree) tree, elements);
     } else if (tree instanceof MemberReferenceTree) {
-      declaration = (ExecutableElement) TreeUtils.elementFromTree(tree);
+      declaration = (ExecutableElement) TreeUtils.elementFromTree(tree, elements);
     } else {
       throw new TypeSystemError("unexpected type of method tree: " + tree.getKind());
     }

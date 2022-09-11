@@ -93,7 +93,9 @@ public class IndexMethodIdentifier {
     if (tree.getKind() != Tree.Kind.METHOD_INVOCATION) {
       return false;
     }
-    return isLengthOfMethodInvocation(TreeUtils.elementFromUse((MethodInvocationTree) tree));
+    return isLengthOfMethodInvocation(
+        // NoCorrection because we are testing for lengthOf.
+        TreeUtils.elementFromUseNoCorrection((MethodInvocationTree) tree));
   }
 
   /**

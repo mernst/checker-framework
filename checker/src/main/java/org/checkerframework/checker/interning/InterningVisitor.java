@@ -202,7 +202,7 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
    */
   @Override
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
-    if (isInvocationOfEquals(node, elements)) {
+    if (isInvocationOfEquals(node)) {
       AnnotatedTypeMirror receiverType = atypeFactory.getReceiverType(node);
       AnnotatedTypeMirror comp = atypeFactory.getAnnotatedType(node.getArguments().get(0));
 
@@ -520,8 +520,9 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
     ExecutableElement enclosingMethod = TreeUtils.elementFromDeclaration(methodTree);
     assert enclosingMethod != null;
 
-    final VariableElement lhs = TreeUtils.elementFromUse((IdentifierTree) left);
-    final VariableElement rhs = TreeUtils.elementFromUse((IdentifierTree) right);
+    // "NoCorrection" because Object methods are irrelevant to interning
+    final Element lhs = TreeUtils.elementFromUseNoCorrection(left);
+    final Element rhs = TreeUtils.elementFromUseNoCorrection(right);
 
     // Matcher to check for if statement that returns zero
     Heuristics.Matcher matcherIfReturnsZero =
@@ -756,8 +757,9 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
       return false;
     }
 
-    final VariableElement lhs = TreeUtils.elementFromUse((IdentifierTree) left);
-    final VariableElement rhs = TreeUtils.elementFromUse((IdentifierTree) right);
+    // "NoCorrection" because Object methods are irrelevant to interning
+    final Element lhs = TreeUtils.elementFromUseNoCorrection(left);
+    final Element rhs = TreeUtils.elementFromUseNoCorrection(right);
 
     // looking for ((a == b || a.compareTo(b) == 0)
     Heuristics.Matcher matcherEqOrCompareTo =

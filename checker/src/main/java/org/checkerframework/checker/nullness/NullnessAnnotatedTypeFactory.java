@@ -540,7 +540,8 @@ public class NullnessAnnotatedTypeFactory
     @Override
     public Void visitMemberSelect(MemberSelectTree node, AnnotatedTypeMirror type) {
 
-      Element elt = TreeUtils.elementFromUse(node);
+      // "NoCorrection" because only checking against null.
+      Element elt = TreeUtils.elementFromUseNoCorrection(node);
       assert elt != null;
       return null;
     }
@@ -560,7 +561,7 @@ public class NullnessAnnotatedTypeFactory
     @Override
     public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror type) {
 
-      Element elt = TreeUtils.elementFromUse(node);
+      Element elt = TreeUtils.elementFromUseNotExecutable(node);
       assert elt != null;
 
       if (elt.getKind() == ElementKind.EXCEPTION_PARAMETER) {

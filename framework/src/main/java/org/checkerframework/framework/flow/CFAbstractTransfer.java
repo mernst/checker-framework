@@ -1018,7 +1018,7 @@ public abstract class CFAbstractTransfer<
     if (!shouldPerformWholeProgramInference(expressionTree)) {
       return false;
     }
-    Element elt = TreeUtils.elementFromTree(lhsTree, elements);
+    VariableElement elt = TreeUtils.lhsElementFromTree(lhsTree);
     return !analysis.checker.shouldSuppressWarnings(elt, "");
   }
 

@@ -269,7 +269,7 @@ public class I18nFormatterTreeUtil {
    */
   public @Nullable I18nFormatCall createFormatForCall(
       MethodInvocationTree tree, I18nFormatterAnnotatedTypeFactory atypeFactory) {
-    ExecutableElement method = TreeUtils.elementFromUse(tree);
+    ExecutableElement method = TreeUtils.elementFromUseNotObject(tree);
     AnnotatedExecutableType methodAnno = atypeFactory.getAnnotatedType(method);
     for (AnnotatedTypeMirror paramType : methodAnno.getParameterTypes()) {
       // find @FormatFor
@@ -312,7 +312,7 @@ public class I18nFormatterTreeUtil {
       this.atypeFactory = atypeFactory;
       List<? extends ExpressionTree> theargs = tree.getArguments();
       this.args = null;
-      ExecutableElement method = TreeUtils.elementFromUse(tree);
+      ExecutableElement method = TreeUtils.elementFromUseNotObject(tree);
       AnnotatedExecutableType methodAnno = atypeFactory.getAnnotatedType(method);
       initialCheck(theargs, method, methodAnno);
     }

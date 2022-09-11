@@ -153,7 +153,8 @@ public class CalledMethodsTransfer extends AccumulationTransfer {
    */
   private void handleEnsuresCalledMethodsVarArgs(
       MethodInvocationNode node, TransferResult<CFValue, CFStore> result) {
-    ExecutableElement elt = TreeUtils.elementFromUse(node.getTree());
+    // No varargs methods in Object
+    ExecutableElement elt = TreeUtils.elementFromUseNoCorrection(node.getTree());
     AnnotationMirror annot = atypeFactory.getDeclAnnotation(elt, EnsuresCalledMethodsVarArgs.class);
     if (annot == null) {
       return;

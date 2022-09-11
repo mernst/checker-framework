@@ -763,6 +763,16 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
+   * Returns the utility class for working with {@link Element}s.
+   *
+   * @return the utility class for working with {@link Element}s
+   */
+  // Exists for use only by MustCallConsistencyAnalyzer.
+  public final Elements getElements() {
+    return elements;
+  }
+
+  /**
    * Returns the names of the annotation processors that are being run.
    *
    * @return the names of the annotation processors that are being run
