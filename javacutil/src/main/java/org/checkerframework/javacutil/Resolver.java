@@ -415,7 +415,7 @@ public class Resolver {
   }
 
   /**
-   * See {@link correctExecutableElementWithinDefaultMethod(ExecutableElement, Elements).
+   * See {@link #correctExecutableElementWithinDefaultMethod(ExecutableElement, Elements)}.
    *
    * @param elt the element to correct
    * @param elements the javac element utilities
