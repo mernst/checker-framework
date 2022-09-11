@@ -140,8 +140,10 @@ public class ElementUtils {
       }
     }
     if (elem.getKind() == ElementKind.METHOD && result.getKind() == ElementKind.INTERFACE) {
-      System.out.printf("I'm here. %s %s%n", elem, result);
-      System.out.printf("  %s%n", ((TypeElement) result).getEnclosedElements());
+      if (false) {
+        System.out.printf("I'm here. %s %s%n", elem, result);
+        System.out.printf("  %s%n", ((TypeElement) result).getEnclosedElements());
+      }
       if (!((TypeElement) result).getEnclosedElements().contains(elem)) {
         System.out.printf("Trouble here. %s %s%n", elem, result);
         // TODO: how to get the TypeElement for java.lang.object?  This appreach requires an

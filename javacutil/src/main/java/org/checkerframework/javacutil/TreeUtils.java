@@ -290,16 +290,8 @@ public final class TreeUtils {
     return (TypeElement) TreeInfo.symbolFor((JCTree) tree);
   }
 
-  /**
-   * Gets the {@link Element} for the given Tree API node.
-   *
-   * @param tree the {@link Tree} node to get the symbol for
-   * @return the Element for the given tree, or null if one could not be found
-   */
-  @Pure
-  public static VariableElement elementFromTree(IdentifierTree tree) {
-    return (VariableElement) elementFromTreeImpl(tree, null);
-  }
+  // IdentifierTree  can have an ExecutableElement.
+  // public static VariableElement elementFromTree(IdentifierTree tree) {
 
   /**
    * Gets the {@link Element} for the given Tree API node.

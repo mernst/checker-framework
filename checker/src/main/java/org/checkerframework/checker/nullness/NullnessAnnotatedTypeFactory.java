@@ -561,7 +561,7 @@ public class NullnessAnnotatedTypeFactory
     @Override
     public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror type) {
 
-      Element elt = TreeUtils.elementFromUseNotExecutable(node);
+      Element elt = TreeUtils.elementFromUse(node, elements);
       assert elt != null;
 
       if (elt.getKind() == ElementKind.EXCEPTION_PARAMETER) {
