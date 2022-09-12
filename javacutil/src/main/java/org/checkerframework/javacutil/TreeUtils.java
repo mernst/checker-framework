@@ -469,7 +469,7 @@ public final class TreeUtils {
    * @return the element for the given variable
    */
   public static VariableElement elementFromDeclaration(VariableTree tree) {
-    VariableElement elt = TreeUtils.elementFromTree(tree);
+    VariableElement elt = (VariableElement) TreeUtils.elementFromTreeNoCorrection((Tree) tree);
     assert elt != null : "@AssumeAssertion(nullness): tree kind";
     return elt;
   }
