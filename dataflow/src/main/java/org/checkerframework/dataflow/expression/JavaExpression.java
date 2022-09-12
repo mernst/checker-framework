@@ -494,7 +494,11 @@ public abstract class JavaExpression {
    * @return a JavaExpression for {@code tree}
    */
   public static JavaExpression fromVariableTree(VariableTree tree) {
-    return fromVariableElement(TreeUtils.typeOf(tree), TreeUtils.elementFromDeclaration(tree));
+    VariableElement varElt = TreeUtils.elementFromDeclaration(tree);
+    if (varElt == null) {
+      throw new BugInCF("what to do? %s [%s]", tree, tree.getClass());
+    }
+    return fromVariableElement(TreeUtils.typeOf(tree), varElt);
   }
 
   /**
