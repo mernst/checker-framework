@@ -279,12 +279,14 @@ public final class TreeUtils {
   //  * use elementFromDeclaration whenever the tree is a declaration
   //  * use elementFromUse when the tree is a use
   //  * use elementFromTree in other cases; note that it may return null
+  // This section of the file groups methods by their receiver type; that is, it puts all
+  // `elementFrom*(FooTree)` methods together.
 
   // There is no single-argument elementFromTree(Tree tree), only overloads with subclasses that do
   // not need an `elements` argument.
 
   /**
-   * Gets the element for a class corresponding to a declaration.
+   * Returns the type element corresponding to the given class declaration.
    *
    * @param tree class declaration
    * @return the element for the given class
@@ -296,7 +298,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node.
+   * Returns the type element corresponding to the given class declaration.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @return the {@link Symbol} for the given tree, or null if one could not be found
@@ -309,7 +311,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node.
+   * Returns the type element corresponding to the given class declaration.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @return the {@link Symbol} for the given tree, or null if one could not be found
@@ -322,9 +324,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the element for the declaration corresponding to this use of an element. To get the
-   * element for a declaration, use {@link #elementFromDeclaration(ClassTree)}, {@link
-   * #elementFromDeclaration(MethodTree)}, or {@link #elementFromDeclaration(VariableTree)} instead.
+   * Returns the element corresponding to the given use.
    *
    * @param tree the tree corresponding to a use of an element
    * @return the element for the corresponding declaration, {@code null} otherwise
@@ -336,9 +336,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the element for the declaration corresponding to this use of an element. To get the
-   * element for a declaration, use {@link #elementFromDeclaration(ClassTree)}, {@link
-   * #elementFromDeclaration(MethodTree)}, or {@link #elementFromDeclaration(VariableTree)} instead.
+   * Returns the element corresponding to the given use.
    *
    * @param tree the tree corresponding to a use of an element
    * @param elements the javac element utilities
@@ -390,9 +388,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the element for the declaration corresponding to this use of an element. To get the
-   * element for a declaration, use {@link #elementFromDeclaration(ClassTree)}, {@link
-   * #elementFromDeclaration(MethodTree)}, or {@link #elementFromDeclaration(VariableTree)} instead.
+   * Returns the element corresponding to the given use.
    *
    * @param tree the tree corresponding to a use of an element
    * @return the element for the corresponding declaration, {@code null} otherwise
@@ -408,7 +404,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the VariableElement for the declaration corresponding to this use of an element.
+   * Returns the VariableElement corresponding to the given use.
    *
    * @param tree the tree corresponding to a use of an element
    * @return the element for the corresponding declaration, {@code null} otherwise
@@ -444,7 +440,7 @@ public final class TreeUtils {
   // public static VariableElement elementFromUse(IdentifierTree tree) {
 
   /**
-   * Gets the {@link Element} for the given Tree API node.
+   * Returns the ExecutableElement for the given method invocation.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @return the Element for the given tree, or null if one could not be found
@@ -457,7 +453,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node.
+   * Returns the ExecutableElement for the given method invocation.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @param elements the javac element utilities
@@ -513,7 +509,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Returns the ExecutableElement for the called method, from a call.
+   * Returns the ExecutableElement for the given method invocation.
    *
    * @param tree a method call
    * @return the ExecutableElement for the called method
@@ -525,7 +521,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the element for a method corresponding to a declaration.
+   * Returns the ExecutableElement for the given method declaration.
    *
    * @param tree a method declaration
    * @return the element for the given method
@@ -539,7 +535,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node.
+   * Returns the ExecutableElement for the given method declaration.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @return the Element for the given tree, or null if one could not be found
@@ -552,7 +548,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node.
+   * Returns the ExecutableElement for the given method declaration.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @return the Element for the given tree, or null if one could not be found
@@ -565,7 +561,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node.
+   * Returns the ExecutableElement for the given constructor invocation.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
@@ -580,7 +576,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node.
+   * Returns the ExecutableElement for the given constructor invocation.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
@@ -595,7 +591,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the ExecutableElement for the called constructor, from a constructor invocation.
+   * Returns the ExecutableElement for the given constructor invocation.
    *
    * @param tree a constructor invocation
    * @return the ExecutableElement for the called constructor
@@ -604,11 +600,11 @@ public final class TreeUtils {
   @Pure
   public static ExecutableElement elementFromUse(NewClassTree tree) {
     // No need for correctExecutableElementWithinDefaultMethod; this is a constructor, not a method.
-    return TreeUtils.elementFromTree(tree);
+    return (ExecutableElement) TreeUtils.elementFromTreeNoCorrection((Tree) tree);
   }
 
   /**
-   * Gets the element for a variable corresponding to its declaration.
+   * Returns the VariableElement corresponding to the given variable declaration.
    *
    * @param tree the variable
    * @return the element for the given variable
@@ -623,7 +619,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node.
+   * Returns the VariableElement corresponding to the given variable declaration.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @return the Element for the given tree, or null if one could not be found
@@ -636,7 +632,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node.
+   * Returns the VariableElement corresponding to the given variable declaration.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @return the Element for the given tree, or null if one could not be found
@@ -661,8 +657,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link VariableElement} for the given Tree API node. For an object instantiation
-   * returns the value of the {@link JCNewClass#constructor} field.
+   * Returns the {@link VariableElement} for the given Tree API node.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
@@ -784,8 +779,8 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node. For an object instantiation returns the
-   * value of the {@link JCNewClass#constructor} field.
+   * Returns the {@link Element} for the given Tree API node. For an object instantiation returns
+   * the value of the {@link JCNewClass#constructor} field.
    *
    * <p>Use this only when you do not statically know whether the tree is a declaration or a use of
    * an element.
@@ -1896,7 +1891,8 @@ public final class TreeUtils {
    */
   public static boolean isLocalVariable(Tree tree) {
     if (tree.getKind() == Tree.Kind.VARIABLE) {
-      return elementFromDeclaration((VariableTree) tree).getKind() == ElementKind.LOCAL_VARIABLE;
+      VariableElement varElt = elementFromDeclaration((VariableTree) tree);
+      return varElt != null && varElt.getKind() == ElementKind.LOCAL_VARIABLE;
     } else if (tree.getKind() == Tree.Kind.IDENTIFIER) {
       ExpressionTree etree = (ExpressionTree) tree;
       assert isUseOfElement(etree) : "@AssumeAssertion(nullness): tree kind";
