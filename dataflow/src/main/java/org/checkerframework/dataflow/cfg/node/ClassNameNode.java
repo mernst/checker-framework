@@ -12,6 +12,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -48,8 +49,12 @@ public class ClassNameNode extends Node {
   public ClassNameNode(ClassTree tree) {
     super(TreeUtils.typeOf(tree));
     this.tree = tree;
-    this.element = TreeUtils.elementFromDeclaration(tree);
-    assert element instanceof TypeElement || element instanceof TypeParameterElement;
+    Element element = TreeUtils.elementFromDeclaration(tree);
+    if (element instanceof TypeElement || element instanceof TypeParameterElement) {
+      throw new BugInCF(
+          "bad element %s [%s] for %s [%s]", element, element.getClass(), tree, tree.getClass());
+    }
+    this.element = element;
     this.parent = null;
   }
 
