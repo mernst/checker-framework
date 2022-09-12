@@ -597,6 +597,7 @@ public final class TreeUtils {
    * @return the ExecutableElement for the called constructor
    * @see #constructor(NewClassTree)
    */
+  @SuppressWarnings("nullness:return")
   @Pure
   public static ExecutableElement elementFromUse(NewClassTree tree) {
     // No need for correctExecutableElementWithinDefaultMethod; this is a constructor, not a method.
