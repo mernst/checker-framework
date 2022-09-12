@@ -401,6 +401,11 @@ public final class TreeUtils {
     return TreeUtils.elementFromTreeNoCorrection(tree);
   }
 
+  @Pure
+  public static @Nullable ExecutableElement elementFromUseNotObject(MethodInvocationTree tree) {
+    return elementFromTreeNotObject(tree);
+  }
+
   /**
    * Gets the element for a method corresponding to a declaration.
    *
@@ -408,7 +413,9 @@ public final class TreeUtils {
    * @return the element for the given method
    */
   public static ExecutableElement elementFromDeclaration(MethodTree tree) {
-    ExecutableElement elt = TreeUtils.elementFromTree(tree);
+    ExecutableElement elt = (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
+    // This is a method DECLARATION, so no special handling with
+    // correctExecutableElementWithinDefaultMethod is required.
     assert elt != null : "@AssumeAssertion(nullness): tree kind";
     return elt;
   }
@@ -418,12 +425,14 @@ public final class TreeUtils {
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @return the Element for the given tree, or null if one could not be found
+   * @deprecated use elementFromDeclaration
    */
+  @Deprecated
   @Pure
   public static ExecutableElement elementFromTree(MethodTree tree) {
-    // This is a method DECLARATION, so no special handling with
-    // correctExecutableElementWithinDefaultMethod is required.
-    return (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
+    ExecutableElement elt = TreeUtils.elementFromTree(tree);
+    assert elt != null : "@AssumeAssertion(nullness): tree kind";
+    return elt;
   }
 
   /**
@@ -473,7 +482,7 @@ public final class TreeUtils {
    */
   @Pure
   public static @Nullable VariableElement elementFromTree(VariableTree tree) {
-    VariableElement result = variableElementFromTree((Tree) tree);
+    VariableElement result = elementFromDeclaration((Tree) tree);
     // `result` can be null, for example for this variable declaration:
     //   PureFunc f1 = TestPure1::myPureMethod;
     return result;
@@ -758,11 +767,6 @@ public final class TreeUtils {
   }
 
   @Pure
-  public static @Nullable ExecutableElement elementFromUseNotObject(MethodInvocationTree tree) {
-    return elementFromTreeNotObject(tree);
-  }
-
-  @Pure
   public static @Nullable Element elementFromUseNotExecutable(Tree tree) {
     return elementFromTreeNotExecutable(tree);
   }
@@ -882,6 +886,7 @@ public final class TreeUtils {
   /**
    * Returns the name of the invoked method.
    *
+   * @param tree the method invocation
    * @return the name of the invoked method
    */
   public static Name methodName(MethodInvocationTree tree) {
@@ -898,6 +903,7 @@ public final class TreeUtils {
    * Returns true if the first statement in the body is a self constructor invocation within a
    * constructor.
    *
+   * @param tree the method declaration
    * @return true if the first statement in the body is a self constructor invocation within a
    *     constructor
    */
@@ -1023,6 +1029,9 @@ public final class TreeUtils {
    *   <li>a reference to a final variable initialized with a compile time constant
    *   <li>a String concatenation of two compile time constants
    * </ol>
+   *
+   * @param tree the tree to check
+   * @return true if the tree is a constant-time expression.
    */
   public static boolean isCompileTimeString(ExpressionTree tree) {
     tree = TreeUtils.withoutParens(tree);
@@ -1638,7 +1647,7 @@ public final class TreeUtils {
 
   /**
    * Determines whether or not the given {@link MethodTree} is an anonymous constructor (the
-   * constructor for an anonymous class.
+   * constructor for an anonymous class).
    *
    * @param method a method tree that may be an anonymous constructor
    * @return true if the given path points to an anonymous constructor, false if it does not
