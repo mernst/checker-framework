@@ -36,6 +36,11 @@ class TypeFromMemberVisitor extends TypeFromTreeVisitor {
     // are added to the type below).
     AnnotatedTypeMirror result = TypeFromTree.fromTypeTree(f, variableTree.getType());
 
+    // TODO: Why is this needed??  Probably remove.
+    if (elt == null) {
+      return result;
+    }
+
     // Handle any annotations in variableTree.getModifiers().
     List<AnnotationMirror> modifierAnnos;
     List<? extends AnnotationTree> annoTrees = variableTree.getModifiers().getAnnotations();

@@ -315,7 +315,7 @@ public abstract class CFAbstractTransfer<
       Element enclosingElement = null;
       if (enclosingTree.getKind() == Tree.Kind.METHOD) {
         // If it is in an initializer, we need to use locals from the initializer.
-        enclosingElement = TreeUtils.elementFromTree((MethodTree) enclosingTree);
+        enclosingElement = TreeUtils.elementFromDeclaration((MethodTree) enclosingTree);
 
       } else if (TreeUtils.isClassTree(enclosingTree)) {
 
