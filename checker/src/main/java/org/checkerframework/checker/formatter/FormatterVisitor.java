@@ -111,6 +111,7 @@ public class FormatterVisitor extends BaseTypeVisitor<FormatterAnnotatedTypeFact
                   default:
                     if (!fc.isValidArgument(formatCat, argType)) {
                       // II.3
+                      // NoCorrection because no Object methods are formatter methods
                       ExecutableElement method = TreeUtils.elementFromUseNoCorrection(node);
                       CharSequence methodName = ElementUtils.getSimpleNameOrDescription(method);
                       ftu.failure(
@@ -205,6 +206,7 @@ public class FormatterVisitor extends BaseTypeVisitor<FormatterAnnotatedTypeFact
       return false;
     }
 
+    // NoCorrection because no Object methods are formatter methods.
     ExecutableElement calledMethodElement = TreeUtils.elementFromUseNoCorrection(invocationTree);
     int callIndex = formatStringIndex(calledMethodElement);
     if (callIndex == -1) {

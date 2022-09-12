@@ -66,7 +66,7 @@ public class CalledMethodsVisitor extends AccumulationVisitor {
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
 
     if (checker.getBooleanOption(CalledMethodsChecker.COUNT_FRAMEWORK_BUILD_CALLS)) {
-      // No Object methods are build methods
+      // NoCorrection because no Object methods are build methods
       ExecutableElement element = TreeUtils.elementFromUseNoCorrection(node);
       for (BuilderFrameworkSupport builderFrameworkSupport :
           ((CalledMethodsAnnotatedTypeFactory) getTypeFactory()).getBuilderFrameworkSupports()) {

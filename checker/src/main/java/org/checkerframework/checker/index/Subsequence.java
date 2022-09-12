@@ -49,6 +49,7 @@ public class Subsequence {
       return null;
     }
 
+    // NoCorrection because no Object method returns a sequence
     Element element = TreeUtils.elementFromTreeNoCorrection(varTree);
     AnnotationMirror hasSub = factory.getDeclAnnotation(element, HasSubsequence.class);
     return createSubsequence(hasSub, factory);

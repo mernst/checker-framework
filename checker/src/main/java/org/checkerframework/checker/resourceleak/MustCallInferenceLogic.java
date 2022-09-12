@@ -103,7 +103,7 @@ public class MustCallInferenceLogic {
     Element receiverEl = TreeUtils.elementFromTreeNoCorrection(receiver.getTree());
 
     if (receiverEl != null && typeFactory.isCandidateOwningField(receiverEl)) {
-      // NoCorrection because only the simple name matters
+      // NoCorrection because only the simple name matters.  (Do I need to get the Element?)
       Element method = TreeUtils.elementFromTreeNoCorrection(mNode.getTree());
       List<String> mustCallValues = typeFactory.getMustCallValue(receiverEl);
 
