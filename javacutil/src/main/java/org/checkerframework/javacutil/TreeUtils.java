@@ -430,7 +430,7 @@ public final class TreeUtils {
   @Deprecated
   @Pure
   public static ExecutableElement elementFromTree(MethodTree tree) {
-    ExecutableElement elt = TreeUtils.elementFromTree(tree);
+    ExecutableElement elt = TreeUtils.elementFromDeclaration(tree);
     assert elt != null : "@AssumeAssertion(nullness): tree kind";
     return elt;
   }
@@ -469,7 +469,7 @@ public final class TreeUtils {
    * @return the element for the given variable
    */
   public static VariableElement elementFromDeclaration(VariableTree tree) {
-    VariableElement elt = TreeUtils.elementFromTree(tree);
+    VariableElement elt = (VariableElement) TreeUtils.elementFromTreeNoCorrection((Tree) tree);
     assert elt != null : "@AssumeAssertion(nullness): tree kind";
     return elt;
   }
@@ -482,7 +482,7 @@ public final class TreeUtils {
    */
   @Pure
   public static @Nullable VariableElement elementFromTree(VariableTree tree) {
-    VariableElement result = elementFromDeclaration((Tree) tree);
+    VariableElement result = elementFromDeclaration(tree);
     // `result` can be null, for example for this variable declaration:
     //   PureFunc f1 = TestPure1::myPureMethod;
     return result;
