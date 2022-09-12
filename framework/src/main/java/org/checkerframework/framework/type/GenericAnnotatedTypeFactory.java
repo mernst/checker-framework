@@ -1347,7 +1347,6 @@ public abstract class GenericAnnotatedTypeFactory<
               ExpressionTree initializer = vt.getInitializer();
               AnnotatedTypeMirror declaredType = getAnnotatedTypeLhs(vt);
               Value declaredValue = analysis.createAbstractValue(declaredType);
-              System.out.printf("About to call fromVariableTree on %s [%s]%n", vt, vt.getClass());
               FieldAccess fieldExpr = (FieldAccess) JavaExpression.fromVariableTree(vt);
               // analyze initializer if present
               if (initializer != null) {
