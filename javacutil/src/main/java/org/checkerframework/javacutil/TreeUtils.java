@@ -291,14 +291,15 @@ public final class TreeUtils {
    * @param tree class declaration
    * @return the element for the given class
    */
-  public static TypeElement elementFromDeclaration(ClassTree tree) {
+  public static @Nullable TypeElement elementFromDeclaration(ClassTree tree) {
     TypeElement result = (TypeElement) TreeInfo.symbolFor((JCTree) tree);
-    assert result != null : "@AssumeAssertion(nullness): tree kind";
     return result;
   }
 
   /**
    * Returns the type element corresponding to the given class declaration.
+   *
+   * <p>The TypeElement may be null for an anonymous class.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @return the {@link Symbol} for the given tree, or null if one could not be found
@@ -306,7 +307,7 @@ public final class TreeUtils {
    */
   @Deprecated // not for removal; retain to prevent calls to this overload
   @Pure
-  public static TypeElement elementFromTree(ClassTree tree) {
+  public static @Nullable TypeElement elementFromTree(ClassTree tree) {
     return elementFromDeclaration(tree);
   }
 
@@ -319,7 +320,7 @@ public final class TreeUtils {
    */
   @Deprecated // not for removal; retain to prevent calls to this overload
   @Pure
-  public static TypeElement elementFromUse(ClassTree tree) {
+  public static @Nullable TypeElement elementFromUse(ClassTree tree) {
     return elementFromDeclaration(tree);
   }
 
@@ -597,6 +598,7 @@ public final class TreeUtils {
    * @return the ExecutableElement for the called constructor
    * @see #constructor(NewClassTree)
    */
+  @SuppressWarnings("nullness:return")
   @Pure
   public static ExecutableElement elementFromUse(NewClassTree tree) {
     // No need for correctExecutableElementWithinDefaultMethod; this is a constructor, not a method.
@@ -900,7 +902,7 @@ public final class TreeUtils {
    */
   public static ExecutableElement getSuperConstructor(NewClassTree newClassTree) {
     if (newClassTree.getClassBody() == null) {
-      return constructor(newClassTree);
+      return elementFromUse(newClassTree);
     }
     JCNewClass jcNewClass = (JCNewClass) newClassTree;
     // Anonymous constructor bodies, which are always synthetic, contain exactly one statement in
@@ -927,8 +929,9 @@ public final class TreeUtils {
    * @see #elementFromUse(NewClassTree)
    * @param tree the constructor invocation
    * @return the {@link ExecutableElement} corresponding to the constructor call in {@code tree}
+   * @deprecated use elementFromUse instead
    */
-  // TODO: rename to elementFromTree or elementFromUse?
+  @Deprecated // 2022-09-12
   public static ExecutableElement constructor(NewClassTree tree) {
     return (ExecutableElement) ((JCNewClass) tree).constructor;
   }
@@ -1074,6 +1077,9 @@ public final class TreeUtils {
    */
   public static boolean hasExplicitConstructor(ClassTree tree) {
     TypeElement elem = TreeUtils.elementFromDeclaration(tree);
+    if (elem == null) {
+      return false;
+    }
     for (ExecutableElement constructorElt :
         ElementFilter.constructorsIn(elem.getEnclosedElements())) {
       if (!isSynthetic(constructorElt)) {
