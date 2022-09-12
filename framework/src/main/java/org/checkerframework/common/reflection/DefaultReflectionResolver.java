@@ -98,7 +98,7 @@ public class DefaultReflectionResolver implements ReflectionResolver {
       MethodInvocationTree tree,
       ParameterizedExecutableType origResult) {
     assert isReflectiveMethodInvocation(tree);
-    if (provider.getDeclAnnotation(TreeUtils.elementFromTree(tree, elements), NewInstance.class)
+    if (provider.getDeclAnnotation(TreeUtils.elementFromUse(tree, elements), NewInstance.class)
         != null) {
       return resolveConstructorCall(factory, tree, origResult);
     } else {

@@ -189,7 +189,8 @@ public class FormatterTreeUtil {
       return null;
     }
 
-    ExecutableElement methodElement = TreeUtils.elementFromUseNotObject(invocationTree);
+    ExecutableElement methodElement =
+        (ExecutableElement) TreeUtils.elementFromUseNotObject(invocationTree);
     int formatStringIndex = FormatterVisitor.formatStringIndex(methodElement);
     if (formatStringIndex == -1) {
       // Reporting the error is redundant if the method was declared in source code, because the

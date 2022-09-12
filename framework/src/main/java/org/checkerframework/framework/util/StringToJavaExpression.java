@@ -250,7 +250,7 @@ public interface StringToJavaExpression {
       String expression, MemberSelectTree fieldAccess, SourceChecker checker)
       throws JavaExpressionParseException {
 
-    VariableElement fieldEle = TreeUtils.variableElementFromUse(fieldAccess);
+    VariableElement fieldEle = TreeUtils.variableElementFromUseNoCorrection(fieldAccess);
     JavaExpression receiver = JavaExpression.fromTree(fieldAccess.getExpression());
     JavaExpression javaExpr = StringToJavaExpression.atFieldDecl(expression, fieldEle, checker);
     return javaExpr.atFieldAccess(receiver);

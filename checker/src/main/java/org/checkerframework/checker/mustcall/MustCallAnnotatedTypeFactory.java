@@ -196,7 +196,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
     if (tree instanceof MethodInvocationTree) {
       declaration = TreeUtils.elementFromUse((MethodInvocationTree) tree, elements);
     } else if (tree instanceof MemberReferenceTree) {
-      declaration = (ExecutableElement) TreeUtils.elementFromTree(tree, elements);
+      declaration = (ExecutableElement) TreeUtils.elementFromUse(tree, elements);
     } else {
       throw new TypeSystemError("unexpected type of method tree: " + tree.getKind());
     }
@@ -416,7 +416,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
 
     @Override
     public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror type) {
-      Element elt = TreeUtils.elementFromTree(node, elements);
+      Element elt = TreeUtils.elementFromUse(node, elements);
       if (elt.getKind() == ElementKind.PARAMETER
           && (checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
               || getDeclAnnotation(elt, Owning.class) == null)) {

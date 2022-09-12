@@ -44,11 +44,11 @@ public class FieldAccessNode extends Node {
     if (tree instanceof MemberSelectTree) {
       MemberSelectTree mstree = (MemberSelectTree) tree;
       assert TreeUtils.isUseOfElement(mstree) : "@AssumeAssertion(nullness): tree kind";
-      this.element = TreeUtils.variableElementFromUse(mstree);
+      this.element = TreeUtils.variableElementFromUseNoCorrection(mstree);
     } else if (tree instanceof IdentifierTree) {
       IdentifierTree itree = (IdentifierTree) tree;
       assert TreeUtils.isUseOfElement(itree) : "@AssumeAssertion(nullness): tree kind";
-      this.element = TreeUtils.variableElementFromUse(itree);
+      this.element = TreeUtils.variableElementFromUseNoCorrection(itree);
     } else {
       throw new BugInCF("unexpected tree %s [%s]", tree, tree.getClass());
     }
