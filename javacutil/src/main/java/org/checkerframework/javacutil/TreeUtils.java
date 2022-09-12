@@ -600,7 +600,7 @@ public final class TreeUtils {
   @Pure
   public static ExecutableElement elementFromUse(NewClassTree tree) {
     // No need for correctExecutableElementWithinDefaultMethod; this is a constructor, not a method.
-    return TreeUtils.elementFromTree(tree);
+    return (ExecutableElement) TreeUtils.elementFromTreeNoCorrection((Tree) tree);
   }
 
   /**
