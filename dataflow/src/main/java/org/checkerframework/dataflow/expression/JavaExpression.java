@@ -438,7 +438,7 @@ public abstract class JavaExpression {
         } else if (ElementUtils.isTypeElement(ele)) {
           result = new ClassName(ele.asType());
         } else {
-          result = fromVariableElement(typeOfId, (VariableElement) ele);
+          result = fromVariableElement(typeOfId, (VariableElement) ele, identifierTree);
         }
         break;
 
@@ -494,11 +494,7 @@ public abstract class JavaExpression {
    * @return a JavaExpression for {@code tree}
    */
   public static JavaExpression fromVariableTree(VariableTree tree) {
-    VariableElement varElt = TreeUtils.elementFromDeclaration(tree);
-    if (varElt == null) {
-      throw new BugInCF("what to do? %s [%s]", tree, tree.getClass());
-    }
-    return fromVariableElement(TreeUtils.typeOf(tree), varElt);
+    return fromVariableElement(TreeUtils.typeOf(tree), varElt, tree);
   }
 
   /**
@@ -508,7 +504,11 @@ public abstract class JavaExpression {
    * @param ele element whose JavaExpression is returned
    * @return the Java expression corresponding to the given variable element {@code ele}
    */
-  private static JavaExpression fromVariableElement(TypeMirror typeOfEle, VariableElement ele) {
+  private static JavaExpression fromVariableElement(
+      TypeMirror typeOfEle, VariableElement ele, Tree tree) {
+    if (ele == null) {
+      return new Unknown(tree);
+    }
     switch (ele.getKind()) {
       case LOCAL_VARIABLE:
       case RESOURCE_VARIABLE:
