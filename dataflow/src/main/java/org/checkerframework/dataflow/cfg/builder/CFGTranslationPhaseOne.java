@@ -1451,8 +1451,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
     ExtendedNode extendedNode = extendWithNodeWithExceptions(node, thrownSet);
 
     /* Check for the TerminatesExecution annotation. */
-    // TODO: How does this differ from elementFromUse which is used above?
-    Element methodElement = TreeUtils.elementFromTree(tree, elements);
+    Element methodElement = TreeUtils.elementFromUse(tree, elements);
     boolean terminatesExecution =
         annotationProvider.getDeclAnnotation(methodElement, TerminatesExecution.class) != null;
     if (terminatesExecution) {

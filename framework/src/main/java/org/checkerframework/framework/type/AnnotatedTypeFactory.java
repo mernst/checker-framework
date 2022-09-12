@@ -1952,7 +1952,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         : "Unexpected tree kind: " + tree.getKind();
 
     // Return null if the element kind has no receiver.
-    Element element = TreeUtils.elementFromTree(tree, elements);
+    Element element = TreeUtils.elementFromUse(tree, elements);
     assert element != null : "Unexpected null element for tree: " + tree;
     if (!ElementUtils.hasReceiver(element)) {
       return null;
