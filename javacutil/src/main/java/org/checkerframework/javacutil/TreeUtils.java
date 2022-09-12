@@ -411,12 +411,11 @@ public final class TreeUtils {
    * Gets the VariableElement for the declaration corresponding to this use of an element.
    *
    * @param tree the tree corresponding to a use of an element
-   * @param elements the javac element utilities
    * @return the element for the corresponding declaration, {@code null} otherwise
    */
   @Pure
-  public static VariableElement variableElementFromUse(ExpressionTree tree, Elements elements) {
-    VariableElement result = (VariableElement) TreeUtils.elementFromTree(tree, elements);
+  public static VariableElement variableElementFromUse(ExpressionTree tree) {
+    VariableElement result = (VariableElement) TreeUtils.elementFromTreeNoCorrection(tree);
     if (result == null) {
       throw new BugInCF("null element for %s [%s]", tree, tree.getClass());
     }

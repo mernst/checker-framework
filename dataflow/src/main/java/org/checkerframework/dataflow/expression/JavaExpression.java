@@ -10,6 +10,7 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewArrayTree;
 import com.sun.source.tree.NewClassTree;
+import com.sun.source.tree.Tree;
 import com.sun.source.tree.UnaryTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
@@ -494,7 +495,8 @@ public abstract class JavaExpression {
    * @return a JavaExpression for {@code tree}
    */
   public static JavaExpression fromVariableTree(VariableTree tree) {
-    return fromVariableElement(TreeUtils.typeOf(tree), varElt, tree);
+    return fromVariableElement(
+        TreeUtils.typeOf(tree), TreeUtils.elementFromDeclaration(tree), tree);
   }
 
   /**
@@ -505,7 +507,7 @@ public abstract class JavaExpression {
    * @return the Java expression corresponding to the given variable element {@code ele}
    */
   private static JavaExpression fromVariableElement(
-      TypeMirror typeOfEle, VariableElement ele, Tree tree) {
+      TypeMirror typeOfEle, @Nullable VariableElement ele, Tree tree) {
     if (ele == null) {
       return new Unknown(tree);
     }
@@ -699,6 +701,7 @@ public abstract class JavaExpression {
    * @return viewpoint-adapted version of this
    */
   public final JavaExpression atMethodBody(MethodTree methodTree) {
+    @SuppressWarnings("nullness:argument") // elementFromDeclaration is non-null for a parameter
     List<JavaExpression> parametersJe =
         CollectionsPlume.mapList(
             (VariableTree param) -> new LocalVariable(TreeUtils.elementFromDeclaration(param)),
