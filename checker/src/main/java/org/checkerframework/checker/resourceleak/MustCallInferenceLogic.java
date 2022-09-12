@@ -9,6 +9,7 @@ import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.util.Elements;
 import org.checkerframework.checker.mustcall.qual.Owning;
 import org.checkerframework.common.wholeprograminference.WholeProgramInference;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
@@ -37,6 +38,9 @@ public class MustCallInferenceLogic {
    */
   private final ResourceLeakAnnotatedTypeFactory typeFactory;
 
+  /** The javac element utilities. */
+  private final Elements elements;
+
   /** The {@link Owning} annotation. */
   protected final AnnotationMirror OWNING;
 
@@ -53,6 +57,7 @@ public class MustCallInferenceLogic {
    */
   MustCallInferenceLogic(ResourceLeakAnnotatedTypeFactory typeFactory, ControlFlowGraph cfg) {
     this.typeFactory = typeFactory;
+    this.elements = typeFactory.getElementUtils();
     this.cfg = cfg;
     OWNING = AnnotationBuilder.fromClass(this.typeFactory.getElementUtils(), Owning.class);
   }
@@ -99,12 +104,10 @@ public class MustCallInferenceLogic {
       return;
     }
 
-    // NoCorrection because only fields are relevant
-    Element receiverEl = TreeUtils.elementFromTreeNoCorrection(receiver.getTree());
+    Element receiverEl = TreeUtils.elementFromTree(receiver.getTree(), elements);
 
     if (receiverEl != null && typeFactory.isCandidateOwningField(receiverEl)) {
-      // NoCorrection because only the simple name matters.  (Do I need to get the Element?)
-      Element method = TreeUtils.elementFromTreeNoCorrection(mNode.getTree());
+      Element method = TreeUtils.elementFromTree(mNode.getTree(), elements);
       List<String> mustCallValues = typeFactory.getMustCallValue(receiverEl);
 
       // This assumes that any MustCall annotation has at most one element.

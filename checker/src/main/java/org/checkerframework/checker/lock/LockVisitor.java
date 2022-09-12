@@ -1017,8 +1017,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
    * @return true if the symbol for the given tree is final or effectively final
    */
   private boolean isTreeSymbolEffectivelyFinalOrUnmodifiable(Tree tree) {
-    // "NoCorrection" because all METHOD symbols are treated the same.
-    Element elem = TreeUtils.elementFromTreeNoCorrection(tree);
+    Element elem = TreeUtils.elementFromTree(tree, elements);
     ElementKind ek = elem.getKind();
     return ek == ElementKind.PACKAGE
         || ek == ElementKind.CLASS

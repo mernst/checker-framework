@@ -240,8 +240,7 @@ public class NullnessVisitor
   /** Case 1: Check for null dereferencing. */
   @Override
   public Void visitMemberSelect(MemberSelectTree node, Void p) {
-    // "NoCorrection" because we won't do anything if the element is an ExecutableElement.
-    Element e = TreeUtils.elementFromTreeNoCorrection(node);
+    Element e = TreeUtils.elementFromTree(node, elements);
     if (e.getKind() == ElementKind.CLASS) {
       if (atypeFactory.containsNullnessAnnotation(null, node.getExpression())) {
         checker.reportError(node, "nullness.on.outer");

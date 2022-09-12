@@ -203,7 +203,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
   /** Annotation processing environment and its associated type and tree utilities. */
   final ProcessingEnvironment env;
 
-  final Elements elements;
+  protected final Elements elements;
   final Types types;
   final Trees trees;
   public final TreeBuilder treeBuilder;
@@ -1626,7 +1626,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
       FieldAccessNode target = new FieldAccessNode(variable, receiver);
       target.setLValue();
 
-      Element element = TreeUtils.elementFromUseNoCorrection(variable);
+      Element element = TreeUtils.elementFromUse(variable, elements);
       if (ElementUtils.isStatic(element) || receiver instanceof ThisNode) {
         // No NullPointerException can be thrown, use normal node
         extendWithNode(target);
@@ -3312,7 +3312,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
     Node expr = scan(tree.getExpression(), p);
     if (!TreeUtils.isFieldAccess(tree)) {
       // Could be a selector of a class or package
-      Element element = TreeUtils.elementFromUseNoCorrection(tree);
+      Element element = TreeUtils.elementFromUse(tree, elements);
       if (ElementUtils.isTypeElement(element)) {
         ClassNameNode result = new ClassNameNode(tree, expr);
         extendWithClassNameNode(result);
@@ -3328,7 +3328,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
 
     Node node = new FieldAccessNode(tree, expr);
 
-    Element element = TreeUtils.elementFromUseNoCorrection(tree);
+    Element element = TreeUtils.elementFromUse(tree, elements);
     if (ElementUtils.isStatic(element)
         || expr instanceof ImplicitThisNode
         || expr instanceof ExplicitThisNode) {

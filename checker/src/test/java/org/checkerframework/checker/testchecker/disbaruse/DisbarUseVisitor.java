@@ -54,8 +54,7 @@ public class DisbarUseVisitor extends BaseTypeVisitor<DisbarUseTypeFactory> {
             : new ExpressionTree[] {enclosingMemberSel, node};
 
     for (ExpressionTree memberSel : expressionTrees) {
-      // "NoCorrection" because we only care about fields & parameters
-      final Element elem = TreeUtils.elementFromUseNoCorrection(memberSel);
+      final Element elem = TreeUtils.elementFromUse(memberSel, elements);
 
       // We only issue errors for variables that are fields or parameters:
       if (elem != null && (elem.getKind().isField() || elem.getKind() == ElementKind.PARAMETER)) {

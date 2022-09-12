@@ -205,8 +205,7 @@ public class OptionalVisitor
     // Use transfer functions and Store entries.
     ExpressionTree receiver = isPresentCall.second;
     if (sameExpression(receiver, getReceiver)) {
-      // "NoCorrection" because only its simple name is used.  (Do I need to get the Element?)
-      ExecutableElement ele = TreeUtils.elementFromUseNoCorrection((MethodInvocationTree) trueExpr);
+      ExecutableElement ele = TreeUtils.elementFromUse((MethodInvocationTree) trueExpr, elements);
 
       checker.reportWarning(
           node,

@@ -464,8 +464,8 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
       return false;
     }
 
-    Tree left = node.getLeftOperand();
-    Tree right = node.getRightOperand();
+    ExpressionTree left = node.getLeftOperand();
+    ExpressionTree right = node.getRightOperand();
 
     // Only valid if we're comparing identifiers.
     if (!(left.getKind() == Tree.Kind.IDENTIFIER && right.getKind() == Tree.Kind.IDENTIFIER)) {
@@ -521,9 +521,8 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
     ExecutableElement enclosingMethod = TreeUtils.elementFromDeclaration(methodTree);
     assert enclosingMethod != null;
 
-    // "NoCorrection" because Object methods are irrelevant to interning
-    final Element lhs = TreeUtils.elementFromUseNoCorrection(left);
-    final Element rhs = TreeUtils.elementFromUseNoCorrection(right);
+    final Element lhs = TreeUtils.elementFromUse(left, elements);
+    final Element rhs = TreeUtils.elementFromUse(right, elements);
 
     // Matcher to check for if statement that returns zero
     Heuristics.Matcher matcherIfReturnsZero =
@@ -750,17 +749,16 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
       return false;
     }
 
-    Tree left = TreeUtils.withoutParens(node.getLeftOperand());
-    Tree right = TreeUtils.withoutParens(node.getRightOperand());
+    ExpressionTree left = TreeUtils.withoutParens(node.getLeftOperand());
+    ExpressionTree right = TreeUtils.withoutParens(node.getRightOperand());
 
     // Only valid if we're comparing identifiers.
     if (!(left.getKind() == Tree.Kind.IDENTIFIER && right.getKind() == Tree.Kind.IDENTIFIER)) {
       return false;
     }
 
-    // "NoCorrection" because Object methods are irrelevant to interning
-    final Element lhs = TreeUtils.elementFromUseNoCorrection(left);
-    final Element rhs = TreeUtils.elementFromUseNoCorrection(right);
+    final Element lhs = TreeUtils.elementFromUse(left, elements);
+    final Element rhs = TreeUtils.elementFromUse(right, elements);
 
     // looking for ((a == b || a.compareTo(b) == 0)
     Heuristics.Matcher matcherEqOrCompareTo =
@@ -825,8 +823,7 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
               return false;
             }
 
-            // NoCorrection because it will be compared against a VariableElement.
-            Element refElt = TreeUtils.elementFromUseNoCorrection(member.getExpression());
+            Element refElt = TreeUtils.elementFromUse(member.getExpression(), elements);
 
             if (!((refElt.equals(lhs) && argElt.equals(rhs))
                 || (refElt.equals(rhs) && argElt.equals(lhs)))) {

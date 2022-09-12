@@ -422,7 +422,7 @@ public class QualifierDefaults {
       if (element != null) {
         return element;
       } else {
-        return TreeUtils.elementFromTreeNoCorrection(tree);
+        return TreeUtils.elementFromTree(tree, elements);
       }
     }
 

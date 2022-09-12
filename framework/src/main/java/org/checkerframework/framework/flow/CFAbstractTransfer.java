@@ -327,7 +327,7 @@ public abstract class CFAbstractTransfer<
         TreePath loopTree = factory.getPath(lambda.getLambdaTree()).getParentPath();
         Element anEnclosingElement = null;
         while (loopTree.getLeaf() != enclosingTree) {
-          Element sym = TreeUtils.elementFromTreeNoCorrection(loopTree.getLeaf());
+          Element sym = TreeUtils.elementFromTree(loopTree.getLeaf(), elements);
           if (sym != null) {
             anEnclosingElement = sym;
             break;
@@ -335,7 +335,7 @@ public abstract class CFAbstractTransfer<
           loopTree = loopTree.getParentPath();
         }
         while (anEnclosingElement != null
-            && !anEnclosingElement.equals(TreeUtils.elementFromTreeNoCorrection(enclosingTree))) {
+            && !anEnclosingElement.equals(TreeUtils.elementFromTree(enclosingTree, elements))) {
           if (anEnclosingElement.getKind() == ElementKind.INSTANCE_INIT
               || anEnclosingElement.getKind() == ElementKind.STATIC_INIT) {
             enclosingElement = anEnclosingElement;

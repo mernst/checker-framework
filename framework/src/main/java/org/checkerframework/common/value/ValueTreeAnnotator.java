@@ -614,7 +614,7 @@ class ValueTreeAnnotator extends TreeAnnotator {
    * @param type the type of that tree
    */
   private void visitEnumConstant(ExpressionTree tree, AnnotatedTypeMirror type) {
-    Element decl = TreeUtils.elementFromTreeNoCorrection(tree);
+    Element decl = TreeUtils.elementFromTree(tree, elements);
     if (decl.getKind() != ElementKind.ENUM_CONSTANT) {
       return;
     }

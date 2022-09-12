@@ -416,8 +416,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
 
     @Override
     public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror type) {
-      // "NoCorrection" because we only care if it is a parameter or resource variable.
-      Element elt = TreeUtils.elementFromTreeNoCorrection(node);
+      Element elt = TreeUtils.elementFromTree(node, elements);
       if (elt.getKind() == ElementKind.PARAMETER
           && (checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
               || getDeclAnnotation(elt, Owning.class) == null)) {

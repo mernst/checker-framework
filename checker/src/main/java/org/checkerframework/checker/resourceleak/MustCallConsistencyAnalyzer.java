@@ -1579,9 +1579,7 @@ class MustCallConsistencyAnalyzer {
       return false;
     }
     MethodInvocationTree methodInvocationTree = node.getTree();
-    // "NoCorrection" because no Object methods have @Owning or @NotOwning.
-    ExecutableElement executableElement =
-        TreeUtils.elementFromUseNoCorrection(methodInvocationTree);
+    ExecutableElement executableElement = TreeUtils.elementFromUse(methodInvocationTree, elements);
     // void methods are "not owning" by construction
     return (ElementUtils.getType(executableElement).getKind() == TypeKind.VOID)
         || (typeFactory.getDeclAnnotation(executableElement, NotOwning.class) != null);

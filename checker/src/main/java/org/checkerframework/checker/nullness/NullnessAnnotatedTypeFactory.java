@@ -540,8 +540,7 @@ public class NullnessAnnotatedTypeFactory
     @Override
     public Void visitMemberSelect(MemberSelectTree node, AnnotatedTypeMirror type) {
 
-      // "NoCorrection" because only checking against null.
-      Element elt = TreeUtils.elementFromUseNoCorrection(node);
+      Element elt = TreeUtils.elementFromUse(node, elements);
       assert elt != null;
       return null;
     }

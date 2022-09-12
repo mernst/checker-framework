@@ -220,7 +220,7 @@ public class ReportVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFactory> {
   @Override
   public Void visitAssignment(AssignmentTree node, Void p) {
     VariableElement member =
-        (VariableElement) TreeUtils.elementFromUseNoCorrection(node.getVariable());
+        (VariableElement) TreeUtils.elementFromUse(node.getVariable(), elements);
     boolean report = this.atypeFactory.getDeclAnnotation(member, ReportWrite.class) != null;
 
     if (report) {
