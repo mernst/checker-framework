@@ -50,9 +50,12 @@ public class ClassNameNode extends Node {
     super(TreeUtils.typeOf(tree));
     this.tree = tree;
     Element element = TreeUtils.elementFromDeclaration(tree);
-    if (element instanceof TypeElement || element instanceof TypeParameterElement) {
+    if (!(element instanceof TypeElement || element instanceof TypeParameterElement)) {
       throw new BugInCF(
-          "bad element %s [%s] for %s [%s]", element, element.getClass(), tree, tree.getClass());
+          "bad element %s for %s [%s]",
+          (element == null) ? "null" : element + "[" + element.getClass() + "]",
+          tree,
+          tree.getClass());
     }
     this.element = element;
     this.parent = null;
