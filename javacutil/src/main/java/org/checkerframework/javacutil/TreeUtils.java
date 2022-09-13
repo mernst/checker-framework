@@ -695,7 +695,7 @@ public final class TreeUtils {
    * element for a declaration, use {@link #elementFromDeclaration(ClassTree)}, {@link
    * #elementFromDeclaration(MethodTree)}, or {@link #elementFromDeclaration(VariableTree)} instead.
    *
-   * <p>Differs from {@link #elementFromUseNoCorrection} in that it does not call {@link
+   * <p>Differs from {@link #elementFromUse} in that it does not call {@link
    * Resolver#correctExecutableElementWithinDefaultMethod}.
    *
    * @param tree the tree corresponding to a use of an element
@@ -704,6 +704,34 @@ public final class TreeUtils {
   @Pure
   public static @Nullable Element elementFromUseNoCorrection(Tree tree) {
     return TreeUtils.elementFromTreeNoCorrection(tree);
+  }
+
+  /**
+   * Like {@code elementFromUse}, but only returns a non-ExecutableElement and does not have an
+   * {@code elements} formal parameter.
+   *
+   * @param tree the tree corresponding to a use of an element
+   * @return the element for the corresponding declaration, {@code null} otherwise
+   */
+  @Pure
+  public static @Nullable Element elementFromUseNotExecutable(Tree tree) {
+    return TreeUtils.elementFromTreeNotExecutable(tree);
+  }
+
+  /**
+   * Like {@code elementFromTree}, but only returns a non-ExecutableElement and does not have an
+   * {@code elements} formal parameter.
+   *
+   * @param tree the tree corresponding to a use of an element
+   * @return the element for the corresponding declaration, {@code null} otherwise
+   */
+  @Pure
+  public static @Nullable Element elementFromTreeNotExecutable(Tree tree) {
+    Element result = TreeUtils.elementFromTreeNoCorrection(tree);
+    if (result instanceof ExecutableElement) {
+      throw new BugInCF("ExecutableElement %s for %s [%s]", result, tree, tree.getClass());
+    }
+    return result;
   }
 
   /** The names of all the methods on java.lang.Object. */

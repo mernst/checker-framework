@@ -113,8 +113,7 @@ class TypeFromTypeTreeVisitor extends TypeFromTreeVisitor {
   public AnnotatedTypeMirror visitParameterizedType(
       ParameterizedTypeTree node, AnnotatedTypeFactory f) {
 
-    // NoCorrection because it's not an ExecutableElement.
-    ClassSymbol baseType = (ClassSymbol) TreeUtils.elementFromTreeNoCorrection(node.getType());
+    ClassSymbol baseType = (ClassSymbol) TreeUtils.elementFromTreeNotExecutable(node.getType());
     updateWildcardBounds(node.getTypeArguments(), baseType.getTypeParameters());
 
     List<AnnotatedTypeMirror> args =

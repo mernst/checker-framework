@@ -36,8 +36,7 @@ public class ClassNameNode extends Node {
     assert tree.getKind() == Tree.Kind.IDENTIFIER;
     this.tree = tree;
     assert TreeUtils.isUseOfElement(tree) : "@AssumeAssertion(nullness): tree kind";
-    // NoCorrection because it's not an ExecutableElement.
-    this.element = TreeUtils.elementFromUseNoCorrection(tree);
+    this.element = TreeUtils.elementFromUseNotExecutable(tree);
     assert element instanceof TypeElement || element instanceof TypeParameterElement;
     this.parent = null;
   }
@@ -66,8 +65,7 @@ public class ClassNameNode extends Node {
     super(TreeUtils.typeOf(tree));
     this.tree = tree;
     assert TreeUtils.isUseOfElement(tree) : "@AssumeAssertion(nullness): tree kind";
-    // NoCorrection because it's not an ExecutableElement.
-    this.element = TreeUtils.elementFromUseNoCorrection(tree);
+    this.element = TreeUtils.elementFromUseNotExecutable(tree);
     assert element instanceof TypeElement || element instanceof TypeParameterElement;
     this.parent = parent;
   }
