@@ -16,7 +16,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
@@ -224,7 +223,7 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
       ExpressionTree valueExp,
       @CompilerMessageKey String errorKey,
       Object... extraArgs) {
-    VariableElement elt = TreeUtils.variableElementFromTree(varTree);
+    Element elt = TreeUtils.elementFromTree(varTree, elements);
     if (elt != null && elt.getKind() == ElementKind.RESOURCE_VARIABLE) {
       commonAssignmentCheckOnResourceVariable = true;
     }
