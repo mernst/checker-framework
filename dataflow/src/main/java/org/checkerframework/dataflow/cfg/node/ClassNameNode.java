@@ -12,7 +12,6 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -36,8 +35,10 @@ public class ClassNameNode extends Node {
     assert tree.getKind() == Tree.Kind.IDENTIFIER;
     this.tree = tree;
     assert TreeUtils.isUseOfElement(tree) : "@AssumeAssertion(nullness): tree kind";
-    this.element = TreeUtils.elementFromUseNotExecutable(tree);
-    assert element instanceof TypeElement || element instanceof TypeParameterElement;
+    Element element = TreeUtils.elementFromUseNotExecutable(tree);
+    assert element instanceof TypeElement || element instanceof TypeParameterElement
+        : "@AssumeAssertion(nullness)";
+    this.element = element;
     this.parent = null;
   }
 
@@ -50,13 +51,8 @@ public class ClassNameNode extends Node {
     super(TreeUtils.typeOf(tree));
     this.tree = tree;
     Element element = TreeUtils.elementFromDeclaration(tree);
-    if (!(element instanceof TypeElement || element instanceof TypeParameterElement)) {
-      throw new BugInCF(
-          "bad element %s for %s [%s]",
-          (element == null) ? "null" : element + "[" + element.getClass() + "]",
-          tree,
-          tree.getClass());
-    }
+    assert element instanceof TypeElement || element instanceof TypeParameterElement
+        : "@AssumeAssertion(nullness)";
     this.element = element;
     this.parent = null;
   }
@@ -65,8 +61,10 @@ public class ClassNameNode extends Node {
     super(TreeUtils.typeOf(tree));
     this.tree = tree;
     assert TreeUtils.isUseOfElement(tree) : "@AssumeAssertion(nullness): tree kind";
-    this.element = TreeUtils.elementFromUseNotExecutable(tree);
-    assert element instanceof TypeElement || element instanceof TypeParameterElement;
+    Element element = TreeUtils.elementFromUseNotExecutable(tree);
+    assert element instanceof TypeElement || element instanceof TypeParameterElement
+        : "@AssumeAssertion(nullness)";
+    this.element = element;
     this.parent = parent;
   }
 
