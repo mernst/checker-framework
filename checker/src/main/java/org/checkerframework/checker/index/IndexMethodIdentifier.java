@@ -94,7 +94,7 @@ public class IndexMethodIdentifier {
       return false;
     }
     return isLengthOfMethodInvocation(
-        // NoCorrection because we are testing for lengthOf.
+        // NoCorrection because testing for lengthOf.
         TreeUtils.elementFromUseNoCorrection((MethodInvocationTree) tree));
   }
 
