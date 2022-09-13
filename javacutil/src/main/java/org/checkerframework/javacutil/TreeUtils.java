@@ -613,11 +613,10 @@ public final class TreeUtils {
    */
   public static @Nullable VariableElement elementFromDeclaration(VariableTree tree) {
     // TODO: change implementation
-    VariableElement elt = (VariableElement) TreeUtils.elementFromTreeNoCorrection((Tree) tree);
+    VariableElement result = (VariableElement) TreeUtils.elementFromTreeNoCorrection((Tree) tree);
     // `result` can be null, for example for this variable declaration:
     //   PureFunc f1 = TestPure1::myPureMethod;
-    assert elt != null : "@AssumeAssertion(nullness): tree kind";
-    return elt;
+    return result;
   }
 
   /**
