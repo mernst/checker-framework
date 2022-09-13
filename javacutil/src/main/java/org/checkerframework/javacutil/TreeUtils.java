@@ -342,11 +342,12 @@ public final class TreeUtils {
    * @param tree the tree corresponding to a use of an element
    * @param elements the javac element utilities
    * @return the element for the corresponding declaration, {@code null} otherwise
+   * @deprecated use elementFromUse
    */
   @Deprecated // not for removal; retain to prevent calls to this overload
   @Pure
   public static @Nullable Element elementFromTree(ExpressionTree tree, Elements elements) {
-    return TreeUtils.elementFromTree((Tree) tree, elements);
+    return TreeUtils.elementFromUse(tree, elements);
   }
 
   /**
@@ -357,7 +358,7 @@ public final class TreeUtils {
    */
   @Pure
   public static @Nullable Element elementFromUse(ExpressionTree tree, Elements elements) {
-    Element result = TreeUtils.elementFromTree(tree, elements);
+    Element result = TreeUtils.elementFromTreeImpl(tree, elements);
     if (result == null) {
       return null;
     }
@@ -379,12 +380,6 @@ public final class TreeUtils {
     }
     return result;
   }
-
-  // IdentifierTree  can have an ExecutableElement.
-  // public static VariableElement elementFromTree(IdentifierTree tree) {
-
-  // Might return an ExecutableElement.
-  // public static VariableElement elementFromUse(IdentifierTree tree) {
 
   /**
    * Returns the ExecutableElement for the given method invocation.
@@ -409,24 +404,8 @@ public final class TreeUtils {
    */
   @Deprecated // not for removal; retain to prevent calls to this overload
   @Pure
-  public static @Nullable ExecutableElement elementFromTree(
-      MethodInvocationTree tree, Elements elements) {
+  public static ExecutableElement elementFromTree(MethodInvocationTree tree, Elements elements) {
     return TreeUtils.elementFromUse(tree, elements);
-  }
-
-  /**
-   * Like elementFromTree, but without correction.
-   *
-   * @param tree the {@link Tree} node to get the symbol for
-   * @return the {@link Symbol} for the given tree, or null if one could not be found
-   */
-  @Pure
-  public static ExecutableElement elementFromTreeNoCorrection(MethodInvocationTree tree) {
-    ExecutableElement result = (ExecutableElement) elementFromTreeNoCorrection((Tree) tree);
-    if (result == null) {
-      throw new BugInCF("tree = " + tree);
-    }
-    return result;
   }
 
   /**
@@ -446,12 +425,17 @@ public final class TreeUtils {
   /**
    * Returns the ExecutableElement for the given method invocation.
    *
+   * <p>Like elementFromUse, but without correction.
+   *
    * @param tree a method call
    * @return the ExecutableElement for the called method
    */
   @Pure
   public static ExecutableElement elementFromUseNoCorrection(MethodInvocationTree tree) {
     ExecutableElement result = (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
+    if (result == null) {
+      throw new BugInCF("tree = " + tree);
+    }
     return result;
   }
 
