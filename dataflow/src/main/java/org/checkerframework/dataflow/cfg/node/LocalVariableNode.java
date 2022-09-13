@@ -65,7 +65,7 @@ public class LocalVariableNode extends Node {
     if (tree instanceof IdentifierTree) {
       IdentifierTree itree = (IdentifierTree) tree;
       assert TreeUtils.isUseOfElement(itree) : "@AssumeAssertion(nullness): tree kind";
-      el = TreeUtils.variableElementFromUseNoCorrection(itree);
+      el = TreeUtils.variableElementFromUse(itree);
     } else {
       assert tree instanceof VariableTree;
       el = TreeUtils.elementFromDeclaration((VariableTree) tree);

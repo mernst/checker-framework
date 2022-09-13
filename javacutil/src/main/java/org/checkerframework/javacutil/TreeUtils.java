@@ -350,27 +350,6 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the VariableElement for the declaration corresponding to this use of an element.
-   *
-   * <p>Returns null if the element does not have kind FIELD.
-   *
-   * @param tree the tree corresponding to a use of an element
-   * @return the element for the corresponding declaration, {@code null} otherwise
-   */
-  // TODO: drop "OrNull" from name?
-  @Pure
-  public static @Nullable VariableElement fieldElementOrNullFromUse(ExpressionTree tree) {
-    VariableElement result = (VariableElement) TreeUtils.elementFromTreeImpl(tree, null);
-    if (result == null) {
-      throw new BugInCF("null element for %s [%s]", tree, tree.getClass());
-    }
-    if (!result.getKind().isField()) {
-      return null;
-    }
-    return result;
-  }
-
-  /**
    * Returns the element corresponding to the given use.
    *
    * @param tree the tree corresponding to a use of an element
@@ -394,21 +373,6 @@ public final class TreeUtils {
    */
   @Pure
   public static VariableElement variableElementFromUse(ExpressionTree tree) {
-    VariableElement result = (VariableElement) TreeUtils.elementFromTreeNoCorrection(tree);
-    if (result == null) {
-      throw new BugInCF("null element for %s [%s]", tree, tree.getClass());
-    }
-    return result;
-  }
-
-  /**
-   * Gets the VariableElement for the declaration corresponding to this use of an element.
-   *
-   * @param tree the tree corresponding to a use of an element
-   * @return the element for the corresponding declaration, {@code null} otherwise
-   */
-  @Pure
-  public static VariableElement variableElementFromUseNoCorrection(ExpressionTree tree) {
     VariableElement result = (VariableElement) TreeUtils.elementFromTreeNoCorrection(tree);
     if (result == null) {
       throw new BugInCF("null element for %s [%s]", tree, tree.getClass());
