@@ -429,7 +429,7 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
    * @return true iff {@code node} is a invocation of {@code equals()}
    */
   public static boolean isInvocationOfEquals(MethodInvocationTree node) {
-    // NoCorrection because Object methods do no interning.
+    // NoCorrection because not testing enclosing class.
     ExecutableElement method = TreeUtils.elementFromUseNoCorrection(node);
     return (method.getParameters().size() == 1
         && method.getReturnType().getKind() == TypeKind.BOOLEAN

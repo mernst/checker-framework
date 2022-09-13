@@ -328,12 +328,14 @@ public final class TreeUtils {
    * Returns the element corresponding to the given use.
    *
    * @param tree the tree corresponding to a use of an element
+   * @param elements the javac element utilities
    * @return the element for the corresponding declaration, {@code null} otherwise
+   * @deprecated use elementFromUse
    */
   @Pure
   @Deprecated // not for removal; retain to prevent calls to this overload
-  public static @Nullable Element elementFromDeclaration(ExpressionTree tree) {
-    return TreeUtils.elementFromUseNoCorrection(tree);
+  public static @Nullable Element elementFromDeclaration(ExpressionTree tree, Elements elements) {
+    return TreeUtils.elementFromUse(tree, elements);
   }
 
   /**
@@ -375,7 +377,7 @@ public final class TreeUtils {
    */
   @Pure
   public static VariableElement variableElementFromUse(ExpressionTree tree) {
-    VariableElement result = (VariableElement) TreeUtils.elementFromTreeNoCorrection(tree);
+    VariableElement result = TreeUtils.variableElementFromTree(tree);
     if (result == null) {
       throw new BugInCF("null element for %s [%s]", tree, tree.getClass());
     }
@@ -386,13 +388,15 @@ public final class TreeUtils {
    * Returns the ExecutableElement for the called method.
    *
    * @param tree the {@link Tree} node to get the symbol for
+   * @param elements the javac element utilities
    * @return the Element for the given tree, or null if one could not be found
    * @deprecated use elementFromUse
    */
   @Deprecated // not for removal; retain to prevent calls to this overload
   @Pure
-  public static ExecutableElement elementFromDeclaration(MethodInvocationTree tree) {
-    return TreeUtils.elementFromUseNoCorrection(tree);
+  public static ExecutableElement elementFromDeclaration(
+      MethodInvocationTree tree, Elements elements) {
+    return TreeUtils.elementFromUse(tree, elements);
   }
 
   /**
@@ -426,7 +430,7 @@ public final class TreeUtils {
   /**
    * Returns the ExecutableElement for the called method.
    *
-   * <p>Like elementFromUse, but without correction.
+   * <p>Like elementFromUse, but without correction. Use with care.
    *
    * @param tree a method call
    * @return the ExecutableElement for the called method
@@ -584,8 +588,9 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node. Does no correction for ExecutableElements
-   * within default methods. Use with care.
+   * Gets the {@link Element} for the given Tree API node.
+   *
+   * <p>Does no correction for ExecutableElements within default methods. Use with care.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
@@ -2281,6 +2286,7 @@ public final class TreeUtils {
    * @return true if the given method invocation is a varargs invocation
    */
   public static boolean isVarArgs(MethodInvocationTree invok) {
+    // NoCorrection because no Object method is varargs.
     ExecutableElement methodElt = elementFromUseNoCorrection(invok);
     if (methodElt == null) {
       return false;

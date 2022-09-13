@@ -645,6 +645,7 @@ public class ValueTransfer extends CFTransfer {
       return false;
     }
 
+    // NoCorrection because we are checking for a compile-time constant.
     Element element = TreeUtils.elementFromUseNoCorrection((ExpressionTree) node.getTree());
     return !ElementUtils.isCompileTimeConstant(element);
   }

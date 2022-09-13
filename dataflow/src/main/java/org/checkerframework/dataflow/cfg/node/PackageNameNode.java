@@ -32,6 +32,7 @@ public class PackageNameNode extends Node {
     super(TreeUtils.typeOf(tree));
     this.tree = tree;
     assert TreeUtils.isUseOfElement(tree) : "@AssumeAssertion(nullness): tree kind";
+    // NoCorrection because it's not an ExecutableElement.
     this.element = (PackageElement) TreeUtils.elementFromUseNoCorrection(tree);
     this.parent = null;
   }
@@ -40,6 +41,7 @@ public class PackageNameNode extends Node {
     super(TreeUtils.typeOf(tree));
     this.tree = tree;
     assert TreeUtils.isUseOfElement(tree) : "@AssumeAssertion(nullness): tree kind";
+    // NoCorrection because it's not an ExecutableElement.
     this.element = (PackageElement) TreeUtils.elementFromUseNoCorrection(tree);
     this.parent = parent;
   }

@@ -13,6 +13,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.value.qual.ArrayLen;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
@@ -39,6 +40,8 @@ public class CollectionToArrayHeuristics {
   private final BaseTypeChecker checker;
   /** The type factory. */
   private final NullnessAnnotatedTypeFactory atypeFactory;
+  /** The javac element utilities. */
+  private final Elements elements;
 
   /** Whether to trust {@code @ArrayLen(0)} annotations. */
   private final boolean trustArrayLenZero;
@@ -63,6 +66,7 @@ public class CollectionToArrayHeuristics {
     this.processingEnv = checker.getProcessingEnvironment();
     this.checker = checker;
     this.atypeFactory = factory;
+    this.elements = factory.getElementUtils();
 
     this.collectionType =
         factory.fromElement(ElementUtils.getTypeElement(processingEnv, Collection.class));
@@ -167,8 +171,7 @@ public class CollectionToArrayHeuristics {
    *     {@code @ArrayLen(0)}
    */
   private boolean isArrayLenZeroFieldAccess(ExpressionTree argument) {
-    // NoCorrection because we only care if it is a field.
-    Element el = TreeUtils.elementFromUseNoCorrection(argument);
+    Element el = TreeUtils.elementFromUse(argument, elements);
     if (el != null && el.getKind().isField()) {
       TypeMirror t = ElementUtils.getType(el);
       if (t.getKind() == TypeKind.ARRAY) {
