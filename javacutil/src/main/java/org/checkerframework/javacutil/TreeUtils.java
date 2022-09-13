@@ -382,7 +382,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Returns the ExecutableElement for the given method invocation.
+   * Returns the ExecutableElement for the called method.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @return the Element for the given tree, or null if one could not be found
@@ -395,7 +395,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Returns the ExecutableElement for the given method invocation.
+   * Returns the ExecutableElement for the called method.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @param elements the javac element utilities
@@ -409,7 +409,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Returns the ExecutableElement for the called method, from a call.
+   * Returns the ExecutableElement for the called method.
    *
    * @param tree a method call
    * @param elements the javac element utilities
@@ -418,12 +418,12 @@ public final class TreeUtils {
   @Pure
   public static ExecutableElement elementFromUse(MethodInvocationTree tree, Elements elements) {
     ExecutableElement result = (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
-    // TODO: need to correct!
+    result = Resolver.correctExecutableElementWithinDefaultMethod(result, elements);
     return result;
   }
 
   /**
-   * Returns the ExecutableElement for the given method invocation.
+   * Returns the ExecutableElement for the called method.
    *
    * <p>Like elementFromUse, but without correction.
    *
@@ -449,8 +449,7 @@ public final class TreeUtils {
    */
   public static @Nullable ExecutableElement elementFromDeclaration(MethodTree tree) {
     ExecutableElement elt = (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
-    // This is a method DECLARATION, so no special handling with
-    // correctExecutableElementWithinDefaultMethod is required.
+    // This is a method DECLARATION, so no need for correctExecutableElementWithinDefaultMethod.
     return elt;
   }
 
@@ -517,11 +516,14 @@ public final class TreeUtils {
    * @return the ExecutableElement for the called constructor
    * @see #constructor(NewClassTree)
    */
-  @SuppressWarnings("nullness:return")
   @Pure
   public static ExecutableElement elementFromUse(NewClassTree tree) {
+    ExecutableElement result = (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
+    if (result == null) {
+      throw new BugInCF("null element for %s", tree);
+    }
     // No need for correctExecutableElementWithinDefaultMethod; this is a constructor, not a method.
-    return (ExecutableElement) TreeUtils.elementFromTreeNoCorrection((Tree) tree);
+    return result;
   }
 
   /**
@@ -531,8 +533,7 @@ public final class TreeUtils {
    * @return the element for the given variable
    */
   public static @Nullable VariableElement elementFromDeclaration(VariableTree tree) {
-    // TODO: change implementation
-    VariableElement result = (VariableElement) TreeUtils.elementFromTreeNoCorrection((Tree) tree);
+    VariableElement result = (VariableElement) TreeInfo.symbolFor((JCTree) tree);
     // `result` can be null, for example for this variable declaration:
     //   PureFunc f1 = TestPure1::myPureMethod;
     return result;
@@ -562,18 +563,6 @@ public final class TreeUtils {
   @Pure
   public static @Nullable VariableElement elementFromUse(VariableTree tree) {
     return elementFromDeclaration(tree);
-  }
-
-  /**
-   * Gets the {@link Element} for the given Tree API node.
-   *
-   * @param tree the {@link Tree} node to get the symbol for
-   * @return the Element for the given tree, or null if one could not be found
-   */
-  @Pure
-  public static @Nullable VariableElement elementFromUse(VariableTree tree, Elements elements) {
-    VariableElement result = (VariableElement) elementFromTree((Tree) tree, elements);
-    return result;
   }
 
   /**
@@ -1025,6 +1014,7 @@ public final class TreeUtils {
     }
 
     if (TreeUtils.isUseOfElement(tree)) {
+      // NoCorrection because testing for a compile-time constant.
       Element elt = TreeUtils.elementFromUseNoCorrection(tree);
       return ElementUtils.isCompileTimeConstant(elt);
     } else if (TreeUtils.isStringConcatenation(tree)) {
