@@ -524,14 +524,15 @@ public final class TreeUtils {
   /**
    * Returns the ExecutableElement for the given method declaration.
    *
+   * <p>The result can be null, when `tree` is a method in an anonymous class.
+   *
    * @param tree a method declaration
    * @return the element for the given method
    */
-  public static ExecutableElement elementFromDeclaration(MethodTree tree) {
+  public static @Nullable ExecutableElement elementFromDeclaration(MethodTree tree) {
     ExecutableElement elt = (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
     // This is a method DECLARATION, so no special handling with
     // correctExecutableElementWithinDefaultMethod is required.
-    assert elt != null : "@AssumeAssertion(nullness): tree kind";
     return elt;
   }
 
@@ -544,7 +545,7 @@ public final class TreeUtils {
    */
   @Deprecated // not for removal; retain to prevent calls to this overload
   @Pure
-  public static ExecutableElement elementFromTree(MethodTree tree) {
+  public static @Nullable ExecutableElement elementFromTree(MethodTree tree) {
     return elementFromDeclaration(tree);
   }
 
@@ -557,7 +558,7 @@ public final class TreeUtils {
    */
   @Deprecated // not for removal; retain to prevent calls to this overload
   @Pure
-  public static ExecutableElement elementFromUse(MethodTree tree) {
+  public static @Nullable ExecutableElement elementFromUse(MethodTree tree) {
     return elementFromDeclaration(tree);
   }
 
