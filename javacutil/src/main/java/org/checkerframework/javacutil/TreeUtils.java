@@ -354,6 +354,7 @@ public final class TreeUtils {
    * Returns the element corresponding to the given use.
    *
    * @param tree the tree corresponding to a use of an element
+   * @param elements the javac element utilities
    * @return the element for the corresponding declaration, {@code null} otherwise
    */
   @Pure
@@ -604,6 +605,7 @@ public final class TreeUtils {
    * an element.
    *
    * @param tree the {@link Tree} node to get the symbol for
+   * @param elements the javac element utilities
    * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
    *     (JCTree)
    * @return the {@link Symbol} for the given tree, or null if one could not be found
@@ -618,6 +620,7 @@ public final class TreeUtils {
    * value of the {@link JCNewClass#constructor} field.
    *
    * @param tree the {@link Tree} node to get the symbol for
+   * @param elements the javac element utilities, or null
    * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
    *     (JCTree)
    * @return the {@link Symbol} for the given tree, or null if one could not be found

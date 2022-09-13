@@ -296,7 +296,7 @@ public class ClassValAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
     /**
      * Return true if this is an invocation of a method annotated with @GetClass. An example of such
-     * a method is {@link Object#getClassName}.
+     * a method is {@link Object#getClass}.
      *
      * @param tree a method invocation
      * @return true if this is an invocation of a method annotated with @GetClass
