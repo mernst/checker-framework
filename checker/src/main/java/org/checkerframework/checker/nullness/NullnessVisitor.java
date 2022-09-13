@@ -195,7 +195,7 @@ public class NullnessVisitor
       case IDENTIFIER:
         TreePath path = getCurrentPath();
         if (TreePathUtil.inConstructor(path)) {
-          return TreeUtils.elementFromUseNotExecutable((ExpressionTree) varTree);
+          return TreeUtils.elementFromUse((ExpressionTree) varTree, elements);
         } else {
           return null;
         }

@@ -313,7 +313,7 @@ public class I18nFormatterTreeUtil {
       this.atypeFactory = atypeFactory;
       List<? extends ExpressionTree> theargs = tree.getArguments();
       this.args = null;
-      ExecutableElement method = (ExecutableElement) TreeUtils.elementFromUseNotObject(tree);
+      ExecutableElement method = TreeUtils.executableElementFromUseNotObject(tree);
       AnnotatedExecutableType methodAnno = atypeFactory.getAnnotatedType(method);
       initialCheck(theargs, method, methodAnno);
     }

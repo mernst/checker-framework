@@ -451,18 +451,6 @@ public final class TreeUtils {
   }
 
   /**
-   * Like elementFromTree, but without correction because the resulting method is not a method on
-   * Object.
-   *
-   * @param tree the {@link Tree} node to get the symbol for
-   * @return the {@link Symbol} for the given tree, or null if one could not be found
-   */
-  @Pure
-  public static @Nullable ExecutableElement elementFromTreeNotObject(MethodInvocationTree tree) {
-    return (ExecutableElement) elementFromTreeNotObject((Tree) tree);
-  }
-
-  /**
    * Like elementFromTree, but without correction.
    *
    * @param tree the {@link Tree} node to get the symbol for
@@ -658,65 +646,6 @@ public final class TreeUtils {
   }
 
   /**
-   * Gets the {@link Element} for the given Tree API node. The returned value must not be an
-   * ExecutableElement.
-   *
-   * @param tree the {@link Tree} node to get the symbol for
-   * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
-   *     (JCTree)
-   * @return the {@link Symbol} for the given tree, or null if one could not be found
-   */
-  @Pure
-  public static @Nullable Element elementFromTreeNotExecutable(Tree tree) {
-    Element result = elementFromTreeImpl(tree, null);
-    if (result instanceof ExecutableElement) {
-      throw new BugInCF(
-          "elementFromTreeNotExecutable(%s [%s]) result = %s [%s]",
-          tree, tree.getClass(), result, result.getClass());
-    }
-    // No correction is necessary because this is not an ExecutableElement.
-    return result;
-  }
-
-  /** The names of all the methods on java.lang.Object. */
-  // The list of names is  from Java 17.
-  private static Set<String> objectMethodNames =
-      new HashSet<>(
-          Arrays.asList(
-              "clone",
-              "equals",
-              "finalize",
-              "getClass",
-              "hashCode",
-              "notify",
-              "notifyAll",
-              "toString",
-              "wait"));
-
-  /**
-   * Gets the {@link Element} for the given Tree API node. The returned value must not have the same
-   * name as a method on Object.
-   *
-   * @param tree the {@link Tree} node to get the symbol for
-   * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
-   *     (JCTree)
-   * @return the {@link Symbol} for the given tree, or null if one could not be found
-   */
-  @Pure
-  public static @Nullable Element elementFromTreeNotObject(Tree tree) {
-    Element result = elementFromTreeImpl(tree, null);
-    if (result instanceof ExecutableElement
-        && objectMethodNames.contains(result.getSimpleName().toString())) {
-      throw new BugInCF(
-          "elementFromTreeNotObject(%s [%s]) result = %s [%s]",
-          tree, tree.getClass(), result, result.getClass());
-    }
-    // No correction is necessary because this is not an ExecutableElement that might need to be
-    // corrected.
-    return result;
-  }
-
-  /**
    * Gets the {@link Element} for the given Tree API node. Does no correction for ExecutableElements
    * within default methods. Use with care.
    *
@@ -832,14 +761,47 @@ public final class TreeUtils {
     return TreeUtils.elementFromTreeNoCorrection(tree);
   }
 
-  @Pure
-  public static @Nullable Element elementFromUseNotObject(Tree tree) {
-    return elementFromTreeNotObject(tree);
-  }
+  /** The names of all the methods on java.lang.Object. */
+  // The list of names is  from Java 17.
+  private static Set<String> objectMethodNames =
+      new HashSet<>(
+          Arrays.asList(
+              "clone",
+              "equals",
+              "finalize",
+              "getClass",
+              "hashCode",
+              "notify",
+              "notifyAll",
+              "toString",
+              "wait"));
 
+  /**
+   * Like elementFromTree, but without correction because the resulting element is not a method on
+   * Object.
+   *
+   * <p>Gets the {@link Element} for the given Tree API node. The returned value must not have the
+   * same name as a method on Object.
+   *
+   * @param tree the {@link Tree} node to get the symbol for
+   * @return the {@link Symbol} for the given tree, or null if one could not be found
+   */
   @Pure
-  public static @Nullable Element elementFromUseNotExecutable(Tree tree) {
-    return elementFromTreeNotExecutable(tree);
+  public static @Nullable ExecutableElement executableElementFromUseNotObject(Tree tree) {
+    ExecutableElement result = (ExecutableElement) elementFromTreeImpl(tree, null);
+    if (result == null) {
+      return null;
+    }
+    // I cannot just test whether the method is on Object because no correction has been done.
+    // I might need to check formal parameter types too, to avoid false alarms here.
+    if (objectMethodNames.contains(result.getSimpleName().toString())) {
+      throw new BugInCF(
+          "executableElementFromUseNotObject(%s [%s]) result = %s [%s]",
+          tree, tree.getClass(), result, result.getClass());
+    }
+    // No correction is necessary because this is not an ExecutableElement that might need to be
+    // corrected.
+    return result;
   }
 
   /**
