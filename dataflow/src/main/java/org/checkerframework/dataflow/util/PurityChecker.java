@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.util.Elements;
 import org.checkerframework.dataflow.qual.Deterministic;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.Pure.Kind;
@@ -178,9 +179,14 @@ public class PurityChecker {
   /** Helper class to keep {@link PurityChecker}'s interface clean. */
   protected static class PurityCheckerHelper extends TreePathScanner<Void, Void> {
 
+    /** The purity result. */
     PurityResult purityResult = new PurityResult();
 
+    /** The annotation provider (typically an AnnotatedTypeFactory). */
     protected final AnnotationProvider annoProvider;
+
+    /** The javac element utilities. */
+    protected final Elements elements;
 
     /**
      * True if all methods should be assumed to be @SideEffectFree, for the purposes of
@@ -206,6 +212,7 @@ public class PurityChecker {
         boolean assumeSideEffectFree,
         boolean assumeDeterministic) {
       this.annoProvider = annoProvider;
+      this.elements = annoProvider.getElementUtils();
       this.assumeSideEffectFree = assumeSideEffectFree;
       this.assumeDeterministic = assumeDeterministic;
     }
@@ -218,7 +225,7 @@ public class PurityChecker {
 
     @Override
     public Void visitMethodInvocation(MethodInvocationTree node, Void ignore) {
-      ExecutableElement elt = TreeUtils.elementFromUse(node);
+      ExecutableElement elt = TreeUtils.elementFromUse(node, elements);
       if (!PurityUtils.hasPurityAnnotation(annoProvider, elt)) {
         purityResult.addNotBothReason(node, "call");
       } else {

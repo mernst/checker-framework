@@ -5,6 +5,7 @@ import java.lang.annotation.Annotation;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.lang.model.util.Elements;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** An AnnotationProvider that is independent of any type hierarchy. */
@@ -40,5 +41,10 @@ public class BasicAnnotationProvider implements AnnotationProvider {
   public @Nullable AnnotationMirror getAnnotationMirror(
       Tree tree, Class<? extends Annotation> target) {
     return null;
+  }
+
+  @Override
+  public Elements getElementUtils() {
+    throw new BugInCF("Don't call this implementation.");
   }
 }

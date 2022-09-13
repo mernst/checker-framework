@@ -84,7 +84,7 @@ public class AliasingVisitor extends BaseTypeVisitor<AliasingAnnotatedTypeFactor
         // be @Unique.
         Tree parent = getCurrentPath().getParentPath().getLeaf();
         boolean parentIsStatement = parent.getKind() == Tree.Kind.EXPRESSION_STATEMENT;
-        ExecutableElement methodElement = TreeUtils.elementFromUse(node);
+        ExecutableElement methodElement = TreeUtils.elementFromUse(node, elements);
         List<? extends VariableElement> params = methodElement.getParameters();
         List<? extends ExpressionTree> args = node.getArguments();
         assert (args.size() == params.size())

@@ -540,14 +540,14 @@ public class NullnessAnnotatedTypeFactory
     @Override
     public Void visitMemberSelect(MemberSelectTree node, AnnotatedTypeMirror type) {
 
-      Element elt = TreeUtils.elementFromUse(node);
+      Element elt = TreeUtils.elementFromUse(node, elements);
       assert elt != null;
       return null;
     }
 
     @Override
     public Void visitVariable(VariableTree node, AnnotatedTypeMirror type) {
-      Element elt = TreeUtils.elementFromTree(node);
+      Element elt = TreeUtils.elementFromDeclaration(node);
       if (elt.getKind() == ElementKind.EXCEPTION_PARAMETER) {
         if (!type.isAnnotatedInHierarchy(NONNULL)) {
           // case 9. exception parameter
@@ -560,7 +560,7 @@ public class NullnessAnnotatedTypeFactory
     @Override
     public Void visitIdentifier(IdentifierTree node, AnnotatedTypeMirror type) {
 
-      Element elt = TreeUtils.elementFromUse(node);
+      Element elt = TreeUtils.elementFromUse(node, elements);
       assert elt != null;
 
       if (elt.getKind() == ElementKind.EXCEPTION_PARAMETER) {

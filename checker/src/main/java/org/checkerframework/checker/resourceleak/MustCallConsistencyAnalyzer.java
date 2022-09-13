@@ -32,6 +32,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import org.checkerframework.checker.calledmethods.qual.CalledMethods;
 import org.checkerframework.checker.mustcall.CreatesMustCallForElementSupplier;
 import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
@@ -174,6 +175,9 @@ class MustCallConsistencyAnalyzer {
 
   /** The analysis from the Resource Leak Checker, used to get input stores based on CFG blocks. */
   private final CFAnalysis analysis;
+
+  /** The javac element utilities. */
+  private final Elements elements;
 
   /**
    * An Obligation is a dataflow fact: a set of resource aliases. Abstractly, each Obligation
@@ -469,6 +473,7 @@ class MustCallConsistencyAnalyzer {
     this.typeFactory = typeFactory;
     this.checker = (ResourceLeakChecker) typeFactory.getChecker();
     this.analysis = analysis;
+    this.elements = typeFactory.getElementUtils();
     this.permitStaticOwning = checker.hasOption("permitStaticOwning");
     this.permitInitializationLeak = checker.hasOption("permitInitializationLeak");
   }
@@ -1042,7 +1047,7 @@ class MustCallConsistencyAnalyzer {
   private void updateObligationsForAssignment(
       Set<Obligation> obligations, AssignmentNode assignmentNode) {
     Node lhs = assignmentNode.getTarget();
-    Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
+    VariableElement lhsElement = TreeUtils.lhsElementFromTree(lhs.getTree());
     // Use the temporary variable for the rhs if it exists.
     Node rhs = NodeUtils.removeCasts(assignmentNode.getExpression());
     rhs = getTempVarOrNode(rhs);
@@ -1295,7 +1300,7 @@ class MustCallConsistencyAnalyzer {
         if (mcValues.isEmpty()) {
           return;
         }
-        Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
+        Element lhsElement = TreeUtils.lhsElementFromTree(lhs.getTree());
         checker.reportError(
             node.getTree(),
             "required.method.not.called",
@@ -1307,7 +1312,7 @@ class MustCallConsistencyAnalyzer {
       }
     } else if (permitInitializationLeak && TreeUtils.isConstructor(enclosingMethodTree)) {
       Element enclosingClassElement =
-          TreeUtils.elementFromTree(enclosingMethodTree).getEnclosingElement();
+          TreeUtils.elementFromDeclaration(enclosingMethodTree).getEnclosingElement();
       if (ElementUtils.isTypeElement(enclosingClassElement)) {
         Element receiverElement = TypesUtils.getTypeElement(receiver.getType());
         if (Objects.equals(enclosingClassElement, receiverElement)) {
@@ -1368,7 +1373,7 @@ class MustCallConsistencyAnalyzer {
       cmAnno = typeFactory.top;
     }
     if (!calledMethodsSatisfyMustCall(mcValues, cmAnno)) {
-      Element lhsElement = TreeUtils.elementFromTree(lhs.getTree());
+      VariableElement lhsElement = TreeUtils.lhsElementFromTree(lhs.getTree());
       if (!checker.shouldSkipUses(lhsElement)) {
         checker.reportError(
             node.getTree(),
@@ -1551,7 +1556,7 @@ class MustCallConsistencyAnalyzer {
     ExecutableElement executableElement;
     if (node instanceof MethodInvocationNode) {
       MethodInvocationNode invocationNode = (MethodInvocationNode) node;
-      executableElement = TreeUtils.elementFromUse(invocationNode.getTree());
+      executableElement = TreeUtils.elementFromUse(invocationNode.getTree(), elements);
     } else if (node instanceof ObjectCreationNode) {
       executableElement = TreeUtils.elementFromUse(((ObjectCreationNode) node).getTree());
     } else {
@@ -1574,7 +1579,7 @@ class MustCallConsistencyAnalyzer {
       return false;
     }
     MethodInvocationTree methodInvocationTree = node.getTree();
-    ExecutableElement executableElement = TreeUtils.elementFromUse(methodInvocationTree);
+    ExecutableElement executableElement = TreeUtils.elementFromUse(methodInvocationTree, elements);
     // void methods are "not owning" by construction
     return (ElementUtils.getType(executableElement).getKind() == TypeKind.VOID)
         || (typeFactory.getDeclAnnotation(executableElement, NotOwning.class) != null);
@@ -1957,7 +1962,7 @@ class MustCallConsistencyAnalyzer {
       // Report the error at the first alias' definition. This choice is arbitrary but consistent.
       ResourceAlias firstAlias = obligation.resourceAliases.iterator().next();
       if (!reportedErrorAliases.contains(firstAlias)) {
-        if (!checker.shouldSkipUses(TreeUtils.elementFromTree(firstAlias.tree))) {
+        if (!checker.shouldSkipUses(TreeUtils.elementFromTree(firstAlias.tree, elements))) {
           reportedErrorAliases.add(firstAlias);
           checker.reportError(
               firstAlias.tree,

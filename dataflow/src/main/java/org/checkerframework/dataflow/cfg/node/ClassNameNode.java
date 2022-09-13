@@ -8,8 +8,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -33,7 +36,8 @@ public class ClassNameNode extends Node {
     assert tree.getKind() == Tree.Kind.IDENTIFIER;
     this.tree = tree;
     assert TreeUtils.isUseOfElement(tree) : "@AssumeAssertion(nullness): tree kind";
-    this.element = TreeUtils.elementFromUse(tree);
+    this.element = TreeUtils.elementFromUseNoCorrection(tree);
+    assert element instanceof TypeElement || element instanceof TypeParameterElement;
     this.parent = null;
   }
 
@@ -45,7 +49,15 @@ public class ClassNameNode extends Node {
   public ClassNameNode(ClassTree tree) {
     super(TreeUtils.typeOf(tree));
     this.tree = tree;
-    this.element = TreeUtils.elementFromDeclaration(tree);
+    Element element = TreeUtils.elementFromDeclaration(tree);
+    if (!(element instanceof TypeElement || element instanceof TypeParameterElement)) {
+      throw new BugInCF(
+          "bad element %s for %s [%s]",
+          (element == null) ? "null" : element + "[" + element.getClass() + "]",
+          tree,
+          tree.getClass());
+    }
+    this.element = element;
     this.parent = null;
   }
 
@@ -53,7 +65,8 @@ public class ClassNameNode extends Node {
     super(TreeUtils.typeOf(tree));
     this.tree = tree;
     assert TreeUtils.isUseOfElement(tree) : "@AssumeAssertion(nullness): tree kind";
-    this.element = TreeUtils.elementFromUse(tree);
+    this.element = TreeUtils.elementFromUseNoCorrection(tree);
+    assert element instanceof TypeElement || element instanceof TypeParameterElement;
     this.parent = parent;
   }
 
@@ -61,6 +74,7 @@ public class ClassNameNode extends Node {
     super(type);
     this.tree = null;
     this.element = element;
+    assert element instanceof TypeElement || element instanceof TypeParameterElement;
     this.parent = null;
   }
 

@@ -422,7 +422,7 @@ public class QualifierDefaults {
       if (element != null) {
         return element;
       } else {
-        return TreeUtils.elementFromTree(tree);
+        return TreeUtils.elementFromTree(tree, elements);
       }
     }
 
@@ -490,11 +490,11 @@ public class QualifierDefaults {
     Element elt;
     switch (tree.getKind()) {
       case MEMBER_SELECT:
-        elt = TreeUtils.elementFromUse((MemberSelectTree) tree);
+        elt = TreeUtils.elementFromUse((MemberSelectTree) tree, elements);
         break;
 
       case IDENTIFIER:
-        elt = TreeUtils.elementFromUse((IdentifierTree) tree);
+        elt = TreeUtils.elementFromUse((IdentifierTree) tree, elements);
         if (ElementUtils.isTypeDeclaration(elt)) {
           // If the Idenitifer is a type, then use the scope of the tree.
           elt = nearestEnclosingExceptLocal(tree);
@@ -502,7 +502,7 @@ public class QualifierDefaults {
         break;
 
       case METHOD_INVOCATION:
-        elt = TreeUtils.elementFromUse((MethodInvocationTree) tree);
+        elt = TreeUtils.elementFromUse((MethodInvocationTree) tree, elements);
         break;
 
         // TODO cases for array access, etc. -- every expression tree

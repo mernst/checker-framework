@@ -111,7 +111,7 @@ public class FormatterVisitor extends BaseTypeVisitor<FormatterAnnotatedTypeFact
                   default:
                     if (!fc.isValidArgument(formatCat, argType)) {
                       // II.3
-                      ExecutableElement method = TreeUtils.elementFromUse(node);
+                      ExecutableElement method = TreeUtils.elementFromUse(node, elements);
                       CharSequence methodName = ElementUtils.getSimpleNameOrDescription(method);
                       ftu.failure(
                           arg, "argument", "in varargs position", methodName, argType, formatCat);
@@ -205,7 +205,7 @@ public class FormatterVisitor extends BaseTypeVisitor<FormatterAnnotatedTypeFact
       return false;
     }
 
-    ExecutableElement calledMethodElement = TreeUtils.elementFromUse(invocationTree);
+    ExecutableElement calledMethodElement = TreeUtils.elementFromUse(invocationTree, elements);
     int callIndex = formatStringIndex(calledMethodElement);
     if (callIndex == -1) {
       throw new UserError(

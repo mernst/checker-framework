@@ -32,7 +32,7 @@ public class PackageNameNode extends Node {
     super(TreeUtils.typeOf(tree));
     this.tree = tree;
     assert TreeUtils.isUseOfElement(tree) : "@AssumeAssertion(nullness): tree kind";
-    this.element = (PackageElement) TreeUtils.elementFromUse(tree);
+    this.element = (PackageElement) TreeUtils.elementFromUseNoCorrection(tree);
     this.parent = null;
   }
 
@@ -40,7 +40,7 @@ public class PackageNameNode extends Node {
     super(TreeUtils.typeOf(tree));
     this.tree = tree;
     assert TreeUtils.isUseOfElement(tree) : "@AssumeAssertion(nullness): tree kind";
-    this.element = (PackageElement) TreeUtils.elementFromUse(tree);
+    this.element = (PackageElement) TreeUtils.elementFromUseNoCorrection(tree);
     this.parent = parent;
   }
 

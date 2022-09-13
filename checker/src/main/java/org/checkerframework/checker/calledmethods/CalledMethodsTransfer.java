@@ -153,7 +153,7 @@ public class CalledMethodsTransfer extends AccumulationTransfer {
    */
   private void handleEnsuresCalledMethodsVarArgs(
       MethodInvocationNode node, TransferResult<CFValue, CFStore> result) {
-    ExecutableElement elt = TreeUtils.elementFromUse(node.getTree());
+    ExecutableElement elt = TreeUtils.elementFromUse(node.getTree(), elements);
     AnnotationMirror annot = atypeFactory.getDeclAnnotation(elt, EnsuresCalledMethodsVarArgs.class);
     if (annot == null) {
       return;

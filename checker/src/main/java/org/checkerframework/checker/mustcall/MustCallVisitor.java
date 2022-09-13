@@ -16,6 +16,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
@@ -178,7 +179,7 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
     // element because MustCallAlias is aliased to PolyMustCall, which is what useType
     // would contain. Note that isValidUse does not need to consider component types,
     // on which it should be called separately.
-    Element elt = TreeUtils.elementFromTree(tree);
+    Element elt = TreeUtils.elementFromTree(tree, elements);
     if (elt != null
         && AnnotationUtils.containsSameByClass(elt.getAnnotationMirrors(), MustCallAlias.class)) {
       return true;
@@ -223,7 +224,7 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
       ExpressionTree valueExp,
       @CompilerMessageKey String errorKey,
       Object... extraArgs) {
-    Element elt = TreeUtils.elementFromTree(varTree);
+    VariableElement elt = TreeUtils.lhsElementFromTree(varTree);
     if (elt != null && elt.getKind() == ElementKind.RESOURCE_VARIABLE) {
       commonAssignmentCheckOnResourceVariable = true;
     }

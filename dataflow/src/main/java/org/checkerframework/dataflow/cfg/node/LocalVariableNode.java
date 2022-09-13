@@ -59,12 +59,13 @@ public class LocalVariableNode extends Node {
    *
    * @return the element associated with this local variable
    */
+  @SuppressWarnings("nullness:return") // non-null if a LocalVariableNode was created
   public VariableElement getElement() {
     VariableElement el;
     if (tree instanceof IdentifierTree) {
       IdentifierTree itree = (IdentifierTree) tree;
       assert TreeUtils.isUseOfElement(itree) : "@AssumeAssertion(nullness): tree kind";
-      el = TreeUtils.variableElementFromUse(itree);
+      el = TreeUtils.variableElementFromUseNoCorrection(itree);
     } else {
       assert tree instanceof VariableTree;
       el = TreeUtils.elementFromDeclaration((VariableTree) tree);

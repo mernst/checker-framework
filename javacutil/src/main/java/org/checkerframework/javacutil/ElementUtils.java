@@ -88,9 +88,64 @@ public class ElementUtils {
    */
   public static @Nullable TypeElement enclosingTypeElement(final Element elem) {
     Element result = elem;
+    if (false) {
+      System.out.printf(
+          "EU.enclosingTypeElement(%s [%s %s extends %s]), isTypeElement = %s%n",
+          elem,
+          elem.getKind(),
+          elem.getClass(),
+          elem.getClass().getSuperclass(),
+          isTypeElement(result));
+    }
+    if (elem.getKind() == ElementKind.METHOD) {
+      TypeMirror receiverType = ((ExecutableElement) elem).getReceiverType();
+      // TODO: why is getReceiverType() none/NoType for getClass()??
+      if (false) {
+        System.out.printf(
+            "  receiver = %s [%s extends %s]%n",
+            receiverType, receiverType.getClass(), receiverType.getClass().getSuperclass());
+      }
+      MethodSymbol methodSymbol = (MethodSymbol) elem;
+      if (false) {
+        System.out.printf(
+            "MethodSymbol %s%n  modifiers (from flags): %s%n  name: %s%n  type: %s%n  owner: %s%n "
+                + " baseSymbol: %s%n",
+            methodSymbol,
+            methodSymbol.getModifiers(),
+            methodSymbol.name,
+            methodSymbol.type,
+            methodSymbol.owner,
+            methodSymbol.baseSymbol());
+      }
+    }
     while (result != null && !isTypeElement(result)) {
       result = result.getEnclosingElement();
+      if (false) {
+        System.out.printf(
+            "EU.enclosingTypeElement(%s), new result = %s [%s %s extends %s], isTypeElement = %s%n",
+            elem,
+            result,
+            result == null ? "[null]" : result.getKind(),
+            result == null ? "[null]" : result.getClass(),
+            result == null ? "[null]" : result.getClass().getSuperclass(),
+            result == null ? "[null]" : isTypeElement(result));
+      }
     }
+    if (elem.getKind() == ElementKind.METHOD && result.getKind() == ElementKind.INTERFACE) {
+      if (false) {
+        System.out.printf("I'm here. %s %s%n", elem, result);
+        System.out.printf("  %s%n", ((TypeElement) result).getEnclosedElements());
+      }
+      if (!((TypeElement) result).getEnclosedElements().contains(elem)) {
+        System.out.printf("Trouble here. %s %s%n", elem, result);
+        // TODO: how to get the TypeElement for java.lang.object?  This appreach requires an
+        // Elements instance, which is available most but not all places that enclosingTypeElement()
+        // is called.
+        // TypeElement jlobject = elements.getTypeElement("java.lang.Object");
+        // System.out.printf("  %s%n", jlobject.getEnclosedElements().contains(elem));
+      }
+    }
+
     return (TypeElement) result;
   }
 
@@ -164,6 +219,7 @@ public class ElementUtils {
    * @param elem the enclosed element of a package
    * @return the innermost package element
    */
+  // This implementation may not work within interface methods in JDK 18.
   public static PackageElement enclosingPackage(Element elem) {
     Element result = elem;
     while (result != null && result.getKind() != ElementKind.PACKAGE) {

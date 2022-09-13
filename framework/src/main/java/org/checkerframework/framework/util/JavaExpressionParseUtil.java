@@ -46,6 +46,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic.Kind;
 import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
@@ -203,6 +204,9 @@ public class JavaExpressionParseUtil {
     /** The processing environment. */
     private final ProcessingEnvironment env;
 
+    /** The element utilities. */
+    private final Elements elements;
+
     /** The resolver. Computed from the environment, but lazily initialized. */
     private @MonotonicNonNull Resolver resolver = null;
 
@@ -250,8 +254,9 @@ public class JavaExpressionParseUtil {
       this.pathToCompilationUnit = pathToCompilationUnit;
       this.localVarPath = localVarPath;
       this.env = env;
+      this.elements = env.getElementUtils();
       this.types = env.getTypeUtils();
-      this.stringTypeMirror = env.getElementUtils().getTypeElement("java.lang.String").asType();
+      this.stringTypeMirror = elements.getTypeElement("java.lang.String").asType();
       this.enclosingType = enclosingType;
       this.thisReference = thisReference;
       this.parameters = parameters;
@@ -760,6 +765,7 @@ public class JavaExpressionParseUtil {
       if (receiverType.getKind() == TypeKind.ARRAY) {
         ExecutableElement element =
             resolver.findMethod(methodName, receiverType, pathToCompilationUnit, argumentTypes);
+        element = Resolver.correctExecutableElementWithinDefaultMethod(element, elements);
         if (element == null) {
           throw constructJavaExpressionParseError(methodName, "no such method");
         }

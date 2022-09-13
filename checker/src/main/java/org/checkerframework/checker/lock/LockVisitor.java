@@ -524,7 +524,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
    */
   @Override
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
-    ExecutableElement methodElement = TreeUtils.elementFromUse(node);
+    ExecutableElement methodElement = TreeUtils.elementFromUse(node, elements);
 
     SideEffectAnnotation seaOfInvokedMethod =
         atypeFactory.methodSideEffectAnnotation(methodElement, false);
@@ -846,7 +846,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
           }
           return;
         case METHOD_INVOCATION:
-          Element elem = TreeUtils.elementFromUse(tree);
+          Element elem = TreeUtils.elementFromUse(tree, elements);
           if (atypeFactory.getDeclAnnotationNoAliases(elem, Deterministic.class) == null
               && atypeFactory.getDeclAnnotationNoAliases(elem, Pure.class) == null) {
             checker.reportError(tree, "lock.expression.not.final", lockExpressionTree);
@@ -1012,9 +1012,12 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
   /**
    * Returns true if the symbol for the given tree is final or effectively final. Package, class and
    * method symbols are unmodifiable and therefore considered final.
+   *
+   * @param tree the tree to test
+   * @return true if the symbol for the given tree is final or effectively final
    */
   private boolean isTreeSymbolEffectivelyFinalOrUnmodifiable(Tree tree) {
-    Element elem = TreeUtils.elementFromTree(tree);
+    Element elem = TreeUtils.elementFromTree(tree, elements);
     ElementKind ek = elem.getKind();
     return ek == ElementKind.PACKAGE
         || ek == ElementKind.CLASS
@@ -1033,7 +1036,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
       // then the field is accessed via an implicit this.
       if ((parent.getKind() != Tree.Kind.MEMBER_SELECT
               || ((MemberSelectTree) parent).getExpression() == tree)
-          && !ElementUtils.isStatic(TreeUtils.elementFromUse(tree))) {
+          && !ElementUtils.isStatic(TreeUtils.elementFromUse(tree, elements))) {
         AnnotationMirror guardedBy =
             atypeFactory.getSelfType(tree).getAnnotationInHierarchy(atypeFactory.GUARDEDBY);
         checkLockOfImplicitThis(tree, guardedBy);

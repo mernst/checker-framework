@@ -105,7 +105,8 @@ public class MustCallTransfer extends CFTransfer {
     // Remove "close" from the type in the store for resource variables.
     // The Resource Leak Checker relies on this code to avoid checking that
     // resource variables are closed.
-    if (atypeFactory.isResourceVariable(TreeUtils.elementFromTree(n.getTarget().getTree()))) {
+    if (atypeFactory.isResourceVariable(
+        TreeUtils.elementFromTree(n.getTarget().getTree(), elements))) {
       CFStore store = result.getRegularStore();
       JavaExpression expr = JavaExpression.fromNode(n.getTarget());
       CFValue value = store.getValue(expr);
@@ -256,10 +257,10 @@ public class MustCallTransfer extends CFTransfer {
     Element enclosingElement;
     TreePath path = atypeFactory.getPath(tree);
     if (path == null) {
-      enclosingElement = TreeUtils.elementFromTree(tree).getEnclosingElement();
+      enclosingElement = TreeUtils.elementFromUse(tree, elements).getEnclosingElement();
     } else {
       ClassTree classTree = TreePathUtil.enclosingClass(path);
-      enclosingElement = TreeUtils.elementFromTree(classTree);
+      enclosingElement = TreeUtils.elementFromDeclaration(classTree);
     }
     if (enclosingElement == null) {
       return null;

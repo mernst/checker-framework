@@ -382,7 +382,7 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
         Tree parent = parentPath.getParentPath().getLeaf();
         if (parent.getKind() == Tree.Kind.METHOD_INVOCATION) {
           // Allow new MyInternType().intern(), where "intern" is any method marked @InternMethod.
-          ExecutableElement elt = TreeUtils.elementFromUse((MethodInvocationTree) parent);
+          ExecutableElement elt = TreeUtils.elementFromUse((MethodInvocationTree) parent, elements);
           if (atypeFactory.getDeclAnnotation(elt, InternMethod.class) != null) {
             return true;
           }
@@ -429,7 +429,8 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
    * @return true iff {@code node} is a invocation of {@code equals()}
    */
   public static boolean isInvocationOfEquals(MethodInvocationTree node) {
-    ExecutableElement method = TreeUtils.elementFromUse(node);
+    // NoCorrection because Object methods do no interning.
+    ExecutableElement method = TreeUtils.elementFromUseNoCorrection(node);
     return (method.getParameters().size() == 1
         && method.getReturnType().getKind() == TypeKind.BOOLEAN
         // method symbols only have simple names
@@ -463,8 +464,8 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
       return false;
     }
 
-    Tree left = node.getLeftOperand();
-    Tree right = node.getRightOperand();
+    ExpressionTree left = node.getLeftOperand();
+    ExpressionTree right = node.getRightOperand();
 
     // Only valid if we're comparing identifiers.
     if (!(left.getKind() == Tree.Kind.IDENTIFIER && right.getKind() == Tree.Kind.IDENTIFIER)) {
@@ -520,8 +521,8 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
     ExecutableElement enclosingMethod = TreeUtils.elementFromDeclaration(methodTree);
     assert enclosingMethod != null;
 
-    final Element lhs = TreeUtils.elementFromUse((IdentifierTree) left);
-    final Element rhs = TreeUtils.elementFromUse((IdentifierTree) right);
+    final Element lhs = TreeUtils.elementFromUse(left, elements);
+    final Element rhs = TreeUtils.elementFromUse(right, elements);
 
     // Matcher to check for if statement that returns zero
     Heuristics.Matcher matcherIfReturnsZero =
@@ -748,16 +749,16 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
       return false;
     }
 
-    Tree left = TreeUtils.withoutParens(node.getLeftOperand());
-    Tree right = TreeUtils.withoutParens(node.getRightOperand());
+    ExpressionTree left = TreeUtils.withoutParens(node.getLeftOperand());
+    ExpressionTree right = TreeUtils.withoutParens(node.getRightOperand());
 
     // Only valid if we're comparing identifiers.
     if (!(left.getKind() == Tree.Kind.IDENTIFIER && right.getKind() == Tree.Kind.IDENTIFIER)) {
       return false;
     }
 
-    final Element lhs = TreeUtils.elementFromUse((IdentifierTree) left);
-    final Element rhs = TreeUtils.elementFromUse((IdentifierTree) right);
+    final Element lhs = TreeUtils.elementFromUse(left, elements);
+    final Element rhs = TreeUtils.elementFromUse(right, elements);
 
     // looking for ((a == b || a.compareTo(b) == 0)
     Heuristics.Matcher matcherEqOrCompareTo =
@@ -811,7 +812,7 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
             if (arg.getKind() != Tree.Kind.IDENTIFIER) {
               return false;
             }
-            Element argElt = TreeUtils.elementFromUse(arg);
+            Element argElt = TreeUtils.elementFromUse(arg, elements);
 
             ExpressionTree exp = tree.getMethodSelect();
             if (exp.getKind() != Tree.Kind.MEMBER_SELECT) {
@@ -822,7 +823,7 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
               return false;
             }
 
-            Element refElt = TreeUtils.elementFromUse(member.getExpression());
+            Element refElt = TreeUtils.elementFromUse(member.getExpression(), elements);
 
             if (!((refElt.equals(lhs) && argElt.equals(rhs))
                 || (refElt.equals(rhs) && argElt.equals(lhs)))) {

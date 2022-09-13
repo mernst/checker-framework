@@ -153,7 +153,7 @@ public class CalledMethodsAnnotatedTypeFactory extends AccumulationAnnotatedType
         // org.checkerframework.checker.builder.qual.ReturnsReceiver} annotation, for
         // backwards compatibility.
         || this.getDeclAnnotation(
-                TreeUtils.elementFromUse(tree),
+                TreeUtils.elementFromUse(tree, elements),
                 org.checkerframework.checker.builder.qual.ReturnsReceiver.class)
             != null;
   }
@@ -177,7 +177,7 @@ public class CalledMethodsAnnotatedTypeFactory extends AccumulationAnnotatedType
       return methodName;
     }
 
-    ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
+    ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree, elements);
     if (!ElementUtils.enclosingTypeElement(invokedMethod)
         .getQualifiedName()
         .contentEquals("com.amazonaws.services.ec2.model.DescribeImagesRequest")) {

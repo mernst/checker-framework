@@ -31,6 +31,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -43,6 +44,7 @@ public class Resolver {
   private final Resolve resolve;
   private final Names names;
   private final Trees trees;
+  private final Elements elements;
   private final Log log;
 
   private static final Method FIND_METHOD;
@@ -141,6 +143,7 @@ public class Resolver {
     this.resolve = Resolve.instance(context);
     this.names = Names.instance(context);
     this.trees = Trees.instance(env);
+    this.elements = env.getElementUtils();
     this.log = Log.instance(context);
   }
 
@@ -325,7 +328,8 @@ public class Resolver {
    *
    * <p>(This method takes into account autoboxing.)
    *
-   * <p>This method is a wrapper around {@code com.sun.tools.javac.comp.Resolve.findMethod}.
+   * <p>This method is a wrapper around {@code com.sun.tools.javac.comp.Resolve.findMethod}, with a
+   * correction for code within default methods of interfaces.
    *
    * @param methodName name of the method to find
    * @param receiverType type of the receiver of the method
@@ -366,6 +370,7 @@ public class Resolver {
         if (resolveResult.getKind() == ElementKind.METHOD
             || resolveResult.getKind() == ElementKind.CONSTRUCTOR) {
           methodResult = (ExecutableElement) resolveResult;
+          methodResult = correctExecutableElementWithinDefaultMethod(methodResult, elements);
         } else {
           methodResult = null;
         }
@@ -387,7 +392,52 @@ public class Resolver {
     }
   }
 
-  /** Build an instance of {@code Resolve$MethodResolutionContext}. */
+  /**
+   * Consider a method, such as `getClass()` or `hashCode()`, that is called within a default method
+   * implementation in an interface.
+   *
+   * <p>In JDK 17 and earlier, the method is resolved to an ExecutableElement whose owner/enclosing
+   * is the class that declares the method, such as java.lang.Object.
+   *
+   * <p>In JDK 18, the method is resolved to an ExecutableElement whose owner/enclosing is the
+   * interface within which the call appears. This is not what we want. We will change that to
+   * java.lang.Object if the method appears in java.lang.Object. If the method doesn't appear in
+   * java.lang.Object, fail for now.
+   *
+   * @param methodElt the method to correct
+   * @param elements the javac element utilities
+   * @return either methodElt, or methodElt in java.lang.Object
+   */
+  public static ExecutableElement correctExecutableElementWithinDefaultMethod(
+      ExecutableElement methodElt, Elements elements) {
+    // TODO
+    return methodElt;
+  }
+
+  /**
+   * See {@link #correctExecutableElementWithinDefaultMethod(ExecutableElement, Elements)}.
+   *
+   * @param elt the element to correct
+   * @param elements the javac element utilities
+   * @return either elt, or elt in java.lang.Object
+   */
+  public static Element correctExecutableElementWithinDefaultMethod(
+      Element elt, Elements elements) {
+    if (elt == null) {
+      return elt;
+    } else if (elt.getKind() == ElementKind.METHOD) {
+      // only METHOD, not CONSTRUCTOR
+      return correctExecutableElementWithinDefaultMethod((ExecutableElement) elt, elements);
+    } else {
+      return elt;
+    }
+  }
+
+  /**
+   * Build an instance of {@code Resolve$MethodResolutionContext}.
+   *
+   * @return an instance of {@code Resolve$MethodResolutionContext}
+   */
   protected Object buildMethodContext()
       throws ClassNotFoundException, InstantiationException, IllegalAccessException,
           InvocationTargetException, NoSuchFieldException {

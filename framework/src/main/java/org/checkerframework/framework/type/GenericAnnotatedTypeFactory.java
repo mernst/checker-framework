@@ -1785,7 +1785,7 @@ public abstract class GenericAnnotatedTypeFactory<
     if (!TreeUtils.isExpressionTree(tree)) {
       // Don't apply defaults to expressions. Their types may be computed from subexpressions
       // in treeAnnotator.
-      addAnnotationsFromDefaultForType(TreeUtils.elementFromTree(tree), type);
+      addAnnotationsFromDefaultForType(TreeUtils.elementFromTree(tree, elements), type);
       log("%s GATF.addComputedTypeAnnotations#2(%s, %s)%n", thisClass, treeString, type);
     }
     applyQualifierParameterDefaults(tree, type);
@@ -1794,7 +1794,7 @@ public abstract class GenericAnnotatedTypeFactory<
     log("%s GATF.addComputedTypeAnnotations#4(%s, %s)%n", thisClass, treeString, type);
     if (TreeUtils.isExpressionTree(tree)) {
       // If a tree annotator, did not add a type, add the DefaultForUse default.
-      addAnnotationsFromDefaultForType(TreeUtils.elementFromTree(tree), type);
+      addAnnotationsFromDefaultForType(TreeUtils.elementFromTree(tree, elements), type);
       log("%s GATF.addComputedTypeAnnotations#5(%s, %s)%n", thisClass, treeString, type);
     }
     typeAnnotator.visit(type, null);
@@ -1893,7 +1893,7 @@ public abstract class GenericAnnotatedTypeFactory<
    * @param type where the defaults are applied
    */
   protected void applyQualifierParameterDefaults(Tree tree, AnnotatedTypeMirror type) {
-    applyQualifierParameterDefaults(TreeUtils.elementFromTree(tree), type);
+    applyQualifierParameterDefaults(TreeUtils.elementFromTree(tree, elements), type);
   }
 
   /**

@@ -403,7 +403,7 @@ class ValueTreeAnnotator extends TreeAnnotator {
       }
     }
 
-    if (!methodIsStaticallyExecutable(TreeUtils.elementFromUse(tree))
+    if (!methodIsStaticallyExecutable(TreeUtils.elementFromUse(tree, elements))
         || !handledByValueChecker(type)) {
       return null;
     }
@@ -453,7 +453,7 @@ class ValueTreeAnnotator extends TreeAnnotator {
     AnnotatedTypeMirror receiver = atypeFactory.getReceiverType(tree);
     List<?> receiverValues;
 
-    if (receiver != null && !ElementUtils.isStatic(TreeUtils.elementFromUse(tree))) {
+    if (receiver != null && !ElementUtils.isStatic(TreeUtils.elementFromUse(tree, elements))) {
       receiverValues = getValues(receiver, receiver.getUnderlyingType());
       if (receiverValues == null || receiverValues.isEmpty()) {
         // Values aren't known, so don't try to evaluate the method.
@@ -614,7 +614,7 @@ class ValueTreeAnnotator extends TreeAnnotator {
    * @param type the type of that tree
    */
   private void visitEnumConstant(ExpressionTree tree, AnnotatedTypeMirror type) {
-    Element decl = TreeUtils.elementFromTree(tree);
+    Element decl = TreeUtils.elementFromUse(tree, elements);
     if (decl.getKind() != ElementKind.ENUM_CONSTANT) {
       return;
     }

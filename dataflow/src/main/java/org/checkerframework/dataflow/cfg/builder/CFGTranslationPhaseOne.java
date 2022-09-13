@@ -203,7 +203,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
   /** Annotation processing environment and its associated type and tree utilities. */
   final ProcessingEnvironment env;
 
-  final Elements elements;
+  protected final Elements elements;
   final Types types;
   final Trees trees;
   public final TreeBuilder treeBuilder;
@@ -852,7 +852,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
 
       MemberSelectTree valueOfSelect = treeBuilder.buildValueOfMethodAccess(classTree);
       handleArtificialTree(valueOfSelect);
-      MethodAccessNode valueOfAccess = new MethodAccessNode(valueOfSelect, className);
+      MethodAccessNode valueOfAccess = new MethodAccessNode(valueOfSelect, className, null);
       valueOfAccess.setInSource(false);
       insertNodeAfter(valueOfAccess, className);
 
@@ -884,7 +884,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
 
       MemberSelectTree primValueSelect = treeBuilder.buildPrimValueMethodAccess(node.getTree());
       handleArtificialTree(primValueSelect);
-      MethodAccessNode primValueAccess = new MethodAccessNode(primValueSelect, node);
+      MethodAccessNode primValueAccess = new MethodAccessNode(primValueSelect, node, null);
       primValueAccess.setInSource(false);
       // Method access may throw NullPointerException
       insertNodeWithExceptionsAfter(
@@ -1399,7 +1399,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
     // Third, test the receiver, if any, for nullness (15.12.4.4).
     // Fourth, convert the arguments to the type of the formal parameters (15.12.4.5).
     // Fifth, if the method is synchronized, lock the receiving object or class (15.12.4.5).
-    ExecutableElement method = TreeUtils.elementFromUse(tree);
+    ExecutableElement method = TreeUtils.elementFromUse(tree, elements);
     if (method == null) {
       // The method wasn't found, e.g. because of a compilation error.
       return null;
@@ -1414,7 +1414,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
     // Look up method to invoke and possibly throw NullPointerException
     Node receiver = getReceiver(methodSelect);
 
-    MethodAccessNode target = new MethodAccessNode(methodSelect, receiver);
+    MethodAccessNode target = new MethodAccessNode(methodSelect, receiver, elements);
 
     ExecutableElement element = method;
     if (ElementUtils.isStatic(element) || receiver instanceof ThisNode) {
@@ -1451,7 +1451,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
     ExtendedNode extendedNode = extendWithNodeWithExceptions(node, thrownSet);
 
     /* Check for the TerminatesExecution annotation. */
-    Element methodElement = TreeUtils.elementFromTree(tree);
+    Element methodElement = TreeUtils.elementFromUse(tree, elements);
     boolean terminatesExecution =
         annotationProvider.getDeclAnnotation(methodElement, TerminatesExecution.class) != null;
     if (terminatesExecution) {
@@ -1625,7 +1625,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
       FieldAccessNode target = new FieldAccessNode(variable, receiver);
       target.setLValue();
 
-      Element element = TreeUtils.elementFromUse(variable);
+      Element element = TreeUtils.elementFromUse(variable, elements);
       if (ElementUtils.isStatic(element) || receiver instanceof ThisNode) {
         // No NullPointerException can be thrown, use normal node
         extendWithNode(target);
@@ -1682,7 +1682,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
       return scan(mtree.getExpression(), null);
     } else {
       // `tree` lacks an explicit reciever.
-      Element ele = TreeUtils.elementFromUse(tree);
+      Element ele = TreeUtils.elementFromUse(tree, elements);
       TypeElement declaringClass = ElementUtils.enclosingTypeElement(ele);
       TypeMirror type = ElementUtils.getType(declaringClass);
       if (ElementUtils.isStatic(ele)) {
@@ -2737,7 +2737,8 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
 
       Node expressionNode = scan(expression, p);
 
-      MethodAccessNode iteratorAccessNode = new MethodAccessNode(iteratorSelect, expressionNode);
+      MethodAccessNode iteratorAccessNode =
+          new MethodAccessNode(iteratorSelect, expressionNode, elements);
       iteratorAccessNode.setInSource(false);
       extendWithNode(iteratorAccessNode);
       MethodInvocationNode iteratorCallNode =
@@ -2762,7 +2763,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
       handleArtificialTree(hasNextSelect);
 
       MethodAccessNode hasNextAccessNode =
-          new MethodAccessNode(hasNextSelect, iteratorReceiverNode);
+          new MethodAccessNode(hasNextSelect, iteratorReceiverNode, elements);
       hasNextAccessNode.setInSource(false);
       extendWithNode(hasNextAccessNode);
 
@@ -2790,7 +2791,8 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
       MemberSelectTree nextSelect = treeBuilder.buildNextMethodAccess(iteratorUse2);
       handleArtificialTree(nextSelect);
 
-      MethodAccessNode nextAccessNode = new MethodAccessNode(nextSelect, iteratorReceiverNode2);
+      MethodAccessNode nextAccessNode =
+          new MethodAccessNode(nextSelect, iteratorReceiverNode2, elements);
       nextAccessNode.setInSource(false);
       extendWithNode(nextAccessNode);
 
@@ -3047,7 +3049,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
       Node receiver = getReceiver(tree);
       node = new FieldAccessNode(tree, receiver);
     } else {
-      Element element = TreeUtils.elementFromUse(tree);
+      Element element = TreeUtils.elementFromUse(tree, elements);
       switch (element.getKind()) {
         case FIELD:
           // Note that "this"/"super" is a field, but not a field access.
@@ -3309,7 +3311,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
     Node expr = scan(tree.getExpression(), p);
     if (!TreeUtils.isFieldAccess(tree)) {
       // Could be a selector of a class or package
-      Element element = TreeUtils.elementFromUse(tree);
+      Element element = TreeUtils.elementFromUse(tree, elements);
       if (ElementUtils.isTypeElement(element)) {
         ClassNameNode result = new ClassNameNode(tree, expr);
         extendWithClassNameNode(result);
@@ -3325,7 +3327,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
 
     Node node = new FieldAccessNode(tree, expr);
 
-    Element element = TreeUtils.elementFromUse(tree);
+    Element element = TreeUtils.elementFromUse(tree, elements);
     if (ElementUtils.isStatic(element)
         || expr instanceof ImplicitThisNode
         || expr instanceof ExplicitThisNode) {

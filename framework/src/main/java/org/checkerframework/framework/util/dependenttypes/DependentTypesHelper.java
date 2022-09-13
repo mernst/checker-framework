@@ -32,6 +32,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.expression.FormalParameter;
 import org.checkerframework.dataflow.expression.JavaExpression;
@@ -105,6 +106,9 @@ public class DependentTypesHelper {
   /** AnnotatedTypeFactory */
   protected final AnnotatedTypeFactory factory;
 
+  /** The javac element utilities. */
+  protected final Elements elements;
+
   /**
    * Maps from an annotation name, the fully-qualified name of its class, to its elements that are
    * Java expressions.
@@ -136,6 +140,7 @@ public class DependentTypesHelper {
    */
   public DependentTypesHelper(AnnotatedTypeFactory factory) {
     this.factory = factory;
+    this.elements = factory.getElementUtils();
 
     this.annoToElements = new HashMap<>();
     for (Class<? extends Annotation> expressionAnno : factory.getSupportedTypeQualifiers()) {
@@ -284,7 +289,7 @@ public class DependentTypesHelper {
    */
   private void atInvocation(AnnotatedExecutableType methodType, ExpressionTree tree) {
     assert hasDependentAnnotations();
-    Element methodElt = TreeUtils.elementFromUse(tree);
+    Element methodElt = TreeUtils.elementFromUse(tree, elements);
     // Because methodType is the type post type variable substitution, it has annotations from
     // both the method declaration and the type arguments at the use of the method. Annotations
     // from type arguments must not be viewpoint-adapted to the call site. For example:

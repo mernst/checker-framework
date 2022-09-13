@@ -130,7 +130,7 @@ public class AliasingTransfer extends CFTransfer {
 
     if (!parentIsStatement) {
 
-      ExecutableElement methodElement = TreeUtils.elementFromUse(n.getTree());
+      ExecutableElement methodElement = TreeUtils.elementFromUse(n.getTree(), elements);
       List<Node> args = n.getArguments();
       List<? extends VariableElement> params = methodElement.getParameters();
       assert (args.size() == params.size())

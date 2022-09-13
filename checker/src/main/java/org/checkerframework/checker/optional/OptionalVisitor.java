@@ -205,7 +205,7 @@ public class OptionalVisitor
     // Use transfer functions and Store entries.
     ExpressionTree receiver = isPresentCall.second;
     if (sameExpression(receiver, getReceiver)) {
-      ExecutableElement ele = TreeUtils.elementFromUse((MethodInvocationTree) trueExpr);
+      ExecutableElement ele = TreeUtils.elementFromUse((MethodInvocationTree) trueExpr, elements);
 
       checker.reportWarning(
           node,

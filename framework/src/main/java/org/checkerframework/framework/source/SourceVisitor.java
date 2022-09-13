@@ -115,7 +115,7 @@ public abstract class SourceVisitor<R, P> extends TreePathScanner<R, P> {
     if (!warnUnneededSuppressions) {
       return;
     }
-    Element elt = TreeUtils.elementFromTree(tree);
+    Element elt = TreeUtils.elementFromTree(tree, elements);
     if (elt.getAnnotation(SuppressWarnings.class) != null) {
       treesWithSuppressWarnings.add(tree);
     }

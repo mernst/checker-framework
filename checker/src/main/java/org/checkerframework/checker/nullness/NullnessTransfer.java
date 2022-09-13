@@ -361,7 +361,7 @@ public class NullnessTransfer
     // warning for the method invocation, but not for subsequent uses of the argument.  See test
     // case FlowNullness.java.
     MethodInvocationTree tree = n.getTree();
-    ExecutableElement method = TreeUtils.elementFromUse(tree);
+    ExecutableElement method = TreeUtils.elementFromUse(tree, elements);
     AnnotatedExecutableType methodType = nullnessTypeFactory.getAnnotatedType(method);
     List<AnnotatedTypeMirror> methodParams = methodType.getParameterTypes();
     List<? extends ExpressionTree> methodArgs = tree.getArguments();

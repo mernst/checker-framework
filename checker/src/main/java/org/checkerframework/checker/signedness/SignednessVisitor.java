@@ -184,7 +184,7 @@ public class SignednessVisitor extends BaseTypeVisitor<SignednessAnnotatedTypeFa
 
   @Override
   public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
-    ExecutableElement methElt = TreeUtils.elementFromUse(node);
+    ExecutableElement methElt = TreeUtils.elementFromUse(node, elements);
     boolean hasEqualsMethodAnno =
         atypeFactory.getDeclAnnotation(methElt, EqualsMethod.class) != null;
     if (hasEqualsMethodAnno || InterningVisitor.isInvocationOfEquals(node)) {

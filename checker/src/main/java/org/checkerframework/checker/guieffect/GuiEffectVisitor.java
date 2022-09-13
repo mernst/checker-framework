@@ -268,7 +268,7 @@ public class GuiEffectVisitor extends BaseTypeVisitor<GuiEffectTypeFactory> {
     }
 
     // Target method annotations
-    ExecutableElement methodElt = TreeUtils.elementFromUse(node);
+    ExecutableElement methodElt = TreeUtils.elementFromUse(node, elements);
     if (debugSpew) {
       System.err.println("methodElt found");
     }

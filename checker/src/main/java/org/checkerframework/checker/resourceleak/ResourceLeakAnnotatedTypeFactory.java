@@ -277,7 +277,7 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
    * @return true if the given tree has an {@link MustCallAlias} annotation
    */
   /* package-private */ boolean hasMustCallAlias(Tree tree) {
-    Element elt = TreeUtils.elementFromTree(tree);
+    Element elt = TreeUtils.elementFromTree(tree, elements);
     return hasMustCallAlias(elt);
   }
 
@@ -307,7 +307,7 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
    *     invoked method
    */
   public boolean hasCreatesMustCallFor(MethodInvocationNode node) {
-    ExecutableElement decl = TreeUtils.elementFromUse(node.getTree());
+    ExecutableElement decl = TreeUtils.elementFromUse(node.getTree(), elements);
     return getDeclAnnotation(decl, CreatesMustCallFor.class) != null
         || getDeclAnnotation(decl, CreatesMustCallFor.List.class) != null;
   }

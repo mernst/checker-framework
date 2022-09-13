@@ -229,7 +229,7 @@ public abstract class AccumulationAnnotatedTypeFactory extends BaseAnnotatedType
     // Must call `getTypeFactoryOfSubchecker` each time, not store and reuse.
     ReturnsReceiverAnnotatedTypeFactory rrATF =
         getTypeFactoryOfSubchecker(ReturnsReceiverChecker.class);
-    ExecutableElement methodEle = TreeUtils.elementFromUse(tree);
+    ExecutableElement methodEle = TreeUtils.elementFromUse(tree, elements);
     AnnotatedExecutableType methodAtm = rrATF.getAnnotatedType(methodEle);
     AnnotatedTypeMirror rrType = methodAtm.getReturnType();
     return rrType != null && rrType.hasAnnotation(This.class);

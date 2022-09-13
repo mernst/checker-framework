@@ -6,7 +6,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.util.Elements;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -24,12 +26,23 @@ public class MethodAccessNode extends Node {
 
   // TODO: add method to get modifiers (static, access level, ..)
 
-  public MethodAccessNode(ExpressionTree tree, Node receiver) {
+  /**
+   * Create a new MethodAccessNode.
+   *
+   * @param tree the expression that is a method access
+   * @param receiver the receiver
+   * @param elements the javac element utilities
+   */
+  public MethodAccessNode(ExpressionTree tree, Node receiver, Elements elements) {
     super(TreeUtils.typeOf(tree));
     assert TreeUtils.isMethodAccess(tree);
     this.tree = tree;
     assert TreeUtils.isUseOfElement(tree) : "@AssumeAssertion(nullness): tree kind";
-    this.method = (ExecutableElement) TreeUtils.elementFromUse(tree);
+    ExecutableElement methodTmp = (ExecutableElement) TreeUtils.elementFromUse(tree, elements);
+    if (methodTmp == null) {
+      throw new BugInCF("tree %s [%s]", tree, tree.getClass());
+    }
+    this.method = methodTmp;
     this.receiver = receiver;
   }
 
