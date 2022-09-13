@@ -1047,7 +1047,7 @@ class MustCallConsistencyAnalyzer {
   private void updateObligationsForAssignment(
       Set<Obligation> obligations, AssignmentNode assignmentNode) {
     Node lhs = assignmentNode.getTarget();
-    VariableElement lhsElement = TreeUtils.lhsElementFromTree(lhs.getTree());
+    VariableElement lhsElement = TreeUtils.variableElementFromTree(lhs.getTree());
     // Use the temporary variable for the rhs if it exists.
     Node rhs = NodeUtils.removeCasts(assignmentNode.getExpression());
     rhs = getTempVarOrNode(rhs);
@@ -1300,7 +1300,7 @@ class MustCallConsistencyAnalyzer {
         if (mcValues.isEmpty()) {
           return;
         }
-        Element lhsElement = TreeUtils.lhsElementFromTree(lhs.getTree());
+        VariableElement lhsElement = TreeUtils.variableElementFromTree(lhs.getTree());
         checker.reportError(
             node.getTree(),
             "required.method.not.called",
@@ -1373,7 +1373,7 @@ class MustCallConsistencyAnalyzer {
       cmAnno = typeFactory.top;
     }
     if (!calledMethodsSatisfyMustCall(mcValues, cmAnno)) {
-      VariableElement lhsElement = TreeUtils.lhsElementFromTree(lhs.getTree());
+      VariableElement lhsElement = TreeUtils.variableElementFromTree(lhs.getTree());
       if (!checker.shouldSkipUses(lhsElement)) {
         checker.reportError(
             node.getTree(),

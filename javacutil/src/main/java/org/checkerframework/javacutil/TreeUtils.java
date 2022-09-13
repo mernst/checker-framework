@@ -371,24 +371,6 @@ public final class TreeUtils {
   }
 
   /**
-   * Use to get the Element for the lhs of an assignment. It is never an ExecutableElement.
-   *
-   * <p>Gets the element for the declaration corresponding to this use of an element. To get the
-   * element for a declaration, use {@link #elementFromDeclaration(ClassTree)}, {@link
-   * #elementFromDeclaration(MethodTree)}, or {@link #elementFromDeclaration(VariableTree)} instead.
-   *
-   * <p>Differs from {@link #elementFromUseNoCorrection} in that it does not call {@link
-   * Resolver#correctExecutableElementWithinDefaultMethod}.
-   *
-   * @param tree the tree corresponding to a use of an element
-   * @return the element for the corresponding declaration, {@code null} otherwise
-   */
-  @Pure
-  public static @Nullable Element lhsElementFromTree(ExpressionTree tree) {
-    return TreeUtils.elementFromTreeNoCorrection(tree);
-  }
-
-  /**
    * Returns the element corresponding to the given use.
    *
    * @param tree the tree corresponding to a use of an element
@@ -746,38 +728,6 @@ public final class TreeUtils {
   @Pure
   public static @Nullable Element elementFromTreeNoCorrection(Tree tree) {
     return elementFromTreeImpl(tree, null);
-  }
-
-  /**
-   * Use to get the Element for the lhs of an assignment. It is never an ExecutableElement.
-   *
-   * <p>Gets the {@link Element} for the given Tree API node. Does no correction for
-   * ExecutableElements within default methods. Use with care.
-   *
-   * @param tree the {@link Tree} node to get the symbol for
-   * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
-   *     (JCTree)
-   * @return the {@link Symbol} for the given tree, or null if one could not be found
-   */
-  @Pure
-  public static @Nullable VariableElement lhsElementFromTree(Tree tree) {
-    return (VariableElement) elementFromTreeImpl(tree, null);
-  }
-
-  /**
-   * Use to get the Element for the lhs of an assignment. It is never an ExecutableElement.
-   *
-   * <p>Gets the {@link Element} for the given Tree API node. Does no correction for
-   * ExecutableElements within default methods. Use with care.
-   *
-   * @param tree the {@link Tree} node to get the symbol for
-   * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
-   *     (JCTree)
-   * @return the {@link Symbol} for the given tree, or null if one could not be found
-   */
-  @Pure
-  public static @Nullable Element lhsElementFromUse(ExpressionTree tree) {
-    return TreeUtils.elementFromTreeNoCorrection(tree);
   }
 
   /**

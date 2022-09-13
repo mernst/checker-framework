@@ -224,7 +224,7 @@ public class MustCallVisitor extends BaseTypeVisitor<MustCallAnnotatedTypeFactor
       ExpressionTree valueExp,
       @CompilerMessageKey String errorKey,
       Object... extraArgs) {
-    VariableElement elt = TreeUtils.lhsElementFromTree(varTree);
+    VariableElement elt = TreeUtils.variableElementFromTree(varTree);
     if (elt != null && elt.getKind() == ElementKind.RESOURCE_VARIABLE) {
       commonAssignmentCheckOnResourceVariable = true;
     }
