@@ -628,7 +628,6 @@ class MustCallConsistencyAnalyzer {
       String s = m.toString();
       missingStrs.add(s.equals("this") ? s + " of type " + m.getType() : s);
     }
-    // String nodeString = node.getTree().toString();
     checker.reportError(
         node.getTree(),
         "reset.not.owning",
