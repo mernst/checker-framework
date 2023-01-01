@@ -369,11 +369,15 @@ public final class TreeUtils {
   }
 
   /**
-   * Returns the element corresponding to the given use. The given tree must be a use of an element;
-   * for example, it cannot be a binary expression.
+   * Gets the element for the declaration corresponding to this use of an element. To get the
+   * element for a declaration, use {@link #elementFromDeclaration(ClassTree)}, {@link
+   * #elementFromDeclaration(MethodTree)}, or {@link #elementFromDeclaration(VariableTree)} instead.
    *
-   * @param tree the tree, which must be a use of an element
-   * @return the element for the given use
+   * <p>This method is just a wrapper around {@link TreeUtils#elementFromTree(Tree)}, but this class
+   * might be the first place someone looks for this functionality.
+   *
+   * @param node the tree corresponding to a use of an element
+   * @return the element for the corresponding declaration, {@code null} otherwise
    */
   @Pure
   public static Element elementFromUse(ExpressionTree tree) {
@@ -479,7 +483,124 @@ public final class TreeUtils {
     if (result == null) {
       throw new BugInCF("tree = %s [%s]", tree, tree.getClass());
     }
+    if (!(el instanceof ExecutableElement)) {
+      throw new BugInCF("Method elements should be ExecutableElement. Found: %s", el);
+    }
     return result;
+  }
+
+  /**
+   * Returns the ExecutableElement for the called method, from a call. Is correct even for method
+   * calls on enum constants.
+   *
+   * @param node a method call
+   * @return the ExecutableElement for the called method
+   */
+  @Deprecated // This method does not work.
+  @Pure
+  public static ExecutableElement elementFromUse(
+      MethodInvocationTree node, Trees trees, TreePath path, Elements elements) {
+
+    // This is a workaround for a javac bug indicated by
+    // https://github.com/typetools/checker-framework/issues/5165 .  Consider a method call on an
+    // enum constant, to a method that overrides a method in the enum.  At the call, javac makes the
+    // Element of the method be the one in the enum class rather than the anonymous class defined by
+    // the enum constant.  (Perhaps the compiler arranges that dynamic dispatch calls the right one
+    // at run time.)
+
+    // That anonymous class does not seem to be reachable from the enum constant:  it isn't in the
+    // enum class's getEnclosedElements().  So, this code looks at the tree and the enum constant's
+    // definition.  Is there a shorter way to obtain the method element from the enum constant?
+
+    // Test whether the receiver is a reference to an Enum constant.
+    JCTree methodSelect = ((JCMethodInvocation) node).getMethodSelect();
+    if (methodSelect.getKind() == Tree.Kind.MEMBER_SELECT) {
+      ExpressionTree receiver = ((MemberSelectTree) methodSelect).getExpression();
+      // System.out.printf("receiver %s %s%n", receiver, receiver.getKind());
+      Element receiverElt = TreeUtils.elementFromTree(receiver);
+      // System.out.printf("receiver %s %s%n", receiver, receiver.getKind());
+      System.out.printf("  receiverElt %s %s%n", receiverElt, receiverElt.getKind());
+      if (receiverElt.getKind() == ElementKind.ENUM_CONSTANT) {
+        // The receiver is a reference to an Enum constant.
+        VariableElement enumVarElt = (VariableElement) receiverElt;
+        TypeElement enumTypeElt = (TypeElement) enumVarElt.getEnclosingElement();
+        System.out.printf(
+            "enumVarElt: %s %s %s%n", enumVarElt, enumVarElt.getKind(), enumVarElt.getClass());
+        Symbol.VarSymbol enumVarSymbol = (Symbol.VarSymbol) enumVarElt;
+        System.out.printf(
+            "enumVarSymbol.owner: %s %s %s%n",
+            enumVarSymbol.owner, enumVarSymbol.owner.getKind(), enumVarSymbol.owner.getClass());
+        System.out.printf(
+            "enumTypeElt: %s %s %s%n", enumTypeElt, enumTypeElt.getKind(), enumTypeElt.getClass());
+        System.out.printf("  Enum enclosed elements = %s%n", enumTypeElt.getEnclosedElements());
+
+        // I now need the Tree for the Enum.  This will only work if the enum definition is being
+        // compiled, not if the enum is read from a classfile -- and not always even if the
+        // enum definition is being compiled.
+        Tree enumTree = trees.getTree(enumTypeElt);
+        System.out.printf(
+            "enumTree: %s%n", enumTree == null ? "null" : toStringTruncated(enumTree, 60));
+        if (enumTree != null) {
+          System.out.printf(
+              "enumTree: %s %s %s%n",
+              toStringTruncated(enumTree, 60), enumTree.getKind(), enumTree.getClass());
+
+          VariableTree enumEltTree =
+              (VariableTree)
+                  TreeInfo.declarationFor(
+                      (com.sun.tools.javac.code.Symbol) enumVarSymbol,
+                      (com.sun.tools.javac.tree.JCTree) enumTree);
+
+          System.out.printf(
+              "enumEltTree: %s %s %s%n",
+              enumEltTree, enumEltTree.getKind(), enumEltTree.getClass());
+
+          NewClassTree eltClass = (NewClassTree) enumEltTree.getInitializer();
+
+          ClassTree classTree = eltClass.getClassBody();
+          System.out.printf("classTree : %s%n", classTree);
+          if (classTree != null) {
+            TypeElement classElt = (TypeElement) elementFromTree(classTree);
+            if (classElt == null) {
+              System.out.printf("classElt: null%n");
+            } else {
+              System.out.printf(
+                  "classElt: %s %s %s%n", classElt, classElt.getKind(), classElt.getClass());
+            }
+          }
+
+          if (classTree != null) {
+            List<? extends Tree> members = classTree.getMembers();
+            for (Tree member : members) {
+              System.out.printf("member: %s %s %s%n", member, member.getKind(), member.getClass());
+
+              if (member.getKind() == Tree.Kind.METHOD) {
+                ExecutableElement enumConstMember =
+                    (ExecutableElement) TreeUtils.elementFromTree(member);
+                if (enumConstMember == null) {
+                  System.out.printf("enumConstMember: null%n");
+                } else {
+                  System.out.printf(
+                      "enumConstMember: %s %s %s%n",
+                      enumConstMember, enumConstMember.getKind(), enumConstMember.getClass());
+                }
+
+                // Here, I had hoped to use Elements.overrides() to determine whether the anonymous
+                // class member overrides the method declared in the class.  However, both classElt
+                // and enumConstMember are null:  that is, javac won't give me an Element either for
+                // the anonymous class or for the method in it.  I'm stuck.
+
+                // Throw an error to prevent more voluminous output.
+                throw new Error();
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Use the standard algorithm.
+    return elementFromUse(node);
   }
 
   /**
@@ -537,7 +658,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Returns the ExecutableElement for the given constructor invocation.
+   * Gets the ExecutableElement for the called constructor, from a constructor invocation.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
@@ -552,7 +673,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Returns the ExecutableElement for the given constructor invocation.
+   * Gets the ExecutableElement for the called constructor, from a constructor invocation.
    *
    * @param tree a constructor invocation
    * @return the ExecutableElement for the called constructor
@@ -563,6 +684,9 @@ public final class TreeUtils {
     ExecutableElement result = (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
     if (result == null) {
       throw new BugInCF("null element for %s", tree);
+    }
+    if (!(el instanceof ExecutableElement)) {
+      throw new BugInCF("Constructor elements should be ExecutableElement. Found: %s", el);
     }
     return result;
   }
@@ -682,200 +806,6 @@ public final class TreeUtils {
         }
         return defaultResult;
     }
-  }
-
-  /**
-   * Gets the element for a class corresponding to a declaration.
-   *
-   * @param node class declaration
-   * @return the element for the given class
-   */
-  public static TypeElement elementFromDeclaration(ClassTree node) {
-    TypeElement elt = (TypeElement) TreeUtils.elementFromTree(node);
-    assert elt != null : "@AssumeAssertion(nullness): tree kind";
-    return elt;
-  }
-
-  /**
-   * Gets the element for a method corresponding to a declaration.
-   *
-   * @return the element for the given method
-   */
-  public static ExecutableElement elementFromDeclaration(MethodTree node) {
-    ExecutableElement elt = (ExecutableElement) TreeUtils.elementFromTree(node);
-    assert elt != null : "@AssumeAssertion(nullness): tree kind";
-    return elt;
-  }
-
-  /**
-   * Gets the element for a variable corresponding to its declaration.
-   *
-   * @return the element for the given variable
-   */
-  public static VariableElement elementFromDeclaration(VariableTree node) {
-    VariableElement elt = (VariableElement) TreeUtils.elementFromTree(node);
-    assert elt != null : "@AssumeAssertion(nullness): tree kind";
-    return elt;
-  }
-
-  /**
-   * Gets the element for the declaration corresponding to this use of an element. To get the
-   * element for a declaration, use {@link #elementFromDeclaration(ClassTree)}, {@link
-   * #elementFromDeclaration(MethodTree)}, or {@link #elementFromDeclaration(VariableTree)} instead.
-   *
-   * <p>This method is just a wrapper around {@link TreeUtils#elementFromTree(Tree)}, but this class
-   * might be the first place someone looks for this functionality.
-   *
-   * @param node the tree corresponding to a use of an element
-   * @return the element for the corresponding declaration, {@code null} otherwise
-   */
-  @Pure
-  public static @Nullable Element elementFromUse(ExpressionTree node) {
-    return TreeUtils.elementFromTree(node);
-  }
-
-  /**
-   * Returns the ExecutableElement for the called method, from a call.
-   *
-   * @param node a method call
-   * @return the ExecutableElement for the called method
-   */
-  @Pure
-  public static ExecutableElement elementFromUse(MethodInvocationTree node) {
-    Element el = TreeUtils.elementFromTree(node);
-    if (!(el instanceof ExecutableElement)) {
-      throw new BugInCF("Method elements should be ExecutableElement. Found: %s", el);
-    }
-    return (ExecutableElement) el;
-  }
-
-  /**
-   * Returns the ExecutableElement for the called method, from a call. Is correct even for method
-   * calls on enum constants.
-   *
-   * @param node a method call
-   * @return the ExecutableElement for the called method
-   */
-  @Pure
-  public static ExecutableElement elementFromUse(
-      MethodInvocationTree node, Trees trees, TreePath path, Elements elements) {
-
-    // This is a workaround for a javac bug indicated by
-    // https://github.com/typetools/checker-framework/issues/5165 .  Consider a method call on an
-    // enum constant, to a method that overrides a method in the enum.  At the call, javac makes the
-    // Element of the method be the one in the enum class rather than the anonymous class defined by
-    // the enum constant.  (Perhaps the compiler arranges that dynamic dispatch calls the right one
-    // at run time.)
-
-    // That anonymous class does not seem to be reachable from the enum constant:  it isn't in the
-    // enum class's getEnclosedElements().  So, this code looks at the tree and the enum constant's
-    // definition.  Is there a shorter way to obtain the method element from the enum constant?
-
-    // Test whether the receiver is a reference to an Enum constant.
-    JCTree methodSelect = ((JCMethodInvocation) node).getMethodSelect();
-    if (methodSelect.getKind() == Tree.Kind.MEMBER_SELECT) {
-      ExpressionTree receiver = ((MemberSelectTree) methodSelect).getExpression();
-      // System.out.printf("receiver %s %s%n", receiver, receiver.getKind());
-      Element receiverElt = TreeUtils.elementFromTree(receiver);
-      // System.out.printf("receiver %s %s%n", receiver, receiver.getKind());
-      System.out.printf("  receiverElt %s %s%n", receiverElt, receiverElt.getKind());
-      if (receiverElt.getKind() == ElementKind.ENUM_CONSTANT) {
-        // The receiver is a reference to an Enum constant.
-        VariableElement enumVarElt = (VariableElement) receiverElt;
-        TypeElement enumTypeElt = (TypeElement) enumVarElt.getEnclosingElement();
-        System.out.printf(
-            "enumVarElt: %s %s %s%n", enumVarElt, enumVarElt.getKind(), enumVarElt.getClass());
-        Symbol.VarSymbol enumVarSymbol = (Symbol.VarSymbol) enumVarElt;
-        System.out.printf(
-            "enumVarSymbol.owner: %s %s %s%n",
-            enumVarSymbol.owner, enumVarSymbol.owner.getKind(), enumVarSymbol.owner.getClass());
-        System.out.printf(
-            "enumTypeElt: %s %s %s%n", enumTypeElt, enumTypeElt.getKind(), enumTypeElt.getClass());
-        System.out.printf("  Enum enclosed elements = %s%n", enumTypeElt.getEnclosedElements());
-
-        // I now need the Tree for the Enum.  This will only work if the enum definition is being
-        // compiled, not if the enum is read from a classfile -- and not always even if the
-        // enum definition is being compiled.
-        Tree enumTree = trees.getTree(enumTypeElt);
-        System.out.printf(
-            "enumTree: %s%n", enumTree == null ? "null" : toStringTruncated(enumTree, 60));
-        if (enumTree != null) {
-          System.out.printf(
-              "enumTree: %s %s %s%n",
-              toStringTruncated(enumTree, 60), enumTree.getKind(), enumTree.getClass());
-
-          VariableTree enumEltTree =
-              (VariableTree)
-                  TreeInfo.declarationFor(
-                      (com.sun.tools.javac.code.Symbol) enumVarSymbol,
-                      (com.sun.tools.javac.tree.JCTree) enumTree);
-
-          System.out.printf(
-              "enumEltTree: %s %s %s%n",
-              enumEltTree, enumEltTree.getKind(), enumEltTree.getClass());
-
-          NewClassTree eltClass = (NewClassTree) enumEltTree.getInitializer();
-
-          ClassTree classTree = eltClass.getClassBody();
-          System.out.printf("classTree : %s%n", classTree);
-          if (classTree != null) {
-            TypeElement classElt = (TypeElement) elementFromTree(classTree);
-            if (classElt == null) {
-              System.out.printf("classElt: null%n");
-            } else {
-              System.out.printf(
-                  "classElt: %s %s %s%n", classElt, classElt.getKind(), classElt.getClass());
-            }
-          }
-
-          if (classTree != null) {
-            List<? extends Tree> members = classTree.getMembers();
-            for (Tree member : members) {
-              System.out.printf("member: %s %s %s%n", member, member.getKind(), member.getClass());
-
-              if (member.getKind() == Tree.Kind.METHOD) {
-                ExecutableElement enumConstMember =
-                    (ExecutableElement) TreeUtils.elementFromTree(member);
-                if (enumConstMember == null) {
-                  System.out.printf("enumConstMember: null%n");
-                } else {
-                  System.out.printf(
-                      "enumConstMember: %s %s %s%n",
-                      enumConstMember, enumConstMember.getKind(), enumConstMember.getClass());
-                }
-
-                // Here, I had hoped to use Elements.overrides() to determine whether the anonymous
-                // class member overrides the method declared in the class.  However, both classElt
-                // and enumConstMember are null:  that is, javac won't give me an Element either for
-                // the anonymous class or for the method in it.  I'm stuck.
-
-                // Throw an error to prevent more voluminous output.
-                throw new Error();
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Use the standard algorithm.
-    return elementFromUse(node);
-  }
-
-  /**
-   * Gets the ExecutableElement for the called constructor, from a constructor invocation.
-   *
-   * @param node a constructor invocation
-   * @return the ExecutableElement for the called constructor
-   * @see #constructor(NewClassTree)
-   */
-  @Pure
-  public static ExecutableElement elementFromUse(NewClassTree node) {
-    Element el = TreeUtils.elementFromTree(node);
-    if (!(el instanceof ExecutableElement)) {
-      throw new BugInCF("Constructor elements should  be ExecutableElement. Found: %s", el);
-    }
-    return (ExecutableElement) el;
   }
 
   /**
