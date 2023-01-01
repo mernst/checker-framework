@@ -22,6 +22,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.SystemUtil;
@@ -106,8 +107,12 @@ public class StubGenerator {
     }
   }
 
-  /** Generate the stub file for all the classes within the provided package. */
-  public void stubFromMethod(Element elt) {
+  /**
+   * Generate the stub file for all the classes within the package that contains {@code elt}.
+   *
+   * @param elt a method or constructor; generate stub files for its package
+   */
+  public void stubFromMethod(ExecutableElement elt) {
     if (!(elt.getKind() == ElementKind.CONSTRUCTOR || elt.getKind() == ElementKind.METHOD)) {
       return;
     }
@@ -118,7 +123,7 @@ public class StubGenerator {
       currentIndention = "    ";
       indent();
     }
-    ExecutableElement method = (ExecutableElement) elt;
+    ExecutableElement method = elt;
 
     printMethodDecl(method);
   }
@@ -379,7 +384,7 @@ public class StubGenerator {
    * @param lst a list to format
    * @return a string representation of the list, without surrounding square brackets
    */
-  private String formatList(List<?> lst) {
+  private String formatList(@MustCallUnknown List<? extends @MustCallUnknown Object> lst) {
     return StringsPlume.join(", ", lst);
   }
 

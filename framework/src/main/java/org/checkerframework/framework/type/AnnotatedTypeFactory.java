@@ -70,6 +70,8 @@ import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
+import org.checkerframework.afu.scenelib.el.AMethod;
+import org.checkerframework.afu.scenelib.el.ATypeElement;
 import org.checkerframework.checker.interning.qual.FindDistinct;
 import org.checkerframework.checker.interning.qual.InternedDistinct;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -137,8 +139,6 @@ import org.checkerframework.javacutil.trees.DetachedVarSymbol;
 import org.plumelib.util.CollectionsPlume;
 import org.plumelib.util.ImmutableTypes;
 import org.plumelib.util.StringsPlume;
-import scenelib.annotations.el.AMethod;
-import scenelib.annotations.el.ATypeElement;
 
 /**
  * The methods of this class take an element or AST node, and return the annotated type as an {@link
@@ -201,6 +201,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    */
   private @Nullable TreePath visitorTreePath;
 
+  // These variables cannot be static because they depend on the ProcessingEnvironment.
   /** The AnnotatedFor.value argument/element. */
   private final ExecutableElement annotatedForValueElement;
   /** The EnsuresQualifier.expression field/element. */
@@ -233,17 +234,17 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   final ExecutableElement requiresQualifierListValueElement;
 
   /** The RequiresQualifier type. */
-  TypeMirror requiresQualifierTM;
+  final TypeMirror requiresQualifierTM;
   /** The RequiresQualifier.List type. */
-  TypeMirror requiresQualifierListTM;
+  final TypeMirror requiresQualifierListTM;
   /** The EnsuresQualifier type. */
-  TypeMirror ensuresQualifierTM;
+  final TypeMirror ensuresQualifierTM;
   /** The EnsuresQualifier.List type. */
-  TypeMirror ensuresQualifierListTM;
+  final TypeMirror ensuresQualifierListTM;
   /** The EnsuresQualifierIf type. */
-  TypeMirror ensuresQualifierIfTM;
+  final TypeMirror ensuresQualifierIfTM;
   /** The EnsuresQualifierIf.List type. */
-  TypeMirror ensuresQualifierIfListTM;
+  final TypeMirror ensuresQualifierIfListTM;
 
   /**
    * ===== postInit initialized fields ==== Note: qualHierarchy and typeHierarchy are both
@@ -333,8 +334,14 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   /**
    * Scans all parts of the {@link AnnotatedTypeMirror} so that all of its fields are initialized.
    */
-  private SimpleAnnotatedTypeScanner<Void, Void> atmInitializer =
+  private final SimpleAnnotatedTypeScanner<Void, Void> atmInitializer =
       new SimpleAnnotatedTypeScanner<>((type1, q) -> null);
+
+  /**
+   * True if all methods should be assumed to be @SideEffectFree, for the purposes of
+   * org.checkerframework.dataflow analysis.
+   */
+  private final boolean assumeSideEffectFree;
 
   /**
    * Initializes all fields of {@code type}.
@@ -517,6 +524,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     this.processingEnv = checker.getProcessingEnvironment();
     // this.root = root;
     this.checker = checker;
+    this.assumeSideEffectFree =
+        checker.hasOption("assumeSideEffectFree") || checker.hasOption("assumePure");
+
     this.trees = Trees.instance(processingEnv);
     this.elements = processingEnv.getElementUtils();
     this.types = processingEnv.getTypeUtils();
@@ -705,8 +715,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
   /**
    * Actions that logically belong in the constructor, but need to run after the subclass
-   * constructor has completed. In particular, parseStubFiles() may try to do type resolution with
-   * this AnnotatedTypeFactory.
+   * constructor has completed. In particular, {@link AnnotationFileElementTypes#parseStubFiles()}
+   * may try to do type resolution with this AnnotatedTypeFactory.
    */
   protected void postInit() {
     this.qualHierarchy = createQualifierHierarchy();
@@ -781,10 +791,11 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       Enumeration<URL> urls = getClass().getClassLoader().getResources(filename);
       while (urls.hasMoreElements()) {
         URL url = urls.nextElement();
-        BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
-        lines.addAll(in.lines().collect(Collectors.toList()));
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()))) {
+          lines.addAll(in.lines().collect(Collectors.toList()));
+        }
       }
-      String[] result = lines.toArray(new String[0]);
+      String[] result = lines.toArray(new String[lines.size()]);
       return result;
     } catch (IOException e) {
       throw new BugInCF(e);
@@ -1115,10 +1126,12 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    *     the returned set, for example, it is used frequently to add Bottom qualifiers
    * @return a set of annotation class instances
    */
-  @SafeVarargs
-  @SuppressWarnings("varargs")
+  @SuppressWarnings({"varargs", "unchecked"}) // @SafeVarargs is only applicable to static methods
   private final Set<Class<? extends Annotation>> loadTypeAnnotationsFromQualDir(
       Class<? extends Annotation>... explicitlyListedAnnotations) {
+    if (loader != null) {
+      loader.close();
+    }
     loader = createAnnotationClassLoader();
 
     Set<Class<? extends Annotation>> annotations = loader.getBundledAnnotationClasses();
@@ -1475,7 +1488,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
   /**
    * Creates an AnnotatedTypeMirror for a variable or method declaration tree. The
-   * AnnotatedTypeMirror contains annotations explicitly written on the tree.
+   * AnnotatedTypeMirror contains annotations explicitly written on the tree, and possibly others as
+   * described below.
    *
    * <p>If a VariableTree is a parameter to a lambda, this method also adds annotations from the
    * declared type of the functional interface and the executable type of its method.
@@ -1613,7 +1627,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * @param tree the type tree
    * @return the (partially) annotated type of the type in the AST
    */
-  /*package private*/ final AnnotatedTypeMirror fromTypeTree(Tree tree) {
+  /* package private */ final AnnotatedTypeMirror fromTypeTree(Tree tree) {
     if (shouldCache && fromTypeTreeCache.containsKey(tree)) {
       return fromTypeTreeCache.get(tree).deepCopy();
     }
@@ -1947,7 +1961,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         : "Unexpected tree kind: " + tree.getKind();
 
     // Return null if the element kind has no receiver.
-    Element element = TreeUtils.elementFromTree(tree);
+    Element element = TreeUtils.elementFromUse(tree);
     assert element != null : "Unexpected null element for tree: " + tree;
     if (!ElementUtils.hasReceiver(element)) {
       return null;
@@ -1980,7 +1994,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     }
     // An implicit receiver is the first enclosing type that is a subtype of the type where the
     // element is declared.
-    while (!isSubtype(thisType.getUnderlyingType(), typeOfImplicitReceiver)) {
+    while (thisType != null && !isSubtype(thisType.getUnderlyingType(), typeOfImplicitReceiver)) {
       thisType = thisType.getEnclosingType();
     }
     return thisType;
@@ -2116,7 +2130,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       return getAnnotatedType(receiver);
     }
 
-    Element element = TreeUtils.elementFromUse(expression);
+    Element element = TreeUtils.elementFromTree(expression);
     if (element != null && ElementUtils.hasReceiver(element)) {
       // The tree references an element that has a receiver, but the tree does not have an explicit
       // receiver. So, the tree must have an implicit receiver of "this" or "Outer.this".
@@ -2567,7 +2581,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     // Add computed annotations to the type.
     addComputedTypeAnnotations(tree, type);
 
-    ExecutableElement ctor = TreeUtils.constructor(tree);
+    ExecutableElement ctor = TreeUtils.elementFromUse(tree);
     AnnotatedExecutableType con = getAnnotatedType(ctor); // get unsubstituted type
     constructorFromUsePreSubstitution(tree, con);
 
@@ -2596,10 +2610,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         List<AnnotatedTypeMirror> p = new ArrayList<>(superCon.getParameterTypes().size() + 1);
         if (TreeUtils.hasSyntheticArgument(tree)) {
           p.add(con.getParameterTypes().get(0));
-        } else if (con.receiverType != null) {
-          p.add(con.receiverType);
+        } else if (con.getReceiverType() != null) {
+          p.add(con.getReceiverType());
         } else {
-          p.add(con.paramTypes.get(0));
+          p.add(con.getParameterTypes().get(0));
         }
         p.addAll(1, superCon.getParameterTypes());
         con.setParameterTypes(p);
@@ -3769,11 +3783,11 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    *
    * <ol>
    *   <li>jdk.astub in the same directory as the checker, if it exists and ignorejdkastub option is
-   *       not supplied <br>
-   *   <li>jdkN.astub, where N is the Java version in the same directory as the checker, if it
-   *       exists and ignorejdkastub option is not supplied <br>
+   *       not supplied
+   *   <li>jdkN.astub (where N is the Java version or any higher value) in the same directory as the
+   *       checker, if it exists and ignorejdkastub option is not supplied
    *   <li>Stub files listed in @StubFiles annotation on the checker; must be in same directory as
-   *       the checker<br>
+   *       the checker
    *   <li>Stub files provided via {@code -Astubs} compiler option
    *   <li>Ajava files provided via {@code -Aajava} compiler option
    * </ol>
@@ -4528,13 +4542,11 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     }
 
     // Functional method
-    Element fnElement = TreeUtils.findFunction(tree, processingEnv);
+    ExecutableElement fnElement = TreeUtils.findFunction(tree, processingEnv);
 
     // Function type
     AnnotatedExecutableType functionType =
-        (AnnotatedExecutableType)
-            AnnotatedTypes.asMemberOf(types, this, functionalInterfaceType, fnElement);
-
+        AnnotatedTypes.asMemberOf(types, this, functionalInterfaceType, fnElement);
     return Pair.of(functionalInterfaceType, functionType);
   }
 
@@ -4850,7 +4862,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    *
    * <p>Capture conversion is the process of converting wildcards in a parameterized type to fresh
    * type variables. See <a
-   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-5.html#jls-5.1.10">JLS 5.1.10</a>
+   * href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-5.html#jls-5.1.10">JLS 5.1.10</a>
    * for details.
    *
    * <p>If {@code type} is not a declared type or if it does not have any wildcard type arguments,
@@ -4869,7 +4881,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    *
    * <p>Capture conversion is the process of converting wildcards in a parameterized type to fresh
    * type variables. See <a
-   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-5.html#jls-5.1.10">JLS 5.1.10</a>
+   * href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-5.html#jls-5.1.10">JLS 5.1.10</a>
    * for details.
    *
    * <p>If {@code type} is not a declared type or if it does not have any wildcard type arguments,
@@ -4945,7 +4957,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
           // Javac used a declared type instead of a captured type variable.  This seems to happen
           // when the bounds of the captured type variable would have been identical. This seems to
           // be a violation of the JLS, but javac does this, so the Checker Framework must handle
-          // that case. (See https://bugs.openjdk.java.net/browse/JDK-8054309.)
+          // that case. (See https://bugs.openjdk.org/browse/JDK-8054309.)
           replaceAnnotations(
               ((AnnotatedWildcardType) uncapturedTypeArg).getSuperBound(), capturedTypeArg);
         }
@@ -5160,7 +5172,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       // be the same type as upperbound.getUnderlyingType().  See
       // framework/tests/all-systems/Issue4890Interfaces.java,
       // framework/tests/all-systems/Issue4890.java and framework/tests/all-systems/Issue4877.java.
-      // (I think this is  https://bugs.openjdk.java.net/browse/JDK-8039222.)
+      // (I think this is  https://bugs.openjdk.org/browse/JDK-8039222.)
       for (AnnotatedTypeMirror bound : ((AnnotatedIntersectionType) upperBound).getBounds()) {
         if (types.isSameType(
             bound.underlyingType, capturedTypeVar.getUpperBound().getUnderlyingType())) {
@@ -5280,8 +5292,12 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     return awt.getUnderlyingType().getSuperBound() == null;
   }
 
-  /** Accessor for the element utilities. */
-  public Elements getElementUtils() {
+  /**
+   * Returns the utility class for working with {@link Element}s.
+   *
+   * @return the utility class for working with {@link Element}s
+   */
+  public final Elements getElementUtils() {
     return this.elements;
   }
 
@@ -5415,8 +5431,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
-   * Checks that the collection contains the annotation. Using Collection.contains does not always
-   * work, because it does not use areSame for comparison.
+   * Checks that the collection contains the annotation. Using {@code Collection.contains} does not
+   * always work, because it does not use {@code areSame()} for comparison.
    *
    * <p>This method is faster than {@link AnnotationUtils#containsSameByClass(Collection, Class)}
    * because is caches the name of the class rather than computing it each time.
@@ -5472,6 +5488,16 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    *     method
    */
   public void wpiAdjustForUpdateNonField(AnnotatedTypeMirror rhsATM) {}
+
+  /**
+   * Returns whether whole-program inference should infer types for receiver expressions. For some
+   * type systems, such as nullness, it doesn't make sense for WPI to do inference on receivers.
+   *
+   * @return true if WPI should infer types for method receiver parameters, false otherwise
+   */
+  public boolean wpiShouldInferTypesForReceivers() {
+    return true;
+  }
 
   /**
    * Side-effects the method or constructor annotations to make any desired changes before writing
@@ -5541,8 +5567,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   /**
    * Get the {@code value} field/element of the given contract list annotation.
    *
-   * @param contractListAnno a {@link RequiresQualifier.List}, {@link EnsuresQualifier.List}, or
-   *     {@link EnsuresQualifier.List}
+   * @param contractListAnno a {@link org.checkerframework.framework.qual.RequiresQualifier.List
+   *     RequiresQualifier.List}, {@link org.checkerframework.framework.qual.EnsuresQualifier.List
+   *     EnsuresQualifier.List}, or {@link
+   *     org.checkerframework.framework.qual.EnsuresQualifierIf.List EnsuresQualifierIf.List}
    * @return the {@code value} field/element of the given annotation
    */
   public List<AnnotationMirror> getContractListValues(AnnotationMirror contractListAnno) {
@@ -5573,5 +5601,24 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       return true;
     }
     return ImmutableTypes.isImmutable(TypeAnnotationUtils.unannotatedType(type).toString());
+  }
+
+  @Override
+  public boolean isSideEffectFree(ExecutableElement methodElement) {
+    if (assumeSideEffectFree) {
+      return true;
+    }
+    if (ElementUtils.isRecordAccessor(methodElement)
+        && TreeUtils.isAutoGeneratedRecordMember(methodElement)) {
+      return true;
+    }
+    for (AnnotationMirror anno : getDeclAnnotations(methodElement)) {
+      if (areSameByClass(anno, org.checkerframework.dataflow.qual.SideEffectFree.class)
+          || areSameByClass(anno, org.checkerframework.dataflow.qual.Pure.class)
+          || areSameByClass(anno, org.jmlspecs.annotation.Pure.class)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

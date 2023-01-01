@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -57,6 +56,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.checkerframework.afu.scenelib.util.JVMNames;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signature.qual.BinaryName;
@@ -79,7 +79,6 @@ import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
-import scenelib.annotations.util.JVMNames;
 
 /**
  * This is an implementation of {@link WholeProgramInferenceStorage} that stores annotations
@@ -93,8 +92,7 @@ public class WholeProgramInferenceJavaParserStorage
    * Directory where .ajava files will be written to and read from. This directory is relative to
    * where the javac command is executed.
    */
-  public static final String AJAVA_FILES_PATH =
-      "build" + File.separator + "whole-program-inference" + File.separator;
+  public static final File AJAVA_FILES_PATH = new File("build", "whole-program-inference");
 
   /** The type factory associated with this. */
   protected final AnnotatedTypeFactory atypeFactory;
@@ -199,11 +197,14 @@ public class WholeProgramInferenceJavaParserStorage
    * @param fieldElt a field
    * @return the annotations for a field
    */
-  private FieldAnnos getFieldAnnos(Element fieldElt) {
-    String className = ElementUtils.getEnclosingClassName((VariableElement) fieldElt);
+  private @Nullable FieldAnnos getFieldAnnos(VariableElement fieldElt) {
+    String className = ElementUtils.getEnclosingClassName(fieldElt);
     // Read in classes for the element.
     getFileForElement(fieldElt);
     ClassOrInterfaceAnnos classAnnos = classToAnnos.get(className);
+    if (classAnnos == null) {
+      return null;
+    }
     FieldAnnos fieldAnnos = classAnnos.fields.get(fieldElt.getSimpleName().toString());
     return fieldAnnos;
   }
@@ -263,6 +264,9 @@ public class WholeProgramInferenceJavaParserStorage
     @SuppressWarnings("signature") // https://tinyurl.com/cfissue/3094
     @BinaryName String className = enclosingClass.flatname.toString();
     ClassOrInterfaceAnnos classAnnos = classToAnnos.get(className);
+    if (classAnnos == null) {
+      return null;
+    }
     // If it's an enum constant it won't appear as a field
     // and it won't have extra annotations, so just return the basic type:
     if (classAnnos.enumConstants.contains(fieldName)) {
@@ -357,9 +361,9 @@ public class WholeProgramInferenceJavaParserStorage
   }
 
   @Override
-  public boolean addFieldDeclarationAnnotation(Element field, AnnotationMirror anno) {
+  public boolean addFieldDeclarationAnnotation(VariableElement field, AnnotationMirror anno) {
     FieldAnnos fieldAnnos = getFieldAnnos(field);
-    boolean isNewAnnotation = fieldAnnos.addDeclarationAnnotation(anno);
+    boolean isNewAnnotation = fieldAnnos != null && fieldAnnos.addDeclarationAnnotation(anno);
     if (isNewAnnotation) {
       modifiedFiles.add(getFileForElement(field));
     }
@@ -414,7 +418,10 @@ public class WholeProgramInferenceJavaParserStorage
       }
     }
 
-    if (newATM.getKind() == TypeKind.ARRAY) {
+    // Need to check both newATM and curATM, because one might be a declared type
+    // even if the other is an array: it is permitted to assign e.g., a String[]
+    // to a location with static type Object **and vice-versa** (if a cast is used).
+    if (newATM.getKind() == TypeKind.ARRAY && curATM.getKind() == TypeKind.ARRAY) {
       AnnotatedArrayType newAAT = (AnnotatedArrayType) newATM;
       AnnotatedArrayType oldAAT = (AnnotatedArrayType) curATM;
       AnnotatedArrayType aatToUpdate = (AnnotatedArrayType) typeToUpdate;
@@ -445,6 +452,11 @@ public class WholeProgramInferenceJavaParserStorage
    */
   private void addClassTree(ClassTree tree) {
     TypeElement element = TreeUtils.elementFromDeclaration(tree);
+    if (element == null) {
+      // TODO: There should be an element here, or there is nowhere to store inferences about
+      // `tree`.
+      return;
+    }
     String className = ElementUtils.getBinaryName(element);
     if (classToAnnos.containsKey(className)) {
       return;
@@ -530,7 +542,7 @@ public class WholeProgramInferenceJavaParserStorage
               // Ordering$1 in PolyCollectorTypeVar.java in the all-systems test suite.
               // addClass(ClassTree) in the then branch just below assumes that such an element
               // exists.
-              Element classElt = TreeUtils.elementFromTree(body);
+              Element classElt = TreeUtils.elementFromDeclaration(body);
               if (classElt != null) {
                 addClass(body);
               } else {
@@ -618,16 +630,14 @@ public class WholeProgramInferenceJavaParserStorage
            */
           private void addCallableDeclaration(
               MethodTree javacTree, CallableDeclaration<?> javaParserNode) {
-            Element element = TreeUtils.elementFromTree(javacTree);
+            ExecutableElement element = TreeUtils.elementFromDeclaration(javacTree);
             if (element == null) {
               // element can be null if there is no element corresponding to the method,
               // which happens for certain kinds of anonymous classes, such as Ordering$1 in
               // PolyCollectorTypeVar.java in the all-systems test suite.
               return;
             }
-            // If elt is non-null, it is guaranteed to be an executable element.
-            ExecutableElement elt = (ExecutableElement) element;
-            String className = ElementUtils.getEnclosingClassName(elt);
+            String className = ElementUtils.getEnclosingClassName(element);
             ClassOrInterfaceAnnos enclosingClass = classToAnnos.get(className);
             String executableSignature = JVMNames.getJVMMethodSignature(javacTree);
             if (!enclosingClass.callableDeclarations.containsKey(executableSignature)) {
@@ -650,12 +660,16 @@ public class WholeProgramInferenceJavaParserStorage
             enclosingClass.enumConstants.add(fieldName);
 
             // Ensure that if an enum constant defines a class, that class gets registered properly.
-            // See e.g. https://docs.oracle.com/javase/specs/jls/se7/html/jls-8.html#jls-8.9.1 for
+            // See e.g. https://docs.oracle.com/javase/specs/jls/se17/html/jls-8.html#jls-8.9.1 for
             // the specification of an enum constant, which does permit it to define an anonymous
             // class.
             NewClassTree constructor = (NewClassTree) javacTree.getInitializer();
-            if (constructor.getClassBody() != null) {
-              addClass(constructor.getClassBody());
+            ClassTree constructorClassBody = constructor.getClassBody();
+            if (constructorClassBody != null) {
+              // addClass assumes there is an element for its argument, but that is not always true!
+              if (TreeUtils.elementFromDeclaration(constructorClassBody) != null) {
+                addClass(constructorClassBody);
+              }
             }
           }
 
@@ -664,7 +678,7 @@ public class WholeProgramInferenceJavaParserStorage
             // This seems to occur when javacTree is a local variable in the second
             // class located in a source file. If this check returns false, then the
             // below call to TreeUtils.elementFromDeclaration causes a crash.
-            if (TreeUtils.elementFromTree(javacTree) == null) {
+            if (TreeUtils.elementFromDeclaration(javacTree) == null) {
               return;
             }
 
@@ -758,7 +772,7 @@ public class WholeProgramInferenceJavaParserStorage
       throw new BugInCF("WholeProgramInferenceJavaParser used with output format " + outputFormat);
     }
 
-    File outputDir = new File(AJAVA_FILES_PATH);
+    File outputDir = AJAVA_FILES_PATH;
     if (!outputDir.exists()) {
       outputDir.mkdirs();
     }
@@ -766,23 +780,22 @@ public class WholeProgramInferenceJavaParserStorage
     for (String path : modifiedFiles) {
       CompilationUnitAnnos root = sourceToAnnos.get(path);
       prepareCompilationUnitForWriting(root);
-      String packageDir;
+      File packageDir;
       if (!root.compilationUnit.getPackageDeclaration().isPresent()) {
         packageDir = AJAVA_FILES_PATH;
       } else {
         packageDir =
-            AJAVA_FILES_PATH
-                + File.separator
-                + root.compilationUnit
+            new File(
+                AJAVA_FILES_PATH,
+                root.compilationUnit
                     .getPackageDeclaration()
                     .get()
                     .getNameAsString()
-                    .replaceAll("\\.", File.separator);
+                    .replaceAll("\\.", File.separator));
       }
 
-      File packageDirFile = new File(packageDir);
-      if (!packageDirFile.exists()) {
-        packageDirFile.mkdirs();
+      if (!packageDir.exists()) {
+        packageDir.mkdirs();
       }
 
       String name = new File(path).getName();
@@ -791,11 +804,11 @@ public class WholeProgramInferenceJavaParserStorage
       }
 
       String nameWithChecker = name + "-" + checker.getClass().getCanonicalName() + ".ajava";
-      String outputPath = packageDir + File.separator + nameWithChecker;
+      File outputPath = new File(packageDir, nameWithChecker);
       if (this.inferOutputOriginal) {
-        String outputPathNoCheckerName = packageDir + File.separator + name + ".ajava";
+        File outputPathNoCheckerName = new File(packageDir, name + ".ajava");
         // Avoid re-writing this file for each checker that was run.
-        if (Files.notExists(Paths.get(outputPathNoCheckerName))) {
+        if (Files.notExists(outputPathNoCheckerName.toPath())) {
           writeAjavaFile(outputPathNoCheckerName, root);
         }
       }
@@ -812,7 +825,7 @@ public class WholeProgramInferenceJavaParserStorage
    * @param outputPath the path to which the ajava file should be written
    * @param root the compilation unit to be written
    */
-  private void writeAjavaFile(String outputPath, CompilationUnitAnnos root) {
+  private void writeAjavaFile(File outputPath, CompilationUnitAnnos root) {
     try (Writer writer = new BufferedWriter(new FileWriter(outputPath))) {
 
       // JavaParser can output using lexical preserving printing, which writes the file such that

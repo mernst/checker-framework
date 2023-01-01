@@ -12,7 +12,7 @@ jobs:
 
 # The dependsOn clauses are:
 #  * Everything depends on the canary jobs (the 4 main jdk17 jobs), except those jobs themselves.
-#  * Anything *_jdk8 or *_jdk11 depends on *_jdk17.
+#  * Anything *_jdk8, *_jdk11, or *_jdk19 depends on *_jdk17.
 
 - job: canary_jobs
   dependsOn:
@@ -61,6 +61,18 @@ jobs:
     fetchDepth: 25
   - bash: ./checker/bin-devel/test-cftests-junit.sh
     displayName: test-cftests-junit.sh
+- job: junit_tests_jdk19
+  dependsOn:
+   - canary_jobs
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk19:latest
+  timeoutInMinutes: 70
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: ./checker/bin-devel/test-cftests-junit.sh
+    displayName: test-cftests-junit.sh
 - job: nonjunit_tests_jdk8
   dependsOn:
    - canary_jobs
@@ -94,6 +106,17 @@ jobs:
     fetchDepth: 25
   - bash: ./checker/bin-devel/test-cftests-nonjunit.sh
     displayName: test-cftests-nonjunit.sh
+- job: nonjunit_tests_jdk19
+  dependsOn:
+   - canary_jobs
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk19:latest
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: ./checker/bin-devel/test-cftests-nonjunit.sh
+    displayName: test-cftests-nonjunit.sh
 - job: inference_tests_jdk8
   dependsOn:
    - canary_jobs
@@ -120,7 +143,9 @@ jobs:
     displayName: test-cftests-inference.sh
 - job: inference_tests_jdk17
   dependsOn:
-   - canary_jobs
+## Improve parallelism by depending only on typecheck, not canary, jobs
+#   - canary_jobs
+   - typecheck_jdk17
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk17:latest
@@ -129,6 +154,19 @@ jobs:
     fetchDepth: 25
   - bash: ./checker/bin-devel/test-cftests-inference.sh
     displayName: test-cftests-inference.sh
+- job: inference_tests_jdk19
+  dependsOn:
+   - canary_jobs
+   - inference_tests_jdk17
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk19:latest
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: ./checker/bin-devel/test-cftests-inference.sh
+    displayName: test-cftests-inference.sh
+# Unlimited fetchDepth for misc_jobs, because of need to make contributors.tex
 - job: misc_jdk8
   dependsOn:
    - canary_jobs
@@ -138,7 +176,6 @@ jobs:
   container: mdernst/cf-ubuntu-jdk8-plus:latest
   steps:
   - checkout: self
-    fetchDepth: 1000
   - bash: ./checker/bin-devel/test-misc.sh
     displayName: test-misc.sh
 - job: misc_jdk11
@@ -150,7 +187,6 @@ jobs:
   container: mdernst/cf-ubuntu-jdk11-plus:latest
   steps:
   - checkout: self
-    fetchDepth: 1000
   - bash: ./checker/bin-devel/test-misc.sh
     displayName: test-misc.sh
 - job: misc_jdk17
@@ -159,7 +195,17 @@ jobs:
   container: mdernst/cf-ubuntu-jdk17-plus:latest
   steps:
   - checkout: self
-    fetchDepth: 1000
+  - bash: ./checker/bin-devel/test-misc.sh
+    displayName: test-misc.sh
+- job: misc_jdk19
+  dependsOn:
+   # - canary_jobs
+   - misc_jdk17
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk19-plus:latest
+  steps:
+  - checkout: self
   - bash: ./checker/bin-devel/test-misc.sh
     displayName: test-misc.sh
 - job: typecheck_jdk8
@@ -190,6 +236,17 @@ jobs:
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk17-plus:latest
+  steps:
+  - checkout: self
+    fetchDepth: 1000
+  - bash: ./checker/bin-devel/test-typecheck.sh
+    displayName: test-typecheck.sh
+- job: typecheck_jdk19
+  dependsOn:
+   - canary_jobs
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk19-plus:latest
   steps:
   - checkout: self
     fetchDepth: 1000
@@ -233,10 +290,24 @@ jobs:
     fetchDepth: 25
   - bash: ./checker/bin-devel/test-daikon.sh
     displayName: test-daikon.sh
+- job: daikon_jdk19
+  dependsOn:
+   - canary_jobs
+   # Could comment out the "daikon_jdk17" dependency to reduce latency.
+   - daikon_jdk17
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk19:latest
+  timeoutInMinutes: 70
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: ./checker/bin-devel/test-daikon.sh
+    displayName: test-daikon.sh
 - job: guava_jdk8
   dependsOn:
    - canary_jobs
-   - guava_jdk17
+   # - guava_jdk17
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk8:latest
@@ -248,7 +319,7 @@ jobs:
 - job: guava_jdk11
   dependsOn:
    - canary_jobs
-   - guava_jdk17
+   # - guava_jdk17
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk11:latest
@@ -263,6 +334,19 @@ jobs:
   pool:
     vmImage: 'ubuntu-latest'
   container: mdernst/cf-ubuntu-jdk17:latest
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: ./checker/bin-devel/test-guava.sh
+    displayName: test-guava.sh
+- job: guava_jdk19
+  condition: false
+  dependsOn:
+   - canary_jobs
+   - guava_jdk17
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk19:latest
   steps:
   - checkout: self
     fetchDepth: 25
@@ -303,6 +387,18 @@ jobs:
     fetchDepth: 25
   - bash: ./checker/bin-devel/test-plume-lib.sh
     displayName: test-plume-lib.sh
+- job: plume_lib_jdk19
+  dependsOn:
+   - canary_jobs
+   - plume_lib_jdk17
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk19:latest
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: ./checker/bin-devel/test-plume-lib.sh
+    displayName: test-plume-lib.sh
 ## The downstream jobs are not currently needed because test-downstream.sh is empty.
 # - job: downstream_jdk8
 #   dependsOn:
@@ -334,6 +430,18 @@ jobs:
 #   pool:
 #     vmImage: 'ubuntu-latest'
 #   container: mdernst/cf-ubuntu-jdk17:latest
+#   steps:
+#   - checkout: self
+#     fetchDepth: 25
+#   - bash: ./checker/bin-devel/test-downstream.sh
+#     displayName: test-downstream.sh
+# - job: downstream_jdk19
+#   dependsOn:
+#    - canary_jobs
+#    - downstream_jdk17
+#   pool:
+#     vmImage: 'ubuntu-latest'
+#   container: mdernst/cf-ubuntu-jdk19:latest
 #   steps:
 #   - checkout: self
 #     fetchDepth: 25
