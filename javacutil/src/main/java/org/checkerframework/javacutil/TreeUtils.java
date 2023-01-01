@@ -497,7 +497,7 @@ public final class TreeUtils {
    * @param node a method call
    * @return the ExecutableElement for the called method
    */
-  @Deprecated // This method does not work.
+  // @Deprecated // This method does not work.
   @Pure
   public static ExecutableElement elementFromUse(
       MethodInvocationTree node, Trees trees, TreePath path, Elements elements) {
