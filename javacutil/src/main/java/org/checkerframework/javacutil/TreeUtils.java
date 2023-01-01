@@ -376,7 +376,7 @@ public final class TreeUtils {
    * <p>This method is just a wrapper around {@link TreeUtils#elementFromTree(Tree)}, but this class
    * might be the first place someone looks for this functionality.
    *
-   * @param node the tree corresponding to a use of an element
+   * @param tree the tree, which must be a use of an element
    * @return the element for the corresponding declaration, {@code null} otherwise
    */
   @Pure
@@ -479,14 +479,15 @@ public final class TreeUtils {
    */
   @Pure
   public static ExecutableElement elementFromUse(MethodInvocationTree tree) {
-    ExecutableElement result = (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
+    Element result = TreeInfo.symbolFor((JCTree) tree);
     if (result == null) {
       throw new BugInCF("tree = %s [%s]", tree, tree.getClass());
     }
-    if (!(el instanceof ExecutableElement)) {
-      throw new BugInCF("Method elements should be ExecutableElement. Found: %s", el);
+    if (!(result instanceof ExecutableElement)) {
+      throw new BugInCF(
+          "Method elements should be ExecutableElement. Found: %s [%s]", result, result.getClass());
     }
-    return result;
+    return (ExecutableElement) result;
   }
 
   /**
@@ -560,7 +561,7 @@ public final class TreeUtils {
           ClassTree classTree = eltClass.getClassBody();
           System.out.printf("classTree : %s%n", classTree);
           if (classTree != null) {
-            TypeElement classElt = (TypeElement) elementFromTree(classTree);
+            TypeElement classElt = elementFromTree(classTree);
             if (classElt == null) {
               System.out.printf("classElt: null%n");
             } else {
@@ -681,14 +682,16 @@ public final class TreeUtils {
    */
   @Pure
   public static ExecutableElement elementFromUse(NewClassTree tree) {
-    ExecutableElement result = (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
+    Element result = TreeInfo.symbolFor((JCTree) tree);
     if (result == null) {
       throw new BugInCF("null element for %s", tree);
     }
-    if (!(el instanceof ExecutableElement)) {
-      throw new BugInCF("Constructor elements should be ExecutableElement. Found: %s", el);
+    if (!(result instanceof ExecutableElement)) {
+      throw new BugInCF(
+          "Constructor elements should be ExecutableElement. Found: %s [%s]",
+          result, result.getClass());
     }
-    return result;
+    return (ExecutableElement) result;
   }
 
   /**
