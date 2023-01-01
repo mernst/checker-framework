@@ -33,10 +33,12 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.expression.FormalParameter;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.JavaExpressionConverter;
 import org.checkerframework.dataflow.expression.LocalVariable;
+import org.checkerframework.dataflow.expression.ThisReference;
 import org.checkerframework.dataflow.expression.Unknown;
 import org.checkerframework.framework.source.SourceChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
@@ -210,7 +212,8 @@ public class DependentTypesHelper {
   ///
 
   /** If true, log information about where lambdas are created. */
-  private static boolean debugStringToJavaExpression = false;
+  // This variable is only set here; edit the source code to modify it.
+  private static final boolean debugStringToJavaExpression = false;
 
   /**
    * Viewpoint-adapts the dependent type annotations on the bounds of the type parameters of the
@@ -651,6 +654,82 @@ public class DependentTypesHelper {
           "delocalize(%s, %s) created %s%n",
           atm, TreeUtils.toStringTruncated(methodDeclTree, 65), stringToJavaExpr);
     }
+    convertAnnotatedTypeMirror(stringToJavaExpr, atm);
+  }
+
+  /**
+   * Delocalizes dependent type annotations in {@code atm} so that they can be placed on the
+   * declaration of the given method or constructor being invoked. Used by whole program inference
+   * to infer dependent types for method/constructor parameters based on the actual arguments used
+   * at call sites.
+   *
+   * @param atm the annotated type mirror to delocalize
+   * @param invocationTree the method or constructor invocation
+   * @param arguments the actual arguments to the method or constructor
+   * @param receiver the actual receiver, if there was one; null if not
+   * @param methodElt the declaration of the method or constructor being invoked
+   */
+  public void delocalizeAtCallsite(
+      AnnotatedTypeMirror atm,
+      Tree invocationTree,
+      List<Node> arguments,
+      @Nullable Node receiver,
+      ExecutableElement methodElt) {
+
+    // TODO: this method should also take the receiver parameter, if there was one at the callsite,
+    // as an argument. Before it does, WPI needs to infer receiver types from callsites.
+
+    if (!hasDependentType(atm)) {
+      return;
+    }
+
+    // For use in stringToJavaExpr below, to avoid re-computation. Especially
+    // important for the TreePath, which is expensive to compute.
+    List<JavaExpression> argsAsExprs = CollectionsPlume.mapList(LocalVariable::fromNode, arguments);
+    JavaExpression receiverAsExpr = receiver == null ? null : LocalVariable.fromNode(receiver);
+    TreePath path = factory.getPath(invocationTree);
+
+    StringToJavaExpression stringToJavaExpr =
+        stringExpr -> {
+          JavaExpression expr =
+              StringToJavaExpression.atPath(stringExpr, path, factory.getChecker());
+          JavaExpressionConverter jec =
+              new JavaExpressionConverter() {
+                @Override
+                public JavaExpression convert(JavaExpression javaExpr) {
+                  // if javaExpr is an argument to the method,
+                  // then return formal parameter expression.
+                  int index = argsAsExprs.indexOf(javaExpr);
+                  if (index != -1) {
+                    return FormalParameter.getFormalParameters(methodElt).get(index);
+                  }
+                  if (javaExpr.equals(receiverAsExpr)) {
+                    return new ThisReference(ElementUtils.enclosingTypeElement(methodElt).asType());
+                  }
+                  return super.convert(javaExpr);
+                }
+
+                // Local variables and this references at the call site that do not
+                // correspond to any parameter need to be removed from the dependent
+                // type annotation, which returning null from these methods accomplishes.
+                @Override
+                public JavaExpression visitLocalVariable(LocalVariable local, Void unused) {
+                  throw new FoundLocalException();
+                }
+
+                @Override
+                public JavaExpression visitThisReference(ThisReference thisRef, Void unused) {
+                  throw new FoundLocalException();
+                }
+              };
+
+          try {
+            return jec.convert(expr);
+          } catch (FoundLocalException ex) {
+            return null;
+          }
+        };
+
     convertAnnotatedTypeMirror(stringToJavaExpr, atm);
   }
 
