@@ -10,7 +10,9 @@ import org.junit.runners.Parameterized.Parameters;
 
 public class ValueReadNullnessStringsConcatenationTest extends CheckerFrameworkPerDirectoryTest {
 
-  /** @param testFiles the files containing test code, which will be type-checked */
+  /**
+   * @param testFiles the files containing test code, which will be type-checked
+   */
   public ValueReadNullnessStringsConcatenationTest(List<File> testFiles) {
     super(
         testFiles,
