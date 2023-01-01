@@ -47,6 +47,10 @@ public class TestUtilities {
   public static final boolean IS_AT_LEAST_17_JVM = SystemUtil.jreVersion >= 17;
   /** True if the JVM is version 17 or lower. */
   public static final boolean IS_AT_MOST_17_JVM = SystemUtil.jreVersion <= 17;
+  /** True if the JVM is version 18 or above. */
+  public static final boolean IS_AT_LEAST_18_JVM = SystemUtil.jreVersion >= 18;
+  /** True if the JVM is version 18 or lower. */
+  public static final boolean IS_AT_MOST_18_JVM = SystemUtil.jreVersion <= 18;
 
   static {
     JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -96,17 +100,24 @@ public class TestUtilities {
 
     for (String dirName : dirNames) {
       File dir = new File(parent, dirName).toPath().toAbsolutePath().normalize().toFile();
-      if (!dir.isDirectory()) {
-        // For "ainfer-*" tests, their sources do not necessarily
-        // exist yet but will be created by a test that runs earlier than they do.
-        if (!(dir.getName().equals("annotated")
-            && dir.getParentFile() != null
-            && dir.getParentFile().getName().startsWith("ainfer-"))) {
-          throw new BugInCF("test directory does not exist: %s", dir);
-        }
-      }
       if (dir.isDirectory()) {
         filesPerDirectory.addAll(findJavaTestFilesInDirectory(dir));
+      } else {
+        // `dir` is not an existent directory.
+
+        // If delombok does not yet work on a given JDK, this directory does not exist.
+        if (dir.getName().contains("delomboked")) {
+          continue;
+        }
+        // For "ainfer-*" tests, their sources do not necessarily
+        // exist yet but will be created by a test that runs earlier than they do.
+        if (dir.getName().equals("annotated")
+            && dir.getParentFile() != null
+            && dir.getParentFile().getName().startsWith("ainfer-")) {
+          continue;
+        }
+
+        throw new BugInCF("test directory does not exist: %s", dir);
       }
     }
 
@@ -225,7 +236,9 @@ public class TestUtilities {
             || (!IS_AT_LEAST_11_JVM && nextLine.contains("@below-java11-jdk-skip-test"))
             || (!IS_AT_MOST_11_JVM && nextLine.contains("@above-java11-jdk-skip-test"))
             || (!IS_AT_LEAST_17_JVM && nextLine.contains("@below-java17-jdk-skip-test"))
-            || (!IS_AT_MOST_17_JVM && nextLine.contains("@above-java17-jdk-skip-test"))) {
+            || (!IS_AT_MOST_17_JVM && nextLine.contains("@above-java17-jdk-skip-test"))
+            || (!IS_AT_LEAST_18_JVM && nextLine.contains("@below-java18-jdk-skip-test"))
+            || (!IS_AT_MOST_18_JVM && nextLine.contains("@above-java18-jdk-skip-test"))) {
           return false;
         }
       }

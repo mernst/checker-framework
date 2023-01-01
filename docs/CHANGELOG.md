@@ -1,14 +1,83 @@
-Version 3.26.0 (October 4, 2022)
---------------------------------
+Version 3.28.1 (January 3, 2022)
+---------------------------------
 
 **User-visible changes:**
 
-Annotations are available for some new JDK 17 APIs (some of those
-introduced since JDK 11).
+Dropped support for `-ApermitUnsupportedJdkVersion` command-line argument.
+You can now run the Checker Framework under any JDK version, without a warning.
 
 **Implementation details:**
 
 **Closed issues:**
+
+
+Version 3.28.0 (December 1, 2022)
+---------------------------------
+
+**User-visible changes:**
+
+The Checker Framework runs under JDK 19 -- that is, it runs on a version 19 JVM.
+
+**Implementation details:**
+
+Renamed `TryFinallyScopeCell` to `LabelCell`.
+
+Renamed `TreeUtils.isEnumSuper` to `isEnumSuperCall`.
+
+**Closed issues:**
+
+#5390, #5399, #5390.
+
+
+Version 3.27.0 (November 1, 2022)
+---------------------------------
+
+**User-visible changes:**
+
+The Constant Value Checker supports new annotation `@DoesNotMatchRegex`.
+
+**Closed issues:**
+
+#5238, #5360, #5362, #5387.
+
+
+Version 3.26.0 (October 3, 2022)
+--------------------------------
+
+**User-visible changes:**
+
+The Checker Framework runs under JDK 18 -- that is, it runs on a version 18 JVM.
+(It worked before, but gave a warning that it was not tested.)
+
+Annotations are available for some new JDK 17 APIs (some of those
+introduced since JDK 11).
+
+Added `-AnoWarnMemoryConstraints` to change the "Memory constraints are impeding
+performance; please increase max heap size" message from a warning to a note.
+
+'unneeded.suppression' warnings can now themeselves be suppressed.
+
+**Implementation details:**
+
+Deprecated `TreeUtils.constructor()` in favor of `TreeUtils.elementFromUse()`.
+
+Added method `isSideEffectFree()` to the `AnnotationProvider` interface.
+
+Deprecated `CFAbstractStore.isSideEffectFree()` in favor of new method
+`AnnotationProvider.isSideEffectFree()`.  Note the different contracts of
+`PurityUtils.isSideEffectFree()` and `AnnotationProvider.isSideEffectFree()`.
+
+Use `TreeUtils.elementFromDeclaration` and `TreeUtils.elementFromUse` in
+preference to `TreeUtils.elementFromTree`, when possible.
+
+For code formatting, use `./gradlew spotlessCheck` and `./gradlew spotlessApply`.
+The `checkFormat` and `reformat` Gradle tasks have been removed.
+
+Removed variable `BaseTypeVisitor.inferPurity`.
+
+**Closed issues:**
+
+#5081, #5159, #5245, #5302, #5319, #5323.
 
 
 Version 3.25.0 (September 1, 2022)
