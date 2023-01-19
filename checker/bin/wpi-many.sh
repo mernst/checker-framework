@@ -306,7 +306,7 @@ else
     grep -oh "^\S*\.java" $(cat "${OUTDIR}-results/results_available.txt") | sed "s/'//g" | grep -v '^\-J' | grep -v '^\-\-add\-opens' | sort | uniq > "${listpath}"
 
     if [ ! -s "${listpath}" ] ; then
-        echo "${listpath} has size zero"
+        echo "listpath ${listpath} has size zero"
         ls -l "${listpath}"
         echo "results_available = ${results_available}"
         echo "---------------- start of ${OUTDIR}-results/results_available.txt ----------------"
@@ -326,6 +326,13 @@ else
       echo "Problem in wpi-many.sh while running scc."
       echo "  listpath = ${listpath}"
       echo "  generated from ${OUTDIR}-results/results_available.txt"
+        echo "---------------- start of ${listpath} ----------------"
+        cat "${listpath}"
+        echo "---------------- end of ${listpath} ----------------"
+        echo "---------------- start of ${OUTDIR}-results/results_available.txt ----------------"
+        cat "${OUTDIR}-results/results_available.txt"
+        echo "---------------- end of ${OUTDIR}-results/results_available.txt ----------------"
+
       exit 1
     fi
     rm -f "${listpath}"
