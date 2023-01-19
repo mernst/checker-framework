@@ -312,6 +312,9 @@ else
         echo "---------------- start of ${OUTDIR}-results/results_available.txt ----------------"
         cat "${OUTDIR}-results/results_available.txt"
         echo "---------------- end of ${OUTDIR}-results/results_available.txt ----------------"
+        echo "---------------- start of log files from which results_available.txt was constructed ----------------"
+        cat "${OUTDIR}-results/"*.log
+        echo "---------------- end of log files from which results_available.txt was constructed ----------------"
         exit 1
     fi
 
@@ -326,13 +329,15 @@ else
       echo "Problem in wpi-many.sh while running scc."
       echo "  listpath = ${listpath}"
       echo "  generated from ${OUTDIR}-results/results_available.txt"
-        echo "---------------- start of ${listpath} ----------------"
-        cat "${listpath}"
-        echo "---------------- end of ${listpath} ----------------"
-        echo "---------------- start of ${OUTDIR}-results/results_available.txt ----------------"
-        cat "${OUTDIR}-results/results_available.txt"
-        echo "---------------- end of ${OUTDIR}-results/results_available.txt ----------------"
-
+      echo "---------------- start of listpath = ${listpath} ----------------"
+      cat "${listpath}"
+      echo "---------------- end of ${listpath} ----------------"
+      echo "---------------- start of ${OUTDIR}-results/results_available.txt ----------------"
+      cat "${OUTDIR}-results/results_available.txt"
+      echo "---------------- end of ${OUTDIR}-results/results_available.txt ----------------"
+      echo "---------------- start of log files from which results_available.txt was constructed ----------------"
+      cat "${OUTDIR}-results/"*.log
+      echo "---------------- end of log files from which results_available.txt was constructed ----------------"
       exit 1
     fi
     rm -f "${listpath}"
