@@ -240,7 +240,9 @@ do
       # the repo will be deleted later if SKIP_OR_DELETE_UNUSABLE is "delete"
     else
       # it's important that </dev/null is on this line, or wpi.sh might consume stdin, which would stop the larger wpi-many loop early
+      echo "wpi-many.sh about to call wpi.sh at $(date)"
       /bin/bash -x "${SCRIPTDIR}/wpi.sh" -d "${REPO_FULLPATH}" -t "${TIMEOUT}" -g "${GRADLECACHEDIR}" -- "$@" &> "${OUTDIR}-results/wpi-out" </dev/null
+      echo "wpi-many.sh finished call to wpi.sh at $(date)"
     fi
 
     cd "${OUTDIR}" || exit 5
