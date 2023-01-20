@@ -300,9 +300,6 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
       }
       AnnotatedTypeMirror paramATM = atypeFactory.getAnnotatedType(ve);
       AnnotatedTypeMirror argATM = atypeFactory.getAnnotatedType(argTree);
-      System.out.printf(
-          "updateInferredExecutableParameterTypes:%n  ve = %s%n  paramATM = %s%n  argATM=%s%n",
-          ve, paramATM, argATM);
       if (varargsParam) {
         // Check whether argATM needs to be turned into an array type, so that the type
         // structure matches paramATM.
@@ -341,19 +338,12 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
         }
       }
       atypeFactory.wpiAdjustForUpdateNonField(argATM);
-      System.out.printf("adjusted: %s%n", argATM);
-      // TODO:
-      // DependentTypesHelper dependentTypesHelper =
-      //     ((GenericAnnotatedTypeFactory) atypeFactory).getDependentTypesHelper();
-      // dependentTypesHelper.atMethodInvocation(argATM, methodDeclTree);
-
       // If storage.getParameterAnnotations receives an index that's larger than the size
       // of the parameter list, scenes-backed inference can create duplicate entries
       // for the varargs parameter (it indexes inferred annotations by the parameter number).
       int paramIndex = varargsParam ? methodElt.getParameters().size() - 1 : i;
       T paramAnnotations =
           storage.getParameterAnnotations(methodElt, paramIndex, paramATM, ve, atypeFactory);
-      System.out.printf("paramAnnotations: %s%n", paramAnnotations);
       if (this.atypeFactory instanceof GenericAnnotatedTypeFactory) {
         ((GenericAnnotatedTypeFactory) this.atypeFactory)
             .getDependentTypesHelper()
