@@ -115,7 +115,7 @@ public class I18nFormatterTreeUtil {
    * @param anno an I18nInvalidFormat annotation
    * @return its value() element/field, or null if it does not have one
    */
-  /* package-private */
+  /*package-private*/
   @Nullable String getI18nInvalidFormatValue(AnnotationMirror anno) {
     return AnnotationUtils.getElementValue(anno, i18nInvalidFormatValueElement, String.class, null);
   }

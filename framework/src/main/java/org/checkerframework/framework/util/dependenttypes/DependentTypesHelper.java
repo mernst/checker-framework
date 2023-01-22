@@ -286,7 +286,7 @@ public class DependentTypesHelper {
    * @param methodType type of the method or constructor invocation; is side-effected by this method
    * @param tree invocation of the method or constructor
    */
-  private void atInvocation(AnnotatedTypeMirror methodType, ExpressionTree tree) {
+  private void atInvocation(AnnotatedExecutableType methodType, ExpressionTree tree) {
     assert hasDependentAnnotations();
     Element methodElt = TreeUtils.elementFromUse(tree);
     // Because methodType is the type post type variable substitution, it has annotations from
@@ -307,7 +307,7 @@ public class DependentTypesHelper {
     // before type variable substitution.)
 
     // The annotations on `declaredMethodType` will be copied to `methodType`.
-    AnnotatedTypeMirror declaredMethodType =
+    AnnotatedExecutableType declaredMethodType =
         (AnnotatedExecutableType) factory.getAnnotatedType(methodElt);
     if (!hasDependentType(declaredMethodType)) {
       return;
