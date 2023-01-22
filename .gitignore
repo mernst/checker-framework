@@ -33,6 +33,7 @@ local.properties
 api
 build
 dist
+dljc-out
 docs/tmpapi/
 stubparser/docs/api
 # Don't want to ignore .jar files in checker/lib/ nor in gradle/wrapper
@@ -52,6 +53,7 @@ checker/src/main/resources/git.properties
 # They must be in the tests/ directory rather than the build/ directory so that
 # CheckerFrameworkPerDirectoryTest can be used.
 checker/tests/calledmethods-delomboked
+gradle/verification-metadata.dryrun.xml
 
 # manual files
 plume-bib
