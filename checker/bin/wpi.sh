@@ -240,7 +240,9 @@ function configure_and_exec_dljc {
   echo "PATH: ${PATH}" >> "$dljc_stdout"
   echo "DLJC_CMD: ${DLJC_CMD}" >> "$dljc_stdout"
   DLJC_STATUS=0
-  eval "${DLJC_CMD}" < /dev/null >> "$dljc_stdout" 2>&1 || DLJC_STATUS=$?
+  # Problem: if the command times out in CI, the output is never shown.
+  cat "$dljc_stdout"
+  eval "${DLJC_CMD}" < /dev/null || DLJC_STATUS=$?
 
   export PATH="${PATH_BACKUP}"
 
