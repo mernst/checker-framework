@@ -865,7 +865,9 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
 
     AnnotatedTypeMirror atmFromStorage =
         storage.atmFromStorageLocation(rhsATM.getUnderlyingType(), annotationsToUpdate);
-    if (fromOverride && isPolymorphic(atmFromStorage)) {
+    if (fromOverride
+    /* ***** TODO: ***** && isPolymorphic(atmFromStorage) */
+    ) {
       atypeFactory.replaceAnnotations(atmFromStorage, rhsATM);
     } else {
       updateAtmWithLub(rhsATM, atmFromStorage);
