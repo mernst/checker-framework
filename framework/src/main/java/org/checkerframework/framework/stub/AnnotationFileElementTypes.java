@@ -241,7 +241,6 @@ public class AnnotationFileElementTypes {
     ++parsingCount;
     SourceChecker checker = factory.getChecker();
     ProcessingEnvironment processingEnv = factory.getProcessingEnv();
-    parsing = true;
     try (InputStream in = new FileInputStream(ajavaPath)) {
       AnnotationFileParser.parseAjavaFile(
           ajavaPath, in, root, factory, processingEnv, annotationFileAnnos);
