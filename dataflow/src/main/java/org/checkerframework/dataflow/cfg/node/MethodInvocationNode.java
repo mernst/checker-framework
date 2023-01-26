@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.javacutil.TreeUtils;
 import org.plumelib.util.StringsPlume;
 

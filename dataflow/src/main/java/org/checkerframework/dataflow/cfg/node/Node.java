@@ -11,6 +11,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.builder.CFGBuilder;
 import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.plumelib.util.UniqueId;
 
 /**

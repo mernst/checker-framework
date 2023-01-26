@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Objects;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * A node for the {@link AssertionError} when an assertion fails.

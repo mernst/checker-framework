@@ -5,6 +5,7 @@ import com.sun.source.tree.Tree;
 import java.util.Collection;
 import java.util.Collections;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * A node for a long literal. For example:

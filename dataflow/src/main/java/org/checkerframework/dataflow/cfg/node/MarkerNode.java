@@ -7,6 +7,7 @@ import java.util.Objects;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Types;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * MarkerNodes are no-op Nodes used for debugging information. They can hold a Tree and a message,

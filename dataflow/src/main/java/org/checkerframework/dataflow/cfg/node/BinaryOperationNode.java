@@ -3,6 +3,7 @@ package org.checkerframework.dataflow.cfg.node;
 import com.sun.source.tree.BinaryTree;
 import java.util.Arrays;
 import java.util.Collection;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
