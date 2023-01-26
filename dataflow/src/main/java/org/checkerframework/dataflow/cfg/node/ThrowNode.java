@@ -61,6 +61,7 @@ public class ThrowNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.singletonList(expression);
   }

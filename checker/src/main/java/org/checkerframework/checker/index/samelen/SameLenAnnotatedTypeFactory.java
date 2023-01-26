@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.index.IndexMethodIdentifier;
@@ -76,6 +77,11 @@ public class SameLenAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The @{@link SameLenBottom} annotation. */
   private final AnnotationMirror BOTTOM =
       AnnotationBuilder.fromClass(elements, SameLenBottom.class);
+  /**
+   * An empty @{@link SameLen} annotation, which should never be used except to compare against its
+   * name.
+   */
+  private final AnnotationMirror SAMELEN_EMPTY = createSameLen(Collections.emptyList());
   /** The @{@link PolySameLen} annotation. */
   private final AnnotationMirror POLY = AnnotationBuilder.fromClass(elements, PolySameLen.class);
 
@@ -401,5 +407,42 @@ public class SameLenAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       }
     }
     return createSameLen(strings);
+  }
+
+  ///
+  /// Whole-program inference
+  ///
+
+  // If
+  //  1. rhs is @SameLen(..., "name-of-this-field", ...)
+  // then remove that string from rhs.
+  @Override
+  public void wpiAdjustForUpdateField(
+      Tree lhsTree, Element element, String fieldName, AnnotatedTypeMirror rhsATM) {
+    // Synthetic variable names contain "#". Ignore them.
+    if (fieldName.contains("#")) {
+      return;
+    }
+
+    AnnotationMirror rhsAM = rhsATM.getAnnotationInHierarchy(UNKNOWN);
+    if (!AnnotationUtils.areSameByName(rhsAM, SAMELEN_EMPTY)) {
+      List<String> sameLenExpressions =
+          AnnotationUtils.getElementValueArray(rhsAM, sameLenValueElement, String.class);
+      if (sameLenExpressions.remove(element.getSimpleName().toString())) {
+        if (sameLenExpressions.isEmpty()) {
+          rhsATM.replaceAnnotation(UNKNOWN);
+        } else {
+          rhsATM.replaceAnnotation(createSameLen(sameLenExpressions));
+        }
+      }
+    }
+  }
+
+  // If
+  //  1. ...
+  // then ...
+  @Override
+  public void wpiAdjustForUpdateNonField(AnnotatedTypeMirror rhsATM) {
+    // TODO
   }
 }

@@ -46,6 +46,7 @@ public class StringLiteralNode extends ValueLiteralNode {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.emptyList();
   }

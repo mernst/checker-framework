@@ -79,6 +79,7 @@ public class LambdaResultExpressionNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.singletonList(result);
   }

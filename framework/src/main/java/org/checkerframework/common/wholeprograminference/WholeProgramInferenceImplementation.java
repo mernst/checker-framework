@@ -415,7 +415,13 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
       }
       String file = storage.getFileForElement(methodElt);
       updateAnnotationSet(
-          preOrPostConditionAnnos, TypeUseLocation.FIELD, inferredType, fieldDeclType, file, false);
+          preOrPostConditionAnnos,
+          TypeUseLocation.FIELD,
+          inferredType,
+          fieldDeclType,
+          file,
+          false,
+          false);
     }
     // Method parameters (other than the receiver parameter "this"):
     // This loop is 1-indexed to match the syntax used in annotation arguments.
@@ -451,6 +457,7 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
             inferredType,
             declType,
             file,
+            false,
             false);
       }
     }
@@ -481,6 +488,7 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
               inferredType,
               declaredType,
               file,
+              false,
               false);
         }
       }
@@ -517,19 +525,20 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
     for (int i = 0; i < overriddenMethod.getParameterTypes().size(); i++) {
       VariableElement ve = methodElt.getParameters().get(i);
       AnnotatedTypeMirror paramATM = atypeFactory.getAnnotatedType(ve);
-      AnnotatedTypeMirror argATM = overriddenMethod.getParameterTypes().get(i);
-      atypeFactory.wpiAdjustForUpdateNonField(argATM);
+      AnnotatedTypeMirror overriddenParamATM = overriddenMethod.getParameterTypes().get(i);
+      atypeFactory.wpiAdjustForUpdateNonField(overriddenParamATM);
       T paramAnnotations =
           storage.getParameterAnnotations(methodElt, i, paramATM, ve, atypeFactory);
-      updateAnnotationSet(paramAnnotations, TypeUseLocation.PARAMETER, argATM, paramATM, file);
+      updateAnnotationSet(
+          paramAnnotations, TypeUseLocation.PARAMETER, overriddenParamATM, paramATM, file);
     }
 
-    AnnotatedDeclaredType argADT = overriddenMethod.getReceiverType();
-    if (argADT != null) {
+    AnnotatedDeclaredType overriddenParamADT = overriddenMethod.getReceiverType();
+    if (overriddenParamADT != null) {
       AnnotatedTypeMirror paramATM = atypeFactory.getAnnotatedType(methodTree).getReceiverType();
       if (paramATM != null) {
         T receiver = storage.getReceiverAnnotations(methodElt, paramATM, atypeFactory);
-        updateAnnotationSet(receiver, TypeUseLocation.RECEIVER, argADT, paramATM, file);
+        updateAnnotationSet(receiver, TypeUseLocation.RECEIVER, overriddenParamADT, paramATM, file);
       }
     }
   }
@@ -817,7 +826,7 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
       AnnotatedTypeMirror rhsATM,
       AnnotatedTypeMirror lhsATM,
       String file) {
-    updateAnnotationSet(annotationsToUpdate, defLoc, rhsATM, lhsATM, file, true);
+    updateAnnotationSet(annotationsToUpdate, defLoc, rhsATM, lhsATM, file, true, false);
   }
 
   /**
@@ -836,10 +845,11 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
    * @param defLoc the location where the annotation will be added
    * @param rhsATM the RHS of the annotated type on the source code
    * @param lhsATM the LHS of the annotated type on the source code
-   * @param file annotation file containing the executable; used for marking the scene as modified
-   *     (needing to be written to disk)
+   * @param file the annotation file containing the executable; used for marking the scene as
+   *     modified (needing to be written to disk)
    * @param ignoreIfAnnotated if true, don't update any type that is explicitly annotated in the
    *     source code
+   * @param fromOverride true if this update is due to an observed override
    */
   protected void updateAnnotationSet(
       T annotationsToUpdate,
@@ -847,14 +857,19 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
       AnnotatedTypeMirror rhsATM,
       AnnotatedTypeMirror lhsATM,
       String file,
-      boolean ignoreIfAnnotated) {
+      boolean ignoreIfAnnotated,
+      boolean fromOverride) {
     if (rhsATM instanceof AnnotatedNullType && ignoreNullAssignments) {
       return;
     }
 
     AnnotatedTypeMirror atmFromStorage =
         storage.atmFromStorageLocation(rhsATM.getUnderlyingType(), annotationsToUpdate);
-    updateAtmWithLub(rhsATM, atmFromStorage);
+    if (fromOverride && isPolymorphic(atmFromStorage)) {
+      atypeFactory.replaceAnnotations(atmFromStorage, rhsATM);
+    } else {
+      updateAtmWithLub(rhsATM, atmFromStorage);
+    }
     if (lhsATM instanceof AnnotatedTypeVariable) {
       Set<AnnotationMirror> upperAnnos =
           ((AnnotatedTypeVariable) lhsATM).getUpperBound().getEffectiveAnnotations();

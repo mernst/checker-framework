@@ -56,6 +56,7 @@ public class StringConcatenateAssignmentNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Arrays.asList(getLeftOperand(), getRightOperand());
   }

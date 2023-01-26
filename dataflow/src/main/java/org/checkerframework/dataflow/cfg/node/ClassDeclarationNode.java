@@ -55,6 +55,7 @@ public class ClassDeclarationNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.emptyList();
   }

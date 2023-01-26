@@ -98,6 +98,7 @@ public class PackageNameNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     if (parent == null) {
       return Collections.emptyList();

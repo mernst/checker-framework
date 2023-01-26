@@ -41,6 +41,7 @@ public abstract class BinaryOperationNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Arrays.asList(getLeftOperand(), getRightOperand());
   }

@@ -48,6 +48,7 @@ public class NullLiteralNode extends ValueLiteralNode {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.emptyList();
   }

@@ -85,6 +85,7 @@ public class AssignmentNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Arrays.asList(getTarget(), getExpression());
   }

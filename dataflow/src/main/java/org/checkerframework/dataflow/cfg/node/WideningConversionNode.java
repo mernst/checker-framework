@@ -63,6 +63,7 @@ public class WideningConversionNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.singletonList(getOperand());
   }

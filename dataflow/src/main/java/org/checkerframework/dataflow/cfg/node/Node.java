@@ -156,6 +156,7 @@ public abstract class Node implements UniqueId {
    *
    * @return a collection containing all of the operand {@link Node}s of this {@link Node}
    */
+  @SideEffectFree
   public abstract Collection<Node> getOperands();
 
   /**

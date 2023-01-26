@@ -57,6 +57,7 @@ public class PrimitiveTypeNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.emptyList();
   }

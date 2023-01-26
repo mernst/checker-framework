@@ -130,6 +130,7 @@ public class TernaryExpressionNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Arrays.asList(getConditionOperand(), getThenOperand(), getElseOperand());
   }

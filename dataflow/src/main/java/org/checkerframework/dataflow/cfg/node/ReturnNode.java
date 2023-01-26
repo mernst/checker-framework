@@ -117,6 +117,7 @@ public class ReturnNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     if (result == null) {
       return Collections.emptyList();

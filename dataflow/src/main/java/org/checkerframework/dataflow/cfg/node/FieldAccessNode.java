@@ -109,6 +109,7 @@ public class FieldAccessNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.singletonList(receiver);
   }

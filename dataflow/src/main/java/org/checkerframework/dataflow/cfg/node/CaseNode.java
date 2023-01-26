@@ -101,6 +101,7 @@ public class CaseNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     List<Node> caseOperands = getCaseOperands();
     ArrayList<Node> operands = new ArrayList<>(caseOperands.size() + 1);

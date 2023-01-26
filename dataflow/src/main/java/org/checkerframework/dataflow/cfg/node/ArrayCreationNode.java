@@ -103,6 +103,7 @@ public class ArrayCreationNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     ArrayList<Node> list = new ArrayList<>(dimensions.size() + initializers.size());
     list.addAll(dimensions);

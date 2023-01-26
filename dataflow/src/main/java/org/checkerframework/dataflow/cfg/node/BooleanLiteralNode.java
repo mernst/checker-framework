@@ -47,6 +47,7 @@ public class BooleanLiteralNode extends ValueLiteralNode {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.emptyList();
   }
