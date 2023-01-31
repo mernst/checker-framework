@@ -293,6 +293,7 @@ public class ReflectiveEvaluator {
     } catch (Throwable e) {
       // Catch all exceptions so that the checker doesn't crash.
       if (reportWarnings) {
+        e.printStackTrace();
         checker.reportWarning(
             tree,
             "field.access.failed",
