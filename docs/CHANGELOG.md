@@ -1,15 +1,52 @@
-Version 3.30.0 (February 1, 2023)
---------------------------------
+Version 3.31.1 (March 1, 2023)
+------------------------------
 
 **User-visible changes:**
 
 **Implementation details:**
 
-`getQualifierKind()` throws an exception rather than returning null.
+**Closed issues:**
 
-Renamed gradle task `copyJarsToDist` to `assembleForJavac`.
+
+Version 3.31.0 (February 17, 2023)
+------------------------------
+
+**User-visible changes:**
+
+Command-line argument `-AshowPrefixInWarningMessages` puts the checker name
+on the first line of each warning and error message.
+
+Signedness Checker changes:
+ * Cast expressions are not subject to type refinement.  When a programmer
+   writes a cast such as `(@Signed int) 2`, it is not refined to
+   `@SignednessGlb` and cannot be used in an unsigned context.
+ * When incompatible arguments are passed to `@PolySigned` formal parameters,
+   the error is expressed in terms of `@SignednessBottom` rather than the
+   greatest lower bound of the argument types.
+
+**Implementation details:**
+
+Moved `AnnotationMirrorSet` and `AnnotationMirrorMap` from
+`org.checkerframework.framework.util` to `org.checkerframework.javacutil`.
+Changed uses of `Set<AnnotationMirror>` to `AnnotationMirrorSet` including in APIs.
+Removed methods from AnnotationUtils that are no longer useful:
+`createAnnotationMap`, `createAnnotationSet`, `createUnmodifiableAnnotationSet`.
 
 **Closed issues:**
+#5597.
+
+
+Version 3.30.0 (February 2, 2023)
+---------------------------------
+
+**Implementation details:**
+
+`getQualifierKind()` throws an exception rather than returning null.
+
+Renamed Gradle task `copyJarsToDist` to `assembleForJavac`.
+
+**Closed issues:**
+#5402, #5486, #5489, #5519, #5524, #5526.
 
 
 Version 3.29.0 (January 5, 2023)
