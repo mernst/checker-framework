@@ -1,12 +1,12 @@
 package org.checkerframework.dataflow.cfg.node;
 
 import com.sun.source.tree.PrimitiveTypeTree;
-import com.sun.source.tree.Tree;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import javax.lang.model.util.Types;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -28,7 +28,7 @@ public class PrimitiveTypeNode extends Node {
   }
 
   @Override
-  public Tree getTree() {
+  public PrimitiveTypeTree getTree() {
     return tree;
   }
 
@@ -57,6 +57,7 @@ public class PrimitiveTypeNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.emptyList();
   }

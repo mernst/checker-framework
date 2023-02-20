@@ -720,12 +720,14 @@ public abstract class InitializationAnnotatedTypeFactory<
         // anything can be assigned to this field.
         type.replaceAnnotation(UNKNOWN_INITIALIZATION);
       } else if (computingAnnotatedTypeMirrorOfLHS) {
-        // The receiver is not initialized for this frame, but the type of a lhs is being computed.
+        // The receiver is not initialized for this frame, but the type of a lhs is being
+        // computed.
         // Change the type of the field to @UnknownInitialization so that
         // anything can be assigned to this field.
         type.replaceAnnotation(UNKNOWN_INITIALIZATION);
       } else {
-        // The receiver is not initialized for this frame and the type being computed is not a LHS.
+        // The receiver is not initialized for this frame and the type being computed is not
+        // a LHS.
         // Replace all annotations with the top annotation for that hierarchy.
         type.clearPrimaryAnnotations();
         type.addAnnotations(qualHierarchy.getTopAnnotations());
@@ -774,9 +776,9 @@ public abstract class InitializationAnnotatedTypeFactory<
     }
 
     @Override
-    public Void visitMethod(MethodTree node, AnnotatedTypeMirror p) {
-      Void result = super.visitMethod(node, p);
-      if (TreeUtils.isConstructor(node)) {
+    public Void visitMethod(MethodTree tree, AnnotatedTypeMirror p) {
+      Void result = super.visitMethod(tree, p);
+      if (TreeUtils.isConstructor(tree)) {
         assert p instanceof AnnotatedExecutableType;
         AnnotatedExecutableType exeType = (AnnotatedExecutableType) p;
         DeclaredType underlyingType = (DeclaredType) exeType.getReturnType().getUnderlyingType();
@@ -787,11 +789,11 @@ public abstract class InitializationAnnotatedTypeFactory<
     }
 
     @Override
-    public Void visitNewClass(NewClassTree node, AnnotatedTypeMirror p) {
-      super.visitNewClass(node, p);
+    public Void visitNewClass(NewClassTree tree, AnnotatedTypeMirror p) {
+      super.visitNewClass(tree, p);
       boolean allInitialized = true;
-      Type type = ((JCTree) node).type;
-      for (ExpressionTree a : node.getArguments()) {
+      Type type = ((JCTree) tree).type;
+      for (ExpressionTree a : tree.getArguments()) {
         final AnnotatedTypeMirror t = getAnnotatedType(a);
         allInitialized &= (isInitialized(t) || isFbcBottom(t));
       }
@@ -812,11 +814,11 @@ public abstract class InitializationAnnotatedTypeFactory<
     }
 
     @Override
-    public Void visitMemberSelect(MemberSelectTree node, AnnotatedTypeMirror annotatedTypeMirror) {
-      if (TreeUtils.isArrayLengthAccess(node)) {
+    public Void visitMemberSelect(MemberSelectTree tree, AnnotatedTypeMirror annotatedTypeMirror) {
+      if (TreeUtils.isArrayLengthAccess(tree)) {
         annotatedTypeMirror.replaceAnnotation(INITIALIZED);
       }
-      return super.visitMemberSelect(node, annotatedTypeMirror);
+      return super.visitMemberSelect(tree, annotatedTypeMirror);
     }
   }
 

@@ -11,12 +11,12 @@ import org.checkerframework.checker.interning.qual.FindDistinct;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedTypeVariable;
-import org.checkerframework.framework.util.AnnotationMirrorMap;
-import org.checkerframework.framework.util.AnnotationMirrorSet;
 import org.checkerframework.framework.util.typeinference.TypeArgInferenceUtil;
 import org.checkerframework.framework.util.typeinference.solver.InferredValue.InferredTarget;
 import org.checkerframework.framework.util.typeinference.solver.InferredValue.InferredType;
 import org.checkerframework.framework.util.typeinference.solver.TargetConstraints.Equalities;
+import org.checkerframework.javacutil.AnnotationMirrorMap;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.BugInCF;
 
 /**
@@ -384,7 +384,8 @@ public class EqualitiesSolver {
     inferred = findEqualTarget(equalities, tops);
 
     if (inferred == null && equalities.types.size() == 1) {
-      // Still could not find an inferred type in all hierarchies, so just use what type is known.
+      // Still could not find an inferred type in all hierarchies, so just use what type is
+      // known.
       AnnotatedTypeMirror type = equalities.types.keySet().iterator().next();
       inferred = new InferredType(type);
     }

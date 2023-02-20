@@ -33,6 +33,7 @@ import org.checkerframework.afu.scenelib.io.IndexFileParser;
 import org.checkerframework.afu.scenelib.io.IndexFileWriter;
 import org.checkerframework.afu.scenelib.io.ParseException;
 import org.checkerframework.checker.signature.qual.BinaryName;
+import org.plumelib.util.ArraySet;
 
 /**
  * Utility that generates {@code @AnnotatedFor} class annotations. The {@link #main} method acts as
@@ -40,7 +41,7 @@ import org.checkerframework.checker.signature.qual.BinaryName;
  */
 public class AddAnnotatedFor {
   /** Definition of {@code @AnnotatedFor} annotation. */
-  private static AnnotationDef adAnnotatedFor;
+  private static final AnnotationDef adAnnotatedFor;
 
   static {
     Class<?> annotatedFor = org.checkerframework.framework.qual.AnnotatedFor.class;
@@ -58,6 +59,11 @@ public class AddAnnotatedFor {
             annotatedForMetaAnnotations,
             Collections.singletonMap("value", new ArrayAFT(BasicAFT.forType(String.class))),
             "AddAnnotatedFor.<clinit>");
+  }
+
+  /** Do not instantiate. */
+  private AddAnnotatedFor() {
+    throw new Error("Do not instantiate");
   }
 
   /**
@@ -93,7 +99,7 @@ public class AddAnnotatedFor {
    */
   public static void addAnnotatedFor(AScene scene) {
     for (AClass clazz : new HashSet<>(scene.classes.values())) {
-      Set<String> annotatedFor = new HashSet<>(2); // usually few @AnnotatedFor are applicable
+      Set<String> annotatedFor = new ArraySet<>(2); // usually few @AnnotatedFor are applicable
       clazz.accept(annotatedForVisitor, annotatedFor);
       if (!annotatedFor.isEmpty()) {
         // Set eliminates duplicates, but it must be converted to List; for whatever reason,
@@ -110,7 +116,7 @@ public class AddAnnotatedFor {
    * These need to be the arguments to an {@code AnnotatedFor} annotation on the class, so that all
    * of the given type systems are run.
    */
-  private static ElementVisitor<Void, Set<String>> annotatedForVisitor =
+  private static final ElementVisitor<Void, Set<String>> annotatedForVisitor =
       new ElementVisitor<Void, Set<String>>() {
         @Override
         public Void visitAnnotationDef(AnnotationDef el, final Set<String> annotatedFor) {

@@ -130,10 +130,15 @@ public abstract class DoubleJavaParserVisitor extends VoidVisitorAdapter<Node> {
    * corresponding elements in order.
    *
    * @param list1 first list of nodes
-   * @param list2 second list of nodes
+   * @param list2 second list of nodes, which has the same size as the first list
    */
   private void visitLists(List<? extends Node> list1, List<? extends Node> list2) {
-    assert list1.size() == list2.size();
+    if (list1.size() != list2.size()) {
+      throw new Error(
+          String.format(
+              "%s.visitLists(%s [size %d], %s [size %d])",
+              this.getClass().getCanonicalName(), list1, list1.size(), list2, list2.size()));
+    }
     for (int i = 0; i < list1.size(); i++) {
       list1.get(i).accept(this, list2.get(i));
     }
@@ -728,8 +733,8 @@ public abstract class DoubleJavaParserVisitor extends VoidVisitorAdapter<Node> {
     TypeParameter node2 = (TypeParameter) other;
     defaultAction(node1, node2);
     node1.getName().accept(this, node2.getName());
-    // Since ajava files and its corresponding Java file may differ in whether they contain a type
-    // bound, only visit type bounds if they're present in both nodes.
+    // Since ajava files and its corresponding Java file may differ in whether they contain a
+    // type bound, only visit type bounds if they're present in both nodes.
     if (node1.getTypeBound().isEmpty() == node2.getTypeBound().isEmpty()) {
       visitLists(node1.getTypeBound(), node2.getTypeBound());
     }

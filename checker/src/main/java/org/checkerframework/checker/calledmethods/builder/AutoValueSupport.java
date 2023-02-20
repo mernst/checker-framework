@@ -38,7 +38,7 @@ import org.plumelib.util.ArraysPlume;
 public class AutoValueSupport implements BuilderFrameworkSupport {
 
   /** The type factory. */
-  private CalledMethodsAnnotatedTypeFactory atypeFactory;
+  private final CalledMethodsAnnotatedTypeFactory atypeFactory;
 
   /**
    * Create a new AutoValueSupport.
@@ -247,9 +247,10 @@ public class AutoValueSupport implements BuilderFrameworkSupport {
       }
     }
 
-    // Could not find a corresponding setter.  This is likely because an AutoValue Extension is in
-    // use.  See https://github.com/kelloggm/object-construction-checker/issues/110 .  For now we
-    // return null, but once that bug is fixed, this should be changed to an assertion failure.
+    // Could not find a corresponding setter.  This is likely because an AutoValue Extension is
+    // in use.  See https://github.com/kelloggm/object-construction-checker/issues/110 .
+    // For now we return null, but once that bug is fixed, this should be changed to an
+    // assertion failure.
     return null;
   }
 
@@ -269,7 +270,7 @@ public class AutoValueSupport implements BuilderFrameworkSupport {
   }
 
   /** Method names for {@link #isAutoValueRequiredProperty} to ignore. */
-  private Set<String> isAutoValueRequiredPropertyIgnored =
+  private final Set<String> isAutoValueRequiredPropertyIgnored =
       new HashSet<>(Arrays.asList("equals", "hashCode", "toString", "<init>", "toBuilder"));
 
   /**
@@ -282,7 +283,8 @@ public class AutoValueSupport implements BuilderFrameworkSupport {
   private boolean isAutoValueRequiredProperty(
       ExecutableElement member, Set<String> avBuilderSetterNames) {
     String name = member.getSimpleName().toString();
-    // Ignore java.lang.Object overrides, constructors, and toBuilder methods in AutoValue classes.
+    // Ignore java.lang.Object overrides, constructors, and toBuilder methods in AutoValue
+    // classes.
     // Strictly speaking, this code should check return types, etc. to handle strange
     // overloads and other corner cases. They seem unlikely enough that we are skipping for now.
     if (isAutoValueRequiredPropertyIgnored.contains(name)) {
@@ -315,6 +317,16 @@ public class AutoValueSupport implements BuilderFrameworkSupport {
     return true;
   }
 
+  /** Classes that AutoValue considers "optional". This list comes from AutoValue's source code. */
+  private static final String[] optionalClassNames =
+      new String[] {
+        "com.google.common.base.Optional",
+        "java.util.Optional",
+        "java.util.OptionalDouble",
+        "java.util.OptionalInt",
+        "java.util.OptionalLong"
+      };
+
   /**
    * Returns whether AutoValue considers a type to be "optional". Optional types do not need to be
    * set before build is called on a builder. Adapted from AutoValue source code.
@@ -322,21 +334,12 @@ public class AutoValueSupport implements BuilderFrameworkSupport {
    * @param type some type
    * @return true if type is an Optional type
    */
-  static boolean isOptional(TypeMirror type) {
+  private static boolean isOptional(TypeMirror type) {
     if (type.getKind() != TypeKind.DECLARED) {
       return false;
     }
     DeclaredType declaredType = (DeclaredType) type;
     TypeElement typeElement = (TypeElement) declaredType.asElement();
-    // This list of classes that AutoValue considers "optional" comes from AutoValue's source code.
-    String[] optionalClassNames =
-        new String[] {
-          "com.google.common.base.Optional",
-          "java.util.Optional",
-          "java.util.OptionalDouble",
-          "java.util.OptionalInt",
-          "java.util.OptionalLong"
-        };
     return typeElement.getTypeParameters().size() == declaredType.getTypeArguments().size()
         && ArraysPlume.indexOf(optionalClassNames, typeElement.getQualifiedName().toString()) != -1;
   }
@@ -376,7 +379,8 @@ public class AutoValueSupport implements BuilderFrameworkSupport {
               .getReturnType()
               .getUnderlyingType();
     }
-    // either the return type should be the builder itself, or it should be a Guava immutable type
+    // Either the return type should be the builder itself, or it should be a Guava immutable
+    // type.
     return BuilderFrameworkSupportUtils.isGuavaImmutableType(retType)
         || builderElement.equals(TypesUtils.getTypeElement(retType));
   }

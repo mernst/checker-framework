@@ -15,10 +15,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
 import org.checkerframework.dataflow.cfg.node.Node;
-import org.checkerframework.dataflow.util.UnmodifiableIdentityHashMap;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
 import org.plumelib.util.UniqueId;
+import org.plumelib.util.UnmodifiableIdentityHashMap;
 
 /**
  * An {@link AnalysisResult} represents the result of a org.checkerframework.dataflow analysis by
@@ -68,9 +68,10 @@ public class AnalysisResult<V extends AbstractValue<V>, S extends Store<S>> impl
       analysisCaches;
 
   /** The unique ID for the next-created object. */
-  static final AtomicLong nextUid = new AtomicLong(0);
+  private static final AtomicLong nextUid = new AtomicLong(0);
+
   /** The unique ID of this object. */
-  final transient long uid = nextUid.getAndIncrement();
+  private final transient long uid = nextUid.getAndIncrement();
 
   @Override
   public long getUid(@UnknownInitialization AnalysisResult<V, S> this) {
@@ -353,9 +354,10 @@ public class AnalysisResult<V extends AbstractValue<V>, S extends Store<S>> impl
         if (lastNode == null) {
           // This block doesn't contain any node, return the store in the transfer input
           return transferInput.getRegularStore();
+        } else {
+          return analysis.runAnalysisFor(
+              lastNode, Analysis.BeforeOrAfter.AFTER, transferInput, nodeValues, analysisCaches);
         }
-        return analysis.runAnalysisFor(
-            lastNode, Analysis.BeforeOrAfter.AFTER, transferInput, nodeValues, analysisCaches);
       case BACKWARD:
         return transferInput.getRegularStore();
       default:
@@ -419,8 +421,9 @@ public class AnalysisResult<V extends AbstractValue<V>, S extends Store<S>> impl
       return null;
     }
     // Calling Analysis.runAnalysisFor() may mutate the internal nodeValues map inside an
-    // AbstractAnalysis object, and by default the AnalysisResult constructor just wraps this map
-    // without copying it.  So here the AnalysisResult maps must be copied, to preserve them.
+    // AbstractAnalysis object, and by default the AnalysisResult constructor just wraps this
+    // map without copying it.  So here the AnalysisResult maps must be copied, to preserve
+    // them.
     copyMapsIfNeeded();
     return runAnalysisFor(node, preOrPost, transferInput, nodeValues, analysisCaches);
   }

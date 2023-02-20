@@ -98,7 +98,7 @@ public final class TreeUtils {
     throw new AssertionError("Class TreeUtils cannot be instantiated.");
   }
 
-  /** Unique IDs for trees. */
+  /** Unique IDs for trees. Used instead of hash codes, so output is deterministic. */
   public static final UniqueIdMap<Tree> treeUids = new UniqueIdMap<>();
 
   /** The value of Flags.GENERATED_MEMBER which does not exist in Java 9 or 11. */
@@ -130,6 +130,16 @@ public final class TreeUtils {
   private static @MonotonicNonNull Method switchExpressionGetCases = null;
   /** The {@code YieldTree.getValue()} method. Null on JDK 11 and lower. */
   private static @MonotonicNonNull Method yieldGetValue = null;
+
+  /** Tree kinds that represent a binary comparison. */
+  private static final Set<Tree.Kind> BINARY_COMPARISON_TREE_KINDS =
+      EnumSet.of(
+          Tree.Kind.EQUAL_TO,
+          Tree.Kind.NOT_EQUAL_TO,
+          Tree.Kind.LESS_THAN,
+          Tree.Kind.GREATER_THAN,
+          Tree.Kind.LESS_THAN_EQUAL,
+          Tree.Kind.GREATER_THAN_EQUAL);
 
   static {
     if (SystemUtil.jreVersion >= 12) {
@@ -301,6 +311,7 @@ public final class TreeUtils {
   // This section of the file groups methods by their receiver type; that is, it puts all
   // `elementFrom*(FooTree)` methods together.
 
+  // TODO: Document when this may return null.
   /**
    * Returns the type element corresponding to the given class declaration.
    *
@@ -365,11 +376,15 @@ public final class TreeUtils {
   }
 
   /**
-   * Returns the element corresponding to the given use. The given tree must be a use of an element;
-   * for example, it cannot be a binary expression.
+   * Gets the element for the declaration corresponding to this use of an element. To get the
+   * element for a declaration, use {@link #elementFromDeclaration(ClassTree)}, {@link
+   * #elementFromDeclaration(MethodTree)}, or {@link #elementFromDeclaration(VariableTree)} instead.
+   *
+   * <p>This method is just a wrapper around {@link TreeUtils#elementFromTree(Tree)}, but this class
+   * might be the first place someone looks for this functionality.
    *
    * @param tree the tree, which must be a use of an element
-   * @return the element for the given use
+   * @return the element for the corresponding declaration, {@code null} otherwise
    */
   @Pure
   public static Element elementFromUse(ExpressionTree tree) {
@@ -471,11 +486,15 @@ public final class TreeUtils {
    */
   @Pure
   public static ExecutableElement elementFromUse(MethodInvocationTree tree) {
-    ExecutableElement result = (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
+    Element result = TreeInfo.symbolFor((JCTree) tree);
     if (result == null) {
       throw new BugInCF("tree = %s [%s]", tree, tree.getClass());
     }
-    return result;
+    if (!(result instanceof ExecutableElement)) {
+      throw new BugInCF(
+          "Method elements should be ExecutableElement. Found: %s [%s]", result, result.getClass());
+    }
+    return (ExecutableElement) result;
   }
 
   /**
@@ -533,7 +552,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Returns the ExecutableElement for the given constructor invocation.
+   * Gets the ExecutableElement for the called constructor, from a constructor invocation.
    *
    * @param tree the {@link Tree} node to get the symbol for
    * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
@@ -548,7 +567,7 @@ public final class TreeUtils {
   }
 
   /**
-   * Returns the ExecutableElement for the given constructor invocation.
+   * Gets the ExecutableElement for the called constructor, from a constructor invocation.
    *
    * @param tree a constructor invocation
    * @return the ExecutableElement for the called constructor
@@ -556,11 +575,16 @@ public final class TreeUtils {
    */
   @Pure
   public static ExecutableElement elementFromUse(NewClassTree tree) {
-    ExecutableElement result = (ExecutableElement) TreeInfo.symbolFor((JCTree) tree);
+    Element result = TreeInfo.symbolFor((JCTree) tree);
     if (result == null) {
       throw new BugInCF("null element for %s", tree);
     }
-    return result;
+    if (!(result instanceof ExecutableElement)) {
+      throw new BugInCF(
+          "Constructor elements should be ExecutableElement. Found: %s [%s]",
+          result, result.getClass());
+    }
+    return (ExecutableElement) result;
   }
 
   /**
@@ -627,8 +651,7 @@ public final class TreeUtils {
    * an element.
    *
    * @param tree the {@link Tree} node to get the symbol for
-   * @throws IllegalArgumentException if {@code tree} is null or is not a valid javac-internal tree
-   *     (JCTree)
+   * @throws BugInCF if {@code tree} is null or is not a valid javac-internal tree (JCTree)
    * @return the {@link Symbol} for the given tree, or null if one could not be found
    */
   @Pure
@@ -693,8 +716,8 @@ public final class TreeUtils {
       return elementFromUse(newClassTree);
     }
     JCNewClass jcNewClass = (JCNewClass) newClassTree;
-    // Anonymous constructor bodies, which are always synthetic, contain exactly one statement in
-    // the form:
+    // Anonymous constructor bodies, which are always synthetic, contain exactly one statement
+    // in the form:
     //    super(arg1, ...)
     // or
     //    o.super(arg1, ...)
@@ -946,7 +969,7 @@ public final class TreeUtils {
    * </ol>
    *
    * @param tree the tree to check
-   * @return true if the tree is a constant-time expression.
+   * @return true if the tree is a constant-time expression
    */
   public static boolean isCompileTimeString(ExpressionTree tree) {
     tree = TreeUtils.withoutParens(tree);
@@ -1071,6 +1094,7 @@ public final class TreeUtils {
     return classTreeKinds().contains(tree.getKind());
   }
 
+  /** The kinds that represent types. */
   private static final Set<Tree.Kind> typeTreeKinds =
       EnumSet.of(
           Tree.Kind.PRIMITIVE_TYPE,
@@ -1158,7 +1182,7 @@ public final class TreeUtils {
       Class<?> type, String methodName, int params, ProcessingEnvironment env) {
     String typeName = type.getCanonicalName();
     if (typeName == null) {
-      throw new BugInCF("class %s has no canonical name", type);
+      throw new BugInCF("TreeUtils.getMethod: class %s has no canonical name", type);
     }
     return getMethod(typeName, methodName, params, env);
   }
@@ -1296,6 +1320,8 @@ public final class TreeUtils {
         }
       }
     }
+
+    // Didn't find an answer.  Compose an error message.
     List<String> candidates = new ArrayList<>();
     for (ExecutableElement exec : ElementFilter.methodsIn(typeElt.getEnclosedElements())) {
       if (exec.getSimpleName().contentEquals(methodName)) {
@@ -1808,7 +1834,7 @@ public final class TreeUtils {
    */
   public static String toStringTruncated(Tree tree, int length) {
     if (length < 6) {
-      throw new IllegalArgumentException("bad length " + length);
+      throw new BugInCF("TreeUtils.toStringTruncated: bad length " + length);
     }
     String result = toStringOneLine(tree);
     if (result.length() > length) {
@@ -1858,7 +1884,8 @@ public final class TreeUtils {
       case RIGHT_SHIFT_ASSIGNMENT:
       case UNSIGNED_RIGHT_SHIFT:
       case UNSIGNED_RIGHT_SHIFT_ASSIGNMENT:
-        // Strictly speaking, these operators do unary promotion on each argument separately.
+        // Strictly speaking, these operators do unary promotion on each argument
+        // separately.
         return true;
 
       case MULTIPLY:
@@ -1929,14 +1956,16 @@ public final class TreeUtils {
           typeTree = ((ParameterizedTypeTree) typeTree).getType();
           break;
         case UNION_TYPE:
-          List<AnnotationTree> result = new ArrayList<>();
-          for (Tree alternative : ((UnionTypeTree) typeTree).getTypeAlternatives()) {
+          List<? extends Tree> alternatives = ((UnionTypeTree) typeTree).getTypeAlternatives();
+          List<AnnotationTree> result = new ArrayList<>(alternatives.size());
+          for (Tree alternative : alternatives) {
             result.addAll(getExplicitAnnotationTrees(null, alternative));
           }
           return result;
         default:
           throw new BugInCF(
-              "what typeTree? %s %s %s", typeTree.getKind(), typeTree.getClass(), typeTree);
+              "TreeUtils.getExplicitAnnotationTrees: what typeTree? %s %s %s",
+              typeTree.getKind(), typeTree.getClass(), typeTree);
       }
     }
   }
@@ -1959,8 +1988,9 @@ public final class TreeUtils {
         // Short should be (short) 0, but this probably doesn't matter so just use int 0;
         return TreeUtils.createLiteral(TypeTag.INT, 0, typeMirror, processingEnv);
       case CHAR:
-        // Value of a char literal needs to be stored as an integer because LiteralTree#getValue
-        // converts it from an integer to a char before being returned.
+        // Value of a char literal needs to be stored as an integer because
+        // LiteralTree#getValue converts it from an integer to a char before being
+        // returned.
         return TreeUtils.createLiteral(TypeTag.CHAR, (int) '\u0000', typeMirror, processingEnv);
       case LONG:
         return TreeUtils.createLiteral(TypeTag.LONG, 0L, typeMirror, processingEnv);
@@ -1969,8 +1999,9 @@ public final class TreeUtils {
       case DOUBLE:
         return TreeUtils.createLiteral(TypeTag.DOUBLE, 0.0d, typeMirror, processingEnv);
       case BOOLEAN:
-        // Value of a boolean literal needs to be stored as an integer because LiteralTree#getValue
-        // converts it from an integer to a boolean before being returned.
+        // Value of a boolean literal needs to be stored as an integer because
+        // LiteralTree#getValue converts it from an integer to a boolean before being
+        // returned.
         return TreeUtils.createLiteral(TypeTag.BOOLEAN, 0, typeMirror, processingEnv);
       default:
         return TreeUtils.createLiteral(
@@ -2070,7 +2101,8 @@ public final class TreeUtils {
       boolean result = caseKind == caseKindRule;
       return result;
     } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-      throw new BugInCF("cannot find and/or call method CaseTree.getKind()", e);
+      throw new BugInCF(
+          "TreeUtils.isCaseRule: cannot find and/or call method CaseTree.getKind()", e);
     }
   }
 
@@ -2277,7 +2309,7 @@ public final class TreeUtils {
       case NEW_CLASS:
         return isVarArgs((NewClassTree) tree);
       default:
-        throw new BugInCF("Unexpected kind of tree: " + tree);
+        throw new BugInCF("TreeUtils.isVarArgs: unexpected kind of tree: " + tree);
     }
   }
 
@@ -2345,5 +2377,15 @@ public final class TreeUtils {
       kind = Tree.Kind.CLASS;
     }
     return kind;
+  }
+
+  /**
+   * Returns true if the {@code tree} is a binary tree that performs a comparison.
+   *
+   * @param tree the tree to check
+   * @return whether the tree represents a binary comparison
+   */
+  public static boolean isBinaryComparison(BinaryTree tree) {
+    return BINARY_COMPARISON_TREE_KINDS.contains(tree.getKind());
   }
 }

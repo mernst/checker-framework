@@ -205,7 +205,7 @@ optional step.
   %BEGIN LATEX
   \\
   %END LATEX
-  \url{https://checkerframework.org/checker-framework-3.28.0.zip}
+  \url{https://checkerframework.org/checker-framework-3.31.0.zip}
 
 \item
   Unzip it to create a \code{checker-framework-\ReleaseVersion{}} directory.
@@ -704,6 +704,11 @@ Type-checking modes:  enable/disable functionality
   suppress any warnings.  For example, if this command-line option is
   supplied, then \<@SuppressWarnings("assignment")> has no effect, but
   \<@SuppressWarnings("nullness:assignment")> does.
+\item \<-AshowPrefixInWarningMessages>
+  When issuing an error or warning, prefix the warning suppression key by
+  the checker name.  For instance, output ``error: [nullness:assignment]
+  ...'' instead of ``error: [assignment]''.  This makes it easy to tell,
+  from the suppression key only, which checker issued the error or warning.
 \end{itemize}
 
 Partially-annotated libraries
@@ -1262,6 +1267,7 @@ if it receives \code{null} as an argument.  Examples include:
   java.lang.Objects.requireNonNull(Object)
   java.lang.String.contains(CharSequence)
   org.junit.Assert.assertNotNull(Object)
+  org.junit.jupiter.api.Assert.assertNotNull(Object)
 \end{Verbatim}
 
 Their formal parameter type is annotated as \<@NonNull>, because otherwise the
@@ -1313,6 +1319,11 @@ The checker will still warn you about crashes in your own code.
 \item
   A stub file (Section~\ref{stub}) can override the library's annotations,
   for one or more methods.
+
+  As a special case, if you want the Nullness Checker to prevent most null
+  pointer exceptions in your code, but to \emph{permit} null pointer
+  exceptions at nullness assertion methods, you can pass
+  \<-Astubs=permit-nullness-assertion-exception.astub>.
 \item
   Don't type-check clients of the method.  For example, JUnit's
   \<assertNotNull()> is typically called only in test code; its clients are

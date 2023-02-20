@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -21,7 +22,7 @@ import org.checkerframework.javacutil.TreeUtils;
 public class ArrayAccessNode extends Node {
 
   /** The corresponding ArrayAccessTree. */
-  protected final Tree tree;
+  protected final ArrayAccessTree tree;
 
   /** The array expression being accessed. */
   protected final Node array;
@@ -33,6 +34,8 @@ public class ArrayAccessNode extends Node {
    * If this ArrayAccessNode is a node for an array desugared from an enhanced for loop, then the
    * {@code arrayExpression} field is the expression in the for loop, e.g., {@code arr} in {@code
    * for(Object o: arr}.
+   *
+   * <p>Is set by {@link #setArrayExpression}.
    */
   protected @Nullable ExpressionTree arrayExpression;
 
@@ -43,9 +46,8 @@ public class ArrayAccessNode extends Node {
    * @param array the node for the array expression being accessed
    * @param index the node for the index used to access the array
    */
-  public ArrayAccessNode(Tree t, Node array, Node index) {
+  public ArrayAccessNode(ArrayAccessTree t, Node array, Node index) {
     super(TreeUtils.typeOf(t));
-    assert t instanceof ArrayAccessTree;
     this.tree = t;
     this.array = array;
     this.index = index;
@@ -87,7 +89,7 @@ public class ArrayAccessNode extends Node {
   }
 
   @Override
-  public Tree getTree() {
+  public ArrayAccessTree getTree() {
     return tree;
   }
 
@@ -117,6 +119,7 @@ public class ArrayAccessNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Arrays.asList(getArray(), getIndex());
   }
