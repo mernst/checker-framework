@@ -112,6 +112,8 @@ public abstract class BaseTypeChecker extends SourceChecker {
     }
 
     super.initChecker();
+
+    warnUnneededSuppressions = hasOption("warnUnneededSuppressions");
   }
 
   /**
@@ -156,6 +158,10 @@ public abstract class BaseTypeChecker extends SourceChecker {
    */
   private @MonotonicNonNull Collection<String> suppressWarningsPrefixesOfSubcheckers = null;
 
+  /** True if -AwarnUnneededSuppressions was supplied on the command line. */
+  // Not final because it is set in `init()`.
+  private boolean warnUnneededSuppressions;
+
   @Override
   protected void setRoot(CompilationUnitTree newRoot) {
     super.setRoot(newRoot);
@@ -192,16 +198,17 @@ public abstract class BaseTypeChecker extends SourceChecker {
    * <p>The BaseTypeChecker will not modify the list returned by this method, but other clients do
    * modify the list.
    *
-   * @return the subchecker classes on which this checker depends
+   * @return the subchecker classes on which this checker depends; will be modified by callees
    */
   protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
-    if (shouldResolveReflection()) {
-      // This must return a modifiable set because clients modify it.
-      return new LinkedHashSet<>(Collections.singleton(MethodValChecker.class));
-    }
-    // The returned set will be modified by callees.
+    // This must return a modifiable set because clients modify it.
     // Most checkers have 1 or fewer subcheckers.
-    return new LinkedHashSet<>(CollectionsPlume.mapCapacity(2));
+    LinkedHashSet<Class<? extends BaseTypeChecker>> result =
+        new LinkedHashSet<>(CollectionsPlume.mapCapacity(2));
+    if (shouldResolveReflection()) {
+      result.add(MethodValChecker.class);
+    }
+    return result;
   }
 
   /**
@@ -335,7 +342,13 @@ public abstract class BaseTypeChecker extends SourceChecker {
           // Don't add more information about the constructor invocation.
           throw (RuntimeException) err;
         }
+      } else if (t instanceof NoSuchMethodException) {
+        // Note: it's possible that NoSuchMethodException was caused by `ctor.newInstance(args)`, if
+        // the constructor itself uses reflection.  But this case is unlikely.
+        throw new TypeSystemError(
+            "Could not find constructor %s(%s)", name, StringsPlume.join(", ", paramTypes));
       }
+
       Throwable cause;
       String causeMessage;
       if (t instanceof InvocationTargetException) {
@@ -610,7 +623,7 @@ public abstract class BaseTypeChecker extends SourceChecker {
       return;
     }
 
-    if (!hasOption("warnUnneededSuppressions")) {
+    if (!warnUnneededSuppressions) {
       return;
     }
     Set<Element> elementsWithSuppressedWarnings =
