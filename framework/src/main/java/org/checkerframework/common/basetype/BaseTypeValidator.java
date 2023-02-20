@@ -11,10 +11,8 @@ import com.sun.source.tree.Tree;
 import com.sun.source.tree.TypeParameterTree;
 import com.sun.source.tree.VariableTree;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
@@ -37,12 +35,14 @@ import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.type.visitor.AnnotatedTypeScanner;
 import org.checkerframework.framework.type.visitor.SimpleAnnotatedTypeScanner;
 import org.checkerframework.framework.util.AnnotatedTypes;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypeAnnotationUtils;
 import org.checkerframework.javacutil.TypesUtils;
+import org.plumelib.util.ArrayMap;
 
 /**
  * A visitor to validate the types in a tree.
@@ -178,8 +178,8 @@ public class BaseTypeValidator extends AnnotatedTypeScanner<Void, Tree> implemen
   protected List<DiagMessage> isTopLevelValidType(
       QualifierHierarchy qualifierHierarchy, AnnotatedTypeMirror type) {
     // multiple annotations from the same hierarchy
-    Set<AnnotationMirror> annotations = type.getAnnotations();
-    Set<AnnotationMirror> seenTops = AnnotationUtils.createAnnotationSet();
+    AnnotationMirrorSet annotations = type.getAnnotations();
+    AnnotationMirrorSet seenTops = new AnnotationMirrorSet();
     for (AnnotationMirror anno : annotations) {
       AnnotationMirror top = qualifierHierarchy.getTopAnnotation(anno);
       if (AnnotationUtils.containsSame(seenTops, top)) {
@@ -291,8 +291,7 @@ public class BaseTypeValidator extends AnnotatedTypeScanner<Void, Tree> implemen
       // Ensure that type use is a subtype of the element type
       // isValidUse determines the erasure of the types.
 
-      Set<AnnotationMirror> bounds =
-          atypeFactory.getTypeDeclarationBounds(type.getUnderlyingType());
+      AnnotationMirrorSet bounds = atypeFactory.getTypeDeclarationBounds(type.getUnderlyingType());
 
       AnnotatedDeclaredType elemType = type.deepCopy();
       elemType.clearPrimaryAnnotations();
@@ -532,7 +531,8 @@ public class BaseTypeValidator extends AnnotatedTypeScanner<Void, Tree> implemen
    * @param tree the type's tree
    */
   protected Void visitParameterizedType(AnnotatedDeclaredType type, ParameterizedTypeTree tree) {
-    // System.out.printf("TypeValidator.visitParameterizedType: type: %s, tree: %s%n", type, tree);
+    // System.out.printf("TypeValidator.visitParameterizedType: type: %s, tree: %s%n", type,
+    // tree);
 
     if (TreeUtils.isDiamondTree(tree)) {
       return null;
@@ -557,73 +557,79 @@ public class BaseTypeValidator extends AnnotatedTypeScanner<Void, Tree> implemen
         element.getTypeParameters());
 
     @SuppressWarnings(
-        "interning:not.interned") // applyCaptureConversion returns the passed type if type does not
-    // have wildcards.
+        "interning:not.interned") // applyCaptureConversion returns the passed type if type
+    // does not have wildcards.
     boolean hasCapturedTypeVariables = capturedType != type;
-    if (hasCapturedTypeVariables) {
-      // Check that the extends bound of the captured type variable is a subtype of the extends
-      // bound of the wildcard.
-      int numTypeArgs = capturedType.getTypeArguments().size();
-      // First create a mapping from captured type variable to its wildcard.
-      Map<TypeVariable, AnnotatedTypeMirror> typeVarToWildcard = new HashMap<>(numTypeArgs);
-      for (int i = 0; i < numTypeArgs; i++) {
-        AnnotatedTypeMirror captureTypeArg = capturedType.getTypeArguments().get(i);
-        if (TypesUtils.isCapturedTypeVariable(captureTypeArg.getUnderlyingType())
-            && type.getTypeArguments().get(i).getKind() == TypeKind.WILDCARD) {
-          AnnotatedTypeVariable capturedTypeVar = (AnnotatedTypeVariable) captureTypeArg;
-          AnnotatedWildcardType wildcard = (AnnotatedWildcardType) type.getTypeArguments().get(i);
-          typeVarToWildcard.put(capturedTypeVar.getUnderlyingType(), wildcard);
-        }
-      }
+    if (!hasCapturedTypeVariables) {
+      return null;
+    }
 
-      for (int i = 0; i < numTypeArgs; i++) {
-        AnnotatedTypeMirror captureTypeArg = capturedType.getTypeArguments().get(i);
-        if (type.getTypeArguments().get(i).getKind() == TypeKind.WILDCARD) {
-          AnnotatedWildcardType wildcard = (AnnotatedWildcardType) type.getTypeArguments().get(i);
-          if (TypesUtils.isCapturedTypeVariable(captureTypeArg.getUnderlyingType())) {
-            AnnotatedTypeVariable capturedTypeVar = (AnnotatedTypeVariable) captureTypeArg;
-            // Substitute the captured type variables with their wildcards. Without this, the
-            // isSubtype check crashes because wildcards aren't comparable with type variables.
-            AnnotatedTypeMirror catpureTypeVarUB =
-                atypeFactory
-                    .getTypeVarSubstitutor()
-                    .substituteWithoutCopyingTypeArguments(
-                        typeVarToWildcard, capturedTypeVar.getUpperBound());
-            if (!atypeFactory
-                .getTypeHierarchy()
-                .isSubtype(catpureTypeVarUB, wildcard.getExtendsBound())) {
-              checker.reportError(
-                  tree.getTypeArguments().get(i),
-                  "type.argument",
-                  element.getTypeParameters().get(i),
-                  element.getSimpleName(),
-                  wildcard.getExtendsBound(),
-                  capturedTypeVar.getUpperBound());
-            }
-          } else if (AnnotatedTypes.isExplicitlySuperBounded(wildcard)) {
-            // If the super bound of the wildcard is the same as the upper bound of the type
-            // parameter, then javac uses the bound rather than creating a fresh type variable.
-            // (See https://bugs.openjdk.org/browse/JDK-8054309.)
-            // In this case, the Checker Framework uses the annotations on the super bound of the
-            // wildcard and ignores the annotations on the extends bound. So, issue a warning if
-            // the annotations on the extends bound are not the same as the annotations on the super
-            // bound.
-            if (!(atypeFactory
-                    .getQualifierHierarchy()
-                    .isSubtype(
-                        wildcard.getSuperBound().getEffectiveAnnotations(),
-                        wildcard.getExtendsBound().getAnnotations())
-                && atypeFactory
-                    .getQualifierHierarchy()
-                    .isSubtype(
-                        wildcard.getExtendsBound().getAnnotations(),
-                        wildcard.getSuperBound().getEffectiveAnnotations()))) {
-              checker.reportError(
-                  tree.getTypeArguments().get(i),
-                  "super.wildcard",
-                  wildcard.getExtendsBound(),
-                  wildcard.getSuperBound());
-            }
+    // Check that the extends bound of the captured type variable is a subtype of the
+    // extends bound of the wildcard.
+    int numTypeArgs = capturedType.getTypeArguments().size();
+    // First create a mapping from captured type variable to its wildcard.
+    Map<TypeVariable, AnnotatedTypeMirror> typeVarToWildcard =
+        ArrayMap.newArrayMapOrHashMap(numTypeArgs);
+    for (int i = 0; i < numTypeArgs; i++) {
+      AnnotatedTypeMirror captureTypeArg = capturedType.getTypeArguments().get(i);
+      if (TypesUtils.isCapturedTypeVariable(captureTypeArg.getUnderlyingType())
+          && type.getTypeArguments().get(i).getKind() == TypeKind.WILDCARD) {
+        AnnotatedTypeVariable capturedTypeVar = (AnnotatedTypeVariable) captureTypeArg;
+        AnnotatedWildcardType wildcard = (AnnotatedWildcardType) type.getTypeArguments().get(i);
+        typeVarToWildcard.put(capturedTypeVar.getUnderlyingType(), wildcard);
+      }
+    }
+
+    for (int i = 0; i < numTypeArgs; i++) {
+      AnnotatedTypeMirror captureTypeArg = capturedType.getTypeArguments().get(i);
+      if (type.getTypeArguments().get(i).getKind() == TypeKind.WILDCARD) {
+        AnnotatedWildcardType wildcard = (AnnotatedWildcardType) type.getTypeArguments().get(i);
+        if (TypesUtils.isCapturedTypeVariable(captureTypeArg.getUnderlyingType())) {
+          AnnotatedTypeVariable capturedTypeVar = (AnnotatedTypeVariable) captureTypeArg;
+          // Substitute the captured type variables with their wildcards. Without
+          // this, the isSubtype check crashes because wildcards aren't comparable
+          // with type variables.
+          AnnotatedTypeMirror catpureTypeVarUB =
+              atypeFactory
+                  .getTypeVarSubstitutor()
+                  .substituteWithoutCopyingTypeArguments(
+                      typeVarToWildcard, capturedTypeVar.getUpperBound());
+          if (!atypeFactory
+              .getTypeHierarchy()
+              .isSubtype(catpureTypeVarUB, wildcard.getExtendsBound())) {
+            checker.reportError(
+                tree.getTypeArguments().get(i),
+                "type.argument",
+                element.getTypeParameters().get(i),
+                element.getSimpleName(),
+                wildcard.getExtendsBound(),
+                capturedTypeVar.getUpperBound());
+          }
+        } else if (AnnotatedTypes.isExplicitlySuperBounded(wildcard)) {
+          // If the super bound of the wildcard is the same as the upper bound of the
+          // type parameter, then javac uses the bound rather than creating a fresh
+          // type variable.
+          // (See https://bugs.openjdk.org/browse/JDK-8054309.)
+          // In this case, the Checker Framework uses the annotations on the super
+          // bound of the wildcard and ignores the annotations on the extends bound.
+          // For example, Set<@1 ? super @2 Object> will collapse into Set<@2 Object>.
+          // So, issue a warning if the annotations on the extends bound are not the
+          // same as the annotations on the super bound.
+          if (!(atypeFactory
+                  .getQualifierHierarchy()
+                  .isSubtype(
+                      wildcard.getSuperBound().getEffectiveAnnotations(),
+                      wildcard.getExtendsBound().getAnnotations())
+              && atypeFactory
+                  .getQualifierHierarchy()
+                  .isSubtype(
+                      wildcard.getExtendsBound().getAnnotations(),
+                      wildcard.getSuperBound().getEffectiveAnnotations()))) {
+            checker.reportError(
+                tree.getTypeArguments().get(i),
+                "super.wildcard",
+                wildcard.getExtendsBound(),
+                wildcard.getSuperBound());
           }
         }
       }
@@ -673,9 +679,9 @@ public class BaseTypeValidator extends AnnotatedTypeScanner<Void, Tree> implemen
   public boolean areBoundsValid(
       final AnnotatedTypeMirror upperBound, final AnnotatedTypeMirror lowerBound) {
     final QualifierHierarchy qualifierHierarchy = atypeFactory.getQualifierHierarchy();
-    final Set<AnnotationMirror> upperBoundAnnos =
+    final AnnotationMirrorSet upperBoundAnnos =
         AnnotatedTypes.findEffectiveAnnotations(qualifierHierarchy, upperBound);
-    final Set<AnnotationMirror> lowerBoundAnnos =
+    final AnnotationMirrorSet lowerBoundAnnos =
         AnnotatedTypes.findEffectiveAnnotations(qualifierHierarchy, lowerBound);
 
     if (upperBoundAnnos.size() == lowerBoundAnnos.size()) {

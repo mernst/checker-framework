@@ -42,7 +42,12 @@ import org.checkerframework.javacutil.Pair;
  * interaction between TypeFromElement and TypesIntoElements allows us to write the defaulted
  * annotations into the Element and have them read later by other parts.
  */
-public class ElementAnnotationApplier {
+public final class ElementAnnotationApplier {
+
+  /** Do not instantiate. */
+  private ElementAnnotationApplier() {
+    throw new AssertionError("Class ElementAnnotationApplier cannot be instantiated.");
+  }
 
   /**
    * Add all of the relevant annotations stored in Element to type. This includes both top-level
@@ -222,8 +227,9 @@ public class ElementAnnotationApplier {
         try {
           ElementAnnotationApplier.applyInternal(type, tpelt, factory);
         } catch (UnexpectedAnnotationLocationException e) {
-          // The above is the second call to applyInternal on this type and element, so any errors
-          // were already reported by the first call. (See the only use of this class.)
+          // The above is the second call to applyInternal on this type and element, so
+          // any errors were already reported by the first call. (See the only use of this
+          // class.)
         }
       }
       return super.visitTypeVariable(type, factory);

@@ -50,7 +50,7 @@ public abstract class AbstractAnalysis<
   /** The transfer function for regular nodes. */
   // TODO: make final. Currently, the transferFunction has a reference to the analysis, so it
   //  can't be created until the Analysis is initialized.
-  protected @Nullable T transferFunction;
+  protected @MonotonicNonNull T transferFunction;
 
   /** The current control flow graph to perform the analysis on. */
   protected @MonotonicNonNull ControlFlowGraph cfg;
@@ -187,12 +187,11 @@ public abstract class AbstractAnalysis<
           || (currentTree != null && currentTree == n.getTree())) {
         return null;
       }
-      // check that 'n' is a subnode of 'node'. Check immediate operands
+      // check that 'n' is a subnode of 'currentNode'. Check immediate operands
       // first for efficiency.
       assert !n.isLValue() : "Did not expect an lvalue, but got " + n;
-      if (currentNode == n
-          || (!currentNode.getOperands().contains(n)
-              && !currentNode.getTransitiveOperands().contains(n))) {
+      if (!currentNode.getOperands().contains(n)
+          && !currentNode.getTransitiveOperands().contains(n)) {
         return null;
       }
       // fall through when the current node is not 'n', and 'n' is not a subnode.
@@ -214,7 +213,7 @@ public abstract class AbstractAnalysis<
    *
    * @param in the current node values
    */
-  /*package-private*/ void setNodeValues(IdentityHashMap<Node, V> in) {
+  /* package-private */ void setNodeValues(IdentityHashMap<Node, V> in) {
     assert !isRunning;
     nodeValues.clear();
     nodeValues.putAll(in);
@@ -339,8 +338,9 @@ public abstract class AbstractAnalysis<
       Node node, TransferInput<V, S> transferInput) {
     assert transferFunction != null : "@AssumeAssertion(nullness): invariant";
     if (node.isLValue()) {
-      // TODO: should the default behavior return a regular transfer result, a conditional transfer
-      //  result (depending on store.containsTwoStores()), or is the following correct?
+      // TODO: should the default behavior return a regular transfer result, a conditional
+      // transfer result (depending on store.containsTwoStores()), or is the following
+      // correct?
       return new RegularTransferResult<>(null, transferInput.getRegularStore());
     }
     transferInput.node = node;

@@ -392,7 +392,8 @@ public class AnnotationFileUtil {
       return resources;
     }
 
-    // The file doesn't exist.  Maybe it is relative to the current working directory, so try that.
+    // The file doesn't exist.  Maybe it is relative to the current working directory, so try
+    // that.
     file = new File(System.getProperty("user.dir"), location);
     if (file.exists()) {
       List<AnnotationFileResource> resources = new ArrayList<>();
@@ -484,21 +485,23 @@ public class AnnotationFileUtil {
    * @return true if elt is the canonical constructor of the record containing it
    */
   public static boolean isCanonicalConstructor(ExecutableElement elt, Types types) {
-    if (elt.getKind() == ElementKind.CONSTRUCTOR) {
-      TypeElement enclosing = (TypeElement) elt.getEnclosingElement();
-      // Can't use RECORD enum constant as it's not available before JDK 16:
-      if (enclosing.getKind().name().equals("RECORD")) {
-        List<? extends Element> recordComponents = ElementUtils.getRecordComponents(enclosing);
-        if (recordComponents.size() == elt.getParameters().size()) {
-          for (int i = 0; i < recordComponents.size(); i++) {
-            if (!types.isSameType(
-                recordComponents.get(i).asType(), elt.getParameters().get(i).asType())) {
-              return false;
-            }
-          }
-          return true;
+    if (elt.getKind() != ElementKind.CONSTRUCTOR) {
+      return false;
+    }
+    TypeElement enclosing = (TypeElement) elt.getEnclosingElement();
+    // Can't use RECORD enum constant as it's not available before JDK 16:
+    if (!enclosing.getKind().name().equals("RECORD")) {
+      return false;
+    }
+    List<? extends Element> recordComponents = ElementUtils.getRecordComponents(enclosing);
+    if (recordComponents.size() == elt.getParameters().size()) {
+      for (int i = 0; i < recordComponents.size(); i++) {
+        if (!types.isSameType(
+            recordComponents.get(i).asType(), elt.getParameters().get(i).asType())) {
+          return false;
         }
       }
+      return true;
     }
     return false;
   }

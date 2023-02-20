@@ -1,7 +1,6 @@
 package org.checkerframework.dataflow.cfg.node;
 
 import com.sun.source.tree.InstanceOfTree;
-import com.sun.source.tree.Tree;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
@@ -9,6 +8,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.javacutil.TypesUtils;
 
 /**
@@ -41,7 +41,7 @@ public class InstanceOfNode extends Node {
    * @param refType the type in the instanceof
    * @param types types util
    */
-  public InstanceOfNode(Tree tree, Node operand, TypeMirror refType, Types types) {
+  public InstanceOfNode(InstanceOfTree tree, Node operand, TypeMirror refType, Types types) {
     this(tree, operand, null, refType, types);
   }
 
@@ -55,14 +55,13 @@ public class InstanceOfNode extends Node {
    * @param types types util
    */
   public InstanceOfNode(
-      Tree tree,
+      InstanceOfTree tree,
       Node operand,
       @Nullable LocalVariableNode bindingVariable,
       TypeMirror refType,
       Types types) {
     super(types.getPrimitiveType(TypeKind.BOOLEAN));
-    assert tree.getKind() == Tree.Kind.INSTANCE_OF;
-    this.tree = (InstanceOfTree) tree;
+    this.tree = tree;
     this.operand = operand;
     this.refType = refType;
     this.types = types;
@@ -129,6 +128,7 @@ public class InstanceOfNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.singletonList(getOperand());
   }

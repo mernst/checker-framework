@@ -5,9 +5,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.javacutil.TreeUtils;
 
-/** A node for the single expression body of a single expression lambda. */
+/** A node for the single expression body of a single-expression lambda. */
 public class LambdaResultExpressionNode extends Node {
 
   /** Tree for the lambda expression body. */
@@ -79,6 +80,7 @@ public class LambdaResultExpressionNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.singletonList(result);
   }
