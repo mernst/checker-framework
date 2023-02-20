@@ -22,9 +22,9 @@ import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
 import com.github.javaparser.ast.expr.UnaryExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.utils.StringEscapeUtils;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.AnnotationValueVisitor;
@@ -35,6 +35,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TypesUtils;
@@ -77,7 +78,7 @@ public class AnnotationMirrorToAnnotationExprConversion {
    * @see #annotationMirrorToAnnotationExpr
    */
   public static NodeList<AnnotationExpr> annotationMirrorSetToAnnotationExprList(
-      Set<AnnotationMirror> annotationMirrors) {
+      AnnotationMirrorSet annotationMirrors) {
     NodeList<AnnotationExpr> result = new NodeList<>();
     for (AnnotationMirror am : annotationMirrors) {
       result.add(annotationMirrorToAnnotationExpr(am));
@@ -97,8 +98,10 @@ public class AnnotationMirrorToAnnotationExprConversion {
       Map<? extends ExecutableElement, ? extends AnnotationValue> values) {
     NodeList<MemberValuePair> convertedValues = new NodeList<>();
     AnnotationValueConverterVisitor converter = new AnnotationValueConverterVisitor();
-    for (ExecutableElement valueName : values.keySet()) {
-      AnnotationValue value = values.get(valueName);
+    for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry :
+        values.entrySet()) {
+      ExecutableElement valueName = entry.getKey();
+      AnnotationValue value = entry.getValue();
       convertedValues.add(
           new MemberValuePair(valueName.getSimpleName().toString(), value.accept(converter, null)));
     }
@@ -199,10 +202,11 @@ public class AnnotationMirrorToAnnotationExprConversion {
     @Override
     public Expression visitLong(long value, Void p) {
       if (value < 0) {
-        return new UnaryExpr(new LongLiteralExpr(Long.toString(-value)), UnaryExpr.Operator.MINUS);
+        return new UnaryExpr(
+            new LongLiteralExpr(Long.toString(-value) + "L"), UnaryExpr.Operator.MINUS);
       }
 
-      return new LongLiteralExpr(Long.toString(value));
+      return new LongLiteralExpr(Long.toString(value) + "L");
     }
 
     @Override
@@ -214,7 +218,7 @@ public class AnnotationMirrorToAnnotationExprConversion {
 
     @Override
     public Expression visitString(String value, Void p) {
-      return new StringLiteralExpr(value);
+      return new StringLiteralExpr(StringEscapeUtils.escapeJava(value));
     }
 
     @Override

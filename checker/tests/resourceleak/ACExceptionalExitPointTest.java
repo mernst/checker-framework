@@ -4,7 +4,8 @@ import org.checkerframework.common.returnsreceiver.qual.*;
 
 class ACExceptionalExitPointTest {
 
-  @MustCall("a") class Foo {
+  @InheritableMustCall("a")
+  class Foo {
     void a() {}
 
     @This Foo b() {
@@ -25,7 +26,7 @@ class ACExceptionalExitPointTest {
   }
 
   void exceptionalExitWrong() throws Exception {
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     Foo fw = makeFoo();
     throw new Exception();
   }

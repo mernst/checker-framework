@@ -3,10 +3,11 @@
 
 import org.checkerframework.checker.mustcall.qual.*;
 
-@MustCall("a") class CreatesMustCallForOverride {
+@InheritableMustCall("a")
+class CreatesMustCallForOverride {
   @CreatesMustCallFor
   @Override
-  // :: error: creates.mustcall.for.override.invalid
+  // :: error: (creates.mustcall.for.override.invalid)
   public String toString() {
     return "this method could re-assign a field or do something else it shouldn't";
   }
@@ -14,7 +15,7 @@ import org.checkerframework.checker.mustcall.qual.*;
   public void a() {}
 
   public static void test_no_cast() {
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     CreatesMustCallForOverride co = new CreatesMustCallForOverride();
     co.a();
     co.toString();

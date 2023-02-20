@@ -130,16 +130,6 @@ public class LockAnnotatedTypeFactory
   public LockAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker, true);
 
-    // This alias is only true for the Lock Checker. All other checkers must
-    // ignore the @LockingFree annotation.
-    addAliasedDeclAnnotation(LockingFree.class, SideEffectFree.class, SIDEEFFECTFREE);
-
-    // This alias is only true for the Lock Checker. All other checkers must
-    // ignore the @ReleasesNoLocks annotation.  Note that ReleasesNoLocks is
-    // not truly side-effect-free even as far as the Lock Checker is concerned,
-    // so there is additional handling of this annotation in the Lock Checker.
-    addAliasedDeclAnnotation(ReleasesNoLocks.class, SideEffectFree.class, SIDEEFFECTFREE);
-
     jcipGuardedBy = classForNameOrNull("net.jcip.annotations.GuardedBy");
 
     javaxGuardedBy = classForNameOrNull("javax.annotation.concurrent.GuardedBy");
@@ -182,7 +172,8 @@ public class LockAnnotatedTypeFactory
 
       @Override
       protected boolean shouldPassThroughExpression(String expression) {
-        // There is no expression to use to replace <self> here, so just pass the expression along.
+        // There is no expression to use to replace <self> here, so just pass the expression
+        // along.
         return super.shouldPassThroughExpression(expression)
             || LockVisitor.SELF_RECEIVER_PATTERN.matcher(expression).matches();
       }
@@ -193,8 +184,8 @@ public class LockAnnotatedTypeFactory
           return javaExpr;
         }
 
-        // If the expression isn't effectively final, then return the NOT_EFFECTIVELY_FINAL error
-        // string.
+        // If the expression isn't effectively final, then return the NOT_EFFECTIVELY_FINAL
+        // error string.
         return createError(javaExpr.toString(), NOT_EFFECTIVELY_FINAL);
       }
     };
@@ -236,8 +227,8 @@ public class LockAnnotatedTypeFactory
       return PurityUtils.isDeterministic(this, methodCall.getElement())
           && isExpressionEffectivelyFinal(methodCall.getReceiver());
     } else if (expr instanceof ThisReference || expr instanceof ClassName) {
-      // this is always final. "ClassName" is actually a class literal (String.class), it's final
-      // too.
+      // this is always final. "ClassName" is actually a class literal (String.class), it's
+      // final too.
       return true;
     } else { // type of 'expr' is not supported in @GuardedBy(...) lock expressions
       return false;
@@ -500,48 +491,49 @@ public class LockAnnotatedTypeFactory
    * annotation is present, return RELEASESNOLOCKS as the default, and MAYRELEASELOCKS as the
    * conservative default.
    *
-   * @param element the method element
+   * @param methodElement the method element
    * @param issueErrorIfMoreThanOnePresent whether to issue an error if more than one side effect
    *     annotation is present on the method
+   * @return the side effect annotation that is present on the given method
    */
-  // package-private
+  /* package-private */
   SideEffectAnnotation methodSideEffectAnnotation(
-      Element element, boolean issueErrorIfMoreThanOnePresent) {
-    if (element != null) {
-      Set<SideEffectAnnotation> sideEffectAnnotationPresent =
-          EnumSet.noneOf(SideEffectAnnotation.class);
-      for (SideEffectAnnotation sea : SideEffectAnnotation.values()) {
-        if (getDeclAnnotationNoAliases(element, sea.getAnnotationClass()) != null) {
-          sideEffectAnnotationPresent.add(sea);
-        }
-      }
-
-      int count = sideEffectAnnotationPresent.size();
-
-      if (count == 0) {
-        return defaults.applyConservativeDefaults(element)
-            ? SideEffectAnnotation.MAYRELEASELOCKS
-            : SideEffectAnnotation.RELEASESNOLOCKS;
-      }
-
-      if (count > 1 && issueErrorIfMoreThanOnePresent) {
-        // TODO: Turn on after figuring out how this interacts with inherited annotations.
-        // checker.reportError(element, "multiple.sideeffect.annotations");
-      }
-
-      SideEffectAnnotation weakest = null;
-      // At least one side effect annotation was found. Return the weakest.
-      for (SideEffectAnnotation sea : sideEffectAnnotationPresent) {
-        if (weakest == null || sea.isWeakerThan(weakest)) {
-          weakest = sea;
-        }
-      }
-      return weakest;
+      ExecutableElement methodElement, boolean issueErrorIfMoreThanOnePresent) {
+    if (methodElement == null) {
+      // When there is not enough information to determine the correct side effect annotation,
+      // return the weakest one.
+      return SideEffectAnnotation.weakest();
     }
 
-    // When there is not enough information to determine the correct side effect annotation,
-    // return the weakest one.
-    return SideEffectAnnotation.weakest();
+    Set<SideEffectAnnotation> sideEffectAnnotationPresent =
+        EnumSet.noneOf(SideEffectAnnotation.class);
+    for (SideEffectAnnotation sea : SideEffectAnnotation.values()) {
+      if (getDeclAnnotationNoAliases(methodElement, sea.getAnnotationClass()) != null) {
+        sideEffectAnnotationPresent.add(sea);
+      }
+    }
+
+    int count = sideEffectAnnotationPresent.size();
+
+    if (count == 0) {
+      return defaults.applyConservativeDefaults(methodElement)
+          ? SideEffectAnnotation.MAYRELEASELOCKS
+          : SideEffectAnnotation.RELEASESNOLOCKS;
+    }
+
+    if (count > 1 && issueErrorIfMoreThanOnePresent) {
+      // TODO: Turn on after figuring out how this interacts with inherited annotations.
+      // checker.reportError(methodElement, "multiple.sideeffect.annotations");
+    }
+
+    SideEffectAnnotation weakest = null;
+    // At least one side effect annotation was found. Return the weakest.
+    for (SideEffectAnnotation sea : sideEffectAnnotationPresent) {
+      if (weakest == null || sea.isWeakerThan(weakest)) {
+        weakest = sea;
+      }
+    }
+    return weakest;
   }
 
   /**
@@ -552,7 +544,7 @@ public class LockAnnotatedTypeFactory
    * @param atm an AnnotatedTypeMirror containing a GuardSatisfied annotation
    * @return the index on the GuardSatisfied annotation
    */
-  // package-private
+  /* package-private */
   int getGuardSatisfiedIndex(AnnotatedTypeMirror atm) {
     return getGuardSatisfiedIndex(atm.getAnnotation(GuardSatisfied.class));
   }
@@ -564,7 +556,7 @@ public class LockAnnotatedTypeFactory
    * @param am an AnnotationMirror for a GuardSatisfied annotation
    * @return the index on the GuardSatisfied annotation
    */
-  // package-private
+  /* package-private */
   int getGuardSatisfiedIndex(AnnotationMirror am) {
     return AnnotationUtils.getElementValueInt(am, guardSatisfiedValueElement, -1);
   }
@@ -687,7 +679,7 @@ public class LockAnnotatedTypeFactory
   @Override
   public void addComputedTypeAnnotations(Tree tree, AnnotatedTypeMirror type, boolean useFlow) {
     if (tree.getKind() == Tree.Kind.VARIABLE) {
-      translateJcipAndJavaxAnnotations(TreeUtils.elementFromTree((VariableTree) tree), type);
+      translateJcipAndJavaxAnnotations(TreeUtils.elementFromDeclaration((VariableTree) tree), type);
     }
 
     super.addComputedTypeAnnotations(tree, type, useFlow);
@@ -765,5 +757,13 @@ public class LockAnnotatedTypeFactory
 
     // Return the resulting AnnotationMirror
     return builder.build();
+  }
+
+  @Override
+  public boolean isSideEffectFree(ExecutableElement method) {
+    SideEffectAnnotation seAnno = methodSideEffectAnnotation(method, false);
+    return seAnno == SideEffectAnnotation.RELEASESNOLOCKS
+        || seAnno == SideEffectAnnotation.LOCKINGFREE
+        || super.isSideEffectFree(method);
   }
 }

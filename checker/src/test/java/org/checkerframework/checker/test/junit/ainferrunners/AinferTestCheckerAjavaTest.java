@@ -18,13 +18,14 @@ import org.junit.runners.Parameterized.Parameters;
 @Category(AinferTestCheckerAjavaTest.class)
 public class AinferTestCheckerAjavaTest extends AinferGeneratePerDirectoryTest {
 
-  /** @param testFiles the files containing test code, which will be type-checked */
+  /**
+   * @param testFiles the files containing test code, which will be type-checked
+   */
   public AinferTestCheckerAjavaTest(List<File> testFiles) {
     super(
         testFiles,
         AinferTestChecker.class,
         "ainfer-testchecker/non-annotated",
-        "-Anomsgtext",
         "-Ainfer=ajava",
         "-Aajava=tests/ainfer-testchecker/input-annotation-files/ExistingPurityAnnotations-org.checkerframework.checker.testchecker.ainfer.AinferTestChecker.ajava",
         "-Awarns");

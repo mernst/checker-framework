@@ -5,6 +5,9 @@ import com.sun.source.tree.Tree;
 import java.util.IllegalFormatException;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
+import org.checkerframework.afu.scenelib.Annotation;
+import org.checkerframework.afu.scenelib.el.AField;
+import org.checkerframework.afu.scenelib.el.AMethod;
 import org.checkerframework.checker.formatter.qual.ConversionCategory;
 import org.checkerframework.checker.formatter.qual.Format;
 import org.checkerframework.checker.formatter.qual.FormatBottom;
@@ -24,11 +27,9 @@ import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.framework.util.QualifierKind;
 import org.checkerframework.javacutil.AnnotationBuilder;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TypeSystemError;
-import scenelib.annotations.Annotation;
-import scenelib.annotations.el.AField;
-import scenelib.annotations.el.AMethod;
 
 /**
  * Adds {@link Format} to the type of tree, if it is a {@code String} or {@code char} literal that
@@ -69,7 +70,7 @@ public class FormatterAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   @Override
-  public QualifierHierarchy createQualifierHierarchy() {
+  protected QualifierHierarchy createQualifierHierarchy() {
     return new FormatterQualifierHierarchy();
   }
 
@@ -136,7 +137,7 @@ public class FormatterAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    */
   private boolean hasFormatMethodAnno(
       WholeProgramInferenceJavaParserStorage.CallableDeclarationAnnos methodAnnos) {
-    Set<AnnotationMirror> declarationAnnos = methodAnnos.getDeclarationAnnotations();
+    AnnotationMirrorSet declarationAnnos = methodAnnos.getDeclarationAnnotations();
     return AnnotationUtils.containsSameByClass(
             declarationAnnos, org.checkerframework.checker.formatter.qual.FormatMethod.class)
         || AnnotationUtils.containsSameByName(

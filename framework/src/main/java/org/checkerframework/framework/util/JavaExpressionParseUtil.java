@@ -108,7 +108,7 @@ public class JavaExpressionParseUtil {
   private static final int PARAMETER_PREFIX_LENGTH = PARAMETER_PREFIX.length();
 
   /** A pattern that matches the start of a formal parameter in "#2" syntax. */
-  private static Pattern FORMAL_PARAMETER = Pattern.compile("#(\\d)");
+  private static final Pattern FORMAL_PARAMETER = Pattern.compile("#(\\d)");
 
   /** The replacement for a formal parameter in "#2" syntax. */
   private static final String PARAMETER_REPLACEMENT = PARAMETER_PREFIX + "$1";
@@ -536,7 +536,8 @@ public class JavaExpressionParseUtil {
      * @return the {@code ClassName} for {@code identifier}, or null if it is not a class name
      */
     protected @Nullable ClassName getIdentifierAsUnqualifiedClassName(String identifier) {
-      // Is identifier an inner class of enclosingType or of any enclosing class of enclosingType?
+      // Is identifier an inner class of enclosingType or of any enclosing class of
+      // enclosingType?
       TypeMirror searchType = enclosingType;
       while (searchType.getKind() == TypeKind.DECLARED) {
         DeclaredType searchDeclaredType = (DeclaredType) searchType;
@@ -1101,10 +1102,12 @@ public class JavaExpressionParseUtil {
    * DiagMessage} that can be used for error reporting.
    */
   public static class JavaExpressionParseException extends Exception {
+    /** The serial version identifier. */
     private static final long serialVersionUID = 2L;
     /** The error message key. */
-    private @CompilerMessageKey String errorKey;
+    private final @CompilerMessageKey String errorKey;
     /** The arguments to the error message key. */
+    @SuppressWarnings("serial") // I do not intend to serialize JavaExpressionParseException objects
     public final Object[] args;
 
     /**

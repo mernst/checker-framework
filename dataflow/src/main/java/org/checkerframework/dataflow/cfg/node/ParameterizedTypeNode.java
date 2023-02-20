@@ -1,11 +1,11 @@
 package org.checkerframework.dataflow.cfg.node;
 
 import com.sun.source.tree.ParameterizedTypeTree;
-import com.sun.source.tree.Tree;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -21,16 +21,15 @@ import org.checkerframework.javacutil.TreeUtils;
  */
 public class ParameterizedTypeNode extends Node {
 
-  protected final Tree tree;
+  protected final ParameterizedTypeTree tree;
 
-  public ParameterizedTypeNode(Tree t) {
+  public ParameterizedTypeNode(ParameterizedTypeTree t) {
     super(TreeUtils.typeOf(t));
-    assert t instanceof ParameterizedTypeTree;
     tree = t;
   }
 
   @Override
-  public Tree getTree() {
+  public ParameterizedTypeTree getTree() {
     return tree;
   }
 
@@ -59,6 +58,7 @@ public class ParameterizedTypeNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.emptyList();
   }

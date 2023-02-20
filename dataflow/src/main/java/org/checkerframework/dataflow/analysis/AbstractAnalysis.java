@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Set;
-import javax.lang.model.element.Element;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.interning.qual.FindDistinct;
 import org.checkerframework.checker.interning.qual.InternedDistinct;
@@ -50,7 +50,7 @@ public abstract class AbstractAnalysis<
   /** The transfer function for regular nodes. */
   // TODO: make final. Currently, the transferFunction has a reference to the analysis, so it
   //  can't be created until the Analysis is initialized.
-  protected @Nullable T transferFunction;
+  protected @MonotonicNonNull T transferFunction;
 
   /** The current control flow graph to perform the analysis on. */
   protected @MonotonicNonNull ControlFlowGraph cfg;
@@ -68,7 +68,7 @@ public abstract class AbstractAnalysis<
   protected final IdentityHashMap<Node, V> nodeValues = new IdentityHashMap<>();
 
   /** Map from (effectively final) local variable elements to their abstract value. */
-  protected final HashMap<Element, V> finalLocalValues = new HashMap<>();
+  protected final HashMap<VariableElement, V> finalLocalValues = new HashMap<>();
 
   /**
    * The node that is currently handled in the analysis (if it is running). The following invariant
@@ -187,12 +187,11 @@ public abstract class AbstractAnalysis<
           || (currentTree != null && currentTree == n.getTree())) {
         return null;
       }
-      // check that 'n' is a subnode of 'node'. Check immediate operands
+      // check that 'n' is a subnode of 'currentNode'. Check immediate operands
       // first for efficiency.
       assert !n.isLValue() : "Did not expect an lvalue, but got " + n;
-      if (currentNode == n
-          || (!currentNode.getOperands().contains(n)
-              && !currentNode.getTransitiveOperands().contains(n))) {
+      if (!currentNode.getOperands().contains(n)
+          && !currentNode.getTransitiveOperands().contains(n)) {
         return null;
       }
       // fall through when the current node is not 'n', and 'n' is not a subnode.
@@ -214,7 +213,7 @@ public abstract class AbstractAnalysis<
    *
    * @param in the current node values
    */
-  /*package-private*/ void setNodeValues(IdentityHashMap<Node, V> in) {
+  /* package-private */ void setNodeValues(IdentityHashMap<Node, V> in) {
     assert !isRunning;
     nodeValues.clear();
     nodeValues.putAll(in);
@@ -339,8 +338,9 @@ public abstract class AbstractAnalysis<
       Node node, TransferInput<V, S> transferInput) {
     assert transferFunction != null : "@AssumeAssertion(nullness): invariant";
     if (node.isLValue()) {
-      // TODO: should the default behavior return a regular transfer result, a conditional transfer
-      //  result (depending on store.containsTwoStores()), or is the following correct?
+      // TODO: should the default behavior return a regular transfer result, a conditional
+      // transfer result (depending on store.containsTwoStores()), or is the following
+      // correct?
       return new RegularTransferResult<>(null, transferInput.getRegularStore());
     }
     transferInput.node = node;
@@ -354,7 +354,7 @@ public abstract class AbstractAnalysis<
       Node lhst = assignment.getTarget();
       if (lhst instanceof LocalVariableNode) {
         LocalVariableNode lhs = (LocalVariableNode) lhst;
-        Element elem = lhs.getElement();
+        VariableElement elem = lhs.getElement();
         if (ElementUtils.isEffectivelyFinal(elem)) {
           V resval = transferResult.getResultValue();
           if (resval != null) {

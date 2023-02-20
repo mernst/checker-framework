@@ -3,7 +3,8 @@
 import org.checkerframework.checker.calledmethods.qual.*;
 import org.checkerframework.checker.mustcall.qual.*;
 
-@MustCall("a") class CreatesMustCallForSimple {
+@InheritableMustCall("a")
+class CreatesMustCallForSimple {
 
   @CreatesMustCallFor
   void reset() {}
@@ -18,27 +19,27 @@ import org.checkerframework.checker.mustcall.qual.*;
   }
 
   static void test1() {
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     CreatesMustCallForSimple cos = makeNoMC();
     @MustCall({}) CreatesMustCallForSimple a = cos;
     cos.reset();
-    // :: error: assignment
+    // :: error: (assignment)
     @CalledMethods({"reset"}) CreatesMustCallForSimple b = cos;
     @CalledMethods({}) CreatesMustCallForSimple c = cos;
   }
 
   static void test2() {
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     CreatesMustCallForSimple cos = makeNoMC();
     @MustCall({}) CreatesMustCallForSimple a = cos;
     cos.resetThis();
-    // :: error: assignment
+    // :: error: (assignment)
     @CalledMethods({"resetThis"}) CreatesMustCallForSimple b = cos;
     @CalledMethods({}) CreatesMustCallForSimple c = cos;
   }
 
   static void test3() {
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     CreatesMustCallForSimple cos = new CreatesMustCallForSimple();
     cos.a();
     cos.resetThis();
@@ -66,7 +67,7 @@ import org.checkerframework.checker.mustcall.qual.*;
   }
 
   static void test7(boolean b) {
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     CreatesMustCallForSimple cos = new CreatesMustCallForSimple();
     cos.a();
     if (b) {

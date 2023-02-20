@@ -43,11 +43,17 @@ import org.checkerframework.javacutil.AnnotationUtils;
  */
 public class SameLenTransfer extends CFTransfer {
 
-  private SameLenAnnotatedTypeFactory aTypeFactory;
+  /** The annotated type factory. */
+  private final SameLenAnnotatedTypeFactory aTypeFactory;
 
   /** Shorthand for aTypeFactory.UNKNOWN. */
-  private AnnotationMirror UNKNOWN;
+  private final AnnotationMirror UNKNOWN;
 
+  /**
+   * Create a new SameLenTransfer.
+   *
+   * @param analysis the CFAnalysis
+   */
   public SameLenTransfer(CFAnalysis analysis) {
     super(analysis);
     this.aTypeFactory = (SameLenAnnotatedTypeFactory) analysis.getTypeFactory();
@@ -86,8 +92,10 @@ public class SameLenTransfer extends CFTransfer {
         Node lengthNodeReceiver = getLengthReceiver(lengthNode);
 
         if (lengthNodeReceiver != null) {
-          // "new T[a.length]" or "new T[s.length()]" is the right hand side of the assignment.
-          // lengthNode is known to be "lengthNodeReceiver.length" or "lengthNodeReceiver.length()"
+          // "new T[a.length]" or "new T[s.length()]" is the right hand side of the
+          // assignment.
+          // lengthNode is known to be "lengthNodeReceiver.length" or
+          // "lengthNodeReceiver.length()"
 
           // targetRec is the receiver for the left hand side of the assignment.
           JavaExpression targetRec = JavaExpression.fromNode(node.getTarget());

@@ -2,7 +2,8 @@
 
 import org.checkerframework.checker.mustcall.qual.*;
 
-@MustCall("a") class CreatesMustCallForSimple {
+@InheritableMustCall("a")
+class CreatesMustCallForSimple {
 
   @CreatesMustCallFor
   void reset() {}
@@ -18,7 +19,7 @@ import org.checkerframework.checker.mustcall.qual.*;
     CreatesMustCallForSimple cos = makeNoMC();
     @MustCall({}) CreatesMustCallForSimple a = cos;
     cos.reset();
-    // :: error: assignment
+    // :: error: (assignment)
     @MustCall({}) CreatesMustCallForSimple b = cos;
     @MustCall("a") CreatesMustCallForSimple c = cos;
   }
@@ -27,7 +28,7 @@ import org.checkerframework.checker.mustcall.qual.*;
     CreatesMustCallForSimple cos = makeNoMC();
     @MustCall({}) CreatesMustCallForSimple a = cos;
     cos.resetThis();
-    // :: error: assignment
+    // :: error: (assignment)
     @MustCall({}) CreatesMustCallForSimple b = cos;
     @MustCall("a") CreatesMustCallForSimple c = cos;
   }
@@ -35,7 +36,7 @@ import org.checkerframework.checker.mustcall.qual.*;
   static void test3() {
     Object cos = makeNoMC();
     @MustCall({}) Object a = cos;
-    // :: error: createsmustcallfor.target.unparseable
+    // :: error: (createsmustcallfor.target.unparseable)
     ((CreatesMustCallForSimple) cos).reset();
     // It would be better to issue an assignment incompatible error here, but the
     // error above is okay too.
@@ -49,7 +50,7 @@ import org.checkerframework.checker.mustcall.qual.*;
     @MustCall({}) Object a = cos;
     CreatesMustCallForSimple r = ((CreatesMustCallForSimple) cos);
     r.reset();
-    // :: error: assignment
+    // :: error: (assignment)
     @MustCall({}) Object b = r;
     @MustCall("a") Object c = r;
   }

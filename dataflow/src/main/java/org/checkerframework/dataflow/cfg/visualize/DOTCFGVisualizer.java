@@ -84,11 +84,8 @@ public class DOTCFGVisualizer<
     String dotGraph = visualizeGraph(cfg, entry, analysis);
     String dotFileName = dotOutputFileName(cfg.underlyingAST);
 
-    try {
-      FileWriter fStream = new FileWriter(dotFileName);
-      BufferedWriter out = new BufferedWriter(fStream);
+    try (BufferedWriter out = new BufferedWriter(new FileWriter(dotFileName))) {
       out.write(dotGraph);
-      out.close();
     } catch (IOException e) {
       throw new UserError("Error creating dot file (is the path valid?): " + dotFileName, e);
     }
@@ -125,7 +122,8 @@ public class DOTCFGVisualizer<
           // The footer of the conditional block.
           sbDotNodes.append("\"];");
         } else {
-          // The footer of the block which has no content and is not a special or conditional block.
+          // The footer of the block which has no content and is not a special or
+          // conditional block.
           sbDotNodes.append("?? empty ??\"];");
         }
       } else {
@@ -328,17 +326,15 @@ public class DOTCFGVisualizer<
    */
   @Override
   public void shutdown() {
-    try {
-      // Open for append, in case of multiple sub-checkers.
-      FileWriter fstream = new FileWriter(outDir + "/methods.txt", true);
-      BufferedWriter out = new BufferedWriter(fstream);
+    // Open for append, in case of multiple sub-checkers.
+    try (FileWriter fstream = new FileWriter(outDir + "/methods.txt", true);
+        BufferedWriter out = new BufferedWriter(fstream)) {
       for (Map.Entry<String, String> kv : generated.entrySet()) {
         out.write(kv.getKey());
         out.append("\t");
         out.write(kv.getValue());
         out.append(lineSeparator);
       }
-      out.close();
     } catch (IOException e) {
       throw new UserError(
           "Error creating methods.txt file in: " + outDir + "; ensure the path is valid", e);

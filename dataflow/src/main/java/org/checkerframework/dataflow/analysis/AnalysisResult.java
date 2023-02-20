@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.lang.model.element.Element;
+import javax.lang.model.element.VariableElement;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.cfg.block.Block;
@@ -18,6 +18,7 @@ import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
 import org.plumelib.util.UniqueId;
+import org.plumelib.util.UnmodifiableIdentityHashMap;
 
 /**
  * An {@link AnalysisResult} represents the result of a org.checkerframework.dataflow analysis by
@@ -29,8 +30,14 @@ import org.plumelib.util.UniqueId;
  */
 public class AnalysisResult<V extends AbstractValue<V>, S extends Store<S>> implements UniqueId {
 
+  /**
+   * For efficiency, certain maps stored in the result are only copied lazily, when they need to be
+   * mutated. This flag tracks if the copying has occurred.
+   */
+  private boolean mapsCopied = false;
+
   /** Abstract values of nodes. */
-  protected final IdentityHashMap<Node, V> nodeValues;
+  protected IdentityHashMap<Node, V> nodeValues;
 
   /**
    * Map from AST {@link Tree}s to sets of {@link Node}s.
@@ -38,16 +45,16 @@ public class AnalysisResult<V extends AbstractValue<V>, S extends Store<S>> impl
    * <p>Some of those Nodes might not be keys in {@link #nodeValues}. One reason is that the Node is
    * unreachable in the control flow graph, so dataflow never gave it a value.
    */
-  protected final IdentityHashMap<Tree, Set<Node>> treeLookup;
+  protected IdentityHashMap<Tree, Set<Node>> treeLookup;
 
   /**
    * Map from postfix increment or decrement trees that are AST {@link UnaryTree}s to the synthetic
    * tree that is {@code v + 1} or {@code v - 1}.
    */
-  protected final IdentityHashMap<UnaryTree, BinaryTree> postfixLookup;
+  protected IdentityHashMap<UnaryTree, BinaryTree> postfixLookup;
 
   /** Map from (effectively final) local variable elements to their abstract value. */
-  protected final HashMap<Element, V> finalLocalValues;
+  protected final HashMap<VariableElement, V> finalLocalValues;
 
   /** The stores before every method call. */
   protected final IdentityHashMap<Block, TransferInput<V, S>> stores;
@@ -61,9 +68,10 @@ public class AnalysisResult<V extends AbstractValue<V>, S extends Store<S>> impl
       analysisCaches;
 
   /** The unique ID for the next-created object. */
-  static final AtomicLong nextUid = new AtomicLong(0);
+  private static final AtomicLong nextUid = new AtomicLong(0);
+
   /** The unique ID of this object. */
-  final transient long uid = nextUid.getAndIncrement();
+  private final transient long uid = nextUid.getAndIncrement();
 
   @Override
   public long getUid(@UnknownInitialization AnalysisResult<V, S> this) {
@@ -85,11 +93,11 @@ public class AnalysisResult<V extends AbstractValue<V>, S extends Store<S>> impl
       IdentityHashMap<Block, TransferInput<V, S>> stores,
       IdentityHashMap<Tree, Set<Node>> treeLookup,
       IdentityHashMap<UnaryTree, BinaryTree> postfixLookup,
-      HashMap<Element, V> finalLocalValues,
+      HashMap<VariableElement, V> finalLocalValues,
       Map<TransferInput<V, S>, IdentityHashMap<Node, TransferResult<V, S>>> analysisCaches) {
-    this.nodeValues = new IdentityHashMap<>(nodeValues);
-    this.treeLookup = new IdentityHashMap<>(treeLookup);
-    this.postfixLookup = new IdentityHashMap<>(postfixLookup);
+    this.nodeValues = UnmodifiableIdentityHashMap.wrap(nodeValues);
+    this.treeLookup = UnmodifiableIdentityHashMap.wrap(treeLookup);
+    this.postfixLookup = UnmodifiableIdentityHashMap.wrap(postfixLookup);
     // TODO: why are stores and finalLocalValues captured?
     this.stores = stores;
     this.finalLocalValues = finalLocalValues;
@@ -110,7 +118,7 @@ public class AnalysisResult<V extends AbstractValue<V>, S extends Store<S>> impl
       IdentityHashMap<Block, TransferInput<V, S>> stores,
       IdentityHashMap<Tree, Set<Node>> treeLookup,
       IdentityHashMap<UnaryTree, BinaryTree> postfixLookup,
-      HashMap<Element, V> finalLocalValues) {
+      HashMap<VariableElement, V> finalLocalValues) {
     this(nodeValues, stores, treeLookup, postfixLookup, finalLocalValues, new IdentityHashMap<>());
   }
 
@@ -136,11 +144,22 @@ public class AnalysisResult<V extends AbstractValue<V>, S extends Store<S>> impl
    * @param other an analysis result to combine with this
    */
   public void combine(AnalysisResult<V, S> other) {
+    copyMapsIfNeeded();
     nodeValues.putAll(other.nodeValues);
     mergeTreeLookup(treeLookup, other.treeLookup);
     postfixLookup.putAll(other.postfixLookup);
     stores.putAll(other.stores);
     finalLocalValues.putAll(other.finalLocalValues);
+  }
+
+  /** Make copies of certain internal IdentityHashMaps, if they have not been copied already. */
+  private void copyMapsIfNeeded() {
+    if (!mapsCopied) {
+      nodeValues = new IdentityHashMap<>(nodeValues);
+      treeLookup = new IdentityHashMap<>(treeLookup);
+      postfixLookup = new IdentityHashMap<>(postfixLookup);
+      mapsCopied = true;
+    }
   }
 
   /**
@@ -167,7 +186,7 @@ public class AnalysisResult<V extends AbstractValue<V>, S extends Store<S>> impl
    *
    * @return the value of effectively final local variables
    */
-  public HashMap<Element, V> getFinalLocalValues() {
+  public HashMap<VariableElement, V> getFinalLocalValues() {
     return finalLocalValues;
   }
 
@@ -335,9 +354,10 @@ public class AnalysisResult<V extends AbstractValue<V>, S extends Store<S>> impl
         if (lastNode == null) {
           // This block doesn't contain any node, return the store in the transfer input
           return transferInput.getRegularStore();
+        } else {
+          return analysis.runAnalysisFor(
+              lastNode, Analysis.BeforeOrAfter.AFTER, transferInput, nodeValues, analysisCaches);
         }
-        return analysis.runAnalysisFor(
-            lastNode, Analysis.BeforeOrAfter.AFTER, transferInput, nodeValues, analysisCaches);
       case BACKWARD:
         return transferInput.getRegularStore();
       default:
@@ -393,12 +413,18 @@ public class AnalysisResult<V extends AbstractValue<V>, S extends Store<S>> impl
    *     running the analysis
    */
   protected @Nullable S runAnalysisFor(Node node, Analysis.BeforeOrAfter preOrPost) {
+    // block is null if node is a formal parameter of a method, or is a field access thereof
     Block block = node.getBlock();
-    assert block != null : "@AssumeAssertion(nullness): invariant";
+    assert block != null : "@AssumeAssertion(nullness): null block for node " + node;
     TransferInput<V, S> transferInput = stores.get(block);
     if (transferInput == null) {
       return null;
     }
+    // Calling Analysis.runAnalysisFor() may mutate the internal nodeValues map inside an
+    // AbstractAnalysis object, and by default the AnalysisResult constructor just wraps this
+    // map without copying it.  So here the AnalysisResult maps must be copied, to preserve
+    // them.
+    copyMapsIfNeeded();
     return runAnalysisFor(node, preOrPost, transferInput, nodeValues, analysisCaches);
   }
 

@@ -4,7 +4,8 @@ import org.checkerframework.common.returnsreceiver.qual.*;
 
 class ACMethodInvocationTest {
 
-  @MustCall("a") class Foo {
+  @InheritableMustCall("a")
+  class Foo {
     void a() {}
 
     @This Foo b() {
@@ -41,12 +42,12 @@ class ACMethodInvocationTest {
   }
 
   void testFluentAPIWrong() {
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     makeFoo().b();
   }
 
   void testFluentAPIWrong2() {
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     makeFoo();
   }
 
@@ -55,12 +56,12 @@ class ACMethodInvocationTest {
   }
 
   void invokeMethodWithCallBWrong() {
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     makeFooFinalize2();
   }
 
   void invokeMethodAndCallCWrong() {
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     makeFoo().c();
   }
 
@@ -73,9 +74,9 @@ class ACMethodInvocationTest {
   Foo testField3;
 
   void testStoringInField() {
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     testField1 = makeFoo();
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     testField2 = new Foo();
 
     testField3 = makeFooFinalize();

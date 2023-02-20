@@ -33,7 +33,7 @@ import org.checkerframework.javacutil.Pair;
  *
  * <p>In a way, this class is a hack: the Type representation for the Elements should contain all
  * annotations that we want. However, due to <a
- * href="http://mail.openjdk.java.net/pipermail/type-annotations-dev/2013-December/001449.html">javac
+ * href="https://mail.openjdk.org/pipermail/type-annotations-dev/2013-December/001449.html">javac
  * bugs</a> decoding the type annotations from the Element is necessary.
  *
  * <p>Even once these bugs are fixed, this class might be useful: in TypesIntoElements it is easy to
@@ -42,7 +42,12 @@ import org.checkerframework.javacutil.Pair;
  * interaction between TypeFromElement and TypesIntoElements allows us to write the defaulted
  * annotations into the Element and have them read later by other parts.
  */
-public class ElementAnnotationApplier {
+public final class ElementAnnotationApplier {
+
+  /** Do not instantiate. */
+  private ElementAnnotationApplier() {
+    throw new AssertionError("Class ElementAnnotationApplier cannot be instantiated.");
+  }
 
   /**
    * Add all of the relevant annotations stored in Element to type. This includes both top-level
@@ -118,7 +123,7 @@ public class ElementAnnotationApplier {
       TypeVarUseApplier.apply(type, element, typeFactory);
 
     } else if (VariableApplier.accepts(type, element)) {
-      if (element.getKind() != ElementKind.LOCAL_VARIABLE) {
+      if (!ElementUtils.isLocalVariable(element)) {
         // For local variables we have the source code,
         // so there is no need to look at the Element.
         // This is needed to avoid a bug in the JDK:
@@ -139,7 +144,7 @@ public class ElementAnnotationApplier {
       MethodTypeParamApplier.apply((AnnotatedTypeVariable) type, element, typeFactory);
 
     } else if (ParamApplier.accepts(type, element)) {
-      ParamApplier.apply(type, element, typeFactory);
+      ParamApplier.apply(type, (VariableElement) element, typeFactory);
 
     } else if (isCaptureConvertedTypeVar(element)) {
       // Types resulting from capture conversion cannot have explicit annotations
@@ -222,8 +227,9 @@ public class ElementAnnotationApplier {
         try {
           ElementAnnotationApplier.applyInternal(type, tpelt, factory);
         } catch (UnexpectedAnnotationLocationException e) {
-          // The above is the second call to applyInternal on this type and element, so any errors
-          // were already reported by the first call. (See the only use of this class.)
+          // The above is the second call to applyInternal on this type and element, so
+          // any errors were already reported by the first call. (See the only use of this
+          // class.)
         }
       }
       return super.visitTypeVariable(type, factory);

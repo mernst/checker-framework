@@ -1,12 +1,13 @@
 package org.checkerframework.checker.nullness;
 
 import java.util.LinkedHashSet;
-import java.util.SortedSet;
+import java.util.NavigableSet;
 import javax.annotation.processing.SupportedOptions;
 import org.checkerframework.checker.initialization.InitializationChecker;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
+import org.checkerframework.framework.qual.StubFiles;
 import org.checkerframework.framework.source.SupportedLintOptions;
 
 /**
@@ -33,6 +34,7 @@ import org.checkerframework.framework.source.SupportedLintOptions;
   NullnessChecker.LINT_PERMITCLEARPROPERTY,
 })
 @SupportedOptions({"assumeKeyFor"})
+@StubFiles({"junit-assertions.astub"})
 public class NullnessChecker extends InitializationChecker {
 
   /** Should we be strict about initialization of {@link MonotonicNonNull} variables? */
@@ -68,6 +70,9 @@ public class NullnessChecker extends InitializationChecker {
   /** Default for {@link #LINT_PERMITCLEARPROPERTY}. */
   public static final boolean LINT_DEFAULT_PERMITCLEARPROPERTY = false;
 
+  /** Default constructor for NullnessChecker. */
+  public NullnessChecker() {}
+
   @Override
   protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
     LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
@@ -79,8 +84,8 @@ public class NullnessChecker extends InitializationChecker {
   }
 
   @Override
-  public SortedSet<String> getSuppressWarningsPrefixes() {
-    SortedSet<String> result = super.getSuppressWarningsPrefixes();
+  public NavigableSet<String> getSuppressWarningsPrefixes() {
+    NavigableSet<String> result = super.getSuppressWarningsPrefixes();
     result.add("nullness");
     return result;
   }
