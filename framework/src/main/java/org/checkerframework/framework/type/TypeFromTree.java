@@ -7,6 +7,7 @@ import javax.lang.model.type.TypeKind;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.javacutil.BugInCF;
+import org.checkerframework.javacutil.TreeUtils;
 
 /**
  * A utility class to convert trees into corresponding AnnotatedTypeMirrors. This class should be
@@ -62,6 +63,8 @@ class TypeFromTree {
     abortIfTreeIsNull(typeFactory, tree);
 
     final AnnotatedTypeMirror type = memberVisitor.visit(tree, typeFactory);
+    System.out.printf(
+        "TypeFromTree.fromMember(%s) => %s%n", TreeUtils.toStringTruncated(tree, 65), type);
     ifExecutableCheckElement(typeFactory, tree, type);
     return type;
   }

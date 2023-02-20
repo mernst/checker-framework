@@ -350,10 +350,14 @@ public class DependentTypesHelper {
       return;
     }
 
+    System.out.printf(
+        "atMethodBody(%s, %s)%n", atm, TreeUtils.toStringTruncated(methodDeclTree, 65));
+
     convertAnnotatedTypeMirror(
         stringExpr ->
             StringToJavaExpression.atMethodBody(stringExpr, methodDeclTree, factory.getChecker()),
         atm);
+    System.out.printf("DTH.atMethodBody exiting; atm=%s%n", atm);
   }
 
   /**

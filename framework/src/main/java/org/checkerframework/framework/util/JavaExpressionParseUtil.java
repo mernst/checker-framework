@@ -159,6 +159,11 @@ public class JavaExpressionParseUtil {
       throw constructJavaExpressionParseError(expression, "the expression did not parse" + extra);
     }
 
+    System.out.printf("JEPU.parse(%s):%n  expr = %s [%s]%n", expression, expr, expr.getClass());
+    System.out.printf(
+        "JEPU.parse(%s) about to call convert: "
+            + "enclosingType=%s, thisReference=%s, thisReference.getType()=%s%n",
+        expression, enclosingType, thisReference, thisReference.getType());
     JavaExpression result =
         ExpressionToJavaExpressionVisitor.convert(
             expr,
@@ -168,6 +173,10 @@ public class JavaExpressionParseUtil {
             localVarPath,
             pathToCompilationUnit,
             env);
+
+    System.out.printf(
+        "JEPU.parse(%s):%n  expr = %s [%s]%n  result = %s [%s]%n",
+        expression, expr, expr.getClass(), result, result.getClass());
 
     if (result instanceof ClassName && !expression.endsWith(".class")) {
       throw constructJavaExpressionParseError(
@@ -422,6 +431,8 @@ public class JavaExpressionParseUtil {
         fieldAccessReceiver = new ClassName(enclosingType);
       }
       FieldAccess fieldAccess = getIdentifierAsFieldAccess(fieldAccessReceiver, s);
+      System.out.printf(
+          "getIdentifierAsFieldAccess(%s, %s) => %s%n", fieldAccessReceiver, s, fieldAccess);
       if (fieldAccess != null) {
         return fieldAccess;
       }
@@ -642,7 +653,11 @@ public class JavaExpressionParseUtil {
       boolean fieldDeclaredInReceiverType = enclosingTypeOfField == receiverExpr.getType();
       if (fieldDeclaredInReceiverType) {
         TypeMirror fieldType = ElementUtils.getType(fieldElem);
-        return new FieldAccess(receiverExpr, fieldType, fieldElem);
+        FieldAccess result = new FieldAccess(receiverExpr, fieldType, fieldElem);
+        System.out.printf(
+            "returning new FieldAccess(%s, %s, %s) = %s%n",
+            receiverExpr, fieldType, fieldElem, result);
+        return result;
       } else {
         if (!(receiverExpr instanceof ThisReference)) {
           String msg =
@@ -658,7 +673,10 @@ public class JavaExpressionParseUtil {
           throw new ParseRuntimeException(constructJavaExpressionParseError(identifier, msg));
         }
         JavaExpression locationOfField = new ThisReference(enclosingTypeOfField);
-        return new FieldAccess(locationOfField, fieldElem);
+        FieldAccess result = new FieldAccess(locationOfField, fieldElem);
+        System.out.printf(
+            "returning new FieldAccess(%s, %s) = %s%n", locationOfField, fieldElem, result);
+        return result;
       }
     }
 
@@ -782,6 +800,8 @@ public class JavaExpressionParseUtil {
     public JavaExpression visit(FieldAccessExpr expr, Void aVoid) {
       setResolverField();
 
+      System.out.printf("visit FieldAccessExpr %s%n", expr);
+
       Expression scope = expr.getScope();
       String name = expr.getNameAsString();
 
@@ -804,10 +824,13 @@ public class JavaExpressionParseUtil {
       }
 
       JavaExpression receiver = scope.accept(this, null);
+      System.out.printf("scope = %s => receiver = %s%n", scope, receiver);
 
       // Check for field access expression.
       FieldAccess fieldAccess = getIdentifierAsFieldAccess(receiver, name);
       if (fieldAccess != null) {
+        System.out.printf(
+            "getIdentifierAsFieldAccess(%s, %s) => %s%n", receiver, name, fieldAccess);
         return fieldAccess;
       }
 

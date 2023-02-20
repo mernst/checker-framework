@@ -1425,6 +1425,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       return fromMemberTreeCache.get(tree).deepCopy();
     }
     AnnotatedTypeMirror result = TypeFromTree.fromMember(this, tree);
+    System.out.printf(
+        "fromMember(%s) result (1) = %s%n", TreeUtils.toStringTruncated(tree, 65), result);
 
     result = mergeAnnotationFileAnnosIntoType(result, tree, ajavaTypes);
     if (currentFileAjavaTypes != null) {

@@ -322,6 +322,9 @@ public class SameLenAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    */
   public List<String> getSameLensFromString(
       String sequenceExpression, Tree tree, TreePath currentPath) {
+    System.out.printf(
+        "getSameLensFromString(%s, %s)%n",
+        sequenceExpression, TreeUtils.toStringTruncated(tree, 65));
     AnnotationMirror sameLenAnno;
     try {
       sameLenAnno =
@@ -334,6 +337,7 @@ public class SameLenAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     if (sameLenAnno == null) {
       return Collections.emptyList();
     }
+    System.out.printf("getSameLensFromString: sameLenAnno = %s%n", sameLenAnno);
     return AnnotationUtils.getElementValueArray(sameLenAnno, sameLenValueElement, String.class);
   }
 

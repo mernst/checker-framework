@@ -170,9 +170,16 @@ public interface StringToJavaExpression {
   static JavaExpression atMethodBody(
       String expression, MethodTree methodTree, SourceChecker checker)
       throws JavaExpressionParseException {
+    System.out.printf(
+        "atMethodBody(%s, %s, %s)%n",
+        expression,
+        TreeUtils.toStringTruncated(methodTree, 65),
+        checker.getClass().getSimpleName());
     ExecutableElement ee = TreeUtils.elementFromDeclaration(methodTree);
     JavaExpression javaExpr = StringToJavaExpression.atMethodDecl(expression, ee, checker);
-    return javaExpr.atMethodBody(methodTree);
+    JavaExpression result = javaExpr.atMethodBody(methodTree);
+    System.out.printf("atMethodBody: javaExpr=%s, result=%s%n", javaExpr, result);
+    return result;
   }
 
   /**

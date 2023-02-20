@@ -2025,6 +2025,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         boolean valid = validateTypeOf(enclosing);
         if (valid) {
           ret = atypeFactory.getMethodReturnType(enclosingMethod, node);
+          System.out.printf(
+              "in visitReturn, getMethodReturnType(%s) => %s%n",
+              TreeUtils.toStringTruncated(enclosingMethod, 65), ret);
         }
       } else {
         AnnotatedExecutableType result =
@@ -2035,6 +2038,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       if (ret != null) {
         visitorState.setAssignmentContext(Pair.of((Tree) node, ret));
 
+        System.out.printf(
+            "%s.visitReturn about to call commonAssignmentCheck(%s, %s)%n",
+            this.getClass().getSimpleName(), ret, node.getExpression());
         commonAssignmentCheck(ret, node.getExpression(), "return.type.incompatible");
       }
       return super.visitReturn(node, p);
@@ -2700,6 +2706,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       @CompilerMessageKey String errorKey,
       Object... extraArgs) {
     AnnotatedTypeMirror varType = atypeFactory.getAnnotatedTypeLhs(varTree);
+    System.out.printf(
+        "%s.getAnnotatedTypeLhs(%s) => %s%n",
+        getClass().getSimpleName(), TreeUtils.toStringTruncated(varTree, 65), varType);
     assert varType != null : "no variable found for tree: " + varTree;
 
     if (!validateType(varTree, varType)) {
@@ -2745,6 +2754,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       return;
     }
     AnnotatedTypeMirror valueType = atypeFactory.getAnnotatedType(valueExp);
+    System.out.printf("valueExp = %s, type = %s%n", valueExp, valueType);
     assert valueType != null : "null type for expression: " + valueExp;
     commonAssignmentCheck(varType, valueType, valueExp, errorKey, extraArgs);
   }

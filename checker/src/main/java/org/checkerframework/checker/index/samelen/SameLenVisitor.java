@@ -34,6 +34,9 @@ public class SameLenVisitor extends BaseTypeVisitor<SameLenAnnotatedTypeFactory>
       Tree valueTree,
       @CompilerMessageKey String errorKey,
       Object... extraArgs) {
+    System.out.printf(
+        "SameLenVisitor.commonAssignmentCheck(%s, %s, %s)%n",
+        varType, valueType, TreeUtils.toStringTruncated(valueTree, 65));
     if (IndexUtil.isSequenceType(valueType.getUnderlyingType())
         && TreeUtils.isExpressionTree(valueTree)
         // if both annotations are @PolySameLen, there is nothing to do
