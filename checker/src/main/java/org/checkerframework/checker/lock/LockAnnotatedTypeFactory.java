@@ -172,7 +172,8 @@ public class LockAnnotatedTypeFactory
 
       @Override
       protected boolean shouldPassThroughExpression(String expression) {
-        // There is no expression to use to replace <self> here, so just pass the expression along.
+        // There is no expression to use to replace <self> here, so just pass the expression
+        // along.
         return super.shouldPassThroughExpression(expression)
             || LockVisitor.SELF_RECEIVER_PATTERN.matcher(expression).matches();
       }
@@ -183,8 +184,8 @@ public class LockAnnotatedTypeFactory
           return javaExpr;
         }
 
-        // If the expression isn't effectively final, then return the NOT_EFFECTIVELY_FINAL error
-        // string.
+        // If the expression isn't effectively final, then return the NOT_EFFECTIVELY_FINAL
+        // error string.
         return createError(javaExpr.toString(), NOT_EFFECTIVELY_FINAL);
       }
     };
@@ -226,8 +227,8 @@ public class LockAnnotatedTypeFactory
       return PurityUtils.isDeterministic(this, methodCall.getElement())
           && isExpressionEffectivelyFinal(methodCall.getReceiver());
     } else if (expr instanceof ThisReference || expr instanceof ClassName) {
-      // this is always final. "ClassName" is actually a class literal (String.class), it's final
-      // too.
+      // this is always final. "ClassName" is actually a class literal (String.class), it's
+      // final too.
       return true;
     } else { // type of 'expr' is not supported in @GuardedBy(...) lock expressions
       return false;
@@ -495,7 +496,7 @@ public class LockAnnotatedTypeFactory
    *     annotation is present on the method
    * @return the side effect annotation that is present on the given method
    */
-  // package-private
+  /* package-private */
   SideEffectAnnotation methodSideEffectAnnotation(
       ExecutableElement methodElement, boolean issueErrorIfMoreThanOnePresent) {
     if (methodElement == null) {
@@ -543,7 +544,7 @@ public class LockAnnotatedTypeFactory
    * @param atm an AnnotatedTypeMirror containing a GuardSatisfied annotation
    * @return the index on the GuardSatisfied annotation
    */
-  // package-private
+  /* package-private */
   int getGuardSatisfiedIndex(AnnotatedTypeMirror atm) {
     return getGuardSatisfiedIndex(atm.getAnnotation(GuardSatisfied.class));
   }
@@ -555,7 +556,7 @@ public class LockAnnotatedTypeFactory
    * @param am an AnnotationMirror for a GuardSatisfied annotation
    * @return the index on the GuardSatisfied annotation
    */
-  // package-private
+  /* package-private */
   int getGuardSatisfiedIndex(AnnotationMirror am) {
     return AnnotationUtils.getElementValueInt(am, guardSatisfiedValueElement, -1);
   }

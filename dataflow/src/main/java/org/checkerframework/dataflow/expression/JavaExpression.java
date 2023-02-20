@@ -154,7 +154,7 @@ public abstract class JavaExpression {
    * @param lst2 the second list to compare
    * @return true if the corresponding list elements satisfy {@link #syntacticEquals}
    */
-  static boolean syntacticEqualsList(
+  public static boolean syntacticEqualsList(
       List<? extends @Nullable JavaExpression> lst1,
       List<? extends @Nullable JavaExpression> lst2) {
     if (lst1.size() != lst2.size()) {
@@ -236,7 +236,8 @@ public abstract class JavaExpression {
     Node receiverNode = node.getReceiver();
     String fieldName = node.getFieldName();
     if (fieldName.equals("this")) {
-      // The CFG represents "className.this" as a FieldAccessNode, but it isn't a field access.
+      // The CFG represents "className.this" as a FieldAccessNode, but it isn't a field
+      // access.
       return new ThisReference(receiverNode.getType());
     } else if (fieldName.equals("class")) {
       // The CFG represents "className.class" as a FieldAccessNode; bit it is a class literal.

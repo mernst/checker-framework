@@ -48,7 +48,7 @@ public class CalledMethodsAnnotatedTypeFactory extends AccumulationAnnotatedType
    * The builder frameworks (such as Lombok and AutoValue) supported by this instance of the Called
    * Methods Checker.
    */
-  private Collection<BuilderFrameworkSupport> builderFrameworkSupports;
+  private final Collection<BuilderFrameworkSupport> builderFrameworkSupports;
 
   /**
    * Whether to use the Value Checker as a subchecker to reduce false positives when analyzing calls
@@ -238,8 +238,8 @@ public class CalledMethodsAnnotatedTypeFactory extends AccumulationAnnotatedType
       filterTree = TreeUtils.getReceiverTree(filterTreeAsMethodInvocation.getMethodSelect());
     }
     // The loop has reached the beginning of a fluent sequence of method calls.  If the ultimate
-    // receiver at the beginning of that fluent sequence is a call to the Filter() constructor, then
-    // use the first argument to the Filter constructor, which is the name of the filter.
+    // receiver at the beginning of that fluent sequence is a call to the Filter() constructor,
+    // then use the first argument to the Filter constructor, which is the name of the filter.
     if (filterTree == null) {
       return null;
     }

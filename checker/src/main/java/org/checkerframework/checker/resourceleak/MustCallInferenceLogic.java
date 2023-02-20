@@ -30,7 +30,7 @@ import org.checkerframework.javacutil.TreeUtils;
 public class MustCallInferenceLogic {
 
   /** The set of owning fields. */
-  private Set<VariableElement> owningFields = new HashSet<>();
+  private final Set<VariableElement> owningFields = new HashSet<>();
 
   /**
    * The type factory for the Resource Leak Checker, which is used to access the Must Call Checker.
@@ -41,7 +41,7 @@ public class MustCallInferenceLogic {
   protected final AnnotationMirror OWNING;
 
   /** The control flow graph. */
-  private ControlFlowGraph cfg;
+  private final ControlFlowGraph cfg;
 
   /**
    * Creates a MustCallInferenceLogic. If the type factory has whole program inference enabled, its
@@ -51,7 +51,8 @@ public class MustCallInferenceLogic {
    * @param typeFactory the type factory
    * @param cfg the ControlFlowGraph
    */
-  MustCallInferenceLogic(ResourceLeakAnnotatedTypeFactory typeFactory, ControlFlowGraph cfg) {
+  /*package-private*/ MustCallInferenceLogic(
+      ResourceLeakAnnotatedTypeFactory typeFactory, ControlFlowGraph cfg) {
     this.typeFactory = typeFactory;
     this.cfg = cfg;
     OWNING = AnnotationBuilder.fromClass(this.typeFactory.getElementUtils(), Owning.class);
@@ -65,7 +66,7 @@ public class MustCallInferenceLogic {
    * {@link #cfg}, and updates the {@link #owningFields} set if it discovers an owning field whose
    * must-call obligations were satisfied along one of the checked paths.
    */
-  void runInference() {
+  /*package-private*/ void runInference() {
     Set<Block> visited = new HashSet<>();
     Deque<Block> worklist = new ArrayDeque<>();
     Block entry = this.cfg.getEntryBlock();

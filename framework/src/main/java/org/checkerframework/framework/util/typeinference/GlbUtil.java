@@ -15,8 +15,8 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedNullType;
 import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.type.TypeHierarchy;
-import org.checkerframework.framework.util.AnnotationMirrorMap;
-import org.checkerframework.framework.util.AnnotationMirrorSet;
+import org.checkerframework.javacutil.AnnotationMirrorMap;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -94,8 +94,8 @@ public class GlbUtil {
       index += 1;
     }
 
-    // if the lowest type is a subtype of all glbTypes then it is the GLB, otherwise there are two
-    // types in glbTypes that are incomparable and we need to use bottom (AnnotatedNullType)
+    // if the lowest type is a subtype of all glbTypes then it is the GLB, otherwise there are
+    // two types in glbTypes that are incomparable and we need to use bottom (AnnotatedNullType)
     boolean incomparable = false;
     for (final AnnotatedTypeMirror type : glbTypes) {
       if (!incomparable

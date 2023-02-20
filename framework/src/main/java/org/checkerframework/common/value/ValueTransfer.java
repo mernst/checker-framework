@@ -1,7 +1,6 @@
 package org.checkerframework.common.value;
 
 import com.sun.source.tree.ExpressionTree;
-import com.sun.source.tree.Tree;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -77,6 +76,9 @@ public class ValueTransfer extends CFTransfer {
   /** The Value qualifier hierarchy. */
   protected final QualifierHierarchy hierarchy;
 
+  /** True if -AnonNullStringsConcatenation was passed on the command line. */
+  private final boolean nonNullStringsConcatenation;
+
   /**
    * Create a new ValueTransfer.
    *
@@ -86,6 +88,8 @@ public class ValueTransfer extends CFTransfer {
     super(analysis);
     atypeFactory = (ValueAnnotatedTypeFactory) analysis.getTypeFactory();
     hierarchy = atypeFactory.getQualifierHierarchy();
+    nonNullStringsConcatenation =
+        atypeFactory.getChecker().hasOption("nonNullStringsConcatenation");
   }
 
   /** Returns a range of possible lengths for an integer from a range, as casted to a String. */
@@ -174,8 +178,9 @@ public class ValueTransfer extends CFTransfer {
       // characters always have length 1
       return Collections.singletonList(1);
     } else if (isIntRange(subNode, p)) {
-      // Try to get a list of lengths from a range of integer values converted to string @IntVal is
-      // not checked for, because if it is present, we would already have the actual string values
+      // Try to get a list of lengths from a range of integer values converted to string.
+      // @IntVal is not checked for, because if it is present, we would already have the
+      // actual string values.
       Range lengthRange = getIntRangeStringLengthRange(subNode, p);
       return ValueCheckerUtils.getValuesFromRange(lengthRange, Integer.class);
     } else if (subNodeTypeKind == TypeKind.BYTE) {
@@ -657,12 +662,9 @@ public class ValueTransfer extends CFTransfer {
     List<String> leftValues = getStringValues(leftOperand, p);
     List<String> rightValues = getStringValues(rightOperand, p);
 
-    boolean nonNullStringConcat =
-        atypeFactory.getChecker().hasOption("nonNullStringsConcatenation");
-
     if (leftValues != null && rightValues != null) {
       // Both operands have known string values, compute set of results
-      if (!nonNullStringConcat) {
+      if (!nonNullStringsConcatenation) {
         if (isNullable(leftOperand)) {
           leftValues = CollectionsPlume.append(leftValues, "null");
         }
@@ -705,7 +707,7 @@ public class ValueTransfer extends CFTransfer {
 
     if (leftLengths != null && rightLengths != null) {
       // Both operands have known lengths, compute set of result lengths
-      if (!nonNullStringConcat) {
+      if (!nonNullStringsConcatenation) {
         if (isNullable(leftOperand)) {
           leftLengths = new ArrayList<>(leftLengths);
           leftLengths.add(4); // "null"
@@ -731,7 +733,7 @@ public class ValueTransfer extends CFTransfer {
 
     if (leftLengthRange != null && rightLengthRange != null) {
       // Both operands have a length from a known range, compute a range of result lengths
-      if (!nonNullStringConcat) {
+      if (!nonNullStringsConcatenation) {
         if (isNullable(leftOperand)) {
           leftLengthRange = leftLengthRange.union(Range.create(4, 4)); // "null"
         }
@@ -860,7 +862,7 @@ public class ValueTransfer extends CFTransfer {
     if (lefts == null || rights == null) {
       return null;
     }
-    List<Number> resultValues = new ArrayList<>();
+    List<Number> resultValues = new ArrayList<>(lefts.size() * rights.size());
     for (Number left : lefts) {
       NumberMath<?> nmLeft = NumberMath.getNumberMath(left);
       for (Number right : rights) {
@@ -1180,10 +1182,10 @@ public class ValueTransfer extends CFTransfer {
         || atypeFactory.isIntRange(rightAnno)
         || isIntegralUnknownVal(rightNode, rightAnno)
         || isIntegralUnknownVal(leftNode, leftAnno)) {
-      // If either is @UnknownVal, then refineIntRanges will treat it as the max range and thus
-      // refine it if possible.  Also, if either is an @IntVal, then it will be converted to a
-      // range.  This is less precise in some cases, but avoids the complexity of comparing a list
-      // of values to a range. (This could be implemented in the future.)
+      // If either is @UnknownVal, then refineIntRanges will treat it as the max range and
+      // thus refine it if possible.  Also, if either is an @IntVal, then it will be converted
+      // to a range.  This is less precise in some cases, but avoids the complexity of
+      // comparing a list of values to a range. (This could be implemented in the future.)
       return refineIntRanges(leftNode, leftAnno, rightNode, rightAnno, op, thenStore, elseStore);
     }
 
@@ -1200,14 +1202,15 @@ public class ValueTransfer extends CFTransfer {
     }
 
     // This is a list of all the values that the expression can evaluate to.
-    List<Boolean> resultValues = new ArrayList<>();
+    int numResultValues = lefts.size() * rights.size();
+    List<Boolean> resultValues = new ArrayList<>(numResultValues);
 
     // These lists are used to refine the values in the store based on the results of the
     // comparison.
-    List<Number> thenLeftVals = new ArrayList<>();
-    List<Number> elseLeftVals = new ArrayList<>();
-    List<Number> thenRightVals = new ArrayList<>();
-    List<Number> elseRightVals = new ArrayList<>();
+    List<Number> thenLeftVals = new ArrayList<>(numResultValues);
+    List<Number> elseLeftVals = new ArrayList<>(numResultValues);
+    List<Number> thenRightVals = new ArrayList<>(numResultValues);
+    List<Number> elseRightVals = new ArrayList<>(numResultValues);
 
     for (Number left : lefts) {
       NumberMath<?> nmLeft = NumberMath.getNumberMath(left);
@@ -1367,7 +1370,8 @@ public class ValueTransfer extends CFTransfer {
           (currentValueFromStore == null
               ? atypeFactory.UNKNOWNVAL
               : getValueAnnotation(currentValueFromStore));
-      // Combine the new annotations based on the results of the comparison with the existing type.
+      // Combine the new annotations based on the results of the comparison with the existing
+      // type.
       AnnotationMirror newAnno = hierarchy.greatestLowerBound(anno, currentAnno);
       store.insertValue(je, newAnno);
 
@@ -1495,12 +1499,11 @@ public class ValueTransfer extends CFTransfer {
   protected void processConditionalPostconditions(
       MethodInvocationNode n,
       ExecutableElement methodElement,
-      Tree tree,
+      ExpressionTree tree,
       CFStore thenStore,
       CFStore elseStore) {
     // For String.startsWith(String) and String.endsWith(String), refine the minimum length
     // of the receiver to the minimum length of the argument.
-
     ValueMethodIdentifier methodIdentifier = atypeFactory.getMethodIdentifier();
     if (methodIdentifier.isStartsWithMethod(methodElement)
         || methodIdentifier.isEndsWithMethod(methodElement)) {
