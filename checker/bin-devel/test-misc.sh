@@ -19,14 +19,19 @@ PLUME_SCRIPTS="$SCRIPTDIR/.plume-scripts"
 status=0
 
 ## Code style and formatting
-./gradlew checkBasicStyle checkFormat --console=plain --warning-mode=all
+JAVA_VER=$(java -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^1\./s///' | cut -d'.' -f1)
+if [ "$JAVA_VER" = "8" ] ; then
+  ./gradlew checkBasicStyle --console=plain --warning-mode=all
+else
+  ./gradlew checkBasicStyle spotlessCheck --console=plain --warning-mode=all
+fi
 if grep -n -r --exclude-dir=build --exclude-dir=examples --exclude-dir=jtreg --exclude-dir=tests --exclude="*.astub" --exclude="*.tex" '^\(import static \|import .*\*;$\)'; then
   echo "Don't use static import or wildcard import"
   exit 1
 fi
 make -C checker/bin
 make -C checker/bin-devel
-make -C docs/developer/release
+make -C docs/developer/release check-python-style
 
 ## HTML legality
 ./gradlew htmlValidate --console=plain --warning-mode=all
@@ -37,7 +42,9 @@ make -C docs/developer/release
 ./gradlew javadocPrivate --console=plain --warning-mode=all || status=1
 # For refactorings that touch a lot of code that you don't understand, create
 # top-level file SKIP-REQUIRE-JAVADOC.  Delete it after the pull request is merged.
-if [ ! -f SKIP-REQUIRE-JAVADOC ]; then
+if [ -f SKIP-REQUIRE-JAVADOC ]; then
+  echo "Skipping requireJavadoc because file SKIP-REQUIRE-JAVADOC exists."
+else
   (./gradlew requireJavadoc --console=plain --warning-mode=all > /tmp/warnings-rjp.txt 2>&1) || true
   "$PLUME_SCRIPTS"/ci-lint-diff /tmp/warnings-rjp.txt || status=1
   (./gradlew javadocDoclintAll --console=plain --warning-mode=all > /tmp/warnings-jda.txt 2>&1) || true

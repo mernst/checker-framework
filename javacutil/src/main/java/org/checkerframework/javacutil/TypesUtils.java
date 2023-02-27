@@ -24,6 +24,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -180,6 +181,12 @@ public final class TypesUtils {
         return ((TypeVariable) type).asElement().getSimpleName().toString();
       case DECLARED:
         return ((DeclaredType) type).asElement().getSimpleName().toString();
+      case INTERSECTION:
+        StringJoiner sjI = new StringJoiner(" & ");
+        for (TypeMirror bound : ((IntersectionType) type).getBounds()) {
+          sjI.add(simpleTypeName(bound));
+        }
+        return sjI.toString();
       case NULL:
         return "<nulltype>";
       case VOID:
@@ -341,6 +348,12 @@ public final class TypesUtils {
         && getQualifiedName((DeclaredType) type).contentEquals(qualifiedName);
   }
 
+  /**
+   * Check if the {@code type} represents a boxed primitive type.
+   *
+   * @param type the type to check
+   * @return true iff type represents a boxed primitive type
+   */
   public static boolean isBoxedPrimitive(TypeMirror type) {
     if (type.getKind() != TypeKind.DECLARED) {
       return false;
@@ -402,6 +415,7 @@ public final class TypesUtils {
   /**
    * Returns true iff the argument is a primitive type.
    *
+   * @param type a type
    * @return whether the argument is a primitive type
    */
   public static boolean isPrimitive(TypeMirror type) {
@@ -869,8 +883,8 @@ public final class TypesUtils {
     }
     // Special case for primitives.
     if (isPrimitive(t1) || isPrimitive(t2)) {
-      // NOTE: we need to know which type is primitive because e.g. int and Integer are assignable
-      // to each other.
+      // NOTE: we need to know which type is primitive because e.g. int and Integer
+      // are assignable to each other.
       if (isPrimitive(t1) && types.isAssignable(t1, t2)) {
         return t2;
       } else if (isPrimitive(t2) && types.isAssignable(t2, t1)) {
@@ -880,7 +894,18 @@ public final class TypesUtils {
         return elements.getTypeElement("java.lang.Object").asType();
       }
     }
-    return types.lub(t1, t2);
+    try {
+      return types.lub(t1, t2);
+    } catch (Exception e) {
+      // typetools issue #3025: In at least Java 8/9, types.lub throws an NPE
+      // on capture/wildcard combinations, see test case
+      // checker/tests/nullness/generics/Issue3025.java.
+      // Using j.l.Object is too coarse in case the type actually matters.
+      // This problem doesn't exist anymore in Java 11+, so let's
+      // see whether this is a problem for anyone in practice.
+      Elements elements = processingEnv.getElementUtils();
+      return elements.getTypeElement("java.lang.Object").asType();
+    }
   }
 
   /**
@@ -1141,7 +1166,7 @@ public final class TypesUtils {
    */
   public static List<TypeVariable> order(Collection<TypeVariable> collection, Types types) {
     List<TypeVariable> list = new ArrayList<>(collection);
-    List<TypeVariable> ordered = new ArrayList<>();
+    List<TypeVariable> ordered = new ArrayList<>(list.size());
     while (!list.isEmpty()) {
       TypeVariable free = doesNotContainOthers(list, types);
       list.remove(free);

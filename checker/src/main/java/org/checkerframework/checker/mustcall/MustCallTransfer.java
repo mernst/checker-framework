@@ -6,6 +6,7 @@ import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -45,13 +46,16 @@ public class MustCallTransfer extends CFTransfer {
   private final TreeBuilder treeBuilder;
 
   /** The type factory. */
-  private MustCallAnnotatedTypeFactory atypeFactory;
+  private final MustCallAnnotatedTypeFactory atypeFactory;
 
   /**
    * A cache for the default type for java.lang.String, to avoid needing to look it up for every
    * implicit string conversion. See {@link #getDefaultStringType(StringConversionNode)}.
    */
   private @MonotonicNonNull AnnotationMirror defaultStringType;
+
+  /** True if -AnoCreatesMustCallFor was passed on the command line. */
+  private final boolean noCreatesMustCallFor;
 
   /**
    * Create a MustCallTransfer.
@@ -61,6 +65,8 @@ public class MustCallTransfer extends CFTransfer {
   public MustCallTransfer(CFAnalysis analysis) {
     super(analysis);
     atypeFactory = (MustCallAnnotatedTypeFactory) analysis.getTypeFactory();
+    noCreatesMustCallFor =
+        atypeFactory.getChecker().hasOption(MustCallChecker.NO_CREATES_MUSTCALLFOR);
     ProcessingEnvironment env = atypeFactory.getChecker().getProcessingEnvironment();
     treeBuilder = new TreeBuilder(env);
   }
@@ -125,9 +131,9 @@ public class MustCallTransfer extends CFTransfer {
     TransferResult<CFValue, CFStore> result = super.visitMethodInvocation(n, in);
 
     updateStoreWithTempVar(result, n);
-    if (!atypeFactory.getChecker().hasOption(MustCallChecker.NO_CREATES_MUSTCALLFOR)) {
+    if (!noCreatesMustCallFor) {
       List<JavaExpression> targetExprs =
-          CreatesMustCallForElementSupplier.getCreatesMustCallForExpressions(
+          CreatesMustCallForToJavaExpression.getCreatesMustCallForExpressionsAtInvocation(
               n, atypeFactory, atypeFactory);
       for (JavaExpression targetExpr : targetExprs) {
         AnnotationMirror defaultType =
@@ -255,10 +261,10 @@ public class MustCallTransfer extends CFTransfer {
     Element enclosingElement;
     TreePath path = atypeFactory.getPath(tree);
     if (path == null) {
-      enclosingElement = TreeUtils.elementFromTree(tree).getEnclosingElement();
+      enclosingElement = TreeUtils.elementFromUse(tree).getEnclosingElement();
     } else {
       ClassTree classTree = TreePathUtil.enclosingClass(path);
-      enclosingElement = TreeUtils.elementFromTree(classTree);
+      enclosingElement = TreeUtils.elementFromDeclaration(classTree);
     }
     if (enclosingElement == null) {
       return null;
@@ -270,16 +276,19 @@ public class MustCallTransfer extends CFTransfer {
   }
 
   /** A unique identifier counter for node names. */
-  protected long uid = 0;
+  protected static AtomicLong uid = new AtomicLong();
 
   /**
-   * Creates a unique, abitrary string that can be used as a name for a temporary variable, using
+   * Creates a unique, arbitrary string that can be used as a name for a temporary variable, using
    * the given prefix. Can be used up to Long.MAX_VALUE times.
+   *
+   * <p>Note that the correctness of the Resource Leak Checker depends on these names actually being
+   * unique, because {@code LocalVariableNode}s derived from them are used as keys in a map.
    *
    * @param prefix the prefix for the name
    * @return a unique name that starts with the prefix
    */
   protected String uniqueName(String prefix) {
-    return prefix + "-" + uid++;
+    return prefix + "-" + uid.getAndIncrement();
   }
 }

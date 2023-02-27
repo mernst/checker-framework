@@ -20,8 +20,8 @@ import org.checkerframework.javacutil.AnnotationUtils;
 public class ReturnsReceiverAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   /**
-   * The {@code @}{@link This} annotation. The field is package visible due to a use in {@link
-   * ReturnsReceiverVisitor}
+   * The {@code @}{@link This} annotation. The field is package visible (i.e., "package private")
+   * due to a use in {@link ReturnsReceiverVisitor}
    */
   final AnnotationMirror THIS_ANNOTATION;
 
@@ -78,8 +78,8 @@ public class ReturnsReceiverAnnotatedTypeFactory extends BaseAnnotatedTypeFactor
         }
       }
 
-      // If return type is annotated with @This, add @This annotation to the receiver type.  We
-      // cannot yet default all receivers to be @This due to
+      // If return type is annotated with @This, add @This annotation to the receiver type.
+      // We cannot yet default all receivers to be @This due to
       // https://github.com/typetools/checker-framework/issues/2931
       AnnotationMirror retAnnotation = returnType.getAnnotationInHierarchy(THIS_ANNOTATION);
       if (retAnnotation != null && AnnotationUtils.areSame(retAnnotation, THIS_ANNOTATION)) {

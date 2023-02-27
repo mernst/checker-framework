@@ -6,8 +6,9 @@ import com.sun.source.tree.VariableTree;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
-import javax.lang.model.element.Element;
+import javax.lang.model.element.VariableElement;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -54,12 +55,18 @@ public class LocalVariableNode extends Node {
     this.receiver = receiver;
   }
 
-  public Element getElement() {
-    Element el;
+  /**
+   * Returns the element associated with this local variable.
+   *
+   * @return the element associated with this local variable
+   */
+  @SuppressWarnings("nullness:return") // non-null if a LocalVariableNode was created
+  public VariableElement getElement() {
+    VariableElement el;
     if (tree instanceof IdentifierTree) {
       IdentifierTree itree = (IdentifierTree) tree;
       assert TreeUtils.isUseOfElement(itree) : "@AssumeAssertion(nullness): tree kind";
-      el = TreeUtils.elementFromUse(itree);
+      el = TreeUtils.variableElementFromUse(itree);
     } else {
       assert tree instanceof VariableTree;
       el = TreeUtils.elementFromDeclaration((VariableTree) tree);
@@ -109,6 +116,7 @@ public class LocalVariableNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.emptyList();
   }

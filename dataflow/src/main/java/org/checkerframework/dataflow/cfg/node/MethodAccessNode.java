@@ -7,10 +7,12 @@ import java.util.Collections;
 import java.util.Objects;
 import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
- * A node for a method access, including a method accesses:
+ * A node for a method access, including a receiver:
  *
  * <pre>
  *   <em>expression</em> . <em>method</em> ()
@@ -24,12 +26,22 @@ public class MethodAccessNode extends Node {
 
   // TODO: add method to get modifiers (static, access level, ..)
 
+  /**
+   * Create a new MethodAccessNode.
+   *
+   * @param tree the expression that is a method access
+   * @param receiver the receiver
+   */
   public MethodAccessNode(ExpressionTree tree, Node receiver) {
     super(TreeUtils.typeOf(tree));
     assert TreeUtils.isMethodAccess(tree);
     this.tree = tree;
     assert TreeUtils.isUseOfElement(tree) : "@AssumeAssertion(nullness): tree kind";
-    this.method = (ExecutableElement) TreeUtils.elementFromUse(tree);
+    ExecutableElement method = (ExecutableElement) TreeUtils.elementFromUse(tree);
+    if (method == null) {
+      throw new BugInCF("tree %s [%s]", tree, tree.getClass());
+    }
+    this.method = method;
     this.receiver = receiver;
   }
 
@@ -71,6 +83,7 @@ public class MethodAccessNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.singletonList(receiver);
   }

@@ -4,11 +4,12 @@
 import java.io.*;
 import org.checkerframework.checker.calledmethods.qual.EnsuresCalledMethods;
 import org.checkerframework.checker.mustcall.qual.CreatesMustCallFor;
-import org.checkerframework.checker.mustcall.qual.MustCall;
+import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.mustcall.qual.Owning;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-@MustCall("close") class NonFinalFieldOnlyOverwrittenIfNull2 {
+@InheritableMustCall("close")
+class NonFinalFieldOnlyOverwrittenIfNull2 {
   @Owning @MonotonicNonNull InputStream is;
 
   @CreatesMustCallFor
@@ -29,7 +30,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
   @CreatesMustCallFor
   void set_error(String fn, boolean b) throws FileNotFoundException {
     if (b) {
-      // :: error: required.method.not.called
+      // :: error: (required.method.not.called)
       is = new FileInputStream(fn);
     }
   }
@@ -57,7 +58,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
   }
 
   public static void test_leak() throws Exception {
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     NonFinalFieldOnlyOverwrittenIfNull2 n = new NonFinalFieldOnlyOverwrittenIfNull2();
     n.set("foo.txt");
     n.close();

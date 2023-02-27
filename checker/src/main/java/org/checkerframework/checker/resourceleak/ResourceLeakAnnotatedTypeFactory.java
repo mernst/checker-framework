@@ -23,6 +23,8 @@ import org.checkerframework.checker.mustcall.MustCallNoCreatesMustCallForChecker
 import org.checkerframework.checker.mustcall.qual.CreatesMustCallFor;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.mustcall.qual.MustCallAlias;
+import org.checkerframework.checker.mustcall.qual.NotOwning;
+import org.checkerframework.checker.mustcall.qual.Owning;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
@@ -47,15 +49,15 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
     implements CreatesMustCallForElementSupplier {
 
   /** The MustCall.value element/field. */
-  final ExecutableElement mustCallValueElement =
+  private final ExecutableElement mustCallValueElement =
       TreeUtils.getMethod(MustCall.class, "value", 0, processingEnv);
 
   /** The EnsuresCalledMethods.value element/field. */
-  final ExecutableElement ensuresCalledMethodsValueElement =
+  /* package-private */ final ExecutableElement ensuresCalledMethodsValueElement =
       TreeUtils.getMethod(EnsuresCalledMethods.class, "value", 0, processingEnv);
 
   /** The EnsuresCalledMethods.methods element/field. */
-  final ExecutableElement ensuresCalledMethodsMethodsElement =
+  /* package-private */ final ExecutableElement ensuresCalledMethodsMethodsElement =
       TreeUtils.getMethod(EnsuresCalledMethods.class, "methods", 0, processingEnv);
 
   /** The CreatesMustCallFor.List.value element/field. */
@@ -66,10 +68,22 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
   private final ExecutableElement createsMustCallForValueElement =
       TreeUtils.getMethod(CreatesMustCallFor.class, "value", 0, processingEnv);
 
+  /** True if -AnoResourceAliases was passed on the command line. */
+  private final boolean noResourceAliases;
+
   /**
    * Bidirectional map to store temporary variables created for expressions with non-empty @MustCall
    * obligations and the corresponding trees. Keys are the artificial local variable nodes created
    * as temporary variables; values are the corresponding trees.
+   *
+   * <p>Note that in an ideal world, this would be an {@code IdentityBiMap}: that is, a BiMap using
+   * {@link java.util.IdentityHashMap} as both of the backing maps. However, Guava doesn't have such
+   * a map AND their implementation is incompatible with IdentityHashMap as a backing map, because
+   * even their {@code AbstractBiMap} class uses {@code equals} calls in its implementation (and its
+   * documentation calls out that it and all its derived BiMaps are incompatible with
+   * IdentityHashMap as a backing map for this reason). Therefore, we use a regular BiMap. Doing so
+   * is safe iff 1) the LocalVariableNode keys all have different names, and 2) a standard Tree
+   * implementation that uses reference equality for equality (e.g., JCTree in javac) is used.
    */
   private final BiMap<LocalVariableNode, Tree> tempVarToTree = HashBiMap.create();
 
@@ -80,6 +94,7 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
    */
   public ResourceLeakAnnotatedTypeFactory(final BaseTypeChecker checker) {
     super(checker);
+    this.noResourceAliases = checker.hasOption(MustCallChecker.NO_RESOURCE_ALIASES);
     this.postInit();
   }
 
@@ -90,7 +105,7 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
    * @param element a element
    * @return true iff the given element is a final field with non-empty @MustCall obligation
    */
-  boolean isCandidateOwningField(Element element) {
+  /*package-private*/ boolean isCandidateOwningField(Element element) {
     return (element.getKind().isField()
         && ElementUtils.isFinal(element)
         && !getMustCallValue(element).isEmpty());
@@ -280,7 +295,7 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
    * @return true if the given element has an {@link MustCallAlias} annotation
    */
   /* package-private */ boolean hasMustCallAlias(Element elt) {
-    if (checker.hasOption(MustCallChecker.NO_RESOURCE_ALIASES)) {
+    if (noResourceAliases) {
       return false;
     }
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
@@ -310,6 +325,7 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
    *     checker
    */
   public boolean canCreateObligations() {
+    // Precomputing this call to `hasOption` causes a NullPointerException, so leave it as is.
     return !checker.hasOption(MustCallChecker.NO_CREATES_MUSTCALLFOR);
   }
 
@@ -345,5 +361,35 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
   @Override
   public ExecutableElement getCreatesMustCallForListValueElement() {
     return createsMustCallForListValueElement;
+  }
+
+  /**
+   * Does the given element have an {@code @NotOwning} annotation (including in stub files)?
+   *
+   * <p>Prefer this method to calling {@link #getDeclAnnotation(Element, Class)} on the type factory
+   * directly, which won't find this annotation in stub files (it only considers stub files loaded
+   * by this checker, not subcheckers).
+   *
+   * @param elt an element
+   * @return whether there is a NotOwning annotation on the given element
+   */
+  public boolean hasNotOwning(Element elt) {
+    MustCallAnnotatedTypeFactory mcatf = getTypeFactoryOfSubchecker(MustCallChecker.class);
+    return mcatf.getDeclAnnotation(elt, NotOwning.class) != null;
+  }
+
+  /**
+   * Does the given element have an {@code @Owning} annotation (including in stub files)?
+   *
+   * <p>Prefer this method to calling {@link #getDeclAnnotation(Element, Class)} on the type factory
+   * directly, which won't find this annotation in stub files (it only considers stub files loaded
+   * by this checker, not subcheckers).
+   *
+   * @param elt an element
+   * @return whether there is an Owning annotation on the given element
+   */
+  public boolean hasOwning(Element elt) {
+    MustCallAnnotatedTypeFactory mcatf = getTypeFactoryOfSubchecker(MustCallChecker.class);
+    return mcatf.getDeclAnnotation(elt, Owning.class) != null;
   }
 }

@@ -3,7 +3,8 @@ import org.checkerframework.common.returnsreceiver.qual.*;
 
 class ACOwning {
 
-  @MustCall("a") static class Foo {
+  @InheritableMustCall("a")
+  static class Foo {
     void a() {}
   }
 
@@ -17,11 +18,11 @@ class ACOwning {
 
   static void noOwnership(Foo foo) {}
 
-  // :: error: required.method.not.called
+  // :: error: (required.method.not.called)
   static void takeOwnershipWrong(@Owning Foo foo) {}
 
   static @NotOwning Foo getNonOwningFoo() {
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     return new Foo();
   }
 
@@ -31,9 +32,9 @@ class ACOwning {
 
   static void ownershipInCallee() {
     Foo f = new Foo();
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     takeOwnership(f, new Foo());
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     Foo g = new Foo();
     noOwnership(g);
   }
@@ -51,17 +52,17 @@ class ACOwning {
   }
 
   void owningAtReturnTest() {
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     Foo f = owningAtReturn();
   }
 
   void ownershipTest() {
-    // :: error: required.method.not.called
+    // :: error: (required.method.not.called)
     takeOwnership(new Foo(), makeFoo());
   }
 
-  @MustCall({})
-  // :: error: super.invocation
+  @InheritableMustCall({})
+  // :: error: (super.invocation) :: error: (inconsistent.mustcall.subtype)
   private class SubFoo extends Foo {
 
     void test() {
@@ -69,7 +70,7 @@ class ACOwning {
     }
 
     void test2() {
-      // :: error: required.method.not.called
+      // :: error: (required.method.not.called)
       Foo f = new Foo();
     }
 

@@ -9,8 +9,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
@@ -26,6 +24,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedPrimitiv
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedTypeVariable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedWildcardType;
 import org.checkerframework.framework.type.visitor.SimpleAnnotatedTypeVisitor;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
@@ -34,12 +33,17 @@ import org.plumelib.util.CollectionsPlume;
 
 /**
  * Finds the direct supertypes of an input AnnotatedTypeMirror. See <a
- * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2">JLS section
+ * href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html#jls-4.10.2">JLS section
  * 4.10.2</a>.
  *
  * @see Types#directSupertypes(TypeMirror)
  */
-class SupertypeFinder {
+final class SupertypeFinder {
+
+  /** Do not instantiate. */
+  private SupertypeFinder() {
+    throw new AssertionError("Class SupertypeFinder cannot be instantiated.");
+  }
 
   // Version of method below for declared types
   /**
@@ -120,7 +124,7 @@ class SupertypeFinder {
     @Override
     public List<AnnotatedTypeMirror> visitPrimitive(AnnotatedPrimitiveType type, Void p) {
       List<AnnotatedTypeMirror> superTypes = new ArrayList<>(1);
-      Set<AnnotationMirror> annotations = type.getAnnotations();
+      AnnotationMirrorSet annotations = type.getAnnotations();
 
       // Find Boxed type
       TypeElement boxed = types.boxedClass(type.getUnderlyingType());
@@ -163,15 +167,15 @@ class SupertypeFinder {
 
     @Override
     public List<AnnotatedDeclaredType> visitDeclared(AnnotatedDeclaredType type, Void p) {
-      // Set<AnnotationMirror> annotations = type.getAnnotations();
+      // AnnotationMirrorSet annotations = type.getAnnotations();
 
       TypeElement typeElement = (TypeElement) type.getUnderlyingType().asElement();
 
       if (type.getTypeArguments().size() != typeElement.getTypeParameters().size()) {
         if (!type.isUnderlyingTypeRaw()) {
           throw new BugInCF(
-              "AnnotatedDeclaredType's element has a different number of type parameters than"
-                  + " type.%ntype=%s%nelement=%s",
+              "AnnotatedDeclaredType's element has a different number of type"
+                  + " parameters than type.%ntype=%s%nelement=%s",
               type, typeElement);
         }
       }
@@ -220,8 +224,8 @@ class SupertypeFinder {
     private Map<TypeVariable, AnnotatedTypeMirror> getTypeVarToTypeArg(AnnotatedDeclaredType type) {
       Map<TypeVariable, AnnotatedTypeMirror> mapping = new HashMap<>();
       // addTypeVarsFromEnclosingTypes can't be called with `type` because it calls
-      // `directSupertypes(types)`, which then calls this method. Add the type variables from `type`
-      // and then call addTypeVarsFromEnclosingTypes on the enclosing type.
+      // `directSupertypes(types)`, which then calls this method. Add the type variables from
+      // `type` and then call addTypeVarsFromEnclosingTypes on the enclosing type.
       addTypeVariablesToMapping(type, mapping);
       addTypeVarsFromEnclosingTypes(type.getEnclosingType(), mapping);
       return mapping;
@@ -370,7 +374,7 @@ class SupertypeFinder {
       for (AnnotatedTypeMirror t : adt.getTypeArguments()) {
         // If the type argument of super is the same as the input type
         if (atypeFactory.types.isSameType(t.getUnderlyingType(), type.getUnderlyingType())) {
-          Set<AnnotationMirror> bounds =
+          AnnotationMirrorSet bounds =
               ((AnnotatedDeclaredType) atypeFactory.getAnnotatedType(dt.asElement()))
                   .typeArgs
                   .get(0)
@@ -398,7 +402,7 @@ class SupertypeFinder {
     @Override
     public List<AnnotatedTypeMirror> visitArray(AnnotatedArrayType type, Void p) {
       List<AnnotatedTypeMirror> superTypes = new ArrayList<>();
-      Set<AnnotationMirror> annotations = type.getAnnotations();
+      AnnotationMirrorSet annotations = type.getAnnotations();
       final AnnotatedTypeMirror objectType = atypeFactory.getAnnotatedType(Object.class);
       objectType.addAnnotations(annotations);
       superTypes.add(objectType);

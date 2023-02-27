@@ -10,6 +10,7 @@ import com.sun.source.tree.Tree;
 import com.sun.source.tree.TypeParameterTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
+import com.sun.tools.javac.code.BoundKind;
 import com.sun.tools.javac.code.Type.WildcardType;
 import java.util.Arrays;
 import java.util.Collections;
@@ -249,7 +250,8 @@ public class QualifierDefaults {
     for (TypeUseLocation loc : STANDARD_CLIMB_DEFAULTS_TOP) {
       for (AnnotationMirror top : tops) {
         if (!conflictsWithExistingDefaults(checkedCodeDefaults, top, loc)) {
-          // Only add standard defaults in locations where a default has not been specified
+          // Only add standard defaults in locations where a default has not been
+          // specified
           addCheckedCodeDefault(top, loc);
         }
       }
@@ -258,7 +260,8 @@ public class QualifierDefaults {
     for (TypeUseLocation loc : STANDARD_CLIMB_DEFAULTS_BOTTOM) {
       for (AnnotationMirror bottom : bottoms) {
         if (!conflictsWithExistingDefaults(checkedCodeDefaults, bottom, loc)) {
-          // Only add standard defaults in locations where a default has not been specified
+          // Only add standard defaults in locations where a default has not been
+          // specified
           addCheckedCodeDefault(bottom, loc);
         }
       }
@@ -275,7 +278,12 @@ public class QualifierDefaults {
     checkedCodeDefaults.add(new Default(absoluteDefaultAnno, location));
   }
 
-  /** Sets the default annotation for unchecked elements. */
+  /**
+   * Add a default annotation for unchecked elements.
+   *
+   * @param uncheckedDefaultAnno the default annotation mirror
+   * @param location the type use location
+   */
   public void addUncheckedCodeDefault(
       AnnotationMirror uncheckedDefaultAnno, TypeUseLocation location) {
     checkDuplicates(uncheckedCodeDefaults, uncheckedDefaultAnno, location);
@@ -299,7 +307,13 @@ public class QualifierDefaults {
     }
   }
 
-  /** Sets the default annotations for a certain Element. */
+  /**
+   * Sets the default annotations for a certain Element.
+   *
+   * @param elem the scope to set the default within
+   * @param elementDefaultAnno the default to set
+   * @param location the location to apply the default to
+   */
   public void addElementDefault(
       Element elem, AnnotationMirror elementDefaultAnno, TypeUseLocation location) {
     DefaultSet prevset = elementDefaults.get(elem);
@@ -448,9 +462,10 @@ public class QualifierDefaults {
             }
           }
           if (prev != null && prev.getKind() == Tree.Kind.MODIFIERS) {
-            // Annotations are modifiers. We do not want to apply the local variable default to
-            // annotations. Without this, test fenum/TestSwitch failed, because the default for an
-            // argument became incompatible with the declared type.
+            // Annotations are modifiers. We do not want to apply the local variable
+            // default to annotations. Without this, test fenum/TestSwitch failed,
+            // because the default for an argument became incompatible with the declared
+            // type.
             break;
           }
           return TreeUtils.elementFromDeclaration((VariableTree) t);
@@ -523,14 +538,14 @@ public class QualifierDefaults {
     applyToTypeVar =
         defaultTypeVarLocals
             && elt != null
-            && elt.getKind() == ElementKind.LOCAL_VARIABLE
+            && ElementUtils.isLocalVariable(elt)
             && type.getKind() == TypeKind.TYPEVAR;
     applyDefaultsElement(elt, type);
     applyToTypeVar = false;
   }
 
   /** The default {@code value} element for a @DefaultQualifier annotation. */
-  private static TypeUseLocation[] defaultQualifierValueDefault =
+  private static final TypeUseLocation[] defaultQualifierValueDefault =
       new TypeUseLocation[] {org.checkerframework.framework.qual.TypeUseLocation.ALL};
 
   /**
@@ -607,6 +622,13 @@ public class QualifierDefaults {
     return elementAnnotatedForThisChecker;
   }
 
+  /**
+   * Returns the defaults that apply to the given Element, considering defaults from enclosing
+   * Elements.
+   *
+   * @param elt the element
+   * @return the defaults
+   */
   private DefaultSet defaultsAt(final Element elt) {
     if (elt == null) {
       return DefaultSet.EMPTY;
@@ -704,7 +726,7 @@ public class QualifierDefaults {
       return useConservativeDefaultsBytecode && !isElementAnnotatedForThisChecker(annotationScope);
     } else if (isFromStubFile) {
       // TODO: Types in stub files not annotated for a particular checker should be
-      // treated as unchecked bytecode.   For now, all types in stub files are treated as
+      // treated as unchecked bytecode.  For now, all types in stub files are treated as
       // checked code. Eventually, @AnnotateFor(checker) will be programmatically added
       // to methods in stub files supplied via the @Stubfile annotation.  Stub files will
       // be treated like unchecked code except for methods in the scope for an @AnnotatedFor.
@@ -941,8 +963,8 @@ public class QualifierDefaults {
                 && scope.getKind() == ElementKind.CONSTRUCTOR
                 && t.getKind() == TypeKind.EXECUTABLE
                 && isTopLevelType) {
-              // This is the return type of a constructor declaration (not a constructor
-              // invocation).
+              // This is the return type of a constructor declaration (not a
+              // constructor invocation).
               final AnnotatedTypeMirror returnType = ((AnnotatedExecutableType) t).getReturnType();
               if (shouldBeAnnotated(returnType, false)) {
                 addAnnotation(returnType, qual);
@@ -1193,7 +1215,7 @@ public class QualifierDefaults {
     final WildcardType wildcard = (WildcardType) annotatedWildcard.getUnderlyingType();
 
     final BoundType boundType;
-    if (wildcard.isUnbound() && wildcard.bound != null) {
+    if (wildcard.kind == BoundKind.UNBOUND && wildcard.bound != null) {
       boundType = getTypeVarBoundType((TypeParameterElement) wildcard.bound.asElement());
 
     } else {

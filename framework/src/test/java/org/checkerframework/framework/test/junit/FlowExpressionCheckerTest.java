@@ -8,9 +8,11 @@ import org.junit.runners.Parameterized.Parameters;
 
 public class FlowExpressionCheckerTest extends CheckerFrameworkPerDirectoryTest {
 
-  /** @param testFiles the files containing test code, which will be type-checked */
+  /**
+   * @param testFiles the files containing test code, which will be type-checked
+   */
   public FlowExpressionCheckerTest(List<File> testFiles) {
-    super(testFiles, FlowExpressionChecker.class, "flowexpression", "-Anomsgtext");
+    super(testFiles, FlowExpressionChecker.class, "flowexpression");
   }
 
   @Parameters

@@ -9,10 +9,11 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import org.checkerframework.checker.calledmethods.CalledMethodsVisitor;
 import org.checkerframework.checker.calledmethods.qual.EnsuresCalledMethods;
-import org.checkerframework.checker.mustcall.CreatesMustCallForElementSupplier;
+import org.checkerframework.checker.mustcall.CreatesMustCallForToJavaExpression;
 import org.checkerframework.checker.mustcall.MustCallAnnotatedTypeFactory;
 import org.checkerframework.checker.mustcall.MustCallChecker;
 import org.checkerframework.checker.mustcall.qual.CreatesMustCallFor;
@@ -22,9 +23,11 @@ import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.framework.flow.CFAbstractStore;
 import org.checkerframework.framework.flow.CFAbstractValue;
 import org.checkerframework.framework.type.QualifierHierarchy;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 /**
  * The visitor for the Resource Leak Checker. Responsible for checking that the rules for {@link
@@ -33,12 +36,18 @@ import org.checkerframework.javacutil.TreeUtils;
  */
 public class ResourceLeakVisitor extends CalledMethodsVisitor {
 
+  /** True if errors related to static owning fields should be suppressed. */
+  private final boolean permitStaticOwning;
+
   /**
    * Because CalledMethodsVisitor doesn't have a type parameter, we need a reference to the type
    * factory that has this static type to access the features that ResourceLeakAnnotatedTypeFactory
    * implements but CalledMethodsAnnotatedTypeFactory does not.
    */
   private final ResourceLeakAnnotatedTypeFactory rlTypeFactory;
+
+  /** True if -AnoLightweightOwnership was supplied on the command line. */
+  private final boolean noLightweightOwnership;
 
   /**
    * Create the visitor.
@@ -48,6 +57,8 @@ public class ResourceLeakVisitor extends CalledMethodsVisitor {
   public ResourceLeakVisitor(final BaseTypeChecker checker) {
     super(checker);
     rlTypeFactory = (ResourceLeakAnnotatedTypeFactory) atypeFactory;
+    permitStaticOwning = checker.hasOption("permitStaticOwning");
+    noLightweightOwnership = checker.hasOption("noLightweightOwnership");
   }
 
   @Override
@@ -56,34 +67,79 @@ public class ResourceLeakVisitor extends CalledMethodsVisitor {
   }
 
   @Override
-  public Void visitMethod(MethodTree node, Void p) {
-    ExecutableElement elt = TreeUtils.elementFromDeclaration(node);
+  public Void visitMethod(MethodTree tree, Void p) {
+    ExecutableElement elt = TreeUtils.elementFromDeclaration(tree);
     MustCallAnnotatedTypeFactory mcAtf =
         rlTypeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
     List<String> cmcfValues = getCreatesMustCallForValues(elt, mcAtf, rlTypeFactory);
     if (!cmcfValues.isEmpty()) {
-      // If this method overrides another method, it must create at least as many
-      // obligations. Without this check, dynamic dispatch might allow e.g. a field to be
-      // overwritten by a CMCF method, but the CMCF effect wouldn't occur.
-      for (ExecutableElement overridden : ElementUtils.getOverriddenMethods(elt, this.types)) {
-        List<String> overriddenCmcfValues =
-            getCreatesMustCallForValues(overridden, mcAtf, rlTypeFactory);
-        if (!overriddenCmcfValues.containsAll(cmcfValues)) {
-          String foundCmcfValueString = String.join(", ", cmcfValues);
-          String neededCmcfValueString = String.join(", ", overriddenCmcfValues);
-          String actualClassname = ElementUtils.getEnclosingClassName(elt);
-          String overriddenClassname = ElementUtils.getEnclosingClassName(overridden);
-          checker.reportError(
-              node,
-              "creates.mustcall.for.override.invalid",
-              actualClassname + "#" + elt,
-              overriddenClassname + "#" + overridden,
-              foundCmcfValueString,
-              neededCmcfValueString);
-        }
+      checkCreatesMustCallForOverrides(tree, elt, mcAtf, cmcfValues);
+      checkCreatesMustCallForTargetsHaveNonEmptyMustCall(tree, mcAtf);
+    }
+    return super.visitMethod(tree, p);
+  }
+
+  /**
+   * checks that any created must-call obligation has a declared type with a non-empty
+   * {@code @MustCall} obligation
+   *
+   * @param tree the method
+   * @param mcAtf the type factory
+   */
+  private void checkCreatesMustCallForTargetsHaveNonEmptyMustCall(
+      MethodTree tree, MustCallAnnotatedTypeFactory mcAtf) {
+    // Get all the JavaExpressions for all CreatesMustCallFor annotations
+    List<JavaExpression> createsMustCallExprs =
+        CreatesMustCallForToJavaExpression.getCreatesMustCallForExpressionsAtMethodDeclaration(
+            tree, mcAtf, mcAtf);
+    for (JavaExpression targetExpr : createsMustCallExprs) {
+      AnnotationMirror mustCallAnno =
+          mcAtf
+              .getAnnotatedType(TypesUtils.getTypeElement(targetExpr.getType()))
+              .getAnnotationInHierarchy(mcAtf.TOP);
+      if (rlTypeFactory.getMustCallValues(mustCallAnno).isEmpty()) {
+        checker.reportError(
+            tree,
+            "creates.mustcall.for.invalid.target",
+            targetExpr.toString(),
+            targetExpr.getType().toString());
       }
     }
-    return super.visitMethod(node, p);
+  }
+
+  /**
+   * Check that an overriding method does not reduce the number of created must-call obligations
+   *
+   * @param tree overriding method
+   * @param elt element for overriding method
+   * @param mcAtf the type factory
+   * @param cmcfValues must call values created by overriding method
+   */
+  private void checkCreatesMustCallForOverrides(
+      MethodTree tree,
+      ExecutableElement elt,
+      MustCallAnnotatedTypeFactory mcAtf,
+      List<String> cmcfValues) {
+    // If this method overrides another method, it must create at least as many
+    // obligations. Without this check, dynamic dispatch might allow e.g. a field to be
+    // overwritten by a CMCF method, but the CMCF effect wouldn't occur.
+    for (ExecutableElement overridden : ElementUtils.getOverriddenMethods(elt, this.types)) {
+      List<String> overriddenCmcfValues =
+          getCreatesMustCallForValues(overridden, mcAtf, rlTypeFactory);
+      if (!overriddenCmcfValues.containsAll(cmcfValues)) {
+        String foundCmcfValueString = String.join(", ", cmcfValues);
+        String neededCmcfValueString = String.join(", ", overriddenCmcfValues);
+        String actualClassname = ElementUtils.getEnclosingClassName(elt);
+        String overriddenClassname = ElementUtils.getEnclosingClassName(overridden);
+        checker.reportError(
+            tree,
+            "creates.mustcall.for.override.invalid",
+            actualClassname + "#" + elt,
+            overriddenClassname + "#" + overridden,
+            foundCmcfValueString,
+            neededCmcfValueString);
+      }
+    }
   }
 
   // Overwritten to check that destructors (i.e. methods responsible for resolving
@@ -101,20 +157,20 @@ public class ResourceLeakVisitor extends CalledMethodsVisitor {
       return;
     }
     if (!isMustCallMethod(methodTree)) {
-      // In this case, the method has an EnsuresCalledMethods annotation but is not a destructor,
-      // so no further checking is required.
+      // In this case, the method has an EnsuresCalledMethods annotation but is not a
+      // destructor, so no further checking is required.
       return;
     }
     CFAbstractStore<?, ?> exitStore = atypeFactory.getExceptionalExitStore(methodTree);
     if (exitStore == null) {
-      // If there is no exceptional exitStore, then the method cannot throw an exception and there
-      // is no need to check anything else.
+      // If there is no exceptional exitStore, then the method cannot throw an exception and
+      // there is no need to check anything else.
     } else {
       CFAbstractValue<?> value = exitStore.getValue(expression);
       AnnotationMirror inferredAnno = null;
       if (value != null) {
         QualifierHierarchy hierarchy = atypeFactory.getQualifierHierarchy();
-        Set<AnnotationMirror> annos = value.getAnnotations();
+        AnnotationMirrorSet annos = value.getAnnotations();
         inferredAnno = hierarchy.findAnnotationInSameHierarchy(annos, annotation);
       }
       if (!checkContract(expression, annotation, inferredAnno, exitStore)) {
@@ -177,7 +233,7 @@ public class ResourceLeakVisitor extends CalledMethodsVisitor {
    * annotations on the given element.
    *
    * <p>Does no viewpoint-adaptation, unlike {@link
-   * CreatesMustCallForElementSupplier#getCreatesMustCallForExpressions} which does.
+   * CreatesMustCallForToJavaExpression#getCreatesMustCallForExpressionsAtInvocation} which does.
    *
    * @param elt an executable element
    * @param mcAtf a MustCallAnnotatedTypeFactory, to source the value element
@@ -187,7 +243,7 @@ public class ResourceLeakVisitor extends CalledMethodsVisitor {
    *     iff there are no @CreatesMustCallFor annotations on elt. The returned list is always
    *     modifiable if it is non-empty.
    */
-  /*package-private*/ static List<String> getCreatesMustCallForValues(
+  /* package-private */ static List<String> getCreatesMustCallForValues(
       ExecutableElement elt,
       MustCallAnnotatedTypeFactory mcAtf,
       ResourceLeakAnnotatedTypeFactory atypeFactory) {
@@ -213,16 +269,16 @@ public class ResourceLeakVisitor extends CalledMethodsVisitor {
   }
 
   @Override
-  public Void visitVariable(VariableTree node, Void p) {
-    Element varElement = TreeUtils.elementFromTree(node);
+  public Void visitVariable(VariableTree tree, Void p) {
+    Element varElement = TreeUtils.elementFromDeclaration(tree);
 
     if (varElement.getKind().isField()
-        && !checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP)
+        && !noLightweightOwnership
         && rlTypeFactory.getDeclAnnotation(varElement, Owning.class) != null) {
       checkOwningField(varElement);
     }
 
-    return super.visitVariable(node, p);
+    return super.visitVariable(tree, p);
   }
 
   /**
@@ -240,6 +296,16 @@ public class ResourceLeakVisitor extends CalledMethodsVisitor {
       return;
     }
 
+    Set<Modifier> modifiers = field.getModifiers();
+    if (modifiers.contains(Modifier.STATIC)) {
+      if (permitStaticOwning) {
+        return;
+      }
+      if (modifiers.contains(Modifier.FINAL)) {
+        return;
+      }
+    }
+
     // This value is side-effected.
     List<String> unsatisfiedMustCallObligationsOfOwningField =
         rlTypeFactory.getMustCallValue(field);
@@ -248,7 +314,7 @@ public class ResourceLeakVisitor extends CalledMethodsVisitor {
       return;
     }
 
-    String error = "";
+    String error;
     Element enclosingElement = field.getEnclosingElement();
     List<String> enclosingMustCallValues = rlTypeFactory.getMustCallValue(enclosingElement);
 
@@ -257,7 +323,13 @@ public class ResourceLeakVisitor extends CalledMethodsVisitor {
           " The enclosing element "
               + ElementUtils.getQualifiedName(enclosingElement)
               + " doesn't have a @MustCall annotation";
+    } else if (enclosingMustCallValues.isEmpty()) {
+      error =
+          " The enclosing element "
+              + ElementUtils.getQualifiedName(enclosingElement)
+              + " has an empty @MustCall annotation";
     } else {
+      error = " [[checkOwningField() did not find a reason!]]"; // should be reassigned
       List<? extends Element> siblingsOfOwningField = enclosingElement.getEnclosedElements();
       for (Element siblingElement : siblingsOfOwningField) {
         if (siblingElement.getKind() == ElementKind.METHOD
@@ -287,8 +359,8 @@ public class ResourceLeakVisitor extends CalledMethodsVisitor {
           }
 
           if (!unsatisfiedMustCallObligationsOfOwningField.isEmpty()) {
-            // This variable could be set immediately before reporting the error, but IMO
-            // it is more clear to set it here.
+            // This variable could be set immediately before reporting the error, but
+            // IMO it is more clear to set it here.
             error =
                 " @EnsuresCalledMethods written on MustCall methods doesn't contain "
                     + MustCallConsistencyAnalyzer.formatMissingMustCallMethods(

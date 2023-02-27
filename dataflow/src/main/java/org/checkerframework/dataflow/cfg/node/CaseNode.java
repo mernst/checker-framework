@@ -1,7 +1,6 @@
 package org.checkerframework.dataflow.cfg.node;
 
 import com.sun.source.tree.CaseTree;
-import com.sun.source.tree.Tree;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -9,6 +8,7 @@ import java.util.Objects;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Types;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.plumelib.util.StringsPlume;
 
 /**
@@ -23,10 +23,12 @@ public class CaseNode extends Node {
 
   /** The tree for this node. */
   protected final CaseTree tree;
+
   /**
    * The Node for the assignment of the switch selector expression to a synthetic local variable.
    */
   protected final AssignmentNode selectorExprAssignment;
+
   /**
    * The case expressions to match the switch expression against: the operands of (possibly
    * multiple) case labels.
@@ -44,7 +46,6 @@ public class CaseNode extends Node {
   public CaseNode(
       CaseTree tree, AssignmentNode selectorExprAssignment, List<Node> caseExprs, Types types) {
     super(types.getNoType(TypeKind.NONE));
-    assert tree.getKind() == Tree.Kind.CASE;
     this.tree = tree;
     this.selectorExprAssignment = selectorExprAssignment;
     this.caseExprs = caseExprs;
@@ -101,10 +102,12 @@ public class CaseNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
-    ArrayList<Node> operands = new ArrayList<>();
+    List<Node> caseOperands = getCaseOperands();
+    ArrayList<Node> operands = new ArrayList<>(caseOperands.size() + 1);
     operands.add(getSwitchOperand());
-    operands.addAll(getCaseOperands());
+    operands.addAll(caseOperands);
     return operands;
   }
 }
