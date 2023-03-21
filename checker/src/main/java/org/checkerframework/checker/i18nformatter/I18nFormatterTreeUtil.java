@@ -102,8 +102,7 @@ public class I18nFormatterTreeUtil {
    * @param invalidFormatString an invalid formatter string
    * @return an {@link I18nInvalidFormat} annotation with the given string as its value
    */
-  /* package-private */
-  AnnotationMirror stringToInvalidFormatAnnotation(String invalidFormatString) {
+  /*package-private*/ AnnotationMirror stringToInvalidFormatAnnotation(String invalidFormatString) {
     AnnotationBuilder builder = new AnnotationBuilder(processingEnv, I18nInvalidFormat.class);
     builder.setValue("value", invalidFormatString);
     return builder.build();
@@ -126,7 +125,7 @@ public class I18nFormatterTreeUtil {
    * @param anno an I18NFormatFor annotation
    * @return its value() element/field
    */
-  /* package-private */ String getI18nFormatForValue(AnnotationMirror anno) {
+  /*package-private*/ String getI18nFormatForValue(AnnotationMirror anno) {
     return AnnotationUtils.getElementValue(anno, i18nFormatForValueElement, String.class);
   }
 
