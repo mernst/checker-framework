@@ -111,8 +111,12 @@ public class DefaultQualifierKindHierarchy implements QualifierKindHierarchy {
   }
 
   @Override
-  public @Nullable QualifierKind getQualifierKind(@CanonicalName String name) {
-    return nameToQualifierKind.get(name);
+  public QualifierKind getQualifierKind(@CanonicalName String name) {
+    QualifierKind result = nameToQualifierKind.get(name);
+    if (result == null) {
+      throw new BugInCF("getQualifierKind(%s) => null", name);
+    }
+    return result;
   }
 
   /**
@@ -205,8 +209,8 @@ public class DefaultQualifierKindHierarchy implements QualifierKindHierarchy {
         if (qualifierKind.top == null) {
           throw new TypeSystemError(
               "PolymorphicQualifier, %s, has to specify a type hierarchy in its"
-                  + " @PolymorphicQualifier meta-annotation, if more than one exists; top types:"
-                  + " [%s].",
+                  + " @PolymorphicQualifier meta-annotation, if more than one exists;"
+                  + " top types: [%s].",
               qualifierKind, StringsPlume.join(", ", tops));
         } else if (!tops.contains(qualifierKind.top)) {
           throw new TypeSystemError(
@@ -257,7 +261,7 @@ public class DefaultQualifierKindHierarchy implements QualifierKindHierarchy {
    * method to create the direct super map some other way.
    *
    * <p>Note that this method is called from the constructor when {@link #nameToQualifierKind} and
-   * {@link #qualifierKinds} are the only fields that have nonnull values. This method is not
+   * {@link #qualifierKinds} are the only fields that have non-null values. This method is not
    * static, so it can be overridden by subclasses.
    *
    * @return a mapping from each {@link QualifierKind} to a set of its direct super qualifiers
@@ -499,7 +503,10 @@ public class DefaultQualifierKindHierarchy implements QualifierKindHierarchy {
 
       Set<DefaultQualifierKind> superSuperQuals = directSuperMap.get(superQualKind);
       if (superSuperQuals == null) {
-        throw new TypeSystemError(superQualKind + " is not a key in the directSuperMap");
+        throw new TypeSystemError(
+            superQualKind
+                + " is not a key in the directSuperMap."
+                + "  Does it have a @SubtypeOf annotation?");
       }
       toVisit.addAll(superSuperQuals);
       allSupers.addAll(superSuperQuals);

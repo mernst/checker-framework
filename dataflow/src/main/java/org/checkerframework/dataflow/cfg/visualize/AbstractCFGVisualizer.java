@@ -52,10 +52,10 @@ public abstract class AbstractCFGVisualizer<
   protected boolean verbose;
 
   /** The line separator. */
-  protected final String lineSeparator = System.lineSeparator();
+  protected static final String lineSeparator = System.lineSeparator();
 
   /** The indentation for elements of the store. */
-  protected final String storeEntryIndent = "  ";
+  protected static final String storeEntryIndent = "  ";
 
   @Override
   public void init(Map<String, Object> args) {
@@ -378,7 +378,7 @@ public abstract class AbstractCFGVisualizer<
   }
 
   /**
-   * Generate the order of processing blocks. Because a block may appears more than once in {@link
+   * Generate the order of processing blocks. Because a block may appear more than once in {@link
    * ControlFlowGraph#getDepthFirstOrderedBlocks()}, the orders of each block are stored in a
    * separate array list.
    *
@@ -390,9 +390,7 @@ public abstract class AbstractCFGVisualizer<
     int count = 1;
     for (Block b : cfg.getDepthFirstOrderedBlocks()) {
       depthFirstOrder.computeIfAbsent(b, k -> new ArrayList<>());
-      @SuppressWarnings(
-          "nullness:assignment.type.incompatible") // computeIfAbsent's function doesn't
-      // return null
+      @SuppressWarnings("nullness:assignment") // computeIfAbsent's function doesn't return null
       @NonNull List<Integer> blockIds = depthFirstOrder.get(b);
       blockIds.add(count++);
     }

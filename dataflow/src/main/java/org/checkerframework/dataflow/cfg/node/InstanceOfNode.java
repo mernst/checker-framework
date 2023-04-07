@@ -1,7 +1,6 @@
 package org.checkerframework.dataflow.cfg.node;
 
 import com.sun.source.tree.InstanceOfTree;
-import com.sun.source.tree.Tree;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
@@ -9,6 +8,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.javacutil.TypesUtils;
 
 /**
@@ -27,24 +27,65 @@ public class InstanceOfNode extends Node {
   /** The tree associated with this node. */
   protected final InstanceOfTree tree;
 
+  /** The node of the binding variable if one exists. */
+  protected final @Nullable LocalVariableNode bindingVariable;
+
   /** For Types.isSameType. */
   protected final Types types;
 
-  /** Create an InstanceOfNode. */
-  public InstanceOfNode(Tree tree, Node operand, TypeMirror refType, Types types) {
+  /**
+   * Create an InstanceOfNode.
+   *
+   * @param tree instanceof tree
+   * @param operand the expression in the instanceof tree
+   * @param refType the type in the instanceof
+   * @param types types util
+   */
+  public InstanceOfNode(InstanceOfTree tree, Node operand, TypeMirror refType, Types types) {
+    this(tree, operand, null, refType, types);
+  }
+
+  /**
+   * Create an InstanceOfNode.
+   *
+   * @param tree instanceof tree
+   * @param operand the expression in the instanceof tree
+   * @param bindingVariable the binding variable or null if there is none
+   * @param refType the type in the instanceof
+   * @param types types util
+   */
+  public InstanceOfNode(
+      InstanceOfTree tree,
+      Node operand,
+      @Nullable LocalVariableNode bindingVariable,
+      TypeMirror refType,
+      Types types) {
     super(types.getPrimitiveType(TypeKind.BOOLEAN));
-    assert tree.getKind() == Tree.Kind.INSTANCE_OF;
-    this.tree = (InstanceOfTree) tree;
+    this.tree = tree;
     this.operand = operand;
     this.refType = refType;
     this.types = types;
+    this.bindingVariable = bindingVariable;
   }
 
   public Node getOperand() {
     return operand;
   }
 
-  /** The reference type being tested against. */
+  /**
+   * Returns the binding variable for this instanceof, or null if one does not exist.
+   *
+   * @return the binding variable for this instanceof, or null if one does not exist
+   */
+  public @Nullable LocalVariableNode getBindingVariable() {
+    return bindingVariable;
+  }
+
+  /**
+   * The reference type being tested against.
+   *
+   * @return the reference type
+   */
   public TypeMirror getRefType() {
     return refType;
   }
@@ -61,7 +102,12 @@ public class InstanceOfNode extends Node {
 
   @Override
   public String toString() {
-    return "(" + getOperand() + " instanceof " + TypesUtils.simpleTypeName(getRefType()) + ")";
+    return "("
+        + getOperand()
+        + " instanceof "
+        + TypesUtils.simpleTypeName(getRefType())
+        + (bindingVariable == null ? "" : " " + getBindingVariable())
+        + ")";
   }
 
   @Override
@@ -82,6 +128,7 @@ public class InstanceOfNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.singletonList(getOperand());
   }

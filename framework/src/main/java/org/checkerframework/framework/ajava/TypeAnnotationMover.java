@@ -35,9 +35,9 @@ public class TypeAnnotationMover extends VoidVisitorAdapter<Void> {
    * Annotations imported by the file, stored as a mapping from names to the TypeElements for the
    * annotations. Contains entries for the simple and fully qualified names of each annotation.
    */
-  private Map<String, TypeElement> allAnnotations;
+  private final Map<String, TypeElement> allAnnotations;
   /** Element utilities. */
-  private Elements elements;
+  private final Elements elements;
 
   /**
    * Constructs a {@code TypeAnnotationMover}.
@@ -45,7 +45,7 @@ public class TypeAnnotationMover extends VoidVisitorAdapter<Void> {
    * @param allAnnotations the annotations imported by the file, as a mapping from annotation name
    *     to TypeElement. There should be two entries for each annotation: the annotation's simple
    *     name and its fully-qualified name both mapped to its TypeElement.
-   * @param elements Element utilities
+   * @param elements the Element utilities
    */
   public TypeAnnotationMover(Map<String, TypeElement> allAnnotations, Elements elements) {
     this.allAnnotations = new HashMap<>(allAnnotations);
@@ -103,7 +103,8 @@ public class TypeAnnotationMover extends VoidVisitorAdapter<Void> {
    */
   private List<AnnotationExpr> getAnnotationsToMove(
       NodeWithAnnotations<?> node, ElementType declarationType) {
-    List<AnnotationExpr> annosToMove = new ArrayList<>();
+    // There are usually no annotations that need to be moved.
+    List<AnnotationExpr> annosToMove = new ArrayList<>(0);
     for (AnnotationExpr annotation : node.getAnnotations()) {
       if (!isPossiblyDeclarationAnnotation(annotation, declarationType)) {
         annosToMove.add(annotation);

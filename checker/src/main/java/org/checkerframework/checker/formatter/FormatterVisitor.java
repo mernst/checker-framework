@@ -24,11 +24,11 @@ import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.common.wholeprograminference.WholeProgramInference;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
-import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
+import org.checkerframework.javacutil.UserError;
 
 /**
  * Whenever a format method invocation is found in the syntax tree, checks are performed as
@@ -42,21 +42,21 @@ public class FormatterVisitor extends BaseTypeVisitor<FormatterAnnotatedTypeFact
   }
 
   @Override
-  public Void visitMethod(MethodTree node, Void p) {
-    ExecutableElement methodElement = TreeUtils.elementFromDeclaration(node);
+  public Void visitMethod(MethodTree tree, Void p) {
+    ExecutableElement methodElement = TreeUtils.elementFromDeclaration(tree);
     if (atypeFactory.getDeclAnnotation(methodElement, FormatMethod.class) != null) {
       int formatStringIndex = FormatterVisitor.formatStringIndex(methodElement);
       if (formatStringIndex == -1) {
-        checker.reportError(node, "format.method.invalid", methodElement.getSimpleName());
+        checker.reportError(tree, "format.method", methodElement.getSimpleName());
       }
     }
-    return super.visitMethod(node, p);
+    return super.visitMethod(tree, p);
   }
 
   @Override
-  public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
+  public Void visitMethodInvocation(MethodInvocationTree tree, Void p) {
     FormatterTreeUtil ftu = atypeFactory.treeUtil;
-    FormatCall fc = ftu.create(node, atypeFactory);
+    FormatCall fc = ftu.create(tree, atypeFactory);
     if (fc != null) {
       MethodTree enclosingMethod =
           TreePathUtil.enclosingMethod(atypeFactory.getPath(fc.invocationTree));
@@ -68,7 +68,7 @@ public class FormatterVisitor extends BaseTypeVisitor<FormatterAnnotatedTypeFact
           // Nothing to do, because call is legal.
         } else {
           // I.1
-          ftu.failure(errMissingFormat, "format.string.invalid", errMissingFormat.value());
+          ftu.failure(errMissingFormat, "format.string", errMissingFormat.value());
         }
       } else {
         // The string has a @Format annotation.
@@ -80,7 +80,8 @@ public class FormatterVisitor extends BaseTypeVisitor<FormatterAnnotatedTypeFact
             int argl = argTypes.length;
             int formatl = formatCats.length;
             if (argl < formatl) {
-              // For assignments, format.missing.arguments is issued from commonAssignmentCheck.
+              // For assignments, format.missing.arguments is issued from
+              // commonAssignmentCheck.
               // II.1
               ftu.failure(invc, "format.missing.arguments", formatl, argl);
             } else {
@@ -111,15 +112,10 @@ public class FormatterVisitor extends BaseTypeVisitor<FormatterAnnotatedTypeFact
                   default:
                     if (!fc.isValidArgument(formatCat, argType)) {
                       // II.3
-                      ExecutableElement method = TreeUtils.elementFromUse(node);
+                      ExecutableElement method = TreeUtils.elementFromUse(tree);
                       CharSequence methodName = ElementUtils.getSimpleNameOrDescription(method);
                       ftu.failure(
-                          arg,
-                          "argument.type.incompatible",
-                          "in varargs position",
-                          methodName,
-                          argType,
-                          formatCat);
+                          arg, "argument", "in varargs position", methodName, argType, formatCat);
                     }
                     break;
                 }
@@ -156,12 +152,12 @@ public class FormatterVisitor extends BaseTypeVisitor<FormatterAnnotatedTypeFact
 
       // Support -Ainfer command-line argument.
       WholeProgramInference wpi = atypeFactory.getWholeProgramInference();
-      if (wpi != null && forwardsArguments(node, enclosingMethod)) {
+      if (wpi != null && forwardsArguments(tree, enclosingMethod)) {
         wpi.addMethodDeclarationAnnotation(
             TreeUtils.elementFromDeclaration(enclosingMethod), atypeFactory.FORMATMETHOD);
       }
     }
-    return super.visitMethodInvocation(node, p);
+    return super.visitMethodInvocation(tree, p);
   }
 
   /**
@@ -213,7 +209,7 @@ public class FormatterVisitor extends BaseTypeVisitor<FormatterAnnotatedTypeFact
     ExecutableElement calledMethodElement = TreeUtils.elementFromUse(invocationTree);
     int callIndex = formatStringIndex(calledMethodElement);
     if (callIndex == -1) {
-      throw new BugInCF(
+      throw new UserError(
           "Method "
               + calledMethodElement
               + " is annotated @FormatMethod but has no String formal parameter");

@@ -14,60 +14,28 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.processing.ProcessingEnvironment;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.plumelib.util.StringsPlume;
+import org.plumelib.util.CollectionsPlume;
 
 /** This file contains basic utility functions. */
 public class SystemUtil {
 
-  /** The system-specific line separator. */
-  private static final String LINE_SEPARATOR = System.lineSeparator();
-
-  /**
-   * Return true if the system property is set to "true". Return false if the system property is not
-   * set or is set to "false". Otherwise, errs.
-   *
-   * @param key system property to check
-   * @return true if the system property is set to "true". Return false if the system property is
-   *     not set or is set to "false". Otherwise, errs.
-   * @deprecated use UtilPlume.getBooleanSystemProperty
-   */
-  @Deprecated // 2021-03-28
-  public static boolean getBooleanSystemProperty(String key) {
-    return Boolean.parseBoolean(System.getProperty(key, "false"));
+  /** Do not instantiate. */
+  private SystemUtil() {
+    throw new Error("Do not instantiate.");
   }
 
-  /**
-   * Return its boolean value if the system property is set. Return defaultValue if the system
-   * property is not set. Errs if the system property is set to a non-boolean value.
-   *
-   * @param key system property to check
-   * @param defaultValue value to use if the property is not set
-   * @return the boolean value of {@code key} or {@code defaultValue} if {@code key} is not set
-   * @deprecated use UtilPlume.getBooleanSystemProperty
-   */
-  @Deprecated // 2021-03-28
-  public static boolean getBooleanSystemProperty(String key, boolean defaultValue) {
-    String value = System.getProperty(key);
-    if (value == null) {
-      return defaultValue;
-    }
-    if (value.equals("true")) {
-      return true;
-    }
-    if (value.equals("false")) {
-      return false;
-    }
-    throw new Error(
-        String.format(
-            "Value for system property %s should be boolean, but is \"%s\".", key, value));
-  }
+  /** The major version number of the Java runtime (JRE), such as 8, 11, or 17. */
+  @SuppressWarnings("deprecation") // remove @SuppressWarnings when getJreVersion() isn't deprecated
+  public static final int jreVersion = getJreVersion();
 
+  // Keep in sync with BCELUtil.java (in the bcel-util project).
   /**
-   * Returns the major JRE version.
+   * Returns the major version number from the "java.version" system property, such as 8, 11, or 17.
    *
    * <p>This is different from the version passed to the compiler via --release; use {@link
    * #getReleaseValue(ProcessingEnvironment)} to get that version.
@@ -76,40 +44,33 @@ public class SystemUtil {
    * formats are considered. Up to Java 8, from a version string like `1.8.whatever`, this method
    * extracts 8. Since Java 9, from a version string like `11.0.1`, this method extracts 11.
    *
-   * @return the major version number from "java.version"
+   * <p>Starting in Java 9, there is the int {@code Runtime.version().feature()}, but that does not
+   * exist on JDK 8.
+   *
+   * @return the major version of the Java runtime
+   * @deprecated use field {@link #jreVersion} instead
    */
+  @Deprecated // 2022-07-14 not for removal, just to make private (and then it won't be
+  // deprecated)
   public static int getJreVersion() {
-    final String jreVersionStr = System.getProperty("java.version");
+    String version = System.getProperty("java.version");
 
-    final Pattern oldVersionPattern = Pattern.compile("^1\\.(\\d+)\\..*$");
-    final Matcher oldVersionMatcher = oldVersionPattern.matcher(jreVersionStr);
-    if (oldVersionMatcher.matches()) {
-      String v = oldVersionMatcher.group(1);
-      assert v != null : "@AssumeAssertion(nullness): inspection";
-      return Integer.parseInt(v);
+    // Up to Java 8, from a version string like "1.8.whatever", extract "8".
+    if (version.startsWith("1.")) {
+      return Integer.parseInt(version.substring(2, 3));
     }
 
-    // See http://openjdk.java.net/jeps/223
-    // We only care about the major version number.
+    // Since Java 9, from a version string like "11.0.1" or "11-ea" or "11u25", extract "11".
+    // The format is described at http://openjdk.org/jeps/223 .
     final Pattern newVersionPattern = Pattern.compile("^(\\d+).*$");
-    final Matcher newVersionMatcher = newVersionPattern.matcher(jreVersionStr);
+    final Matcher newVersionMatcher = newVersionPattern.matcher(version);
     if (newVersionMatcher.matches()) {
       String v = newVersionMatcher.group(1);
       assert v != null : "@AssumeAssertion(nullness): inspection";
       return Integer.parseInt(v);
     }
 
-    // For Early Access version of the JDK
-    final Pattern eaVersionPattern = Pattern.compile("^(\\d+)-ea$");
-    final Matcher eaVersionMatcher = eaVersionPattern.matcher(jreVersionStr);
-    if (eaVersionMatcher.matches()) {
-      String v = eaVersionMatcher.group(1);
-      assert v != null : "@AssumeAssertion(nullness): inspection";
-      return Integer.parseInt(v);
-    }
-
-    throw new RuntimeException(
-        "Could not determine version from property java.version=" + jreVersionStr);
+    throw new RuntimeException("Could not determine version from property java.version=" + version);
   }
 
   /**
@@ -132,7 +93,7 @@ public class SystemUtil {
    */
   public static @Nullable String getToolsJar() {
 
-    if (getJreVersion() > 8) {
+    if (jreVersion > 8) {
       return null;
     }
 
@@ -146,14 +107,14 @@ public class SystemUtil {
         throw new Error("Can't infer Java home; java.home=" + javaHomeProperty);
       }
     }
-    String toolsJarFilename = javaHome + File.separator + "lib" + File.separator + "tools.jar";
-    if (!new File(toolsJarFilename).exists()) {
+    File toolsJarFile = new File(new File(javaHome, "lib"), "tools.jar");
+    if (!toolsJarFile.exists()) {
       throw new Error(
           String.format(
               "File does not exist: %s ; JAVA_HOME=%s ; java.home=%s",
-              toolsJarFilename, javaHome, System.getProperty("java.home")));
+              toolsJarFile, javaHome, System.getProperty("java.home")));
     }
-    return javaHome + File.separator + "lib" + File.separator + "tools.jar";
+    return toolsJarFile.toString();
   }
 
   ///
@@ -171,7 +132,9 @@ public class SystemUtil {
    * @param list1 a list
    * @param list2 a list
    * @return a list that contains all the distinct elements of the two lists
+   * @deprecated use CollectionsPlume.listUnion
    */
+  @Deprecated // 2023-01-08
   public static <T> List<T> union(List<T> list1, List<T> list2) {
     List<T> result = new ArrayList<>(list1.size() + list2.size());
     addWithoutDuplicates(result, list1);
@@ -188,11 +151,12 @@ public class SystemUtil {
    * @param <T> the type of the list elements
    * @param dest a list to add to
    * @param source a list of elements to add
+   * @deprecated use CollectionsPlume.adjoinAll
    */
-  @SuppressWarnings(
-      "nullness:argument.type.incompatible" // true positive:  `dest` might be incompatible with
-  // null and `source` might contain null.
+  @SuppressWarnings("nullness:argument" // true positive:  `dest` might be incompatible
+  // with null and `source` might contain null.
   )
+  @Deprecated // 2023-01-08
   public static <T> void addWithoutDuplicates(List<T> dest, List<? extends T> source) {
     for (T elt : source) {
       if (!dest.contains(elt)) {
@@ -212,7 +176,9 @@ public class SystemUtil {
    * @param list1 a list
    * @param list2 a list
    * @return a list that contains all the elements of {@code list1} that are not in {@code list2}
+   * @deprecated use CollectionsPlume.listIntersection
    */
+  @Deprecated // 2023-01-08
   public static <T> List<T> intersection(List<? extends T> list1, List<? extends T> list2) {
     List<T> result = new ArrayList<>(list1);
     result.retainAll(list2);
@@ -220,67 +186,26 @@ public class SystemUtil {
   }
 
   /**
-   * Concatenates two arrays. Can be invoked varargs-style.
+   * Returns a list with the same contents as its argument, but sorted and without duplicates. May
+   * return its argument if its argument is sorted and has no duplicates, but is not guaranteed to
+   * do so. The argument is not modified.
    *
-   * @param <T> the type of the array elements
-   * @param array1 the first array
-   * @param array2 the second array
-   * @return a new array containing the contents of the given arrays, in order
-   * @deprecated use StringsPlume.concatenate
+   * <p>This is like {@code withoutDuplicates}, but requires the list elements to implement {@link
+   * Comparable}, and thus can be more efficient.
+   *
+   * @param <T> the type of elements in {@code values}
+   * @param values a list of values
+   * @return the values, with duplicates removed
    */
-  @Deprecated // 2021-03-28
-  @SuppressWarnings("unchecked")
-  public static <T> T[] concatenate(T[] array1, T... array2) {
-    @SuppressWarnings("nullness") // elements are not non-null yet, but will be by return stmt
-    T[] result = Arrays.copyOf(array1, array1.length + array2.length);
-    System.arraycopy(array2, 0, result, array1.length, array2.length);
-    return result;
-  }
+  // TODO: Deprecate or delete once plume-util 1.6.6 (from which this is taken) is released.
+  public static <T extends Comparable<T>> List<T> withoutDuplicatesSorted(List<T> values) {
+    // This adds O(n) time cost, and has the benefit of sometimes avoiding allocating a TreeSet.
+    if (CollectionsPlume.isSortedNoDuplicates(values)) {
+      return values;
+    }
 
-  /**
-   * Given an expected number of elements, returns the capacity that should be passed to a HashMap
-   * or HashSet constructor, so that the set or map will not resize.
-   *
-   * @param numElements the maximum expected number of elements in the map or set
-   * @return the initial capacity to pass to a HashMap or HashSet constructor
-   */
-  public static int mapCapacity(int numElements) {
-    // Equivalent to: (int) (numElements / 0.75) + 1
-    // where 0.75 is the default load factor.
-    return (numElements * 4 / 3) + 1;
-  }
-
-  /**
-   * Given an expected number of elements, returns the capacity that should be passed to a HashMap
-   * or HashSet constructor, so that the set or map will not resize.
-   *
-   * @param c a collection whose size is the maximum expected number of elements in the map or set
-   * @return the initial capacity to pass to a HashMap or HashSet constructor
-   */
-  public static int mapCapacity(Collection<?> c) {
-    return mapCapacity(c.size());
-  }
-
-  /**
-   * Given an expected number of elements, returns the capacity that should be passed to a HashMap
-   * or HashSet constructor, so that the set or map will not resize.
-   *
-   * @param m a map whose size is the maximum expected number of elements in the map or set
-   * @return the initial capacity to pass to a HashMap or HashSet constructor
-   */
-  public static int mapCapacity(Map<?, ?> m) {
-    return mapCapacity(m.size());
-  }
-
-  /**
-   * Given an expected number of elements, returns the capacity that should be passed to a HashMap
-   * or HashSet constructor, so that the set or map will not resize.
-   *
-   * @param s a set whose size is the maximum expected number of elements in the map or set
-   * @return the initial capacity to pass to a HashMap or HashSet constructor
-   */
-  public static int mapCapacity(Set<?> s) {
-    return mapCapacity(s.size());
+    Set<T> set = new TreeSet<>(values);
+    return new ArrayList<>(set);
   }
 
   ///
@@ -297,79 +222,14 @@ public class SystemUtil {
    */
   @Deprecated // 2021-03-10
   public static List<String> readFile(final File argFile) throws IOException {
-    final BufferedReader br = new BufferedReader(new FileReader(argFile));
-    String line;
-
-    List<String> lines = new ArrayList<>();
-    while ((line = br.readLine()) != null) {
-      lines.add(line);
+    try (final BufferedReader br = new BufferedReader(new FileReader(argFile))) {
+      String line;
+      List<String> lines = new ArrayList<>();
+      while ((line = br.readLine()) != null) {
+        lines.add(line);
+      }
+      return lines;
     }
-    br.close();
-    return lines;
-  }
-
-  /**
-   * Returns a new String composed of the string representations of the elements joined together
-   * with a copy of the specified delimiter.
-   *
-   * @param <T> the type of array elements
-   * @param delimiter the delimiter that separates each element
-   * @param objs the values whose string representations to join together
-   * @return a new string that concatenates the string representations of the elements
-   * @deprecated use {@code StringsPlume.join}
-   */
-  @Deprecated // 2020-12-19
-  public static <T> String join(CharSequence delimiter, T[] objs) {
-    if (objs == null) {
-      return "null";
-    }
-    return StringsPlume.join(delimiter, objs);
-  }
-
-  /**
-   * Returns a new String composed of the string representations of the elements joined together
-   * with a copy of the specified delimiter.
-   *
-   * @param delimiter the delimiter that separates each element
-   * @param values the values whose string representations to join together
-   * @return a new string that concatenates the string representations of the elements
-   * @deprecated use {@code StringsPlume.join}
-   */
-  @Deprecated // 2020-12-19
-  public static String join(CharSequence delimiter, Iterable<?> values) {
-    if (values == null) {
-      return "null";
-    }
-    return StringsPlume.join(delimiter, values);
-  }
-
-  /**
-   * Concatenate the string representations of the objects, placing the system-specific line
-   * separator between them.
-   *
-   * @param <T> the type of array elements
-   * @param a array of values to concatenate
-   * @return the concatenation of the string representations of the values, each on its own line
-   * @deprecated use {@code StringsPlume.joinLines}
-   */
-  @Deprecated // 2020-12-19
-  @SafeVarargs
-  @SuppressWarnings("varargs")
-  public static <T> String joinLines(T... a) {
-    return join(LINE_SEPARATOR, a);
-  }
-
-  /**
-   * Concatenate the string representations of the objects, placing the system-specific line
-   * separator between them.
-   *
-   * @param v list of values to concatenate
-   * @return the concatenation of the string representations of the values, each on its own line
-   * @deprecated use {@code StringsPlume.joinLines}
-   */
-  @Deprecated // 2020-12-19
-  public static String joinLines(Iterable<? extends Object> v) {
-    return join(LINE_SEPARATOR, v);
   }
 
   /**
@@ -408,5 +268,104 @@ public class SystemUtil {
     System.arraycopy(array, 0, result, 1, array.length);
     result[result.length - 1] = lastElt;
     return result;
+  }
+
+  /**
+   * Return true if the system property is set to "true". Return false if the system property is not
+   * set or is set to "false". Otherwise, errs.
+   *
+   * @param key system property to check
+   * @return true if the system property is set to "true". Return false if the system property is
+   *     not set or is set to "false". Otherwise, errs.
+   * @deprecated use UtilPlume.getBooleanSystemProperty
+   */
+  @Deprecated // 2021-03-28
+  public static boolean getBooleanSystemProperty(String key) {
+    return Boolean.parseBoolean(System.getProperty(key, "false"));
+  }
+
+  /**
+   * Return its boolean value if the system property is set. Return defaultValue if the system
+   * property is not set. Errs if the system property is set to a non-boolean value.
+   *
+   * @param key system property to check
+   * @param defaultValue value to use if the property is not set
+   * @return the boolean value of {@code key} or {@code defaultValue} if {@code key} is not set
+   * @deprecated use UtilPlume.getBooleanSystemProperty
+   */
+  @Deprecated // 2021-03-28
+  public static boolean getBooleanSystemProperty(String key, boolean defaultValue) {
+    String value = System.getProperty(key);
+    if (value == null) {
+      return defaultValue;
+    }
+    if (value.equals("true")) {
+      return true;
+    }
+    if (value.equals("false")) {
+      return false;
+    }
+    throw new UserError(
+        String.format(
+            "Value for system property %s should be boolean, but is \"%s\".", key, value));
+  }
+
+  /**
+   * Concatenates two arrays. Can be invoked varargs-style.
+   *
+   * @param <T> the type of the array elements
+   * @param array1 the first array
+   * @param array2 the second array
+   * @return a new array containing the contents of the given arrays, in order
+   * @deprecated use StringsPlume.concatenate
+   */
+  @Deprecated // 2021-03-28
+  @SuppressWarnings("unchecked")
+  public static <T> T[] concatenate(T[] array1, T... array2) {
+    @SuppressWarnings("nullness") // elements are not non-null yet, but will be by return stmt
+    T[] result = Arrays.copyOf(array1, array1.length + array2.length);
+    System.arraycopy(array2, 0, result, array1.length, array2.length);
+    return result;
+  }
+
+  /**
+   * Given an expected number of elements, returns the capacity that should be passed to a HashMap
+   * or HashSet constructor, so that the set or map will not resize.
+   *
+   * @param numElements the maximum expected number of elements in the map or set
+   * @return the initial capacity to pass to a HashMap or HashSet constructor
+   * @deprecated use CollectionsPlume.mapCapacity
+   */
+  @Deprecated // 2021-05-05
+  public static int mapCapacity(int numElements) {
+    // Equivalent to: (int) (numElements / 0.75) + 1
+    // where 0.75 is the default load factor.
+    return (numElements * 4 / 3) + 1;
+  }
+
+  /**
+   * Given an expected number of elements, returns the capacity that should be passed to a HashMap
+   * or HashSet constructor, so that the set or map will not resize.
+   *
+   * @param c a collection whose size is the maximum expected number of elements in the map or set
+   * @return the initial capacity to pass to a HashMap or HashSet constructor
+   * @deprecated use CollectionsPlume.mapCapacity
+   */
+  @Deprecated // 2021-05-05
+  public static int mapCapacity(Collection<?> c) {
+    return mapCapacity(c.size());
+  }
+
+  /**
+   * Given an expected number of elements, returns the capacity that should be passed to a HashMap
+   * or HashSet constructor, so that the set or map will not resize.
+   *
+   * @param m a map whose size is the maximum expected number of elements in the map or set
+   * @return the initial capacity to pass to a HashMap or HashSet constructor
+   * @deprecated use CollectionsPlume.mapCapacity
+   */
+  @Deprecated // 2021-05-05
+  public static int mapCapacity(Map<?, ?> m) {
+    return mapCapacity(m.size());
   }
 }

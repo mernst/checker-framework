@@ -6,7 +6,6 @@ import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.NewArrayTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.tree.Tree.Kind;
 import com.sun.source.util.TreePath;
 import java.util.Collections;
 import java.util.List;
@@ -74,12 +73,13 @@ public class UpperBoundVisitor extends BaseTypeVisitor<UpperBoundAnnotatedTypeFa
 
   /** Warns about LTLengthOf annotations with arguments whose lengths do not match. */
   @Override
-  public Void visitAnnotation(AnnotationTree node, Void p) {
-    AnnotationMirror anno = TreeUtils.annotationFromAnnotationTree(node);
+  public Void visitAnnotation(AnnotationTree tree, Void p) {
+    AnnotationMirror anno = TreeUtils.annotationFromAnnotationTree(tree);
     if (atypeFactory.areSameByClass(anno, LTLengthOf.class)) {
-      List<? extends ExpressionTree> args = node.getArguments();
+      List<? extends ExpressionTree> args = tree.getArguments();
       if (args.size() == 2) {
-        // If offsets are provided, there must be the same number of them as there are arrays.
+        // If offsets are provided, there must be the same number of them as there are
+        // arrays.
         List<String> sequences =
             AnnotationUtils.getElementValueArray(
                 anno, atypeFactory.ltLengthOfValueElement, String.class);
@@ -88,7 +88,7 @@ public class UpperBoundVisitor extends BaseTypeVisitor<UpperBoundAnnotatedTypeFa
                 anno, atypeFactory.ltLengthOfOffsetElement, String.class, Collections.emptyList());
         if (sequences.size() != offsets.size() && !offsets.isEmpty()) {
           checker.reportError(
-              node, "different.length.sequences.offsets", sequences.size(), offsets.size());
+              tree, "different.length.sequences.offsets", sequences.size(), offsets.size());
           return null;
         }
       }
@@ -102,11 +102,11 @@ public class UpperBoundVisitor extends BaseTypeVisitor<UpperBoundAnnotatedTypeFa
 
       // check that each expression is parsable at the declaration of this class
       ClassTree enclosingClass = TreePathUtil.enclosingClass(getCurrentPath());
-      checkEffectivelyFinalAndParsable(seq, enclosingClass, node);
-      checkEffectivelyFinalAndParsable(from, enclosingClass, node);
-      checkEffectivelyFinalAndParsable(to, enclosingClass, node);
+      checkEffectivelyFinalAndParsable(seq, enclosingClass, tree);
+      checkEffectivelyFinalAndParsable(from, enclosingClass, tree);
+      checkEffectivelyFinalAndParsable(to, enclosingClass, tree);
     }
-    return super.visitAnnotation(node, p);
+    return super.visitAnnotation(tree, p);
   }
 
   /**
@@ -263,7 +263,7 @@ public class UpperBoundVisitor extends BaseTypeVisitor<UpperBoundAnnotatedTypeFa
           valueType,
           valueTree);
       super.commonAssignmentCheck(varType, valueTree, errorKey, extraArgs);
-    } else if (checker.hasOption("showchecks")) {
+    } else if (showchecks) {
       commonAssignmentCheckEndDiagnostic(
           true, "relaxedCommonAssignment", varType, valueType, valueTree);
     }
@@ -298,7 +298,7 @@ public class UpperBoundVisitor extends BaseTypeVisitor<UpperBoundAnnotatedTypeFa
    * @return true if the assignment is legal based on special Upper Bound rules
    */
   private boolean relaxedCommonAssignment(AnnotatedTypeMirror varType, ExpressionTree valueExp) {
-    if (valueExp.getKind() == Kind.NEW_ARRAY && varType.getKind() == TypeKind.ARRAY) {
+    if (valueExp.getKind() == Tree.Kind.NEW_ARRAY && varType.getKind() == TypeKind.ARRAY) {
       List<? extends ExpressionTree> expressions = ((NewArrayTree) valueExp).getInitializers();
       if (expressions == null || expressions.isEmpty()) {
         return false;
@@ -403,8 +403,8 @@ public class UpperBoundVisitor extends BaseTypeVisitor<UpperBoundAnnotatedTypeFa
 
     // Take advantage of information available on a HasSubsequence(a, from, to) annotation
     // on the lhs qualifier (varLtlQual):
-    // this allows us to show that iff varLtlQual includes LTL(b), b has HSS, and expQual includes
-    // LTL(a, -from), then the LTL(b) can be removed from varLtlQual.
+    // this allows us to show that iff varLtlQual includes LTL(b), b has HSS, and expQual
+    // includes LTL(a, -from), then the LTL(b) can be removed from varLtlQual.
 
     UBQualifier newLHS = processSubsequenceForLHS(varLtlQual, expQual);
     if (newLHS.isUnknown()) {

@@ -1,5 +1,6 @@
 package org.checkerframework.dataflow.cfg;
 
+import com.sun.source.tree.BinaryTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MethodTree;
@@ -27,12 +28,12 @@ import org.checkerframework.dataflow.cfg.block.RegularBlock;
 import org.checkerframework.dataflow.cfg.block.SingleSuccessorBlock;
 import org.checkerframework.dataflow.cfg.block.SpecialBlock;
 import org.checkerframework.dataflow.cfg.block.SpecialBlockImpl;
-import org.checkerframework.dataflow.cfg.node.AssignmentNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.ReturnNode;
 import org.checkerframework.dataflow.cfg.visualize.CFGVisualizer;
 import org.checkerframework.dataflow.cfg.visualize.StringCFGVisualizer;
 import org.plumelib.util.UniqueId;
+import org.plumelib.util.UnmodifiableIdentityHashMap;
 
 /**
  * A control flow graph (CFG for short) of a single method.
@@ -57,9 +58,10 @@ public class ControlFlowGraph implements UniqueId {
   public final UnderlyingAST underlyingAST;
 
   /** The unique ID for the next-created object. */
-  static final AtomicLong nextUid = new AtomicLong(0);
+  private static final AtomicLong nextUid = new AtomicLong(0);
+
   /** The unique ID of this object. */
-  final transient long uid = nextUid.getAndIncrement();
+  private final transient long uid = nextUid.getAndIncrement();
 
   @Override
   public long getUid(@UnknownInitialization ControlFlowGraph this) {
@@ -85,8 +87,11 @@ public class ControlFlowGraph implements UniqueId {
   /** Map from AST {@link Tree}s to post-conversion sets of {@link Node}s. */
   protected final IdentityHashMap<Tree, Set<Node>> convertedTreeLookup;
 
-  /** Map from AST {@link UnaryTree}s to corresponding {@link AssignmentNode}s. */
-  protected final IdentityHashMap<UnaryTree, AssignmentNode> unaryAssignNodeLookup;
+  /**
+   * Map from postfix increment or decrement trees that are AST {@link UnaryTree}s to the synthetic
+   * tree that is {@code v + 1} or {@code v - 1}.
+   */
+  protected final IdentityHashMap<UnaryTree, BinaryTree> postfixNodeLookup;
 
   /**
    * All return nodes (if any) encountered. Only includes return statements that actually return
@@ -113,7 +118,7 @@ public class ControlFlowGraph implements UniqueId {
       UnderlyingAST underlyingAST,
       IdentityHashMap<Tree, Set<Node>> treeLookup,
       IdentityHashMap<Tree, Set<Node>> convertedTreeLookup,
-      IdentityHashMap<UnaryTree, AssignmentNode> unaryAssignNodeLookup,
+      IdentityHashMap<UnaryTree, BinaryTree> postfixNodeLookup,
       List<ReturnNode> returnNodes,
       List<ClassTree> declaredClasses,
       List<LambdaExpressionTree> declaredLambdas) {
@@ -121,7 +126,7 @@ public class ControlFlowGraph implements UniqueId {
     this.entryBlock = entryBlock;
     this.underlyingAST = underlyingAST;
     this.treeLookup = treeLookup;
-    this.unaryAssignNodeLookup = unaryAssignNodeLookup;
+    this.postfixNodeLookup = postfixNodeLookup;
     this.convertedTreeLookup = convertedTreeLookup;
     this.regularExitBlock = regularExitBlock;
     this.exceptionalExitBlock = exceptionalExitBlock;
@@ -255,22 +260,22 @@ public class ControlFlowGraph implements UniqueId {
   }
 
   /**
-   * Returns the copied tree-lookup map. Ignores convertedTreeLookup, though {@link
+   * Returns an unmodifiable view of the tree-lookup map. Ignores convertedTreeLookup, though {@link
    * #getNodesCorrespondingToTree} uses that field.
    *
-   * @return the copied tree-lookup map
+   * @return the unmodifiable tree-lookup map
    */
-  public IdentityHashMap<Tree, Set<Node>> getTreeLookup() {
-    return new IdentityHashMap<>(treeLookup);
+  public UnmodifiableIdentityHashMap<Tree, Set<Node>> getTreeLookup() {
+    return UnmodifiableIdentityHashMap.wrap(treeLookup);
   }
 
   /**
-   * Returns the copied lookup-map of the assign node for unary operation.
+   * Returns an unmodifiable view of the lookup-map of the binary tree for a postfix expression.
    *
-   * @return the copied lookup-map of the assign node for unary operation
+   * @return the unmodifiable lookup-map of the binary tree for a postfix expression
    */
-  public IdentityHashMap<UnaryTree, AssignmentNode> getUnaryAssignNodeLookup() {
-    return new IdentityHashMap<>(unaryAssignNodeLookup);
+  public UnmodifiableIdentityHashMap<UnaryTree, BinaryTree> getPostfixNodeLookup() {
+    return UnmodifiableIdentityHashMap.wrap(postfixNodeLookup);
   }
 
   /**
@@ -289,14 +294,15 @@ public class ControlFlowGraph implements UniqueId {
 
   /**
    * Get the {@link ClassTree} of the CFG if the argument {@link Tree} maps to a {@link Node} in the
-   * CFG or null otherwise.
+   * CFG, or null otherwise.
+   *
+   * @param t a tree that might be within a class
+   * @return the class that contains the given tree, or null
    */
   public @Nullable ClassTree getContainingClass(Tree t) {
-    if (treeLookup.containsKey(t)) {
-      if (underlyingAST.getKind() == UnderlyingAST.Kind.METHOD) {
-        UnderlyingAST.CFGMethod cfgMethod = (UnderlyingAST.CFGMethod) underlyingAST;
-        return cfgMethod.getClassTree();
-      }
+    if (treeLookup.containsKey(t) && underlyingAST.getKind() == UnderlyingAST.Kind.METHOD) {
+      UnderlyingAST.CFGMethod cfgMethod = (UnderlyingAST.CFGMethod) underlyingAST;
+      return cfgMethod.getClassTree();
     }
     return null;
   }
@@ -334,7 +340,7 @@ public class ControlFlowGraph implements UniqueId {
     }
 
     StringJoiner result = new StringJoiner(String.format("%n  "));
-    result.add(className + "{");
+    result.add(className + " #" + getUid() + " {");
     result.add("entryBlock=" + entryBlock);
     result.add("regularExitBlock=" + regularExitBlock);
     result.add("exceptionalExitBlock=" + exceptionalExitBlock);
@@ -345,7 +351,7 @@ public class ControlFlowGraph implements UniqueId {
     result.add("underlyingAST=" + underlyingAST);
     result.add("treeLookup=" + AnalysisResult.treeLookupToString(treeLookup));
     result.add("convertedTreeLookup=" + AnalysisResult.treeLookupToString(convertedTreeLookup));
-    result.add("unaryAssignNodeLookup=" + unaryAssignNodeLookup);
+    result.add("postfixLookup=" + postfixNodeLookup);
     result.add("returnNodes=" + Node.nodeCollectionToString(returnNodes));
     result.add("declaredClasses=" + declaredClasses);
     result.add("declaredLambdas=" + declaredLambdas);

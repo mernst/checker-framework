@@ -60,6 +60,7 @@ The process takes around 2 hours (including manual steps) when all goes accordin
     <ul>
       <li><a href="#step_by_step">Step by Step</a></li>
       <li><a href="#continuous-integration">Continuous integration tests</a></li>
+      <li><a href="#snapshot_release">Snapshot release</a></li>
       <li><a href="#pre_release_checklist">Pre-release Checklist</a></li>
       <li><a href="#release_process_overview">Release Process Overview</a>
         <ul>
@@ -107,19 +108,11 @@ miss a step if you only read the paragraph asking you to say 'yes'.
     a <a href="https://github.com/javaparser/javaparser/releases">JavaParser
     release</a> since the last Checker Framework
     release, <a href="https://github.com/typetools/stubparser#updating-from-upstream-javaparser">update
-    Stubparser from JavaParser</a>.
+      Stubparser from JavaParser</a>.
+    Do this on your own computer; it doesn't have to be done on the CSE file system..
   </li>
-  <li>Update the Checker Framework source code:
+  <li>On your own computer, update the Checker Framework source code <em>in the <code>master</code> branch</em>:
     <ul>
-      <li>
-        <b>Update the list of contributors</b>.
-        <pre><code>cd docs/manual
-make contributors.tex
-git diff `git rev-list -1 --before 1.month.ago origin/master` HEAD -- contributors.tex
-</code></pre>
-        Update the <a href="https://github.com/plume-lib/plume-scripts/blob/master/git-authors.sed"><code>plume-scripts/git-authors.sed</code></a> script if
-        any customizations are necessary.
-      </li>
       <li>
         <b>Update the AWS Java SDK BOM dependency.</b> In file <code>checker/build.gradle</code>,
         edit the <code>com.amazonaws:aws-java-sdk-bom</code> dependency to be the latest version
@@ -139,8 +132,8 @@ git diff `git rev-list -1 --before 1.month.ago origin/master` HEAD -- contributo
         (The AFU version is updated as part of the release scripts.)
 
         <p>
-        Update the minor version (second number) if there are any incompatibilities
-        with the previous version.
+        Update the minor version (middle number in the version number)
+        if there are any incompatibilities with the previous version.
         This includes incompatibilities for people who are maintaining a checker,
         which happens if the signature changes for any method in these classes:
         </p>
@@ -169,22 +162,30 @@ TreeAnnotator
         (TODO: Write a command that diffs these classes between the previous and current release.)
         </p>
         <p>
-        A rule of thumb is that any framework change that requires changes to more than one type-checker should be at least a minor version (second number in the version number) bump.
+        A rule of thumb is that any framework change that requires changes to more than one type-checker should be at least a minor version (middle number in the version number) bump.
         </p>
+      </li>
+      <li>
+        <b>Update the Annotation Tools version number</b>, again <em>in the <code>master</code> branch</em>,
+        in <code>annotation-file-utilities/build.gradle</code>.
+        (TODO: Are any other replacements necessary?)
       </li>
       <li>
         <b>Commit and push</b> these changes to typetools/master.
       </li>
     </ul>
   <li>
-      <strong>Log into Buffalo</strong><br/>
-      <code>ssh $USER@buffalo.cs.washington.edu<br/></code>
+      <strong>Log into a machine on the CSE file system, such as tern.</strong><br/>
+      <code>ssh $USER@tern.cs.washington.edu<br/></code>
   </li>
   <li>
       <strong>In a user-specific temporary directory, clone/update the Checker Framework repository (it contains the release scripts).</strong><br/>
+      <!-- This isn't a <pre> block because that formats differently than commands. -->
       <code>mkdir -p /scratch/$USER/cf-release<br/></code>
+      <code>chown -R types_www /scratch/$USER/cf-release<br/></code>
+      <code>chmod -R g+rw /scratch/$USER/cf-release<br/></code>
       <code>cd /scratch/$USER/cf-release<br/></code>
-      <code>test -d checker-framework && (cd checker-framework && git pull --quiet) || git clone --quiet https://github.com/typetools/checker-framework.git<br/></code>
+      <code>test -d checker-framework && (cd checker-framework && git pull --ff-only --quiet) || git clone --quiet https://github.com/typetools/checker-framework.git<br/></code>
       <code>cd checker-framework/docs/developer/release<br/></code>
     (The release scripts will checkout and build all dependencies.)
   </li>
@@ -196,7 +197,7 @@ TreeAnnotator
       to be built but more work still needs to be done.  Just pass &quot;all&quot; for now.
   </li>
   <li>
-      <strong>Run release_push</strong> to move release artifacts from the development website to the live site and to Maven Central <br/>
+      <strong>Run release_push</strong> to run a few tests and move release artifacts from the development website to the live site and to Maven Central <br/>
       <code>python3 release_push.py release</code><br/><br/>
       <div class="alert alert-danger">
         <strong>Note:</strong> The &quot;<strong>release</strong>&quot; argument states that you intend
@@ -209,9 +210,18 @@ TreeAnnotator
       further each time.
   </li>
   <li> <strong>Update list of qualifiers in Project Lombok.</strong>
-    Following the instructions in <a href="https://github.com/rzwitserloot/lombok/blob/master/src/core/lombok/core/handlers/HandlerUtil.java#L108">HandlerUtil.java</a>.
+    Follow the instructions in <a href="https://github.com/projectlombok/lombok/blob/master/src/core/lombok/core/handlers/HandlerUtil.java#L108">HandlerUtil.java</a>.
     If the release did not add, remove, or rename any type qualifiers, no changes are required.
-    Those instructions do not work on macOS, so you may need to use buffalo to make the changes.
+    Those instructions do not work on macOS, so you may need to use a Linux machine to make the changes.
+  </li>
+  <li><strong>Update the Annotation Tools' use of the Checker Framework</strong>
+    by making a pull request that changes two occurrences of the old version number in
+    <code>annotation-file-utilities/build.gradle</code>.
+  </li>
+  <li> <strong>Make Daikon use the latest Checker Framework version.</strong>
+
+    Follow the  instructions in
+    <a href="https://github.com/codespecs/daikon/blob/master/java/lib/README">java/lib/README</a> to update the Checker Framework version number in Daikon.
   </li>
 </ol>
 
@@ -227,7 +237,6 @@ TreeAnnotator
   <ul>
     <li>Annotation File Utilities: <a href="https://travis-ci.org/typetools/annotation-tools/branches"><img src="https://travis-ci.org/typetools/annotation-tools.svg?branch=master" alt="Travis typetools/annotation-tools status"/></a></li>
     <li>Checker Framework: <a href="https://dev.azure.com/typetools/checker-framework/_build/latest?definitionId=2&branchName=master"><img src="https://dev.azure.com/typetools/checker-framework/_apis/build/status/typetools.checker-framework?branchName=master" alt="Azure Pipelines typetools/checker-framework status"/></a></li>
-    <li>checker-framework.demos: <a href="https://travis-ci.org/typetools/checker-framework.demos/branches"><img src="https://travis-ci.org/typetools/checker-framework.demos.svg?branch=master" alt="Travis typetools/checker-framework.demos status"/></a></li>
     <li>Daikon: <a href="https://dev.azure.com/codespecs/daikon/_build/latest?definitionId=1&branchName=master"><img src="https://dev.azure.com/codespecs/daikon/_apis/build/status/codespecs.daikon?branchName=master" alt="codespecs/daikon Azure Pipelines status"></a></li>
     <li>guava-typecheck: <a href="https://travis-ci.org/typetests/guava-typecheck/branches"><img src="https://travis-ci.org/typetests/guava-typecheck.svg?branch=master" alt="Travis typetests/guava-typecheck status"/></a></li>
   </ul>
@@ -236,13 +245,45 @@ TreeAnnotator
   </li>
 </ol>
 
+  <h2 id="snapshot_release">Snapshot release</h2>
+  <p>This section explains how to release the Maven artifacts to the snapshot repository.</p>
+  <ol>
+    <li>
+      Ensure that <code>~/.gradle/gradle.properties</code> includes your <code>SONATYPE_NEXUS_USERNAME</code>
+      and <code>SONATYPE_NEXUS_PASSWORD</code>.
+    </li>
+    <li>
+      Ensure that the version number in <code>checker-framework/build.gradle</code> (in <code>allprojects { version ... }</code>) ends in <code>-SNAPSHOT</code>.
+    </li>
+    <li>
+      Run <code>./gradlew publish</code> in <code>checker-framework</code>.
+    </li>
+    <li>
+      In the <code>build.gradle</code> file of a project that you want
+      to use the snapshot version of the Checker Framework:
+      <pre>
+repositories {
+  ...
+  maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+}
+
+ext.checkerFrameworkVersion = '3.28.1-SNAPSHOT'
+dependencies {
+  compileOnly "org.checkerframework:checker-qual:${checkerFrameworkVersion}"
+  testCompileOnly "org.checkerframework:checker-qual:${checkerFrameworkVersion}"
+  checkerFramework "org.checkerframework:checker:${checkerFrameworkVersion}"
+}
+      </pre>
+    </li>
+  </ol>
+
   <h2 id="pre_release_checklist">Pre-release Checklist</h2>
   <p>If you have not performed a release before you must follow these steps.</p>
   <table class="table">
     <tr>
       <td>1.</td>
       <td><strong>Ensure you are a member of the types_www and pl_gang groups</strong><br/>
-        Run the command "groups" on the file system (perhaps on Buffalo).
+        Run the command "groups" on the CSE file system (perhaps on tern).
         If the group types_www or pl_gang do not appear in the list, email the appropriate
         person to be added (currently Michael Ernst).
       </td>
@@ -250,7 +291,7 @@ TreeAnnotator
     <tr>
       <td>2.</td>
       <td><strong>Import the Checker Framework signing key for PGP</strong><br/>
-        SSH into Buffalo and run the following command:<br/>
+        SSH into tern and run the following command:<br/>
         <code>gpg --allow-secret-key-import --import /projects/swlab1/checker-framework/hosting-info/release-private.key<br/><br/></code>
         Note:  The password for this key is located in the file<br/>
         <code>/projects/swlab1/checker-framework/hosting-info/release-private.password<br/></code>
@@ -278,7 +319,7 @@ TreeAnnotator
         <pre>
 SONATYPE_NEXUS_USERNAME=your_user_name
 SONATYPE_NEXUS_PASSWORD=your_password</pre>
-        using the information you just created for your Sonatype Account on Buffalo or other
+        using the information you just created for your Sonatype Account on tern or other
         network host.  Since the file contains your password, make it non-readable:  <code>chmod og-rw ~/.gradle/gradle.properties</code>
       </td>
     </tr>
@@ -289,21 +330,21 @@ SONATYPE_NEXUS_PASSWORD=your_password</pre>
         issue tracker for each project that has been released.
         You will need to be a "developer" for each project so that you have update privileges for
         the issue trackers.
-        You should be listed as a member of typetools on a committer on <a href="https://github.com/orgs/typetools/teams/committers">GitHub</a>.
+        You should be listed as a member of typetools as a committer on <a href="https://github.com/orgs/typetools/teams/committers">GitHub</a>.
       </td>
     </tr>
     <tr>
       <td>6.</td>
       <td><strong>Install html5validator</strong><br/>
-       If you are going to perform the release on buffalo, you may need to install
+       If you are going to perform the release on tern, you may need to install
        html5validator.  If <code>html5validator --version</code> issues any errors, try running
-       <code>pip install --user html5validator</code>.  You may need to add <code>.local/bin</code>
+       <code>pip3 install --user html5validator</code>.  You may need to add <code>.local/bin</code>
        to your path.
       </td>
     </tr>
     <tr>
       <td>7.</td>
-      <td><strong>Add GitHub SSH keys to buffalo</strong><br/>
+      <td><strong>Add GitHub SSH keys to tern</strong><br/>
       See <a href="https://help.github.com/articles/connecting-to-github-with-ssh/">GitHub docs</a>.
       </td>
     </tr>
@@ -329,7 +370,7 @@ git config --global user.email you@example.com</pre>
   </table>
 
   <h2 id="release_process_overview">Release Process Overview</h2>
-  <p>This section first explains the structure of the projects on disk on Buffalo, then lists scripts used during the release process.</p>
+  <p>This section first explains the structure of the projects on disk on tern, then lists scripts used during the release process.</p>
 
     <h3 id="file_layout">File Layout</h3>
     <table class="table table-bordered file_layout_table">
@@ -453,7 +494,7 @@ git config --global user.email you@example.com</pre>
         <td>Global variables used in release_push, release_build, and sanity_checks.  These should NOT
           be used in release_utils as release_utils is supposed to consist of self-contained
           reusable methods.  These variables are tailored for running the scripts on
-          buffalo.cs.washington.edu
+          tern.cs.washington.edu.
         </td>
       </tr>
       <tr>
@@ -476,18 +517,18 @@ git config --global user.email you@example.com</pre>
 
     <h3 id="content_guidelines">Content Guidelines</h3>
     <ul>
-      <li>Only (and all) changes that affect users go into the changelog.
+      <li>Only (and all) changes that affect users (including type system developers) go into the changelog.
         If a change is breaking, no matter how small, mention it.</li>
       <li>
-            Even if some code has been committed to the repository, don't
-            announce the feature until it has been documented in the manual.
+        Even if some code has been committed to the repository, don't
+        announce the feature until it has been documented in the manual.
       </li>
       <li>Checker Framework:
         <ul>
           <li>List all issues (in issue trackers) resolved since the previous release:
             <a href="https://checkerframework.org/CHANGELOG.md">previous release</a>,
             <a href="https://github.com/typetools/checker-framework/issues?q=is%3Aissue+is%3Aclosed+sort%3Aupdated-desc">issues query</a>,
-            <a href="https://github.com/typetools/checker-framework/blob/master/docs/changelog.txt">current changelog</a>.
+            <a href="https://github.com/typetools/checker-framework/blob/master/docs/CHANGELOG.md">current changelog</a>.
           </li>
           <li>
             Ensure the changelogs reflect version control commits since the last release, via the
@@ -614,7 +655,7 @@ git config --global user.email you@example.com</pre>
     release related errors.
     <h4>Tasks:</h4> <!-- omit from toc -->
     <ul>
-      <li>Create a Buffalo task to run the release_build script without prompting.</li>
+      <li>Create a tern task to run the release_build script without prompting.</li>
       <li>Observe the output of this task and identify possible errors.</li>
       <li>Fix up all observed errors until the release_build script runs without error.</li>
       <li>We probably want to move the link checking of the development site to the release_build script and
@@ -672,7 +713,7 @@ git config --global user.email you@example.com</pre>
 </body>
 </html>
 
-<!--  LocalWords:  serif px pre CCC JDK AFS PAG mkdir cd svn co EFEFEF ul li Changelog stubparser JavaParser jdk8 GenericAnnotatedTypeFactory CFTransfer CFAbstractTransfer CFAbstractAnalysis CFAnalysis CFAbstractStore CFStore CFAbstractValue CFValue BaseTypeVisitor BaseTypeChecker SourceChecker MultigraphQualifierHierarchy AbstractQualifierPolymorphism AnnotationUtils TreeAnnotator TODO typetools
+<!--  LocalWords:  serif px pre CCC JDK AFS PAG mkdir cd svn co EFEFEF ul li Changelog stubparser JavaParser GenericAnnotatedTypeFactory CFTransfer CFAbstractTransfer CFAbstractAnalysis CFAnalysis CFAbstractStore CFStore CFAbstractValue CFValue BaseTypeVisitor BaseTypeChecker SourceChecker MultigraphQualifierHierarchy AbstractQualifierPolymorphism AnnotationUtils TreeAnnotator TODO typetools
  -->
 <!--  LocalWords:  xml ver dev yyyyMMDD URL url diff hg buildfile kelloggm checkerframework gradle
  -->

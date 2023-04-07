@@ -32,6 +32,13 @@ Checker (see \chapterpageref{index-checker}) or the
 \refqualclass{common/value/qual}{IntRange} annotation of the Constant Value
 Checker (see \chapterpageref{constant-value-checker}).
 
+Additional details appear in the paper
+``Preventing signedness errors in numerical computations in
+Java''~\cite{Mackie2016} (FSE 2016).
+
+To run the Signedness Checker, run javac with
+\<-processor org.checkerframework.checker.signedness.SignednessChecker>.
+
 
 \sectionAndLabel{Annotations}{signedness-checker-annotations}
 
@@ -81,11 +88,16 @@ These are the qualifiers in the signedness type system:
     covers the same cases as
     \refqualclass{checker/signedness/qual}{SignedPositive}, plus manifest literals, to
     prevent the programmer from having to annotate them all explicitly.
-    This annotation should almost never be written by the
-    programmer.
+    \emph{This annotation should almost never be written by the
+    programmer.}
 
  \item[\refqualclass{checker/signedness/qual}{PolySigned}]
    indicates qualifier polymorphism.
+   When two formal parameter types are annotated with
+   \refqualclass{checker/signedness/qual}{PolySigned}, the two arguments
+   at a call site
+   must have the same signedness type annotation.  (This differs from the
+   standard rule for polymorphic qualifiers.)
    For a description of qualifier polymorphism, see
    Section~\ref{method-qualifier-polymorphism}.
 
@@ -115,30 +127,15 @@ Signedness Checker treats it in one of the following ways:
     All \code{byte}, \code{short}, \code{int}, and \code{long} literals default
     to \refqualclass{checker/signedness/qual}{SignednessGlb}.
     \item
-    All \code{byte}, \code{short}, \code{int}, and \code{long} variables default
-    to \refqualclass{checker/signedness/qual}{Signed}.
+    All \code{char} and \code{Character} expressions default to
+    \refqualclass{checker/signedness/qual}{Unsigned}.
     \item
-    All other expressions default to \refqualclass{checker/signedness/qual}{UnknownSignedness}.
+    All \code{char} and \code{Character} variables default to
+    \refqualclass{checker/signedness/qual}{Unsigned}.
+    \item
+    All other expressions default to \refqualclass{checker/signedness/qual}{Signed}.
 
 \end{itemize}
-
-
-\subsectionAndLabel{Widening conversions}{signedness-checker-widening-conversions}
-
-Figure~\ref{fig-signedness-hierarchy} shows the type qualifier hierarchy.
-When upcasting among integral types, the expression has type
-\<@SignedPositive> because the value is guaranteed to be within the signed
-positive range.  For example:
-
-\begin{Verbatim}
-@Signed int sint;
-@Unsigned int uint;
-@SignedPositive long splong1 = sint;   // legal
-@SignedPositive long splong2 = uint;   // legal
-... (long) sint ...   // this expression has type @SignedPositive long
-... (long) uint ...   // this expression has type @SignedPositive long
-\end{Verbatim}
-
 
 \sectionAndLabel{Prohibited operations}{signedness-checker-prohibited-operations}
 
@@ -272,10 +269,9 @@ unsigned type may not participate in a division, as shown in
 Sections~\ref{signedness-checker-prohibited-operations}
 and~\ref{signedness-checker-rationale}.  However, if a constant is assigned
 to a variable that was declared with \<@Unsigned> type, then --- just like
-the constant --- the variable may be treated as either signed or unsigned.
-For example, it can participate in division.  Since the result of the
-division is signed, you cannot accidentally assign the division result to
-an \<@Unsigned> variable.
+the constant --- the variable may be treated as either signed or unsigned,
+due to local type refinement (Section~\ref{type-refinement}).
+For example, it can participate in division.
 
 \begin{Verbatim}
     void useLocalVariables() {
@@ -290,6 +286,31 @@ an \<@Unsigned> variable.
         int x = u1 / u2; // OK; computation over constants, interpreted as signed; result is signed
     }
 \end{Verbatim}
+
+To prevent local type refinement, use a cast:
+\begin{Verbatim}
+        @Unsigned int u1 = (@Unsigned int) 2147483646;
+\end{Verbatim}
+
+Note that type-checking produces a different result for \<int x = u1 / u2;>
+here than in the similar example in
+Section~\ref{signedness-checker-rationale}.  In
+Section~\ref{signedness-checker-rationale}, the method is reading fields,
+and all it knows is the declared type of the field.  In 20.4, the method is
+reading a local variable, and dataflow (that is, flow-sensitive type
+refinement) refines the types of local variables.
+
+
+\sectionAndLabel{Instantiating polymorphism}{signedness-instantiating-polymorphism}
+
+When calling a method with formal parameters annotated as
+\refqualclass{checker/signedness/qual}{PolySigned}, all arguments for
+\<@PolySigned> formal parameters must have comparable types.  (One way to
+do this is for all types to be the same.)  This is different than the usual
+rules for polymorphic qualifiers.  If you violate this rule, then the
+Signedness Checker's error messages can be obscure, because they are about
+\<@SignednessBottom>.  You can fix the signedness error messages by casting
+the arguments.
 
 
 \sectionAndLabel{Other signedness annotations}{signedness-other-annotations}

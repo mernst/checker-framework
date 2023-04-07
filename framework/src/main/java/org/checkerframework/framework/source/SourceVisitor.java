@@ -32,10 +32,14 @@ public abstract class SourceVisitor<R, P> extends TreePathScanner<R, P> {
   /** The {@link Types} helper to use when scanning. */
   protected final Types types;
 
-  /** The root of the AST that this {@link SourceVisitor} will scan. */
+  /**
+   * The root of the AST that this {@link SourceVisitor} will scan.
+   *
+   * <p>Is set by {@link #setRoot}.
+   */
   protected CompilationUnitTree root;
 
-  /** A set of trees that are annotated with {@code @SuppressWarnings}. */
+  /** The trees that are annotated with {@code @SuppressWarnings}. */
   public final List<Tree> treesWithSuppressWarnings;
 
   /** Whether or not a warning should be issued for unneeded warning suppressions. */
@@ -101,9 +105,9 @@ public abstract class SourceVisitor<R, P> extends TreePathScanner<R, P> {
   }
 
   @Override
-  public R visitMethod(MethodTree node, P p) {
-    storeSuppressWarningsAnno(node);
-    return super.visitMethod(node, p);
+  public R visitMethod(MethodTree tree, P p) {
+    storeSuppressWarningsAnno(tree);
+    return super.visitMethod(tree, p);
   }
 
   /**

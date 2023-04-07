@@ -2,7 +2,9 @@ package org.checkerframework.framework.ajava;
 
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.comments.Comment;
+import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.nodeTypes.NodeWithAnnotations;
+import java.util.List;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -64,10 +66,10 @@ public class AnnotationEqualityVisitor extends DoubleJavaParserVisitor {
     }
 
     // Comparing annotations with "equals" considers comments in the AST attached to the
-    // annotations. These should be ignored because two valid ASTs for the same file may differ in
-    // where comments appear, or whether they appear at all. So, to check if two nodes have the same
-    // annotations we create copies with all comments removed and compare their lists of annotations
-    // directly.
+    // annotations. These should be ignored because two valid ASTs for the same file may differ
+    // in where comments appear, or whether they appear at all. So, to check if two nodes have
+    // the same annotations we create copies with all comments removed and compare their lists
+    // of annotations directly.
     Node node1Copy = node1.clone();
     Node node2Copy = node2.clone();
 
@@ -78,9 +80,10 @@ public class AnnotationEqualityVisitor extends DoubleJavaParserVisitor {
       comment.remove();
     }
 
-    if (!((NodeWithAnnotations<?>) node1Copy)
-        .getAnnotations()
-        .equals(((NodeWithAnnotations<?>) node2Copy).getAnnotations())) {
+    List<AnnotationExpr> node1annos = ((NodeWithAnnotations<?>) node1Copy).getAnnotations();
+    List<AnnotationExpr> node2annos = ((NodeWithAnnotations<?>) node2Copy).getAnnotations();
+
+    if (!node1annos.equals(node2annos)) {
       annotationsMatch = false;
       mismatchedNode1 = (NodeWithAnnotations<?>) node1;
       mismatchedNode2 = (NodeWithAnnotations<?>) node2;

@@ -1,12 +1,12 @@
 package org.checkerframework.dataflow.cfg.node;
 
-import com.sun.source.tree.Tree;
-import com.sun.source.tree.Tree.Kind;
+import com.sun.source.tree.AssertTree;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * A node for the {@link AssertionError} when an assertion fails.
@@ -17,15 +17,14 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 public class AssertionErrorNode extends Node {
 
-  protected final Tree tree;
+  protected final AssertTree tree;
   protected final Node condition;
   protected final Node detail;
 
-  public AssertionErrorNode(Tree tree, Node condition, Node detail, TypeMirror type) {
+  public AssertionErrorNode(AssertTree tree, Node condition, Node detail, TypeMirror type) {
     // TODO: Find out the correct "type" for statements.
     // Is it TypeKind.NONE?
     super(type);
-    assert tree.getKind() == Kind.ASSERT;
     this.tree = tree;
     this.condition = condition;
     this.detail = detail;
@@ -40,7 +39,7 @@ public class AssertionErrorNode extends Node {
   }
 
   @Override
-  public Tree getTree() {
+  public AssertTree getTree() {
     return tree;
   }
 
@@ -70,6 +69,7 @@ public class AssertionErrorNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Arrays.asList(getCondition(), getDetail());
   }

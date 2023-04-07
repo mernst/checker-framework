@@ -245,7 +245,7 @@ public final class TypeKindUtils {
    * Returns the minimum value representable by the given ingetgral primitive type.
    *
    * @param tk a primitive type kind
-   * @return the minimum value representable by the given integral primitive type.
+   * @return the minimum value representable by the given integral primitive type
    */
   public static long minValue(TypeKind tk) {
     switch (tk) {
@@ -271,7 +271,7 @@ public final class TypeKindUtils {
    * Returns the maximum value representable by the given integral primitive type.
    *
    * @param tk a primitive type kind
-   * @return the maximum value representable by the given integral primitive type.
+   * @return the maximum value representable by the given integral primitive type
    */
   public static long maxValue(TypeKind tk) {
     switch (tk) {

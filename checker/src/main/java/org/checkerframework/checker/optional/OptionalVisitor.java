@@ -9,7 +9,6 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.ParenthesizedTree;
 import com.sun.source.tree.StatementTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.UnaryTree;
 import com.sun.source.tree.VariableTree;
 import java.util.Collection;
@@ -85,7 +84,12 @@ public class OptionalVisitor
     return new OptionalTypeValidator(checker, this, atypeFactory);
   }
 
-  /** @return true iff expression is a call to java.util.Optional.get */
+  /**
+   * Returns true iff {@code expression} is a call to java.util.Optional.get.
+   *
+   * @param expression an expression
+   * @return true iff {@code expression} is a call to java.util.Optional.get
+   */
   private boolean isCallToGet(ExpressionTree expression) {
     ProcessingEnvironment env = checker.getProcessingEnvironment();
     return TreeUtils.isMethodInvocation(expression, optionalGet, env);
@@ -129,7 +133,12 @@ public class OptionalVisitor
     }
   }
 
-  /** @return true iff expression is a call to Optional creation: of, ofNullable. */
+  /**
+   * Returns true iff the method being callid is Optional creation: of, ofNullable.
+   *
+   * @param methInvok a method invocation
+   * @return true iff the method being called is Optional creation: of, ofNullable
+   */
   private boolean isOptionalCreation(MethodInvocationTree methInvok) {
     ProcessingEnvironment env = checker.getProcessingEnvironment();
     return TreeUtils.isMethodInvocation(methInvok, optionalOf, env)
@@ -137,7 +146,11 @@ public class OptionalVisitor
   }
 
   /**
-   * @return true iff expression is a call to Optional elimination: get, orElse, orElseGet,
+   * Returns true iff the method being called is Optional elimination: get, orElse, orElseGet,
+   * orElseThrow.
+   *
+   * @param methInvok a method invocation
+   * @return true iff the method being called is Optional elimination: get, orElse, orElseGet,
    *     orElseThrow
    */
   private boolean isOptionalElimation(MethodInvocationTree methInvok) {
@@ -151,9 +164,9 @@ public class OptionalVisitor
   }
 
   @Override
-  public Void visitConditionalExpression(ConditionalExpressionTree node, Void p) {
-    handleTernaryIsPresentGet(node);
-    return super.visitConditionalExpression(node, p);
+  public Void visitConditionalExpression(ConditionalExpressionTree tree, Void p) {
+    handleTernaryIsPresentGet(tree);
+    return super.visitConditionalExpression(tree, p);
   }
 
   /**
@@ -162,24 +175,26 @@ public class OptionalVisitor
    * <p>Pattern match for: {@code VAR.isPresent() ? VAR.get().METHOD() : VALUE}
    *
    * <p>Prefer: {@code VAR.map(METHOD).orElse(VALUE);}
+   *
+   * @param tree a conditional expression that can perhaps be simplified
    */
   // TODO: Should handle this via a transfer function, instead of pattern-matching.
-  public void handleTernaryIsPresentGet(ConditionalExpressionTree node) {
+  public void handleTernaryIsPresentGet(ConditionalExpressionTree tree) {
 
-    ExpressionTree condExpr = TreeUtils.withoutParens(node.getCondition());
+    ExpressionTree condExpr = TreeUtils.withoutParens(tree.getCondition());
     Pair<Boolean, ExpressionTree> isPresentCall = isCallToIsPresent(condExpr);
     if (isPresentCall == null) {
       return;
     }
-    ExpressionTree trueExpr = TreeUtils.withoutParens(node.getTrueExpression());
-    ExpressionTree falseExpr = TreeUtils.withoutParens(node.getFalseExpression());
+    ExpressionTree trueExpr = TreeUtils.withoutParens(tree.getTrueExpression());
+    ExpressionTree falseExpr = TreeUtils.withoutParens(tree.getFalseExpression());
     if (!isPresentCall.first) {
       ExpressionTree tmp = trueExpr;
       trueExpr = falseExpr;
       falseExpr = tmp;
     }
 
-    if (trueExpr.getKind() != Kind.METHOD_INVOCATION) {
+    if (trueExpr.getKind() != Tree.Kind.METHOD_INVOCATION) {
       return;
     }
     ExpressionTree trueReceiver = TreeUtils.getReceiverTree(trueExpr);
@@ -195,7 +210,7 @@ public class OptionalVisitor
       ExecutableElement ele = TreeUtils.elementFromUse((MethodInvocationTree) trueExpr);
 
       checker.reportWarning(
-          node,
+          tree,
           "prefer.map.and.orelse",
           receiver,
           // The literal "CONTAININGCLASS::" is gross.
@@ -224,9 +239,9 @@ public class OptionalVisitor
   }
 
   @Override
-  public Void visitIf(IfTree node, Void p) {
-    handleConditionalStatementIsPresentGet(node);
-    return super.visitIf(node, p);
+  public Void visitIf(IfTree tree, Void p) {
+    handleConditionalStatementIsPresentGet(tree);
+    return super.visitIf(tree, p);
   }
 
   /**
@@ -235,17 +250,19 @@ public class OptionalVisitor
    * <p>Pattern match for: {@code if (VAR.isPresent()) { METHOD(VAR.get()); }}
    *
    * <p>Prefer: {@code VAR.ifPresent(METHOD);}
+   *
+   * @param tree an if statement that can perhaps be simplified
    */
-  public void handleConditionalStatementIsPresentGet(IfTree node) {
+  public void handleConditionalStatementIsPresentGet(IfTree tree) {
 
-    ExpressionTree condExpr = TreeUtils.withoutParens(node.getCondition());
+    ExpressionTree condExpr = TreeUtils.withoutParens(tree.getCondition());
     Pair<Boolean, ExpressionTree> isPresentCall = isCallToIsPresent(condExpr);
     if (isPresentCall == null) {
       return;
     }
 
-    StatementTree thenStmt = skipBlocks(node.getThenStatement());
-    StatementTree elseStmt = skipBlocks(node.getElseStatement());
+    StatementTree thenStmt = skipBlocks(tree.getThenStatement());
+    StatementTree elseStmt = skipBlocks(tree.getElseStatement());
     if (!isPresentCall.first) {
       StatementTree tmp = thenStmt;
       thenStmt = elseStmt;
@@ -259,11 +276,11 @@ public class OptionalVisitor
       return;
     }
 
-    if (thenStmt.getKind() != Kind.EXPRESSION_STATEMENT) {
+    if (thenStmt.getKind() != Tree.Kind.EXPRESSION_STATEMENT) {
       return;
     }
     ExpressionTree thenExpr = ((ExpressionStatementTree) thenStmt).getExpression();
-    if (thenExpr.getKind() != Kind.METHOD_INVOCATION) {
+    if (thenExpr.getKind() != Tree.Kind.METHOD_INVOCATION) {
       return;
     }
     MethodInvocationTree invok = (MethodInvocationTree) thenExpr;
@@ -288,13 +305,13 @@ public class OptionalVisitor
       methodString = methodString.substring(0, dotPos) + "::" + methodString.substring(dotPos + 1);
     }
 
-    checker.reportWarning(node, "prefer.ifpresent", receiver, methodString);
+    checker.reportWarning(tree, "prefer.ifpresent", receiver, methodString);
   }
 
   @Override
-  public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
-    handleCreationElimination(node);
-    return super.visitMethodInvocation(node, p);
+  public Void visitMethodInvocation(MethodInvocationTree tree, Void p) {
+    handleCreationElimination(tree);
+    return super.visitMethodInvocation(tree, p);
   }
 
   /**
@@ -303,18 +320,20 @@ public class OptionalVisitor
    * <p>Pattern match for: {@code CREATION().ELIMINATION()}
    *
    * <p>Prefer: {@code VAR.ifPresent(METHOD);}
+   *
+   * @param tree a method invocation that can perhaps be simplified
    */
-  public void handleCreationElimination(MethodInvocationTree node) {
-    if (!isOptionalElimation(node)) {
+  public void handleCreationElimination(MethodInvocationTree tree) {
+    if (!isOptionalElimation(tree)) {
       return;
     }
-    ExpressionTree receiver = TreeUtils.getReceiverTree(node);
-    if (!(receiver.getKind() == Kind.METHOD_INVOCATION
+    ExpressionTree receiver = TreeUtils.getReceiverTree(tree);
+    if (!(receiver.getKind() == Tree.Kind.METHOD_INVOCATION
         && isOptionalCreation((MethodInvocationTree) receiver))) {
       return;
     }
 
-    checker.reportWarning(node, "introduce.eliminate");
+    checker.reportWarning(tree, "introduce.eliminate");
   }
 
   /**
@@ -323,18 +342,18 @@ public class OptionalVisitor
    * <p>Don't use Optional in fields and method parameters.
    */
   @Override
-  public Void visitVariable(VariableTree node, Void p) {
-    VariableElement ve = TreeUtils.elementFromDeclaration(node);
+  public Void visitVariable(VariableTree tree, Void p) {
+    VariableElement ve = TreeUtils.elementFromDeclaration(tree);
     TypeMirror tm = ve.asType();
     if (isOptionalType(tm)) {
-      ElementKind ekind = TreeUtils.elementFromDeclaration(node).getKind();
+      ElementKind ekind = TreeUtils.elementFromDeclaration(tree).getKind();
       if (ekind.isField()) {
-        checker.reportWarning(node, "optional.field");
+        checker.reportWarning(tree, "optional.field");
       } else if (ekind == ElementKind.PARAMETER) {
-        checker.reportWarning(node, "optional.parameter");
+        checker.reportWarning(tree, "optional.parameter");
       }
     }
-    return super.visitVariable(node, p);
+    return super.visitVariable(tree, p);
   }
 
   /**

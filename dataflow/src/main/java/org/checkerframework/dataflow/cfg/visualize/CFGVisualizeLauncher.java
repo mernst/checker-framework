@@ -10,10 +10,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
+import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.analysis.AbstractValue;
 import org.checkerframework.dataflow.analysis.Analysis;
@@ -22,6 +22,7 @@ import org.checkerframework.dataflow.analysis.TransferFunction;
 import org.checkerframework.dataflow.cfg.CFGProcessor;
 import org.checkerframework.dataflow.cfg.CFGProcessor.CFGProcessResult;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
+import org.plumelib.util.ArrayMap;
 
 /**
  * Launcher to generate the DOT or String representation of the control flow graph of a given method
@@ -32,7 +33,10 @@ import org.checkerframework.dataflow.cfg.ControlFlowGraph;
  * org.checkerframework.dataflow.cfg.playground.ConstantPropagationPlayground} for another way to
  * use it.
  */
-public class CFGVisualizeLauncher {
+public final class CFGVisualizeLauncher {
+
+  /** Create a CFGVisualizeLauncher. */
+  public CFGVisualizeLauncher() {}
 
   /**
    * The main entry point of CFGVisualizeLauncher.
@@ -120,14 +124,14 @@ public class CFGVisualizeLauncher {
   /**
    * Generate the DOT representation of the CFG for a method, only. Does no dataflow analysis.
    *
-   * @param inputFile java source input file
+   * @param inputFile a Java source file, used as input
    * @param outputDir output directory
    * @param method name of the method to generate the CFG for
    * @param clas name of the class which includes the method to generate the CFG for
    * @param pdf also generate a PDF
    * @param verbose show verbose information in CFG
    */
-  protected void generateDOTofCFGWithoutAnalysis(
+  void generateDOTofCFGWithoutAnalysis(
       String inputFile,
       String outputDir,
       String method,
@@ -140,15 +144,15 @@ public class CFGVisualizeLauncher {
   /**
    * Generate the String representation of the CFG for a method, only. Does no dataflow analysis.
    *
-   * @param inputFile java source input file
+   * @param inputFile a Java source file, used as input
    * @param method name of the method to generate the CFG for
    * @param clas name of the class which includes the method to generate the CFG for
    * @param verbose show verbose information in CFG
    * @return the String representation of the CFG
    */
-  protected String generateStringOfCFGWithoutAnalysis(
+  String generateStringOfCFGWithoutAnalysis(
       String inputFile, String method, String clas, boolean verbose) {
-    @Nullable Map<String, Object> res = generateStringOfCFG(inputFile, method, clas, verbose, null);
+    Map<String, Object> res = generateStringOfCFG(inputFile, method, clas, verbose, null);
     if (res != null) {
       String stringGraph = (String) res.get("stringGraph");
       if (stringGraph == null) {
@@ -166,7 +170,7 @@ public class CFGVisualizeLauncher {
    * @param <V> the abstract value type to be tracked by the analysis
    * @param <S> the store type used in the analysis
    * @param <T> the transfer function type that is used to approximated runtime behavior
-   * @param inputFile java source input file
+   * @param inputFile a Java source file, used as input
    * @param outputDir source output directory
    * @param method name of the method to generate the CFG for
    * @param clas name of the class which includes the method to generate the CFG for
@@ -189,7 +193,7 @@ public class CFGVisualizeLauncher {
       analysis.performAnalysis(cfg);
     }
 
-    Map<String, Object> args = new HashMap<>(2);
+    Map<String, Object> args = new ArrayMap<>(2);
     args.put("outdir", outputDir);
     args.put("verbose", verbose);
 
@@ -207,12 +211,12 @@ public class CFGVisualizeLauncher {
   /**
    * Generate the control flow graph of a method in a class.
    *
-   * @param file java source input file
+   * @param file a Java source file, used as input
    * @param clas name of the class which includes the method to generate the CFG for
    * @param method name of the method to generate the CFG for
    * @return control flow graph of the specified method
    */
-  protected ControlFlowGraph generateMethodCFG(String file, String clas, final String method) {
+  ControlFlowGraph generateMethodCFG(String file, String clas, final String method) {
 
     CFGProcessor cfgProcessor = new CFGProcessor(clas, method);
 
@@ -220,20 +224,28 @@ public class CFGVisualizeLauncher {
     Options.instance(context).put("compilePolicy", "ATTR_ONLY");
     JavaCompiler javac = new JavaCompiler(context);
 
-    JavacFileManager fileManager = (JavacFileManager) context.get(JavaFileManager.class);
-
-    JavaFileObject l = fileManager.getJavaFileObjectsFromStrings(List.of(file)).iterator().next();
+    JavaFileObject l;
+    try (JavacFileManager fileManager = (JavacFileManager) context.get(JavaFileManager.class)) {
+      l = fileManager.getJavaFileObjectsFromStrings(List.of(file)).iterator().next();
+    } catch (IOException e) {
+      throw new Error(e);
+    }
 
     PrintStream err = System.err;
     try {
-      // redirect syserr to nothing (and prevent the compiler from issuing
-      // warnings about our exception.
-      System.setErr(
-          new PrintStream(
-              new OutputStream() {
-                @Override
-                public void write(int b) throws IOException {}
-              }));
+      // Redirect syserr to nothing (and prevent the compiler from issuing
+      // warnings about our exception).
+      @SuppressWarnings({
+        "builder:required.method.not.called",
+        "mustcall:assignment"
+      }) // Won't be needed in JDK 11+ with use of "OutputStream.nullOutputStream()".
+      @MustCall() OutputStream nullOS =
+          // In JDK 11+, this can be just "OutputStream.nullOutputStream()".
+          new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {}
+          };
+      System.setErr(new PrintStream(nullOS));
       javac.compile(List.of(l), List.of(clas), List.of(cfgProcessor), List.nil());
     } catch (Throwable e) {
       // ok
@@ -261,7 +273,7 @@ public class CFGVisualizeLauncher {
    *
    * @param file name of the dot file
    */
-  protected void producePDF(String file) {
+  void producePDF(String file) {
     try {
       String command = "dot -Tpdf \"" + file + "\" -o \"" + file + ".pdf\"";
       Process child = Runtime.getRuntime().exec(new String[] {"/bin/sh", "-c", command});
@@ -278,7 +290,7 @@ public class CFGVisualizeLauncher {
    * @param <V> the abstract value type to be tracked by the analysis
    * @param <S> the store type used in the analysis
    * @param <T> the transfer function type that is used to approximated runtime behavior
-   * @param inputFile java source input file
+   * @param inputFile a Java source file, used as input
    * @param method name of the method to generate the CFG for
    * @param clas name of the class which includes the method to generate the CFG for
    * @param verbose show verbose information in CFG
@@ -309,7 +321,7 @@ public class CFGVisualizeLauncher {
   }
 
   /** Print usage information. */
-  protected void printUsage() {
+  void printUsage() {
     System.out.println(
         "Generate the control flow graph of a Java method, represented as a DOT or String graph.");
     System.out.println(
@@ -323,8 +335,8 @@ public class CFGVisualizeLauncher {
     System.out.println("    --pdf:       Also generate the PDF by invoking 'dot'.");
     System.out.println("    --verbose:   Show the verbose output (defaults to 'false').");
     System.out.println(
-        "    --string:    Print the string representation of the control flow graph (defaults to"
-            + " 'false').");
+        "    --string:    Print the string representation of the control flow graph"
+            + " (defaults to 'false').");
   }
 
   /**
@@ -332,7 +344,7 @@ public class CFGVisualizeLauncher {
    *
    * @param string error message
    */
-  protected void printError(@Nullable String string) {
+  void printError(@Nullable String string) {
     System.err.println("ERROR: " + string);
   }
 }

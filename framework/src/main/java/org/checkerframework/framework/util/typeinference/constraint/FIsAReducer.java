@@ -22,7 +22,7 @@ import org.plumelib.util.StringsPlume;
  * and reduces it by one step. The resulting constraint may still be reducible.
  *
  * <p>Generally reductions should map to corresponding rules in
- * https://docs.oracle.com/javase/specs/jls/se11/html/jls-15.html#jls-15.12.2.7
+ * https://docs.oracle.com/javase/specs/jls/se17/html/jls-15.html#jls-15.12.2.7
  */
 public class FIsAReducer implements AFReducer {
 
@@ -133,7 +133,7 @@ public class FIsAReducer implements AFReducer {
         AnnotatedDeclaredType parameter,
         AnnotatedDeclaredType argument,
         Set<AFConstraint> constraints) {
-      if (argument.wasRaw() || parameter.wasRaw()) {
+      if (argument.isUnderlyingTypeRaw() || parameter.isUnderlyingTypeRaw()) {
         return null;
       }
 
@@ -209,7 +209,7 @@ public class FIsAReducer implements AFReducer {
     @Override
     public Void visitNull_Null(
         AnnotatedNullType parameter, AnnotatedNullType argument, Set<AFConstraint> afConstraints) {
-      // we sometimes get these when we have captured types passed as arguments
+      // we sometimes get these when we have captured type variables passed as arguments
       // regardless they don't give any information
       return null;
     }

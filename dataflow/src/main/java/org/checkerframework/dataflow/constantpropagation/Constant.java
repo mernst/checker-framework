@@ -4,11 +4,12 @@ import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.analysis.AbstractValue;
+import org.checkerframework.javacutil.BugInCF;
 
 public class Constant implements AbstractValue<Constant> {
 
   /** What kind of abstract value is this? */
-  protected Type type;
+  protected final Type type;
 
   /** The value of this abstract value (or null). */
   protected @Nullable Integer value;
@@ -118,7 +119,7 @@ public class Constant implements AbstractValue<Constant> {
         assert isConstant() : "@AssumeAssertion(nullness)";
         return value.toString();
       default:
-        throw new Error("Unexpected type");
+        throw new BugInCF("Unexpected type: " + type);
     }
   }
 }

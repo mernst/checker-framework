@@ -23,7 +23,7 @@ public class TypeDeclarationApplier extends TargetedElementAnnotationApplier {
 
   /**
    * If a type_index == -1 it means that the index refers to the immediate supertype class of the
-   * declaration. There is only ever one of these since java has no multiple inheritance
+   * declaration. There is only ever one of these since Java has no multiple inheritance
    */
   public static final int SUPERCLASS_INDEX = -1;
 
@@ -52,28 +52,35 @@ public class TypeDeclarationApplier extends TargetedElementAnnotationApplier {
     this.declaredType = (AnnotatedDeclaredType) type;
   }
 
-  @Override
-  protected TargetType[] validTargets() {
-    return new TargetType[] {
-      TargetType.RESOURCE_VARIABLE,
-      TargetType.EXCEPTION_PARAMETER,
-      TargetType.NEW,
-      TargetType.CAST,
-      TargetType.INSTANCEOF,
-      TargetType.METHOD_INVOCATION_TYPE_ARGUMENT,
-      TargetType.CONSTRUCTOR_INVOCATION_TYPE_ARGUMENT,
-      TargetType.METHOD_REFERENCE,
-      TargetType.CONSTRUCTOR_REFERENCE,
-      TargetType.METHOD_REFERENCE_TYPE_ARGUMENT,
-      TargetType.CONSTRUCTOR_REFERENCE_TYPE_ARGUMENT,
-      TargetType.CLASS_TYPE_PARAMETER,
-      TargetType.CLASS_TYPE_PARAMETER_BOUND
-    };
-  }
+  /** The annotated targets. */
+  private static final TargetType[] annotatedTargets = new TargetType[] {TargetType.CLASS_EXTENDS};
 
   @Override
   protected TargetType[] annotatedTargets() {
-    return new TargetType[] {TargetType.CLASS_EXTENDS};
+    return annotatedTargets;
+  }
+
+  /** The valid targets. */
+  private static final TargetType[] validTargets =
+      new TargetType[] {
+        TargetType.RESOURCE_VARIABLE,
+        TargetType.EXCEPTION_PARAMETER,
+        TargetType.NEW,
+        TargetType.CAST,
+        TargetType.INSTANCEOF,
+        TargetType.METHOD_INVOCATION_TYPE_ARGUMENT,
+        TargetType.CONSTRUCTOR_INVOCATION_TYPE_ARGUMENT,
+        TargetType.METHOD_REFERENCE,
+        TargetType.CONSTRUCTOR_REFERENCE,
+        TargetType.METHOD_REFERENCE_TYPE_ARGUMENT,
+        TargetType.CONSTRUCTOR_REFERENCE_TYPE_ARGUMENT,
+        TargetType.CLASS_TYPE_PARAMETER,
+        TargetType.CLASS_TYPE_PARAMETER_BOUND
+      };
+
+  @Override
+  protected TargetType[] validTargets() {
+    return validTargets;
   }
 
   /** All TypeCompounds (annotations) on the ClassSymbol. */
@@ -93,8 +100,8 @@ public class TypeDeclarationApplier extends TargetedElementAnnotationApplier {
   protected void handleTargeted(List<TypeCompound> extendsAndImplementsAnnos)
       throws UnexpectedAnnotationLocationException {
     if (TypesUtils.isAnonymous(typeSymbol.type)) {
-      // If this is an anonymous class, then the annotations after "new" but before the class name
-      // are stored as super class annotations. Treat them as annotations on the class.
+      // If this is an anonymous class, then the annotations after "new" but before the class
+      // name are stored as super class annotations. Treat them as annotations on the class.
       for (final Attribute.TypeCompound anno : extendsAndImplementsAnnos) {
         if (anno.position.type_index >= SUPERCLASS_INDEX && anno.position.location.isEmpty()) {
           type.addAnnotation(anno);

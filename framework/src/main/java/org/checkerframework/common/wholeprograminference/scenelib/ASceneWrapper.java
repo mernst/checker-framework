@@ -4,8 +4,6 @@ import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -14,6 +12,14 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import org.checkerframework.afu.scenelib.Annotation;
+import org.checkerframework.afu.scenelib.el.AClass;
+import org.checkerframework.afu.scenelib.el.AField;
+import org.checkerframework.afu.scenelib.el.AMethod;
+import org.checkerframework.afu.scenelib.el.AScene;
+import org.checkerframework.afu.scenelib.el.ATypeElement;
+import org.checkerframework.afu.scenelib.el.DefException;
+import org.checkerframework.afu.scenelib.io.IndexFileWriter;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.wholeprograminference.AnnotationConverter;
@@ -26,15 +32,8 @@ import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.UserError;
+import org.plumelib.util.ArraySet;
 import org.plumelib.util.CollectionsPlume;
-import scenelib.annotations.Annotation;
-import scenelib.annotations.el.AClass;
-import scenelib.annotations.el.AField;
-import scenelib.annotations.el.AMethod;
-import scenelib.annotations.el.AScene;
-import scenelib.annotations.el.ATypeElement;
-import scenelib.annotations.el.DefException;
-import scenelib.annotations.io.IndexFileWriter;
 
 /**
  * scene-lib (from the Annotation File Utilities) doesn't provide enough information to usefully
@@ -94,7 +93,8 @@ public class ASceneWrapper {
     String annosToRemoveKey = WholeProgramInferenceScenesStorage.aTypeElementToString(typeElt);
     Set<String> annosToRemoveForLocation = annosToRemove.get(Pair.of(annosToRemoveKey, loc));
     if (annosToRemoveForLocation != null) {
-      Set<Annotation> annosToRemoveHere = new HashSet<>();
+      Set<Annotation> annosToRemoveHere =
+          ArraySet.newArraySetOrHashSet(annosToRemoveForLocation.size());
       for (Annotation anno : typeElt.tlAnnotationsHere) {
         if (annosToRemoveForLocation.contains(anno.def().toString())) {
           annosToRemoveHere.add(anno);
@@ -145,13 +145,15 @@ public class ASceneWrapper {
       try {
         switch (outputFormat) {
           case STUB:
-            // For stub files, pass in the checker to compute contracts on the fly; precomputing
-            // yields incorrect annotations, most likely due to nested classes.
+            // For stub files, pass in the checker to compute contracts on the fly;
+            // precomputing yields incorrect annotations, most likely due to nested
+            // classes.
             SceneToStubWriter.write(this, filepath, checker);
             break;
           case JAIF:
-            // For .jaif files, precompute contracts because the Annotation File Utilities knows
-            // nothing about (and cannot depend on) the Checker Framework.
+            // For .jaif files, precompute contracts because the Annotation File
+            // Utilities knows nothing about (and cannot depend on) the Checker
+            // Framework.
             for (Map.Entry<String, AClass> classEntry : scene.classes.entrySet()) {
               AClass aClass = classEntry.getValue();
               for (Map.Entry<String, AMethod> methodEntry : aClass.getMethods().entrySet()) {
@@ -165,7 +167,9 @@ public class ASceneWrapper {
                 aMethod.contracts = contractAnnotations;
               }
             }
-            IndexFileWriter.write(scene, new FileWriter(filepath));
+            try (FileWriter fw = new FileWriter(filepath)) {
+              IndexFileWriter.write(scene, fw);
+            }
             break;
           default:
             throw new BugInCF("Unhandled outputFormat " + outputFormat);
@@ -192,12 +196,7 @@ public class ASceneWrapper {
       return;
     }
     if (classSymbol.isEnum()) {
-      List<VariableElement> enumConstants = new ArrayList<>();
-      for (Element e : ((TypeElement) classSymbol).getEnclosedElements()) {
-        if (e.getKind() == ElementKind.ENUM_CONSTANT) {
-          enumConstants.add((VariableElement) e);
-        }
-      }
+      List<VariableElement> enumConstants = ElementUtils.getEnumConstants(classSymbol);
       if (!aClass.isEnum(classSymbol.getSimpleName().toString())) {
         aClass.setEnumConstants(enumConstants);
       } else {
@@ -221,8 +220,14 @@ public class ASceneWrapper {
     ClassSymbol outerClass = classSymbol;
     ClassSymbol previous = classSymbol;
     do {
-      if (outerClass.isEnum()) {
+      if (outerClass.getKind() == ElementKind.ANNOTATION_TYPE) {
+        aClass.markAsAnnotation(outerClass.getSimpleName().toString());
+      } else if (outerClass.isEnum()) {
         aClass.markAsEnum(outerClass.getSimpleName().toString());
+      } else if (outerClass.isInterface()) {
+        aClass.markAsInterface(outerClass.getSimpleName().toString());
+        // } else if (outerClass.isRecord()) {
+        //   aClass.markAsRecord(outerClass.getSimpleName().toString());
       }
       Element element = classSymbol.getEnclosingElement();
       if (element == null || element.getKind() == ElementKind.PACKAGE) {

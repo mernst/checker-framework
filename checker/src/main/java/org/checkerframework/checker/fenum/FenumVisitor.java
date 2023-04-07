@@ -7,6 +7,7 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.Tree;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
@@ -16,6 +17,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.QualifierHierarchy;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.TreeUtils;
 
 public class FenumVisitor extends BaseTypeVisitor<FenumAnnotatedTypeFactory> {
@@ -24,41 +26,42 @@ public class FenumVisitor extends BaseTypeVisitor<FenumAnnotatedTypeFactory> {
   }
 
   @Override
-  public Void visitBinary(BinaryTree node, Void p) {
-    if (!TreeUtils.isStringConcatenation(node)) {
+  public Void visitBinary(BinaryTree tree, Void p) {
+    if (!TreeUtils.isStringConcatenation(tree)) {
       // TODO: ignore string concatenations
 
       // The Fenum Checker is only concerned with primitive types, so just check that
       // the primary annotations are equivalent.
-      AnnotatedTypeMirror lhsAtm = atypeFactory.getAnnotatedType(node.getLeftOperand());
-      AnnotatedTypeMirror rhsAtm = atypeFactory.getAnnotatedType(node.getRightOperand());
+      AnnotatedTypeMirror lhsAtm = atypeFactory.getAnnotatedType(tree.getLeftOperand());
+      AnnotatedTypeMirror rhsAtm = atypeFactory.getAnnotatedType(tree.getRightOperand());
 
-      Set<AnnotationMirror> lhs = lhsAtm.getEffectiveAnnotations();
-      Set<AnnotationMirror> rhs = rhsAtm.getEffectiveAnnotations();
+      AnnotationMirrorSet lhs = lhsAtm.getEffectiveAnnotations();
+      AnnotationMirrorSet rhs = rhsAtm.getEffectiveAnnotations();
       QualifierHierarchy qualHierarchy = atypeFactory.getQualifierHierarchy();
       if (!(qualHierarchy.isSubtype(lhs, rhs) || qualHierarchy.isSubtype(rhs, lhs))) {
-        checker.reportError(node, "binary.type.incompatible", lhsAtm, rhsAtm);
+        checker.reportError(tree, "binary", lhsAtm, rhsAtm);
       }
     }
-    return super.visitBinary(node, p);
+    return super.visitBinary(tree, p);
   }
 
   @Override
-  public Void visitSwitch(SwitchTree node, Void p) {
-    ExpressionTree expr = node.getExpression();
+  public Void visitSwitch(SwitchTree tree, Void p) {
+    ExpressionTree expr = tree.getExpression();
     AnnotatedTypeMirror exprType = atypeFactory.getAnnotatedType(expr);
 
-    for (CaseTree caseExpr : node.getCases()) {
-      ExpressionTree realCaseExpr = caseExpr.getExpression();
-      if (realCaseExpr != null) {
+    for (CaseTree caseExpr : tree.getCases()) {
+      List<? extends ExpressionTree> realCaseExprs = TreeUtils.caseTreeGetExpressions(caseExpr);
+      // Check all the case options against the switch expression type:
+      for (ExpressionTree realCaseExpr : realCaseExprs) {
         AnnotatedTypeMirror caseType = atypeFactory.getAnnotatedType(realCaseExpr);
 
-        // There is currently no "switch.type.incompatible" message key, so it is treated
+        // There is currently no "switch" message key, so it is treated
         // identically to "type.incompatible".
-        this.commonAssignmentCheck(exprType, caseType, caseExpr, "switch.type.incompatible");
+        this.commonAssignmentCheck(exprType, caseType, caseExpr, "type.incompatible");
       }
     }
-    return super.visitSwitch(node, p);
+    return super.visitSwitch(tree, p);
   }
 
   @Override

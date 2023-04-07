@@ -20,6 +20,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedUnionTyp
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedWildcardType;
 import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.type.visitor.AbstractAtmComboVisitor;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -93,7 +94,7 @@ class AtmLubVisitor extends AbstractAtmComboVisitor<Void, AnnotatedTypeMirror> {
     // if @L <: @U <: @N then LUB(@N null, T) = @N T
     // if @L <: @N <:@U && @N != @L  then LUB(@N null, T) = @U T
     // if @N <: @L <: @U             then LUB(@N null, T) =    T
-    Set<AnnotationMirror> lowerBounds =
+    AnnotationMirrorSet lowerBounds =
         AnnotatedTypes.findEffectiveLowerBoundAnnotations(qualifierHierarchy, otherAsLub);
     for (AnnotationMirror lowerBound : lowerBounds) {
       AnnotationMirror nullAnno = nullType.getAnnotationInHierarchy(lowerBound);
@@ -185,11 +186,12 @@ class AtmLubVisitor extends AbstractAtmComboVisitor<Void, AnnotatedTypeMirror> {
   private void lubTypeArgument(
       AnnotatedTypeMirror type1, AnnotatedTypeMirror type2, AnnotatedTypeMirror lub) {
     // In lub(), asSuper is called on type1 and type2, but asSuper does not recur into type
-    // arguments, so call asSuper on the type arguments so that they have the same underlying type.
+    // arguments, so call asSuper on the type arguments so that they have the same underlying
+    // type.
     final AnnotatedTypeMirror type1AsLub = AnnotatedTypes.asSuper(atypeFactory, type1, lub);
     final AnnotatedTypeMirror type2AsLub = AnnotatedTypes.asSuper(atypeFactory, type2, lub);
 
-    // If the type argument is a wildcard or captured wildcard, then the lub computation is
+    // If the type argument is a wildcard or captured type argument, then the lub computation is
     // slightly different.  The primary annotation on the lower bound is the glb of lower bounds
     // of the type types.  This is because the lub of Gen<@A ? extends @A Object> and Gen<@B ?
     // extends @A Object> is Gen<@B ? extends @A Object>.  If visit(type1AsLub, type2AsLub, lub)
@@ -214,7 +216,7 @@ class AtmLubVisitor extends AbstractAtmComboVisitor<Void, AnnotatedTypeMirror> {
           lubWildcard.getSuperBound(),
           lubWildcard.getExtendsBound());
     } else if (lub.getKind() == TypeKind.TYPEVAR
-        && TypesUtils.isCaptured((TypeVariable) lub.getUnderlyingType())) {
+        && TypesUtils.isCapturedTypeVariable((TypeVariable) lub.getUnderlyingType())) {
       if (visited(lub)) {
         return;
       }
@@ -300,9 +302,9 @@ class AtmLubVisitor extends AbstractAtmComboVisitor<Void, AnnotatedTypeMirror> {
     // For each hierarchy, if type1 is not a subtype of type2 and type2 is not a
     // subtype of type1, then the primary annotation on lub must be the effective upper
     // bound of type1 or type2, whichever is higher.
-    Set<AnnotationMirror> type1LowerBoundAnnos =
+    AnnotationMirrorSet type1LowerBoundAnnos =
         AnnotatedTypes.findEffectiveLowerBoundAnnotations(qualifierHierarchy, type1);
-    Set<AnnotationMirror> type2LowerBoundAnnos =
+    AnnotationMirrorSet type2LowerBoundAnnos =
         AnnotatedTypes.findEffectiveLowerBoundAnnotations(qualifierHierarchy, type2);
 
     for (AnnotationMirror lower1 : type1LowerBoundAnnos) {

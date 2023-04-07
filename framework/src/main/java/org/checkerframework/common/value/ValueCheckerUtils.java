@@ -1,16 +1,13 @@
 package org.checkerframework.common.value;
 
-import com.google.common.collect.Comparators;
 import com.sun.source.tree.Tree;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeMirror;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
 import org.checkerframework.common.value.qual.IntRange;
 import org.checkerframework.common.value.qual.IntVal;
 import org.checkerframework.common.value.qual.StringVal;
@@ -21,7 +18,8 @@ import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
 import org.checkerframework.javacutil.AnnotationUtils;
-import org.checkerframework.javacutil.BugInCF;
+import org.checkerframework.javacutil.SystemUtil;
+import org.checkerframework.javacutil.TypeSystemError;
 import org.checkerframework.javacutil.TypesUtils;
 import org.plumelib.util.CollectionsPlume;
 
@@ -30,11 +28,11 @@ public class ValueCheckerUtils {
 
   /** Do not instantiate. */
   private ValueCheckerUtils() {
-    throw new BugInCF("do not instantiate");
+    throw new TypeSystemError("do not instantiate");
   }
 
   /**
-   * Get a list of values of annotation, and then cast them to a given type.
+   * Get a list of the values of an annotation, and then cast the values to a given type.
    *
    * @param anno the annotation that contains values
    * @param castTo the type that is casted to
@@ -43,6 +41,23 @@ public class ValueCheckerUtils {
    */
   public static List<?> getValuesCastedToType(
       AnnotationMirror anno, TypeMirror castTo, ValueAnnotatedTypeFactory atypeFactory) {
+    return getValuesCastedToType(anno, castTo, false, atypeFactory);
+  }
+
+  /**
+   * Get a list of the values of an annotation, and then cast the values to a given type.
+   *
+   * @param anno the annotation that contains values
+   * @param castTo the unannotated type that is casted to
+   * @param isUnsigned true if the type being casted to is unsigned
+   * @param atypeFactory the type factory
+   * @return a list of values after the casting
+   */
+  public static List<?> getValuesCastedToType(
+      AnnotationMirror anno,
+      TypeMirror castTo,
+      boolean isUnsigned,
+      ValueAnnotatedTypeFactory atypeFactory) {
     Class<?> castType = TypesUtils.getClassFromType(castTo);
     List<?> values;
     switch (AnnotationUtils.annotationName(anno)) {
@@ -51,12 +66,12 @@ public class ValueCheckerUtils {
         break;
       case ValueAnnotatedTypeFactory.INTVAL_NAME:
         List<Long> longs = atypeFactory.getIntValues(anno);
-        values = convertIntVal(longs, castType, castTo);
+        values = convertIntVal(longs, castType, castTo, isUnsigned);
         break;
       case ValueAnnotatedTypeFactory.INTRANGE_NAME:
         Range range = atypeFactory.getRange(anno);
         List<Long> rangeValues = getValuesFromRange(range, Long.class);
-        values = convertIntVal(rangeValues, castType, castTo);
+        values = convertIntVal(rangeValues, castType, castTo, isUnsigned);
         break;
       case ValueAnnotatedTypeFactory.STRINGVAL_NAME:
         values = convertStringVal(anno, castType, atypeFactory);
@@ -115,14 +130,17 @@ public class ValueCheckerUtils {
   }
 
   /**
-   * Get all possible values from the given type and cast them into a boxed primitive type.
+   * Get all possible values from the given type and cast them into a boxed primitive type. Returns
+   * null if the list would have length greater than {@link ValueAnnotatedTypeFactory#MAX_VALUES}.
    *
    * <p>{@code expectedType} must be a boxed type, not a primitive type, because primitive types
    * cannot be stored in a list.
    *
+   * @param <T> the type of the values to obtain
    * @param range the given range
    * @param expectedType the expected type
-   * @return a list of all the values in the range
+   * @return a list of all the values in the range, or null if there would be more than {@link
+   *     ValueAnnotatedTypeFactory#MAX_VALUES}
    */
   public static <T> List<T> getValuesFromRange(Range range, Class<T> expectedType) {
     if (range == null || range.isWiderThan(ValueAnnotatedTypeFactory.MAX_VALUES)) {
@@ -148,7 +166,14 @@ public class ValueCheckerUtils {
     return values;
   }
 
-  private static List<?> convertToStringVal(List<?> origValues) {
+  /**
+   * Converts a list of objects to a list of their string representations.
+   *
+   * @param origValues the objects to format
+   * @return a list of the formatted objects
+   */
+  @SuppressWarnings("mustcall:methodref.receiver") // generics; #979 ?
+  private static List<?> convertToStringVal(List<? extends @MustCallUnknown Object> origValues) {
     if (origValues == null) {
       return null;
     }
@@ -193,7 +218,18 @@ public class ValueCheckerUtils {
     return strings;
   }
 
-  private static List<?> convertIntVal(List<Long> longs, Class<?> newClass, TypeMirror newType) {
+  /**
+   * Convert a list of longs to a given type
+   *
+   * @param longs the integral values to convert
+   * @param newClass determines the type of the result
+   * @param newType the type to which to cast, if newClass is numeric
+   * @param isUnsigned if true, treat {@code newType} as unsigned
+   * @return the {@code value} of a {@code @IntVal} annotation, as a {@code List<Integer>} or a
+   *     {@code List<char[]>}
+   */
+  private static List<?> convertIntVal(
+      List<Long> longs, Class<?> newClass, TypeMirror newType, boolean isUnsigned) {
     if (longs == null) {
       return null;
     }
@@ -203,9 +239,9 @@ public class ValueCheckerUtils {
       return CollectionsPlume.mapList((Long l) -> (char) l.longValue(), longs);
     } else if (newClass == Boolean.class) {
       throw new UnsupportedOperationException(
-          "ValueAnnotatedTypeFactory: can't convert int to boolean");
+          "ValueAnnotatedTypeFactory: can't convert integral type to boolean");
     }
-    return NumberUtils.castNumbers(newType, longs);
+    return NumberUtils.castNumbers(newType, isUnsigned, longs);
   }
 
   /**
@@ -238,30 +274,6 @@ public class ValueCheckerUtils {
   }
 
   /**
-   * Returns a list with the same contents as its argument, but without duplicates. May return its
-   * argument if its argument has no duplicates, but is not guaranteed to do so.
-   *
-   * @param <T> the type of elements in {@code values}
-   * @param values a list of values
-   * @return the values, with duplicates removed
-   * @deprecated use {@code CollectionsPlume.withoutDuplicates}
-   */
-  @Deprecated // 2020-03-31
-  public static <T extends Comparable<T>> List<T> removeDuplicates(List<T> values) {
-    // This adds O(n) time cost, and has the benefit of sometimes avoiding allocating a TreeSet.
-    if (Comparators.isInStrictOrder(values, Comparator.naturalOrder())) {
-      return values;
-    }
-
-    Set<T> set = new TreeSet<>(values);
-    if (values.size() == set.size()) {
-      return values;
-    } else {
-      return new ArrayList<>(set);
-    }
-  }
-
-  /**
    * Gets a list of lengths for a list of string values.
    *
    * @param values list of string values
@@ -269,7 +281,7 @@ public class ValueCheckerUtils {
    */
   public static List<Integer> getLengthsForStringValues(List<String> values) {
     List<Integer> lengths = CollectionsPlume.mapList(String::length, values);
-    return CollectionsPlume.withoutDuplicates(lengths);
+    return SystemUtil.withoutDuplicatesSorted(lengths);
   }
 
   /**

@@ -15,7 +15,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +45,7 @@ import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.TypeSystemError;
 import org.checkerframework.javacutil.UserError;
+import org.plumelib.util.ArrayMap;
 import org.plumelib.util.CollectionsPlume;
 import org.plumelib.util.StringsPlume;
 
@@ -102,8 +102,8 @@ public abstract class BaseTypeChecker extends SourceChecker {
       // subchecker A would complain about a lint option for subchecker B.
       checker.setSupportedLintOptions(this.getSupportedLintOptions());
 
-      // initChecker validates the passed options, so call it after setting supported options and
-      // lints.
+      // initChecker validates the passed options, so call it after setting supported options
+      // and lints.
       checker.initChecker();
     }
 
@@ -112,6 +112,8 @@ public abstract class BaseTypeChecker extends SourceChecker {
     }
 
     super.initChecker();
+
+    warnUnneededSuppressions = hasOption("warnUnneededSuppressions");
   }
 
   /**
@@ -156,6 +158,10 @@ public abstract class BaseTypeChecker extends SourceChecker {
    */
   private @MonotonicNonNull Collection<String> suppressWarningsPrefixesOfSubcheckers = null;
 
+  /** True if -AwarnUnneededSuppressions was supplied on the command line. */
+  // Not final because it is set in `init()`.
+  private boolean warnUnneededSuppressions;
+
   @Override
   protected void setRoot(CompilationUnitTree newRoot) {
     super.setRoot(newRoot);
@@ -192,14 +198,18 @@ public abstract class BaseTypeChecker extends SourceChecker {
    * <p>The BaseTypeChecker will not modify the list returned by this method, but other clients do
    * modify the list.
    *
-   * @return the subchecker classes on which this checker depends
+   * @return the subchecker classes on which this checker depends; will be modified by callees
    */
+  // This is never looked up in, but it is iterated over (and added to, which does a lookup).
   protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
+    // This must return a modifiable set because clients modify it.
+    // Most checkers have 1 or fewer subcheckers.
+    LinkedHashSet<Class<? extends BaseTypeChecker>> result =
+        new LinkedHashSet<>(CollectionsPlume.mapCapacity(2));
     if (shouldResolveReflection()) {
-      return new LinkedHashSet<>(Collections.singleton(MethodValChecker.class));
+      result.add(MethodValChecker.class);
     }
-    // The returned set will be modified by callees.
-    return new LinkedHashSet<>();
+    return result;
   }
 
   /**
@@ -210,6 +220,9 @@ public abstract class BaseTypeChecker extends SourceChecker {
   public boolean shouldResolveReflection() {
     return hasOptionNoSubcheckers("resolveReflection");
   }
+
+  /** An array containing just {@code BaseTypeChecker.class}. */
+  private static Class<?>[] baseTypeCheckerClassArray = new Class<?>[] {BaseTypeChecker.class};
 
   /**
    * Returns the appropriate visitor that type-checks the compilation unit according to the type
@@ -226,16 +239,17 @@ public abstract class BaseTypeChecker extends SourceChecker {
    * @return the type-checking visitor
    */
   @Override
+  @SuppressWarnings("mustcall:return") // generics problem
   protected BaseTypeVisitor<?> createSourceVisitor() {
     // Try to reflectively load the visitor.
     Class<?> checkerClass = this.getClass();
-
+    Object[] thisArray = new Object[] {this};
     while (checkerClass != BaseTypeChecker.class) {
       BaseTypeVisitor<?> result =
           invokeConstructorFor(
               BaseTypeChecker.getRelatedClassName(checkerClass, "Visitor"),
-              new Class<?>[] {BaseTypeChecker.class},
-              new Object[] {this});
+              baseTypeCheckerClassArray,
+              thisArray);
       if (result != null) {
         return result;
       }
@@ -329,7 +343,13 @@ public abstract class BaseTypeChecker extends SourceChecker {
           // Don't add more information about the constructor invocation.
           throw (RuntimeException) err;
         }
+      } else if (t instanceof NoSuchMethodException) {
+        // Note: it's possible that NoSuchMethodException was caused by `ctor.newInstance(args)`, if
+        // the constructor itself uses reflection.  But this case is unlikely.
+        throw new TypeSystemError(
+            "Could not find constructor %s(%s)", name, StringsPlume.join(", ", paramTypes));
       }
+
       Throwable cause;
       String causeMessage;
       if (t instanceof InvocationTargetException) {
@@ -402,32 +422,35 @@ public abstract class BaseTypeChecker extends SourceChecker {
    * Returns the type factory used by a subchecker. Returns null if no matching subchecker was found
    * or if the type factory is null. The caller must know the exact checker class to request.
    *
-   * @param checkerClass the class of the subchecker
+   * <p>Because the visitor state is copied, call this method each time a subfactory is needed
+   * rather than store the returned subfactory in a field.
+   *
+   * @param subCheckerClass the class of the subchecker
+   * @param <T> the type of {@code subCheckerClass}'s {@link AnnotatedTypeFactory}
    * @return the type factory of the requested subchecker or null if not found
    */
-  @SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals"}) // Intentional abuse
-  public <T extends GenericAnnotatedTypeFactory<?, ?, ?, ?>, U extends BaseTypeChecker>
-      T getTypeFactoryOfSubchecker(Class<U> checkerClass) {
-    BaseTypeChecker checker = getSubchecker(checkerClass);
-    if (checker != null) {
-      return (T) checker.getTypeFactory();
-    }
-
-    return null;
+  @SuppressWarnings("TypeParameterUnusedInFormals") // Intentional abuse
+  public <T extends GenericAnnotatedTypeFactory<?, ?, ?, ?>> @Nullable T getTypeFactoryOfSubchecker(
+      Class<? extends BaseTypeChecker> subCheckerClass) {
+    return getTypeFactory().getTypeFactoryOfSubchecker(subCheckerClass);
   }
 
-  /*
-   * Performs a depth first search for all checkers this checker depends on.
-   * The depth first search ensures that the collection has the correct order the checkers need to be run in.
-   *
-   * Modifies the alreadyInitializedSubcheckerMap map by adding all recursively newly instantiated subcheckers' class objects and instances.
-   * A LinkedHashMap is used because, unlike HashMap, it preserves the order in which entries were inserted.
-   *
+  /**
    * Returns the unmodifiable list of immediate subcheckers of this checker.
+   *
+   * <p>Performs a depth first search for all checkers this checker depends on. The depth first
+   * search ensures that the collection has the correct order the checkers need to be run in.
+   *
+   * <p>Modifies the alreadyInitializedSubcheckerMap map by adding all recursively newly
+   * instantiated subcheckers' class objects and instances. It is necessary to use a map that
+   * preserves the order in which entries were inserted, such as LinkedHashMap or ArrayMap.
+   *
+   * @param alreadyInitializedSubcheckerMap subcheckers that have already been instantiated. Is
+   *     modified by this method.
+   * @return the unmodifiable list of immediate subcheckers of this checker
    */
   private List<BaseTypeChecker> instantiateSubcheckers(
-      LinkedHashMap<Class<? extends BaseTypeChecker>, BaseTypeChecker>
-          alreadyInitializedSubcheckerMap) {
+      Map<Class<? extends BaseTypeChecker>, BaseTypeChecker> alreadyInitializedSubcheckerMap) {
     LinkedHashSet<Class<? extends BaseTypeChecker>> classesOfImmediateSubcheckers =
         getImmediateSubcheckerClasses();
     if (classesOfImmediateSubcheckers.isEmpty()) {
@@ -478,8 +501,8 @@ public abstract class BaseTypeChecker extends SourceChecker {
   public List<BaseTypeChecker> getSubcheckers() {
     if (subcheckers == null) {
       // Instantiate the checkers this one depends on, if any.
-      LinkedHashMap<Class<? extends BaseTypeChecker>, BaseTypeChecker> checkerMap =
-          new LinkedHashMap<>(1);
+      Map<Class<? extends BaseTypeChecker>, BaseTypeChecker> checkerMap =
+          new ArrayMap<Class<? extends BaseTypeChecker>, BaseTypeChecker>(2);
 
       immediateSubcheckers = instantiateSubcheckers(checkerMap);
 
@@ -521,8 +544,9 @@ public abstract class BaseTypeChecker extends SourceChecker {
     // All other messages are printed immediately.  This includes errors issued because the
     // checker threw an exception.
 
-    // In order to run the next checker on this compilation unit even if the previous issued errors,
-    // the next checker's errsOnLastExit needs to include all errors issued by previous checkers.
+    // In order to run the next checker on this compilation unit even if the previous issued
+    // errors, the next checker's errsOnLastExit needs to include all errors issued by previous
+    // checkers.
 
     Context context = ((JavacProcessingEnvironment) processingEnv).getContext();
     Log log = Log.instance(context);
@@ -568,7 +592,7 @@ public abstract class BaseTypeChecker extends SourceChecker {
   }
 
   /** A cache for {@link #getUltimateParentChecker}. */
-  @MonotonicNonNull BaseTypeChecker ultimateParentChecker;
+  private @MonotonicNonNull BaseTypeChecker ultimateParentChecker;
 
   /**
    * Finds the ultimate parent checker of this checker. The ultimate parent checker is the checker
@@ -600,12 +624,13 @@ public abstract class BaseTypeChecker extends SourceChecker {
       return;
     }
 
-    if (!hasOption("warnUnneededSuppressions")) {
+    if (!warnUnneededSuppressions) {
       return;
     }
     Set<Element> elementsWithSuppressedWarnings =
         new HashSet<>(this.elementsWithSuppressedWarnings);
     this.elementsWithSuppressedWarnings.clear();
+
     Set<String> prefixes = new HashSet<>(getSuppressWarningsPrefixes());
     Set<String> errorKeys = new HashSet<>(messagesProperties.stringPropertyNames());
     for (BaseTypeChecker subChecker : subcheckers) {
@@ -623,10 +648,13 @@ public abstract class BaseTypeChecker extends SourceChecker {
   /**
    * Stores all messages issued by this checker and its subcheckers for the current compilation
    * unit. The messages are printed after all checkers have processed the current compilation unit.
-   * If this checker has no subcheckers and is not a subchecker for any other checker, then
+   * The purpose is to sort messages, grouping together all messages about a particular line of
+   * code.
+   *
+   * <p>If this checker has no subcheckers and is not a subchecker for any other checker, then
    * messageStore is null and messages will be printed as they are issued by this checker.
    */
-  private TreeSet<CheckerMessage> messageStore = null;
+  private @MonotonicNonNull TreeSet<CheckerMessage> messageStore;
 
   /**
    * If this is a compound checker or a subchecker of a compound checker, then the message is stored
@@ -655,10 +683,8 @@ public abstract class BaseTypeChecker extends SourceChecker {
    * @param unit current compilation unit
    */
   private void printStoredMessages(CompilationUnitTree unit) {
-    if (messageStore != null) {
-      for (CheckerMessage msg : messageStore) {
-        super.printOrStoreMessage(msg.kind, msg.message, msg.source, unit, msg.trace);
-      }
+    for (CheckerMessage msg : messageStore) {
+      super.printOrStoreMessage(msg.kind, msg.message, msg.source, unit, msg.trace);
     }
   }
 
@@ -806,7 +832,8 @@ public abstract class BaseTypeChecker extends SourceChecker {
       }
 
       options.addAll(
-          expandCFOptions(Arrays.asList(this.getClass()), options.toArray(new String[0])));
+          expandCFOptions(
+              Arrays.asList(this.getClass()), options.toArray(new String[options.size()])));
 
       supportedOptions = Collections.unmodifiableSet(options);
     }
@@ -831,7 +858,7 @@ public abstract class BaseTypeChecker extends SourceChecker {
    * Like {@link #getOptions}, but only includes options provided to this checker. Does not include
    * those passed to subcheckers.
    *
-   * @return the the active options for this checker, not including those passed to subcheckers
+   * @return the active options for this checker, not including those passed to subcheckers
    */
   public Map<String, String> getOptionsNoSubcheckers() {
     return super.getOptions();
@@ -855,7 +882,7 @@ public abstract class BaseTypeChecker extends SourceChecker {
    * @return stub files to be treated as if they had been written in a {@code @StubFiles} annotation
    */
   public List<String> getExtraStubFiles() {
-    return new ArrayList<>();
+    return Collections.emptyList();
   }
 
   @Override

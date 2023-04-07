@@ -19,6 +19,7 @@ import org.checkerframework.framework.flow.CFAbstractStore;
 import org.checkerframework.framework.flow.CFAbstractValue;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.QualifierHierarchy;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.plumelib.util.CollectionsPlume;
 import org.plumelib.util.ToStringComparator;
@@ -70,7 +71,7 @@ public class InitializationStore<V extends CFAbstractValue<V>, S extends Initial
     if (je instanceof FieldAccess) {
       FieldAccess fieldAccess = (FieldAccess) je;
       if (!fieldValues.containsKey(je)) {
-        Set<AnnotationMirror> declaredAnnos =
+        AnnotationMirrorSet declaredAnnos =
             atypeFactory.getAnnotatedType(fieldAccess.getField()).getAnnotations();
         if (AnnotationUtils.containsSame(declaredAnnos, invariantAnno)) {
           if (!invariantFields.containsKey(fieldAccess)) {
@@ -126,6 +127,8 @@ public class InitializationStore<V extends CFAbstractValue<V>, S extends Initial
    * Mark the field identified by the element {@code field} as initialized if it belongs to the
    * current class, or is static (in which case there is no aliasing issue and we can just add all
    * static fields).
+   *
+   * @param field a field that is initialized
    */
   public void addInitializedField(FieldAccess field) {
     boolean fieldOnThisReference = field.getReceiver() instanceof ThisReference;
@@ -138,6 +141,8 @@ public class InitializationStore<V extends CFAbstractValue<V>, S extends Initial
   /**
    * Mark the field identified by the element {@code f} as initialized (the caller needs to ensure
    * that the field belongs to the current class, or is a static field).
+   *
+   * @param f a field that is initialized
    */
   public void addInitializedField(VariableElement f) {
     initializedFields.add(f);
@@ -155,6 +160,7 @@ public class InitializationStore<V extends CFAbstractValue<V>, S extends Initial
     }
     @SuppressWarnings("unchecked")
     S other = (S) o;
+
     for (Element field : other.initializedFields) {
       if (!initializedFields.contains(field)) {
         return false;
@@ -216,8 +222,8 @@ public class InitializationStore<V extends CFAbstractValue<V>, S extends Initial
     for (Map.Entry<FieldAccess, V> e : invariantFields.entrySet()) {
       FieldAccess key = e.getKey();
       if (other.invariantFields.containsKey(key)) {
-        // TODO: Is the value other.invariantFields.get(key) the same as e.getValue()?  Should the
-        // two values be lubbed?
+        // TODO: Is the value other.invariantFields.get(key) the same as e.getValue()?
+        // Should the two values be lubbed?
         result.invariantFields.put(key, e.getValue());
       }
     }
@@ -230,9 +236,11 @@ public class InitializationStore<V extends CFAbstractValue<V>, S extends Initial
   @Override
   protected String internalVisualize(CFGVisualizer<V, S, ?> viz) {
     String superVisualize = super.internalVisualize(viz);
+
     String initializedVisualize =
         viz.visualizeStoreKeyVal(
             "initialized fields", ToStringComparator.sorted(initializedFields));
+
     List<VariableElement> invariantVars =
         CollectionsPlume.mapList(FieldAccess::getField, invariantFields.keySet());
     String invariantVisualize =

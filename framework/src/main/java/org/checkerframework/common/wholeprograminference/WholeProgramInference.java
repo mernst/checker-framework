@@ -8,6 +8,7 @@ import java.util.Map;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.dataflow.analysis.Analysis;
@@ -130,9 +131,8 @@ public interface WholeProgramInference {
    * @param field the field whose type will be refined. Must be either a FieldAccessNode or a
    *     LocalVariableNode whose element kind is FIELD.
    * @param rhs the expression being assigned to the field
-   * @param classTree the ClassTree for the enclosing class of the assignment
    */
-  void updateFromFieldAssignment(Node field, Node rhs, ClassTree classTree);
+  void updateFromFieldAssignment(Node field, Node rhs);
 
   /**
    * Updates the type of {@code field} based on an assignment whose right-hand side has type {@code
@@ -189,6 +189,32 @@ public interface WholeProgramInference {
   void addMethodDeclarationAnnotation(ExecutableElement methodElt, AnnotationMirror anno);
 
   /**
+   * Updates a field to add a declaration annotation.
+   *
+   * @param fieldElt the field to annotate
+   * @param anno the declaration annotation to add to the field
+   */
+  void addFieldDeclarationAnnotation(VariableElement fieldElt, AnnotationMirror anno);
+
+  /**
+   * Adds a declaration annotation to a formal parameter.
+   *
+   * @param methodElt the method whose formal parameter will be annotated
+   * @param index the index of the parameter (0-indexed)
+   * @param anno the annotation to add
+   */
+  void addDeclarationAnnotationToFormalParameter(
+      ExecutableElement methodElt, int index, AnnotationMirror anno);
+
+  /**
+   * Adds an annotation to a class declaration.
+   *
+   * @param classElt the class declaration to annotate
+   * @param anno the annotation to add
+   */
+  void addClassDeclarationAnnotation(TypeElement classElt, AnnotationMirror anno);
+
+  /**
    * Writes the inferred results to a file. Ideally, it should be called at the end of the
    * type-checking process. In practice, it is called after each class, because we don't know which
    * class will be the last one in the type-checking process.
@@ -222,7 +248,7 @@ public interface WholeProgramInference {
 
     /**
      * Output the results of whole-program inference as an ajava file that can be read in using the
-     * -Aajava option.
+     * {@code -Aajava} option.
      */
     AJAVA(),
   }

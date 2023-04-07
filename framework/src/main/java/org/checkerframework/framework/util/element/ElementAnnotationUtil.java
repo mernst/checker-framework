@@ -15,11 +15,9 @@ import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.TypeVariable;
 import org.checkerframework.checker.formatter.qual.FormatMethod;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
@@ -31,9 +29,9 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedUnionTyp
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedWildcardType;
 import org.checkerframework.framework.type.ElementAnnotationApplier;
 import org.checkerframework.framework.util.AnnotatedTypes;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
-import org.checkerframework.javacutil.TypesUtils;
 import org.plumelib.util.StringsPlume;
 
 /**
@@ -186,16 +184,19 @@ public class ElementAnnotationUtil {
    * </ul>
    */
   private static final class WildcardBoundAnnos {
+    /** The wildcard type. */
     public final AnnotatedWildcardType wildcard;
-    public final Set<AnnotationMirror> upperBoundAnnos;
-    public final Set<AnnotationMirror> lowerBoundAnnos;
+    /** The upper bound annotations. */
+    public final AnnotationMirrorSet upperBoundAnnos;
+    /** The lower bound annotations. */
+    public final AnnotationMirrorSet lowerBoundAnnos;
 
     // indicates that this is an annotation in front of an unbounded wildcard
     // e.g.  < @A ? >
     // For each annotation in this set, if there is no annotation in upperBoundAnnos
     // that is in the same hierarchy then the annotation will be applied to both bounds
     // otherwise the annotation applies to the lower bound only
-    public final Set<AnnotationMirror> possiblyBoth;
+    public final AnnotationMirrorSet possiblyBoth;
 
     /** Whether or not wildcard has an explicit super bound. */
     private final boolean isSuperBounded;
@@ -203,11 +204,17 @@ public class ElementAnnotationUtil {
     /** Whether or not wildcard has NO explicit bound whatsoever. */
     private final boolean isUnbounded;
 
+    /**
+     * Creates a new WildcardBoundAnnos from the given wildcard type, with no upper- or lower-bound
+     * annotations.
+     *
+     * @param wildcard the wildcard type
+     */
     WildcardBoundAnnos(AnnotatedWildcardType wildcard) {
       this.wildcard = wildcard;
-      this.upperBoundAnnos = AnnotationUtils.createAnnotationSet();
-      this.lowerBoundAnnos = AnnotationUtils.createAnnotationSet();
-      this.possiblyBoth = AnnotationUtils.createAnnotationSet();
+      this.upperBoundAnnos = new AnnotationMirrorSet();
+      this.lowerBoundAnnos = new AnnotationMirrorSet();
+      this.possiblyBoth = new AnnotationMirrorSet();
 
       this.isSuperBounded = AnnotatedTypes.hasExplicitSuperBound(wildcard);
       this.isUnbounded = AnnotatedTypes.hasNoExplicitBound(wildcard);
@@ -388,9 +395,10 @@ public class ElementAnnotationUtil {
       boolean isComponentTypeOfArray)
       throws UnexpectedAnnotationLocationException {
     if (location.isEmpty() && type.getKind() != TypeKind.DECLARED) {
-      // An annotation with an empty type path on a declared type applies to the outermost enclosing
-      // type. This logic is handled together with non-empty type paths in getLocationTypeADT. For
-      // other kinds of types, no work is required for an empty type path.
+      // An annotation with an empty type path on a declared type applies to the outermost
+      // enclosing type. This logic is handled together with non-empty type paths in
+      // getLocationTypeADT.
+      // For other kinds of types, no work is required for an empty type path.
       return type;
     }
     switch (type.getKind()) {
@@ -401,15 +409,6 @@ public class ElementAnnotationUtil {
             (AnnotatedDeclaredType) type, location, anno, isComponentTypeOfArray);
       case WILDCARD:
         return getLocationTypeAWT((AnnotatedWildcardType) type, location);
-      case TYPEVAR:
-        if (TypesUtils.isCaptured((TypeVariable) type.getUnderlyingType())) {
-          // Work-around for Issue 1696: ignore captured wildcards.
-          // There is no reason to observe such a type and it would be better
-          // to prevent that this type ever reaches this point.
-          return type;
-        }
-        // Raise an error for all other type variables (why isn't this needed?).
-        break;
       case ARRAY:
         return getLocationTypeAAT((AnnotatedArrayType) type, location, anno);
       case UNION:
@@ -421,7 +420,7 @@ public class ElementAnnotationUtil {
     }
     throw new UnexpectedAnnotationLocationException(
         "ElementAnnotationUtil.getTypeAtLocation: "
-            + "unexpected annotation with location found for type: %s (kind: %s ) location: ",
+            + "unexpected annotation with location found for type: %s (kind: %s) location: ",
         type, type.getKind(), location);
   }
 
@@ -455,7 +454,7 @@ public class ElementAnnotationUtil {
     // If the AnnotatedDeclaredType is a component of an array type, then apply anno to all
     // possible inner types.
     // NOTE: This workaround can be removed once
-    // https://bugs.openjdk.java.net/browse/JDK-8208470 is fixed
+    // https://bugs.openjdk.org/browse/JDK-8208470 is fixed
     // The number of enclosing types is outerToInner.size() - 1; there only is
     // work to do if outerToInner contains more than one element.
     if (anno != null && isComponentTypeOfArray && location.isEmpty() && outerToInner.size() > 1) {

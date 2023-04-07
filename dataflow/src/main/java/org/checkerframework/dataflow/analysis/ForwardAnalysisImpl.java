@@ -159,6 +159,9 @@ public class ForwardAnalysisImpl<
           // Propagate store to exceptional successors
           for (Map.Entry<TypeMirror, Set<Block>> e : eb.getExceptionalSuccessors().entrySet()) {
             TypeMirror cause = e.getKey();
+            if (isIgnoredExceptionType(cause)) {
+              continue;
+            }
             S exceptionalStore = transferResult.getExceptionalStore(cause);
             if (exceptionalStore != null) {
               for (Block exceptionSucc : e.getValue()) {
@@ -216,7 +219,7 @@ public class ForwardAnalysisImpl<
   }
 
   @Override
-  @SuppressWarnings("nullness:contracts.precondition.override.invalid") // implementation field
+  @SuppressWarnings("nullness:contracts.precondition.override") // implementation field
   @RequiresNonNull("cfg")
   public List<Pair<ReturnNode, @Nullable TransferResult<V, S>>> getReturnStatementStores() {
     return CollectionsPlume.<ReturnNode, Pair<ReturnNode, @Nullable TransferResult<V, S>>>mapList(
@@ -254,7 +257,8 @@ public class ForwardAnalysisImpl<
         case REGULAR_BLOCK:
           {
             RegularBlock rb = (RegularBlock) block;
-            // Apply transfer function to contents until we found the node we are looking for.
+            // Apply transfer function to contents until we found the node we are
+            // looking for.
             TransferInput<V, S> store = blockTransferInput;
             TransferResult<V, S> transferResult;
             for (Node n : rb.getNodes()) {
@@ -265,7 +269,8 @@ public class ForwardAnalysisImpl<
               if (cache != null && cache.containsKey(n)) {
                 transferResult = cache.get(n);
               } else {
-                // Copy the store to avoid changing other blocks' transfer inputs in {@link #inputs}
+                // Copy the store to avoid changing other blocks' transfer inputs in
+                // {@link #inputs}
                 transferResult = callTransferFunction(n, store.copy());
                 if (cache != null) {
                   cache.put(n, transferResult);
@@ -293,12 +298,14 @@ public class ForwardAnalysisImpl<
               return blockTransferInput.getRegularStore();
             }
             setCurrentNode(node);
-            // Copy the store to avoid changing other blocks' transfer inputs in {@link #inputs}
+            // Copy the store to avoid changing other blocks' transfer inputs in {@link
+            // #inputs}
             TransferResult<V, S> transferResult;
             if (cache != null && cache.containsKey(node)) {
               transferResult = cache.get(node);
             } else {
-              // Copy the store to avoid changing other blocks' transfer inputs in {@link #inputs}
+              // Copy the store to avoid changing other blocks' transfer inputs in
+              // {@link #inputs}
               transferResult = callTransferFunction(node, blockTransferInput.copy());
               if (cache != null) {
                 cache.put(node, transferResult);
@@ -369,7 +376,8 @@ public class ForwardAnalysisImpl<
     TransferResult<V, S> transferResult = super.callTransferFunction(node, input);
 
     if (node instanceof ReturnNode) {
-      // Save a copy of the store to later check if some property holds at a given return statement
+      // Save a copy of the store to later check if some property holds at a given return
+      // statement.
       storesAtReturnStatements.put((ReturnNode) node, transferResult);
     }
     return transferResult;

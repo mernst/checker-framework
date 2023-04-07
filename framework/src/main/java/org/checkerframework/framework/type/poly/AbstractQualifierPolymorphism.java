@@ -28,11 +28,12 @@ import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.type.visitor.EquivalentAtmComboScanner;
 import org.checkerframework.framework.type.visitor.SimpleAnnotatedTypeScanner;
 import org.checkerframework.framework.util.AnnotatedTypes;
-import org.checkerframework.framework.util.AnnotationMirrorMap;
-import org.checkerframework.framework.util.AnnotationMirrorSet;
+import org.checkerframework.javacutil.AnnotationMirrorMap;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
+import org.plumelib.util.CollectionsPlume;
 
 /**
  * Implements framework support for qualifier polymorphism.
@@ -73,7 +74,7 @@ public abstract class AbstractQualifierPolymorphism implements QualifierPolymorp
   protected final AnnotationMirrorSet topQuals;
 
   /** Determines the instantiations for each polymorphic qualifier. */
-  private PolyCollector collector = new PolyCollector();
+  private final PolyCollector collector = new PolyCollector();
 
   /** Resolves each polymorphic qualifier by replacing it with its instantiation. */
   private final SimpleAnnotatedTypeScanner<Void, AnnotationMirrorMap<AnnotationMirror>> replacer;
@@ -87,6 +88,9 @@ public abstract class AbstractQualifierPolymorphism implements QualifierPolymorp
   /** Mapping from poly qualifier to its instantiation for types with a qualifier parameter. */
   protected final AnnotationMirrorMap<AnnotationMirror> polyInstantiationForQualifierParameter =
       new AnnotationMirrorMap<>();
+
+  /** The visit method returns true if the passed type has any polymorphic qualifiers. */
+  protected final SimpleAnnotatedTypeScanner<Boolean, Void> polyScanner;
 
   /**
    * Creates an {@link AbstractQualifierPolymorphism} instance that uses the given checker for
@@ -125,6 +129,19 @@ public abstract class AbstractQualifierPolymorphism implements QualifierPolymorp
               replace(type, map);
               return null;
             });
+
+    this.polyScanner =
+        new SimpleAnnotatedTypeScanner<>(
+            (type, notused) -> {
+              for (AnnotationMirror a : type.getAnnotations()) {
+                if (qualHierarchy.isPolymorphicQualifier(a)) {
+                  return true;
+                }
+              }
+              return false;
+            },
+            Boolean::logicalOr,
+            false);
   }
 
   /**
@@ -140,6 +157,16 @@ public abstract class AbstractQualifierPolymorphism implements QualifierPolymorp
   }
 
   /**
+   * Returns true if {@code type} has any polymorphic qualifiers
+   *
+   * @param type a type that might have polymorphic qualifiers
+   * @return true if {@code type} has any polymorphic qualifiers
+   */
+  protected boolean hasPolymorphicQualifiers(AnnotatedTypeMirror type) {
+    return polyScanner.visit(type);
+  }
+
+  /**
    * Resolves polymorphism annotations for the given type.
    *
    * @param tree the tree associated with the type
@@ -147,7 +174,7 @@ public abstract class AbstractQualifierPolymorphism implements QualifierPolymorp
    */
   @Override
   public void resolve(MethodInvocationTree tree, AnnotatedExecutableType type) {
-    if (polyQuals.isEmpty()) {
+    if (polyQuals.isEmpty() || !hasPolymorphicQualifiers(type)) {
       return;
     }
 
@@ -155,19 +182,20 @@ public abstract class AbstractQualifierPolymorphism implements QualifierPolymorp
     // method element requires two.
     // See also BaseTypeVisitor.visitMethodInvocation and
     // CFGBuilder.CFGTranslationPhaseOne.visitMethodInvocation.
-    if (TreeUtils.isEnumSuper(tree)) {
+    if (TreeUtils.isEnumSuperCall(tree)) {
       return;
     }
     List<AnnotatedTypeMirror> parameters =
-        AnnotatedTypes.expandVarArgs(atypeFactory, type, tree.getArguments());
+        AnnotatedTypes.adaptParameters(atypeFactory, type, tree.getArguments());
     List<AnnotatedTypeMirror> arguments =
-        AnnotatedTypes.getAnnotatedTypes(atypeFactory, parameters, tree.getArguments());
+        CollectionsPlume.mapList(atypeFactory::getAnnotatedType, tree.getArguments());
 
     AnnotationMirrorMap<AnnotationMirror> instantiationMapping =
         collector.visit(arguments, parameters);
 
     // For super() and this() method calls, getReceiverType(tree) does not return the correct
-    // type. So, just skip those.  This is consistent with skipping receivers of constructors below.
+    // type. So, just skip those.  This is consistent with skipping receivers of constructors
+    // below.
     if (type.getReceiverType() != null
         && !TreeUtils.isSuperConstructorCall(tree)
         && !TreeUtils.isThisConstructorCall(tree)) {
@@ -187,13 +215,13 @@ public abstract class AbstractQualifierPolymorphism implements QualifierPolymorp
 
   @Override
   public void resolve(NewClassTree tree, AnnotatedExecutableType type) {
-    if (polyQuals.isEmpty()) {
+    if (polyQuals.isEmpty() || !hasPolymorphicQualifiers(type)) {
       return;
     }
     List<AnnotatedTypeMirror> parameters =
-        AnnotatedTypes.expandVarArgs(atypeFactory, type, tree.getArguments());
+        AnnotatedTypes.adaptParameters(atypeFactory, type, tree.getArguments());
     List<AnnotatedTypeMirror> arguments =
-        AnnotatedTypes.getAnnotatedTypes(atypeFactory, parameters, tree.getArguments());
+        CollectionsPlume.mapList(atypeFactory::getAnnotatedType, tree.getArguments());
 
     AnnotationMirrorMap<AnnotationMirror> instantiationMapping =
         collector.visit(arguments, parameters);
@@ -201,7 +229,10 @@ public abstract class AbstractQualifierPolymorphism implements QualifierPolymorp
     // instantiationMapping = collector.reduce(instantiationMapping,
     //        collector.visit(factory.getReceiverType(tree), type.getReceiverType()));
 
-    AnnotatedTypeMirror newClassType = atypeFactory.fromNewClass(tree);
+    AnnotatedTypeMirror newClassType = type.getReturnType().deepCopy();
+    newClassType.clearPrimaryAnnotations();
+    newClassType.replaceAnnotations(atypeFactory.getExplicitNewClassAnnos(tree));
+
     instantiationMapping =
         collector.reduce(
             instantiationMapping, mapQualifierToPoly(newClassType, type.getReturnType()));
@@ -216,7 +247,7 @@ public abstract class AbstractQualifierPolymorphism implements QualifierPolymorp
 
   @Override
   public void resolve(VariableElement field, AnnotatedTypeMirror owner, AnnotatedTypeMirror type) {
-    if (polyQuals.isEmpty()) {
+    if (polyQuals.isEmpty() || !hasPolymorphicQualifiers(type)) {
       return;
     }
     AnnotationMirrorMap<AnnotationMirror> matchingMapping = new AnnotationMirrorMap<>();
@@ -238,12 +269,13 @@ public abstract class AbstractQualifierPolymorphism implements QualifierPolymorp
   @Override
   public void resolve(
       AnnotatedExecutableType functionalInterface, AnnotatedExecutableType memberReference) {
-    for (AnnotationMirror type : functionalInterface.getReturnType().getAnnotations()) {
-      if (atypeFactory.getQualifierHierarchy().isPolymorphicQualifier(type)) {
-        // functional interface has a polymorphic qualifier, so they should not be resolved
-        // on memberReference.
-        return;
-      }
+    if (hasPolymorphicQualifiers(functionalInterface.getReturnType())) {
+      // functional interface has a polymorphic qualifier, so they should not be resolved
+      // on memberReference.
+      return;
+    }
+    if (polyQuals.isEmpty() || !hasPolymorphicQualifiers(memberReference)) {
+      return;
     }
     AnnotationMirrorMap<AnnotationMirror> instantiationMapping;
 
@@ -270,7 +302,7 @@ public abstract class AbstractQualifierPolymorphism implements QualifierPolymorp
     }
     // Deal with varargs
     if (memberReference.isVarArgs() && !functionalInterface.isVarArgs()) {
-      parameters = AnnotatedTypes.expandVarArgsFromTypes(memberReference, args);
+      parameters = AnnotatedTypes.expandVarArgsParametersFromTypes(memberReference, args);
     }
 
     instantiationMapping =
@@ -487,7 +519,8 @@ public abstract class AbstractQualifierPolymorphism implements QualifierPolymorp
     protected String defaultErrorMessage(
         AnnotatedTypeMirror type1, AnnotatedTypeMirror type2, Void aVoid) {
       return String.format(
-          "AbstractQualifierPolymorphism: Unexpected combination: type1: %s (%s) type2: %s (%s).",
+          "AbstractQualifierPolymorphism:"
+              + " Unexpected combination: type1: %s (%s) type2: %s (%s).",
           type1, type1.getKind(), type2, type2.getKind());
     }
 

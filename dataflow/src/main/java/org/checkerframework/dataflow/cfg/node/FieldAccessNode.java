@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.Objects;
 import javax.lang.model.element.VariableElement;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
@@ -27,6 +29,12 @@ public class FieldAccessNode extends Node {
 
   // TODO: add method to get modifiers (static, access level, ..)
 
+  /**
+   * Creates a new FieldAccessNode.
+   *
+   * @param tree the tree from which to create a FieldAccessNode
+   * @param receiver the receiver for the resuling FieldAccessNode
+   */
   public FieldAccessNode(Tree tree, Node receiver) {
     super(TreeUtils.typeOf(tree));
     assert TreeUtils.isFieldAccess(tree);
@@ -37,12 +45,13 @@ public class FieldAccessNode extends Node {
     if (tree instanceof MemberSelectTree) {
       MemberSelectTree mstree = (MemberSelectTree) tree;
       assert TreeUtils.isUseOfElement(mstree) : "@AssumeAssertion(nullness): tree kind";
-      this.element = (VariableElement) TreeUtils.elementFromUse(mstree);
-    } else {
-      assert tree instanceof IdentifierTree;
+      this.element = TreeUtils.variableElementFromUse(mstree);
+    } else if (tree instanceof IdentifierTree) {
       IdentifierTree itree = (IdentifierTree) tree;
       assert TreeUtils.isUseOfElement(itree) : "@AssumeAssertion(nullness): tree kind";
-      this.element = (VariableElement) TreeUtils.elementFromUse(itree);
+      this.element = TreeUtils.variableElementFromUse(itree);
+    } else {
+      throw new BugInCF("unexpected tree %s [%s]", tree, tree.getClass());
     }
   }
 
@@ -101,6 +110,7 @@ public class FieldAccessNode extends Node {
   }
 
   @Override
+  @SideEffectFree
   public Collection<Node> getOperands() {
     return Collections.singletonList(receiver);
   }

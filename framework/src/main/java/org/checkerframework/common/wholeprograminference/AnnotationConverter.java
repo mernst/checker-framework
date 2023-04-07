@@ -8,48 +8,50 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
+import org.checkerframework.afu.scenelib.Annotation;
+import org.checkerframework.afu.scenelib.el.AnnotationDef;
+import org.checkerframework.afu.scenelib.field.AnnotationFieldType;
+import org.checkerframework.afu.scenelib.field.ArrayAFT;
+import org.checkerframework.afu.scenelib.field.BasicAFT;
+import org.checkerframework.afu.scenelib.field.ClassTokenAFT;
+import org.checkerframework.afu.scenelib.field.EnumAFT;
+import org.checkerframework.afu.scenelib.field.ScalarAFT;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TypesUtils;
 import org.plumelib.reflection.Signatures;
+import org.plumelib.util.ArrayMap;
 import org.plumelib.util.CollectionsPlume;
-import scenelib.annotations.Annotation;
-import scenelib.annotations.el.AnnotationDef;
-import scenelib.annotations.field.AnnotationFieldType;
-import scenelib.annotations.field.ArrayAFT;
-import scenelib.annotations.field.BasicAFT;
-import scenelib.annotations.field.ClassTokenAFT;
-import scenelib.annotations.field.EnumAFT;
-import scenelib.annotations.field.ScalarAFT;
 
 /**
- * This class contains static methods that convert between {@link scenelib.annotations.Annotation}
- * and {@link javax.lang.model.element.AnnotationMirror}.
+ * This class contains static methods that convert between {@link Annotation} and {@link
+ * javax.lang.model.element.AnnotationMirror}.
  */
 public class AnnotationConverter {
 
+  /** Creates a new AnnotationConverter. */
+  AnnotationConverter() {}
+
   /**
-   * Converts an {@link javax.lang.model.element.AnnotationMirror} into an {@link
-   * scenelib.annotations.Annotation}.
+   * Converts an {@link javax.lang.model.element.AnnotationMirror} into an {@link Annotation}.
    *
    * @param am the AnnotationMirror
    * @return the Annotation
    */
   public static Annotation annotationMirrorToAnnotation(AnnotationMirror am) {
-    @SuppressWarnings("signature:argument.type.incompatible") // TODO: bug for inner classes
+    @SuppressWarnings("signature:argument") // TODO: bug for inner classes
     AnnotationDef def =
         new AnnotationDef(
             AnnotationUtils.annotationName(am),
             String.format(
                 "annotationMirrorToAnnotation %s [%s] keyset=%s",
                 am, am.getClass(), am.getElementValues().keySet()));
-    Map<String, AnnotationFieldType> fieldTypes = new HashMap<>(am.getElementValues().size());
+    Map<String, AnnotationFieldType> fieldTypes = new ArrayMap<>(am.getElementValues().size());
     // Handling cases where there are fields in annotations.
     for (ExecutableElement ee : am.getElementValues().keySet()) {
       AnnotationFieldType aft = getAnnotationFieldType(ee);
@@ -82,8 +84,7 @@ public class AnnotationConverter {
   }
 
   /**
-   * Converts an {@link scenelib.annotations.Annotation} into an {@link
-   * javax.lang.model.element.AnnotationMirror}.
+   * Converts an {@link Annotation} into an {@link javax.lang.model.element.AnnotationMirror}.
    *
    * @param anno the Annotation
    * @param processingEnv the ProcessingEnvironment
@@ -138,19 +139,19 @@ public class AnnotationConverter {
         return BasicAFT.forType(short.class);
 
       case ARRAY:
-        TypeMirror componentType = (((ArrayType) tm).getComponentType());
+        TypeMirror componentType = ((ArrayType) tm).getComponentType();
         AnnotationFieldType componentAFT = typeMirrorToAnnotationFieldType(componentType);
         return new ArrayAFT((ScalarAFT) componentAFT);
 
       case DECLARED:
-        Name className = TypesUtils.getQualifiedName((DeclaredType) tm);
-        if (className.contentEquals("java.lang.String")) {
+        String className = TypesUtils.getQualifiedName((DeclaredType) tm);
+        if (className.equals("java.lang.String")) {
           return BasicAFT.forType(String.class);
-        } else if (className.contentEquals("java.lang.Class")) {
+        } else if (className.equals("java.lang.Class")) {
           return ClassTokenAFT.ctaft;
         } else {
           // This must be an enum constant.
-          return new EnumAFT(className.toString());
+          return new EnumAFT(className);
         }
 
       default:

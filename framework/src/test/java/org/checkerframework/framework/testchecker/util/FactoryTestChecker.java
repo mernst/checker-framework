@@ -20,6 +20,7 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.tools.JavaFileObject;
 import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.source.SourceChecker;
@@ -68,10 +69,6 @@ import org.checkerframework.javacutil.TreeUtils;
  * -Afactory} command-line argument (e.g. {@code
  * -Afactory=checkers.nullness.NullnessAnnotatedTypeFactory}). The factory needs to have a
  * constructor of the form {@code <init>(ProcessingEnvironment, CompilationUnitTree)}.
- */
-/*
- * The code here is one of the most ugliest I have ever written.  I should revise
- * it in the future.  - Mahmood
  */
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @SupportedOptions({"checker"})
@@ -232,7 +229,7 @@ public class FactoryTestChecker extends BaseTypeChecker {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
       if (o instanceof TreeSpec) {
         TreeSpec other = (TreeSpec) o;
         return treeString.equals(other.treeString) && lineNumber == other.lineNumber;

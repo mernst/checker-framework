@@ -20,10 +20,10 @@ annotations invariably lead to checker warnings.
 
 This chapter describes how to eliminate
 the warnings by adding annotations to the library.
-(Alternately, you can instead
+(Alternately, the \code{-AskipUses} or \code{-AonlyUses} command-line
+option can
 suppress all warnings related to an unannotated library, or to part of your
-codebase, by use of the
-\code{-AskipUses} or \code{-AonlyUses} command-line option; see
+codebase; see
 Sections~\ref{askipuses}--\ref{askipdefs}.)
 
 You can write annotations for a library, and make them known to a checker, in two ways.
@@ -228,8 +228,8 @@ This section describes how to create an annotated library.
 
 \begin{enumerate}
 \item See the
-  \ahref{https://search.maven.org/search?q=org.checkerframework.annotatedlib}{the
-  \<org.checkerframework.annotatedlib> group in the Maven Central Repository}
+  \href{https://search.maven.org/search?q=org.checkerframework.annotatedlib}{\<org.checkerframework.annotatedlib>
+    group in the Maven Central Repository}
   to find out whether an annotated version of the library already exists.
 %% This adds clutter to the source code, so omit the step from these instructions.
 % \item Optionally, run a script that adds
@@ -253,7 +253,7 @@ This section describes how to create an annotated library.
     Add a line in its main README to indicate that this is an annotated
     version of the library.  That line should also indicate how to obtain
     the corresponding upstream version (typically a git tag
-    \ahref{https://rawgit.com/typetools/checker-framework/master/docs/developer/developer-manual.html#annotated-library-version-numbers}{corresponding
+    \href{https://checkerframework.org/manual/developer-manual.html#annotated-library-version-numbers}{corresponding
       to a release}), so that others can see exactly what edits you have
     made.
 
@@ -398,8 +398,10 @@ defaults and type-checking warnings are issued.
 may be passed to the \<-processor> command-line argument:  the
 fully-qualified class name for the checker, or a shorthand for built-in
 checkers (see Section~\ref{shorthand-for-checkers}).
+The argument to \refqualclass{framework/qual}{AnnotatedFor} is not an
+annotation name, but a checker name.
 Writing \<@AnnotatedFor> on a class doesn't necessarily mean that you wrote
-any annotations, but that the user examined the source code and verified
+any annotations, but that you examined the source code and verified
 that all appropriate annotations are present.
 
 \begin{sloppypar}
@@ -432,6 +434,13 @@ These sections illustrate stub classes via the example of creating a \refqualcla
 version of \code{java.lang.String}.  You don't need to repeat these steps
 to handle \code{java.lang.String} for the Interning Checker,
 but you might do something similar for a different class and/or checker.
+
+There are two types of annotation files, which are files containing annotations that
+can be read by the Checker Framework.
+This section describes stub files, which are used by programmers and
+type system designers.
+Section~\ref{ajava-files} dscribes ajava files, which are used by
+tools, such as type inference.
 
 
 \subsectionAndLabel{Using a stub file}{stub-using}
@@ -493,6 +502,10 @@ stub file), then, for each type hierarchy, the last annotation read is used.
 
 The annotated JDK is read as a stub file.
 You can override JDK annotations by providing your own stub file.
+If your stub file contains a JDK method \<m>, then no type annotations from
+the JDK's \<m> are used.  If the JDK's \<m> contains a declaration
+annotation \<@D>, it is used unless your stub file contains a different
+\<@D> annotation for \<m>.
 
 The command-line option \<-AmergeStubsWithSource> tells the checker to use
 both source files and stub files.  The checker permits only values that are
@@ -520,7 +533,7 @@ superclass, even though the subclass inherits (does not define) the method.
 An example, \<SecureRandom.nextInt()>, is shown below.
 
 To express that method \<m> has a different type in subclass \<Sub> than
-where \<m> is defined, write a ``fake override'':  write the method in in
+where \<m> is defined, write a ``fake override'':  write the method in
 class \<Sub> in a stub file.  The Checker Framework will use that type for
 \<m> at calls where the receiver's declared type is \<Sub> or lower.
 
@@ -803,10 +816,24 @@ Some command-line options make the stub parser issue more warnings:
 
 \begin{description}
 \item[\<-AstubWarnIfNotFound>]
-  Warn whenever some element of a stub file cannot be found.
+\item[\<-AstubNoWarnIfNotFound>]
+  The Checker Framework can issue a ``Type not found'' warning
+  when a stub file contains a nonexistent
+  element, for example when the stub file mentions a method that the class
+  does not contain.
+  By default, the Checker Framework warns about such problems in a stub
+  file provided on the command line, but does not warn about built-in stub files.
+  These command-line options turn the warnings on or off (respectively) for
+  all stub files. \\
   The \<@NoStubParserWarning> annotation on a package or type in a stub file
-  overrides the \<-AstubWarnIfNotFound> command-line option, and no warning
-  will be issued.
+  causes no warning to be issued for that package or type, regardless of
+  the command-line options.
+
+  % These warnings are not enabled by default because they would produce too
+  % much output.  An example of an innocuous warning is when a stub file is
+  % written for library version B but library version A is on the classpath.  A
+  % warning is issued for every method that is in the stub file but not in
+  % version A which is on the classpath.
 
 \item[\<-AstubWarnIfNotFoundIgnoresClasses>]
   Modifies the behavior of \<-AstubWarnIfNotFound>
@@ -817,7 +844,9 @@ Some command-line options make the stub parser issue more warnings:
 \item[\<-AstubWarnIfRedundantWithBytecode>]
   Warn if a stub file entry is redundant with bytecode information.  The
   warning means that the stub file's type is the same as the bytecode type,
-  so that entry in the stub file is not necessary.
+  so that entry in the stub file has no effect.  You could remove the
+  entry in the stub file to make it shorter, or you could add an annotation
+  to the stub file to make the entry have an effect.
 
 %% Uncomment when https://tinyurl.com/cfissue/2759 is fixed.
 % \item[\<-AstubWarnIfOverwritesBytecode>]
@@ -826,7 +855,8 @@ Some command-line options make the stub parser issue more warnings:
 
 \item[\<-AstubWarnNote>]
   Issue a ``note'', not a warning, for the \<-AstubWarn*> command-line
-  arguments.  A warning prevents further compilation, but a note permits
+  arguments.  A warning may prevents further compilation (depending on
+  whether the \<-Werror> command-line argument is passed), but a note permits
   compilation to proceed.
 
 \end{description}
@@ -871,16 +901,15 @@ can be read by the Checker Framework.
 Section~\ref{stub} describes stub files, which are used by programmers and
 type system designers.
 This section dscribes ajava files.
+Ajava files are read and written by tools, such as whole-program type
+inference (see Section~\ref{whole-program-inference}).  This section about
+ajava files is primarily of interest to the maintainers of such tools.
 
-Ajava files are simply valid Java
-source files whose annotations the Checker Framework can read.
-The Checker Framework can read their annotations that are written
-on anonymous and local classes (annotations in such locations are ignored
-in stub files).
-
-Ajava files are typically read and written by tools, such as whole-program
-inference (see Section~\ref{whole-program-inference}).  This section is
-primarily of interest to the maintainers of those tools.
+An ajava file is simply a valid Java source file.
+The Checker Framework reads its annotations.
+(This includes annotations that are written
+on anonymous and local classes --- annotations in such locations are ignored
+in stub files.)
 
 
 \subsectionAndLabel{Using an Ajava file}{ajava-using}
@@ -899,7 +928,7 @@ For example:
 \end{Verbatim}
 \end{myxsmall}
 
-If there's an annotation in both a source file file and the corresponding a
+If there's an annotation in both a source file and the corresponding a
 source file, the Checker Framework uses the greatest lower bound, as with
 the \code{-AmergeStubsWithSource} option.
 
@@ -909,13 +938,23 @@ the \code{-AmergeStubsWithSource} option.
 
 If the Checker Framework reads both a source file and an ajava file that
 corresponds to it, then the source file and the ajava file must have a
-specific relationship to one another.
+specific relationship to one another, to prevent errors that could occur
+due to mismatches.
 
 
 \subsubsectionAndLabel{Names of ajava files}{ajava-file-name}
 
-The ajava file must be found below one of the arguments to
-\code{-Aajava}, in a subdirectory matching its package name.
+The ajava file must either (1) be found below one of the arguments to
+\code{-Aajava}, in a subdirectory matching its package name, or (2) be
+unambiguously specified directly with its full path. A pair of \<.ajava>
+files are specified ambiguously if one of their fully-qualified names
+is a substring of the other, and both are specified as \<.ajava> files (rather
+than being found under directories). For example, if the \<-Aajava> argument
+was \<-Aajava=~/foo/Bar.ajava:~/baz/foo/Bar.ajava>, the two \<.ajava> files
+would be considered ambiguous and a \<ambiguous.ajava> warning would be issued.
+Files found under a directory are always unambiguous, because their file structure
+must match their package name; the solution to a \<ambiguous.ajava> warning is to
+convert the specific files in the \<-Aajava> argument to directories.
 
 The ajava file must be named
 \code{ClassName-checker.qualified.name.ajava} where
@@ -953,9 +992,9 @@ The \code{InsertAjavaAnnotations.java} program inserts annotations
 from ajava files into Java files.  This can be used to
 insert the annotations inferred by whole program inference into the source code
 of a program, similarly to the
-\ahref{https://checkerframework.org/annotation-file-utilities/\#insert-annotations-to-source}{\code{insert-annotations-to-source}
+\href{https://checkerframework.org/annotation-file-utilities/#insert-annotations-to-source}{\code{insert-annotations-to-source}
   script} from the
-\ahref{https://checkerframework.org/annotation-file-utilities/}{Annotation
+\href{https://checkerframework.org/annotation-file-utilities/}{Annotation
   File Utilities project}.
 
 Its arguments are a directory containing ajava files and a directory
@@ -971,7 +1010,7 @@ Here is an example invocation:
 \sectionAndLabel{Troubleshooting/debugging annotated libraries}{libraries-troubleshooting}
 
 Sometimes, it may seem that a checker is treating a library as unannotated
-even though the library has annotations.  The compiler has a flags that
+even though the library has annotations.  The compiler has a flag that
 may help you in determining which library files are read.
 
 \begin{description}
@@ -992,7 +1031,7 @@ being silently ignored.  A typo in an annotation name, or a missing
 % LocalWords: CollectionToArrayHeuristics BaseTypeVisitor Xbootclasspath
 % LocalWords: Interning's UsesObjectEquals ApermitMissingJdk AonlyUses java pre
 % LocalWords: Aignorejdkastub AstubWarnIfNotFound AstubDebug dont local'
-% LocalWords: enableForgroundNdefPush BCEL getopt jdk8
+% LocalWords: enableForgroundNdefPush BCEL getopt
 % LocalWords: NoAnnotationFileParserWarning CHECKERFRAMEWORK AnnotatedFor regex
 % LocalWords: AuseConservativeDefaultsForUnannotatedCode buildfile qual
 % LocalWords: AprintUnannotatedMethods checkername AskipDefs bcel mkdir

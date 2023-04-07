@@ -55,6 +55,12 @@ To run the Format String Checker, supply the
 \code{-processor org.checkerframework.checker.formatter.FormatterChecker} command-line option to javac.
 \end{sloppypar}
 
+The paper ``A type system for format strings''~\cite{WeitzKSE2014} (ISSTA
+2014,
+\myurl{https://homes.cs.washington.edu/~mernst/pubs/format-string-issta2014-abstract.html})
+gives more details about the Format String Checker and the Internationalization Format
+String Checker (\chapterpageref{i18n-formatter-checker});
+
 
 \sectionAndLabel{Formatting terminology}{formatter-terminology}
 
@@ -542,7 +548,7 @@ literal is a valid format string or not.  When a string is computed or is
 obtained from an external resource, then the string must be trusted or tested.
 
 One way to test a string is to call the
-\refmethod{checker/formatter/util}{FormatUtil}{asFormat}{-java.lang.String-org.checkerframework.checker.formatter.qual.ConversionCategory...-}
+\refmethod{checker/formatter/util}{FormatUtil}{asFormat}{(java.lang.String,org.checkerframework.checker.formatter.qual.ConversionCategory...)}
 method to check whether the format string is valid and its format
 specifiers match certain conversion categories.
 If this is not the case, \<asFormat> raises an exception.  Your code should
@@ -586,6 +592,6 @@ must be on the classpath at run time.
 
 %  LocalWords:  printf InvalidFormat Formatter FormatBottom specifier's
 %  LocalWords:  ConversionCategory isValidCodePoint BigInteger BigDecimal
-%  LocalWords:  varargs TODO Formattable formatTo FormatUtil java qual
+%  LocalWords:  varargs TODO Formattable formatTo FormatUtil qual
 %  LocalWords:  asFormat printFloatAndInt formatter CharSequence
 %%  LocalWords:  UnknownFormat FormatMethod

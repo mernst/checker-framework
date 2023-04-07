@@ -88,7 +88,8 @@ public class TestDiagnosticUtils {
   public static TestDiagnostic fromJavaxToolsDiagnostic(
       String diagnosticString, boolean noMsgText) {
     // It would be nice not to parse this from the diagnostic string.
-    // However, diagnostic.toString() may contain "[unchecked]" even though getMessage() does not.
+    // However, diagnostic.toString() may contain "[unchecked]" even though getMessage() does
+    // not.
     // Since we want to match the error messages reported by javac exactly, we must parse.
     Pair<String, String> trimmed = formatJavaxToolString(diagnosticString, noMsgText);
     return fromPatternMatching(
@@ -112,8 +113,8 @@ public class TestDiagnosticUtils {
         lineNumber,
         DiagnosticKind.JSpecify,
         stringFromJavaFile,
-        /*isFixable=*/ false,
-        /*omitParentheses=*/ true);
+        /* isFixable= */ false,
+        /* omitParentheses= */ true);
   }
 
   /**
@@ -199,11 +200,11 @@ public class TestDiagnosticUtils {
   }
 
   /**
-   * Given a javax diagnostic, return a pair of (trimmed, fileame), where "trimmed" is the first
+   * Given a javax diagnostic, return a pair of (trimmed, filename), where "trimmed" is the first
    * line of the message, without the leading filename.
    *
    * @param original a javax diagnostic
-   * @param noMsgText whether to do work; if false, this returns a pair of (argument, "").
+   * @param noMsgText whether to do work; if false, this returns a pair of (argument, "")
    * @return the diagnostic, split into message and filename
    */
   public static Pair<String, String> formatJavaxToolString(String original, boolean noMsgText) {
@@ -236,8 +237,8 @@ public class TestDiagnosticUtils {
    * @return true if all lines of the message should be shown
    */
   private static boolean retainAllLines(String message) {
-    // Retain all if it is a thrown exception "unexpected Throwable" or it is a Checker Framework
-    // Error (contains "Compilation unit") or is OutOfMemoryError.
+    // Retain all if it is a thrown exception "unexpected Throwable" or it is a Checker
+    // Framework Error (contains "Compilation unit") or is OutOfMemoryError.
     return message.contains("unexpected Throwable")
         || message.contains("Compilation unit")
         || message.contains("OutOfMemoryError");

@@ -33,9 +33,9 @@ public class CFGProcessor extends BasicTypeProcessor {
 
   /** AST for source file. */
   private @Nullable CompilationUnitTree rootTree;
-  /** Tree node for the specified class. */
+  /** AST node for the specified class. */
   private @Nullable ClassTree classTree;
-  /** Tree node for the specified method. */
+  /** AST node for the specified method. */
   private @Nullable MethodTree methodTree;
 
   /** Result of CFG process; is set by {@link #typeProcessingOver}. */
@@ -87,22 +87,22 @@ public class CFGProcessor extends BasicTypeProcessor {
     rootTree = root;
     return new TreePathScanner<Void, Void>() {
       @Override
-      public Void visitClass(ClassTree node, Void p) {
-        TypeElement el = TreeUtils.elementFromDeclaration(node);
-        if (el.getSimpleName().contentEquals(className)) {
-          classTree = node;
+      public Void visitClass(ClassTree tree, Void p) {
+        TypeElement el = TreeUtils.elementFromDeclaration(tree);
+        if (el != null && el.getSimpleName().contentEquals(className)) {
+          classTree = tree;
         }
-        return super.visitClass(node, p);
+        return super.visitClass(tree, p);
       }
 
       @Override
-      public Void visitMethod(MethodTree node, Void p) {
-        ExecutableElement el = TreeUtils.elementFromDeclaration(node);
-        if (el.getSimpleName().contentEquals(methodName)) {
-          methodTree = node;
-          // Stop execution by throwing an exception. This makes sure that compilation does not
-          // proceed, and thus the AST is not modified by further phases of the compilation (and we
-          // save the work to do the compilation).
+      public Void visitMethod(MethodTree tree, Void p) {
+        ExecutableElement el = TreeUtils.elementFromDeclaration(tree);
+        if (el != null && el.getSimpleName().contentEquals(methodName)) {
+          methodTree = tree;
+          // Stop execution by throwing an exception. This makes sure that compilation
+          // does not proceed, and thus the AST is not modified by further phases of the
+          // compilation (and we save the work to do the compilation).
           throw new RuntimeException();
         }
         return null;
@@ -156,12 +156,16 @@ public class CFGProcessor extends BasicTypeProcessor {
       this.errMsg = errMsg;
     }
 
-    /** Check if the CFG process succeeded. */
+    /**
+     * Check if the CFG process succeeded.
+     *
+     * @return true if the CFG process succeeded
+     */
     @Pure
     @EnsuresNonNullIf(expression = "getCFG()", result = true)
     // TODO: add once #1307 is fixed
     // @EnsuresNonNullIf(expression = "getErrMsg()", result = false)
-    @SuppressWarnings("nullness:contracts.conditional.postcondition.not.satisfied")
+    @SuppressWarnings("nullness:contracts.conditional.postcondition")
     public boolean isSuccess() {
       return isSuccess;
     }

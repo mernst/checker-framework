@@ -11,8 +11,8 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
  * {@link TreeAnnotator} is an abstract SimpleTreeVisitor to be used with {@link ListTreeAnnotator}.
  *
  * <p>This class does not visit component parts of the tree. By default, the visit methods all call
- * {@link #defaultAction(Tree, Object)}, which does nothing unless overriden. Therefore, subclass do
- * not need to call super unless they override {@link #defaultAction(Tree, Object)}.
+ * {@link #defaultAction(Tree, Object)}, which does nothing unless overridden. Therefore, subclass
+ * do not need to call super unless they override {@link #defaultAction(Tree, Object)}.
  *
  * @see ListTreeAnnotator
  * @see PropagationTreeAnnotator
@@ -20,8 +20,14 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
  */
 public abstract class TreeAnnotator extends SimpleTreeVisitor<Void, AnnotatedTypeMirror> {
 
+  /** The type factory. */
   protected final AnnotatedTypeFactory atypeFactory;
 
+  /**
+   * Create a new TreeAnnotator.
+   *
+   * @param atypeFactory the type factory
+   */
   protected TreeAnnotator(AnnotatedTypeFactory atypeFactory) {
     this.atypeFactory = atypeFactory;
   }
@@ -35,8 +41,8 @@ public abstract class TreeAnnotator extends SimpleTreeVisitor<Void, AnnotatedTyp
    * @see org.checkerframework.framework.type.typeannotator.TypeAnnotator
    */
   @Override
-  public Void visitMethod(MethodTree node, AnnotatedTypeMirror p) {
-    return super.visitMethod(node, p);
+  public Void visitMethod(MethodTree tree, AnnotatedTypeMirror p) {
+    return super.visitMethod(tree, p);
   }
 
   /**
@@ -51,7 +57,7 @@ public abstract class TreeAnnotator extends SimpleTreeVisitor<Void, AnnotatedTyp
    * a subtype of the type the AnnotatedTypeFactory computes.
    */
   @Override
-  public Void visitBinary(BinaryTree node, AnnotatedTypeMirror mirror) {
-    return super.visitBinary(node, mirror);
+  public Void visitBinary(BinaryTree tree, AnnotatedTypeMirror mirror) {
+    return super.visitBinary(tree, mirror);
   }
 }

@@ -23,8 +23,8 @@ import org.checkerframework.framework.type.ElementQualifierHierarchy;
 import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
-import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypeSystemError;
 
 /**
  * The Search Index Checker is used to help type the results of calls to the JDK's binary search
@@ -92,7 +92,7 @@ public class SearchIndexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     } else if (areSameByClass(am, SearchIndexFor.class)) {
       return AnnotationUtils.getElementValueArray(am, searchIndexForValueElement, String.class);
     } else {
-      throw new BugInCF("indexForValue(%s)", am);
+      throw new TypeSystemError("indexForValue(%s)", am);
     }
   }
 
@@ -134,15 +134,18 @@ public class SearchIndexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       // annotation that combines their values.
 
       // Each annotation is either NegativeIndexFor or SearchIndexFor.
-      Set<String> combinedArrays = new HashSet<>(getValueElement(a1));
-      combinedArrays.addAll(getValueElement(a2));
+      Set<String> combinedSet = new HashSet<>(getValueElement(a1));
+      combinedSet.addAll(getValueElement(a2));
+      // The list is backed by the given array.
+      List<String> combinedList =
+          Arrays.asList(combinedSet.toArray(new String[combinedSet.size()]));
 
       // NegativeIndexFor <: SearchIndexFor.
       if (areSameByClass(a1, NegativeIndexFor.class)
           || areSameByClass(a2, NegativeIndexFor.class)) {
-        return createNegativeIndexFor(Arrays.asList(combinedArrays.toArray(new String[0])));
+        return createNegativeIndexFor(combinedList);
       } else {
-        return createSearchIndexFor(Arrays.asList(combinedArrays.toArray(new String[0])));
+        return createSearchIndexFor(combinedList);
       }
     }
 

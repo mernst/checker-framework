@@ -10,7 +10,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Set;
-import javax.lang.model.element.Element;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.interning.qual.FindDistinct;
 import org.checkerframework.checker.interning.qual.InternedDistinct;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
@@ -49,7 +50,7 @@ public abstract class AbstractAnalysis<
   /** The transfer function for regular nodes. */
   // TODO: make final. Currently, the transferFunction has a reference to the analysis, so it
   //  can't be created until the Analysis is initialized.
-  protected @Nullable T transferFunction;
+  protected @MonotonicNonNull T transferFunction;
 
   /** The current control flow graph to perform the analysis on. */
   protected @MonotonicNonNull ControlFlowGraph cfg;
@@ -67,7 +68,7 @@ public abstract class AbstractAnalysis<
   protected final IdentityHashMap<Node, V> nodeValues = new IdentityHashMap<>();
 
   /** Map from (effectively final) local variable elements to their abstract value. */
-  protected final HashMap<Element, V> finalLocalValues = new HashMap<>();
+  protected final HashMap<VariableElement, V> finalLocalValues = new HashMap<>();
 
   /**
    * The node that is currently handled in the analysis (if it is running). The following invariant
@@ -161,7 +162,7 @@ public abstract class AbstractAnalysis<
   }
 
   @Override
-  @SuppressWarnings("nullness:contracts.precondition.override.invalid") // implementation field
+  @SuppressWarnings("nullness:contracts.precondition.override") // implementation field
   @RequiresNonNull("cfg")
   public AnalysisResult<V, S> getResult() {
     if (isRunning) {
@@ -169,7 +170,7 @@ public abstract class AbstractAnalysis<
           "AbstractAnalysis::getResult() shouldn't be called when the analysis is running.");
     }
     return new AnalysisResult<>(
-        nodeValues, inputs, cfg.getTreeLookup(), cfg.getUnaryAssignNodeLookup(), finalLocalValues);
+        nodeValues, inputs, cfg.getTreeLookup(), cfg.getPostfixNodeLookup(), finalLocalValues);
   }
 
   @Override
@@ -186,12 +187,11 @@ public abstract class AbstractAnalysis<
           || (currentTree != null && currentTree == n.getTree())) {
         return null;
       }
-      // check that 'n' is a subnode of 'node'. Check immediate operands
+      // check that 'n' is a subnode of 'currentNode'. Check immediate operands
       // first for efficiency.
       assert !n.isLValue() : "Did not expect an lvalue, but got " + n;
-      if (currentNode == n
-          || (!currentNode.getOperands().contains(n)
-              && !currentNode.getTransitiveOperands().contains(n))) {
+      if (!currentNode.getOperands().contains(n)
+          && !currentNode.getTransitiveOperands().contains(n)) {
         return null;
       }
       // fall through when the current node is not 'n', and 'n' is not a subnode.
@@ -220,7 +220,7 @@ public abstract class AbstractAnalysis<
   }
 
   @Override
-  @SuppressWarnings("nullness:contracts.precondition.override.invalid") // implementation field
+  @SuppressWarnings("nullness:contracts.precondition.override") // implementation field
   @RequiresNonNull("cfg")
   public @Nullable S getRegularExitStore() {
     SpecialBlock regularExitBlock = cfg.getRegularExitBlock();
@@ -232,7 +232,7 @@ public abstract class AbstractAnalysis<
   }
 
   @Override
-  @SuppressWarnings("nullness:contracts.precondition.override.invalid") // implementation field
+  @SuppressWarnings("nullness:contracts.precondition.override") // implementation field
   @RequiresNonNull("cfg")
   public @Nullable S getExceptionalExitStore() {
     SpecialBlock exceptionalExitBlock = cfg.getExceptionalExitBlock();
@@ -260,16 +260,30 @@ public abstract class AbstractAnalysis<
 
   @Override
   public @Nullable V getValue(Tree t) {
-    // we don't have a org.checkerframework.dataflow fact about the current node yet
-    if (t == currentTree) {
+    // Dataflow is analyzing the tree, so no value is available.
+    if (t == currentTree || cfg == null) {
       return null;
     }
-    Set<Node> nodesCorrespondingToTree = getNodesForTree(t);
-    if (nodesCorrespondingToTree == null) {
+    V result = getValue(getNodesForTree(t));
+    if (result == null) {
+      result = getValue(cfg.getTreeLookup().get(t));
+    }
+    return result;
+  }
+
+  /**
+   * Returns the least upper bound of the values of {@code nodes}.
+   *
+   * @param nodes a set of nodes
+   * @return the least upper bound of the values of {@code nodes}
+   */
+  private @Nullable V getValue(@Nullable Set<Node> nodes) {
+    if (nodes == null) {
       return null;
     }
+
     V merged = null;
-    for (Node aNode : nodesCorrespondingToTree) {
+    for (Node aNode : nodes) {
       if (aNode.isLValue()) {
         return null;
       }
@@ -280,6 +294,7 @@ public abstract class AbstractAnalysis<
         merged = merged.leastUpperBound(v);
       }
     }
+
     return merged;
   }
 
@@ -323,8 +338,9 @@ public abstract class AbstractAnalysis<
       Node node, TransferInput<V, S> transferInput) {
     assert transferFunction != null : "@AssumeAssertion(nullness): invariant";
     if (node.isLValue()) {
-      // TODO: should the default behavior return a regular transfer result, a conditional transfer
-      //  result (depending on store.containsTwoStores()), or is the following correct?
+      // TODO: should the default behavior return a regular transfer result, a conditional
+      // transfer result (depending on store.containsTwoStores()), or is the following
+      // correct?
       return new RegularTransferResult<>(null, transferInput.getRegularStore());
     }
     transferInput.node = node;
@@ -338,7 +354,7 @@ public abstract class AbstractAnalysis<
       Node lhst = assignment.getTarget();
       if (lhst instanceof LocalVariableNode) {
         LocalVariableNode lhs = (LocalVariableNode) lhst;
-        Element elem = lhs.getElement();
+        VariableElement elem = lhs.getElement();
         if (ElementUtils.isEffectivelyFinal(elem)) {
           V resval = transferResult.getResultValue();
           if (resval != null) {
@@ -358,6 +374,20 @@ public abstract class AbstractAnalysis<
   protected final void init(ControlFlowGraph cfg) {
     initFields(cfg);
     initInitialInputs();
+  }
+
+  /**
+   * Should exceptional control flow for a particular exception type be ignored?
+   *
+   * <p>The default implementation always returns {@code false}. Subclasses should override the
+   * method to implement a different policy.
+   *
+   * @param exceptionType the exception type
+   * @return {@code true} if exceptional control flow due to {@code exceptionType} should be
+   *     ignored, {@code false} otherwise
+   */
+  protected boolean isIgnoredExceptionType(TypeMirror exceptionType) {
+    return false;
   }
 
   /**
@@ -493,7 +523,7 @@ public abstract class AbstractAnalysis<
      */
     @Pure
     @EnsuresNonNullIf(result = false, expression = "poll()")
-    @SuppressWarnings("nullness:contracts.conditional.postcondition.not.satisfied") // forwarded
+    @SuppressWarnings("nullness:contracts.conditional.postcondition") // forwarded
     public boolean isEmpty() {
       return queue.isEmpty();
     }

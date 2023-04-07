@@ -50,7 +50,9 @@ There are two forms of fake enumeration annotations --- above, illustrated
 by \code{@Fenum("A")} and \code{@FenumC}.
 See Section~\ref{fenum-annotations} for descriptions of how to
 introduce both types of fenums. The type qualifiers in gray
-(\code{@FenumTop}, \code{@FenumUnqualified}, and \code{@FenumBottom})
+(\refqualclass{checker/fenum/qual}{FenumTop},
+\refqualclass{checker/fenum/qual}{FenumUnqualified}, and
+\refqualclass{checker/fenum/qual}{FenumBottom})
 should never be written in
 source code; they are used internally by the type system.
 \<@FenumUnqualified> is the default qualifier for unannotated types, except
@@ -188,7 +190,7 @@ To remove this warning message, add a \code{@SuppressWarnings} annotation to eit
 the field or class declaration, for example:
 
 \begin{Verbatim}
-@SuppressWarnings("fenum:assignment.type.incompatible") // initialization of fake enums
+@SuppressWarnings("fenum:assignment") // initialization of fake enums
 class MyConsts {
   public static final @Fenum("A") int ACONST1 = 1;
   public static final @Fenum("A") int ACONST2 = 2;
@@ -203,7 +205,7 @@ The following example introduces two fenums in class \code{TestStatic}
 and then performs a few typical operations.
 
 \begin{Verbatim}
-@SuppressWarnings("fenum:assignment.type.incompatible")   // initialization of fake enums
+@SuppressWarnings("fenum:assignment")   // initialization of fake enums
 public class TestStatic {
   public static final @Fenum("A") int ACONST1 = 1;
   public static final @Fenum("A") int ACONST2 = 2;
@@ -232,11 +234,16 @@ class FenumUser {
 
 Also, see the example project in the \<docs/examples/fenum-extension> directory.
 
+The paper ``Building and using pluggable
+type-checkers''~\cite{DietlDEMS2011} (ICSE 2011,
+\myurl{https://homes.cs.washington.edu/~mernst/pubs/pluggable-checkers-icse2011.pdf})
+describes case studies of the Fake Enum Checker.
+
 
 \sectionAndLabel{The fake enumeration pattern}{fenum-pattern}
 
 Java's
-\href{https://docs.oracle.com/javase/specs/jls/se11/html/jls-8.html#jls-8.9}{\code{enum}}
+\href{https://docs.oracle.com/javase/specs/jls/se17/html/jls-8.html#jls-8.9}{\code{enum}}
 keyword lets you define an enumeration type: a finite set of distinct values
 that are related to one another but are disjoint from all other
 types, including other enumerations.
@@ -282,7 +289,7 @@ primitive types as well as for reference types.
   (ICSE 2011, \url{https://homes.cs.washington.edu/~mernst/pubs/pluggable-checkers-icse2011.pdf#page=3})
 
 \item Java Language Specification on enums:\\
-  \url{https://docs.oracle.com/javase/specs/jls/se11/html/jls-8.html#jls-8.9}
+  \url{https://docs.oracle.com/javase/specs/jls/se17/html/jls-8.html#jls-8.9}
 
 \item Tutorial trail on enums:\\
   \url{https://docs.oracle.com/javase/tutorial/java/javaOO/enum.html}
@@ -294,7 +301,7 @@ primitive types as well as for reference types.
 
 % LocalWords:  enums typesafe Fenum Fenums fenum MyFenum quals fenums Aquals
 % LocalWords:  TestStatic FenumC FenumD myPackage RetentionPolicy IntDef
-% LocalWords:  SubtypeOf FenumTop MyFile Enum enum AWT java jls qual
-%  LocalWords:  FenumUnqualified FenumBottom ElementType classpath typedef
-%%  LocalWords:  bootclasspath AqualDirs myProject myLibrary RUNTIME
-%  LocalWords:  setNavigationMode NavigationMode checkers'' processorpath
+% LocalWords:  SubtypeOf FenumTop MyFile Enum enum AWT jls qual
+% LocalWords:  FenumUnqualified FenumBottom ElementType classpath typedef
+% LocalWords:  bootclasspath AqualDirs myProject myLibrary RUNTIME
+% LocalWords:  setNavigationMode NavigationMode checkers'' processorpath

@@ -184,6 +184,13 @@ public enum ConversionCategory {
   }
 
   /**
+   * The conversion categories that have a corresponding conversion character. This lacks UNUSED,
+   * TIME_AND_INT, etc.
+   */
+  private static final ConversionCategory[] conversionCategoriesWithChar =
+      new ConversionCategory[] {GENERAL, CHAR, INT, FLOAT, TIME};
+
+  /**
    * Converts a conversion character to a category. For example:
    *
    * <pre>{@code
@@ -195,7 +202,7 @@ public enum ConversionCategory {
    */
   @SuppressWarnings("nullness:dereference.of.nullable") // `chars` field is non-null for these
   public static ConversionCategory fromConversionChar(char c) {
-    for (ConversionCategory v : new ConversionCategory[] {GENERAL, CHAR, INT, FLOAT, TIME}) {
+    for (ConversionCategory v : conversionCategoriesWithChar) {
       if (v.chars.contains(String.valueOf(c))) {
         return v;
       }
@@ -210,6 +217,10 @@ public enum ConversionCategory {
   public static boolean isSubsetOf(ConversionCategory a, ConversionCategory b) {
     return intersect(a, b) == a;
   }
+
+  /** Conversion categories that need to be considered by {@link #intersect}. */
+  private static final ConversionCategory[] conversionCategoriesForIntersect =
+      new ConversionCategory[] {CHAR, INT, FLOAT, TIME, CHAR_AND_INT, INT_AND_TIME, NULL};
 
   /**
    * Returns the intersection of two categories. This is seldomly needed.
@@ -240,20 +251,16 @@ public enum ConversionCategory {
       return a;
     }
 
-    @SuppressWarnings(
-        "nullness:argument.type.incompatible") // `types` field is null only for UNUSED and
-    // GENERAL
+    @SuppressWarnings("nullness:argument" // `types` field is null only for UNUSED and GENERAL
+    )
     Set<Class<?>> as = arrayToSet(a.types);
-    @SuppressWarnings(
-        "nullness:argument.type.incompatible") // `types` field is null only for UNUSED and
-    // GENERAL
+    @SuppressWarnings("nullness:argument" // `types` field is null only for UNUSED and GENERAL
+    )
     Set<Class<?>> bs = arrayToSet(b.types);
     as.retainAll(bs); // intersection
-    for (ConversionCategory v :
-        new ConversionCategory[] {CHAR, INT, FLOAT, TIME, CHAR_AND_INT, INT_AND_TIME, NULL}) {
-      @SuppressWarnings(
-          "nullness:argument.type.incompatible") // `types` field is null only for UNUSED
-      // and GENERAL
+    for (ConversionCategory v : conversionCategoriesForIntersect) {
+      @SuppressWarnings("nullness:argument" // `types` field is null only for UNUSED and GENERAL
+      )
       Set<Class<?>> vs = arrayToSet(v.types);
       if (vs.equals(as)) {
         return v;
@@ -261,6 +268,10 @@ public enum ConversionCategory {
     }
     throw new RuntimeException();
   }
+
+  /** Conversion categories that need to be considered by {@link #union}. */
+  private static final ConversionCategory[] conversionCategoriesForUnion =
+      new ConversionCategory[] {NULL, CHAR_AND_INT, INT_AND_TIME, CHAR, INT, FLOAT, TIME};
 
   /**
    * Returns the union of two categories. This is seldomly needed.
@@ -291,20 +302,16 @@ public enum ConversionCategory {
       return INT;
     }
 
-    @SuppressWarnings(
-        "nullness:argument.type.incompatible") // `types` field is null only for UNUSED and
-    // GENERAL
+    @SuppressWarnings("nullness:argument" // `types` field is null only for UNUSED and GENERAL
+    )
     Set<Class<?>> as = arrayToSet(a.types);
-    @SuppressWarnings(
-        "nullness:argument.type.incompatible") // `types` field is null only for UNUSED and
-    // GENERAL
+    @SuppressWarnings("nullness:argument" // `types` field is null only for UNUSED and GENERAL
+    )
     Set<Class<?>> bs = arrayToSet(b.types);
     as.addAll(bs); // union
-    for (ConversionCategory v :
-        new ConversionCategory[] {NULL, CHAR_AND_INT, INT_AND_TIME, CHAR, INT, FLOAT, TIME}) {
-      @SuppressWarnings(
-          "nullness:argument.type.incompatible") // `types` field is null only for UNUSED
-      // and GENERAL
+    for (ConversionCategory v : conversionCategoriesForUnion) {
+      @SuppressWarnings("nullness:argument" // `types` field is null only for UNUSED and GENERAL
+      )
       Set<Class<?>> vs = arrayToSet(v.types);
       if (vs.equals(as)) {
         return v;

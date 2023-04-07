@@ -5,7 +5,6 @@ import com.sun.source.util.TreePath;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -44,6 +43,7 @@ import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.QualifierHierarchy;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 
 /**
@@ -107,10 +107,10 @@ import org.checkerframework.javacutil.AnnotationUtils;
 public class UpperBoundTransfer extends IndexAbstractTransfer {
 
   /** The type factory associated with this transfer function. */
-  private UpperBoundAnnotatedTypeFactory atypeFactory;
+  private final UpperBoundAnnotatedTypeFactory atypeFactory;
 
   /** The int TypeMirror. */
-  TypeMirror intTM;
+  private final TypeMirror intTM;
 
   /**
    * Creates a new UpperBoundTransfer.
@@ -459,7 +459,8 @@ public class UpperBoundTransfer extends IndexAbstractTransfer {
 
     JavaExpression receiver = null;
     if (NodeUtils.isArrayLengthFieldAccess(lengthAccess)) {
-      FieldAccess fa = JavaExpression.fromNodeFieldAccess((FieldAccessNode) lengthAccess);
+      FieldAccess fa =
+          (FieldAccess) JavaExpression.fromNodeFieldAccess((FieldAccessNode) lengthAccess);
       receiver = fa.getReceiver();
 
     } else if (atypeFactory.getMethodIdentifier().isLengthOfMethodInvocation(lengthAccess)) {
@@ -507,7 +508,7 @@ public class UpperBoundTransfer extends IndexAbstractTransfer {
   @Override
   public TransferResult<CFValue, CFStore> visitNumericalAddition(
       NumericalAdditionNode n, TransferInput<CFValue, CFStore> in) {
-    // type of leftNode + rightNode  is  glb(t, s) where
+    // type of  leftNode + rightNode  is  glb(t, s) where
     // t = minusOffset(type(leftNode), rightNode) and
     // s = minusOffset(type(rightNode), leftNode)
 
@@ -519,8 +520,9 @@ public class UpperBoundTransfer extends IndexAbstractTransfer {
 
     UBQualifier glb = t.glb(s);
     if (left.isLessThanLengthQualifier() && right.isLessThanLengthQualifier()) {
-      // If expression i has type @LTLengthOf(value = "f2", offset = "f1.length") int and expression
-      // j is less than or equal to the length of f1, then the type of i + j is @LTLengthOf("f2").
+      // If expression i has type @LTLengthOf(value = "f2", offset = "f1.length") int and
+      // expression j is less than or equal to the length of f1, then the type of i + j is
+      // @LTLengthOf("f2").
       UBQualifier r = removeSequenceLengths((LessThanLengthOf) left, (LessThanLengthOf) right);
       glb = glb.glb(r);
       UBQualifier l = removeSequenceLengths((LessThanLengthOf) right, (LessThanLengthOf) left);
@@ -603,11 +605,12 @@ public class UpperBoundTransfer extends IndexAbstractTransfer {
           try {
             je = UpperBoundVisitor.parseJavaExpressionString(b, atypeFactory, currentPath);
           } catch (NullPointerException npe) {
-            // I have no idea why this seems to happen only on a few JDK classes.  It appears to
-            // only happen during the preprocessing step - the NPE is thrown while trying to find
-            // the enclosing class of a class tree, which is null. I can't find a reproducible test
-            // case that's smaller than the size of DualPivotQuicksort.  Since this refinement is
-            // optional, but useful elsewhere, catching this NPE here and returning is always safe.
+            // I have no idea why this seems to happen only on a few JDK classes.  It
+            // appears to only happen during the preprocessing step - the NPE is thrown
+            // while trying to find the enclosing class of a class tree, which is null.
+            // I can't find a reproducible test case that's smaller than the size of
+            // DualPivotQuicksort.  Since this refinement is optional, but useful
+            // elsewhere, catching this NPE here and returning is always safe.
             return createTransferResult(n, in, leftWithOffset);
           }
 
@@ -692,7 +695,7 @@ public class UpperBoundTransfer extends IndexAbstractTransfer {
   public TransferResult<CFValue, CFStore> visitFieldAccess(
       FieldAccessNode n, TransferInput<CFValue, CFStore> in) {
     if (NodeUtils.isArrayLengthFieldAccess(n)) {
-      FieldAccess arrayLength = JavaExpression.fromNodeFieldAccess(n);
+      FieldAccess arrayLength = (FieldAccess) JavaExpression.fromNodeFieldAccess(n);
       JavaExpression arrayJe = arrayLength.getReceiver();
       Tree arrayTree = n.getReceiver().getTree();
       TransferResult<CFValue, CFStore> result = visitLengthAccess(n, in, arrayJe, arrayTree);
@@ -801,7 +804,7 @@ public class UpperBoundTransfer extends IndexAbstractTransfer {
     if (value == null) {
       return UpperBoundUnknownQualifier.UNKNOWN;
     }
-    Set<AnnotationMirror> set = value.getAnnotations();
+    AnnotationMirrorSet set = value.getAnnotations();
     AnnotationMirror anno = hierarchy.findAnnotationInHierarchy(set, atypeFactory.UNKNOWN);
     if (anno == null) {
       return UpperBoundUnknownQualifier.UNKNOWN;
@@ -823,10 +826,12 @@ public class UpperBoundTransfer extends IndexAbstractTransfer {
     // Refines subtrahend in the switch expression
     // TODO: This cannot be done in strengthenAnnotationOfEqualTo, because that does not provide
     // transfer input.
-    Node caseNode = n.getCaseOperand();
-    AssignmentNode assign = (AssignmentNode) n.getSwitchOperand();
+    List<Node> caseNodes = n.getCaseOperands();
+    AssignmentNode assign = n.getSwitchOperand();
     Node switchNode = assign.getExpression();
-    refineSubtrahendWithOffset(switchNode, caseNode, false, in, result.getThenStore());
+    for (Node caseNode : caseNodes) {
+      refineSubtrahendWithOffset(switchNode, caseNode, false, in, result.getThenStore());
+    }
     return result;
   }
 
@@ -847,7 +852,7 @@ public class UpperBoundTransfer extends IndexAbstractTransfer {
       default:
         return result;
     }
-    CFValue c = new CFValue(analysis, Collections.singleton(newAnno), intTM);
+    CFValue c = new CFValue(analysis, AnnotationMirrorSet.singleton(newAnno), intTM);
     return new RegularTransferResult<>(c, result.getRegularStore());
   }
 }

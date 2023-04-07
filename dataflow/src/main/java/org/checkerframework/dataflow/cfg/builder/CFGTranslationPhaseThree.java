@@ -13,10 +13,7 @@ import org.checkerframework.dataflow.cfg.block.ConditionalBlockImpl;
 import org.checkerframework.dataflow.cfg.block.ExceptionBlockImpl;
 import org.checkerframework.dataflow.cfg.block.RegularBlockImpl;
 import org.checkerframework.dataflow.cfg.block.SingleSuccessorBlockImpl;
-
-/* --------------------------------------------------------- */
-/* Phase Three */
-/* --------------------------------------------------------- */
+import org.checkerframework.javacutil.BugInCF;
 
 /**
  * Class that performs phase three of the translation process. In particular, the following
@@ -56,7 +53,6 @@ public class CFGTranslationPhaseThree {
   @SuppressWarnings("nullness") // TODO: successors
   public static ControlFlowGraph process(ControlFlowGraph cfg) {
     Set<Block> worklist = cfg.getAllBlocks();
-    Set<Block> dontVisit = new HashSet<>();
 
     // note: this method has to be careful when relinking basic blocks
     // to not forget to adjust the predecessors, too
@@ -64,7 +60,7 @@ public class CFGTranslationPhaseThree {
     // fix predecessor lists by removing any unreachable predecessors
     for (Block c : worklist) {
       BlockImpl cur = (BlockImpl) c;
-      for (Block pred : new HashSet<>(cur.getPredecessors())) {
+      for (Block pred : cur.getPredecessors()) {
         if (!worklist.contains(pred)) {
           cur.removePredecessor((BlockImpl) pred);
         }
@@ -72,6 +68,7 @@ public class CFGTranslationPhaseThree {
     }
 
     // remove empty blocks
+    Set<Block> dontVisit = new HashSet<>();
     for (Block cur : worklist) {
       if (dontVisit.contains(cur)) {
         continue;
@@ -288,7 +285,7 @@ public class CFGTranslationPhaseThree {
         if (e.getSuccessor() == cur) {
           return singleSuccessorHolder(e, cur);
         } else {
-          @SuppressWarnings("keyfor:assignment.type.incompatible") // ignore keyfor type
+          @SuppressWarnings("keyfor:assignment") // ignore keyfor type
           Set<Map.Entry<TypeMirror, Set<Block>>> entrySet = e.getExceptionalSuccessors().entrySet();
           for (final Map.Entry<TypeMirror, Set<Block>> entry : entrySet) {
             if (entry.getValue().contains(cur)) {
@@ -307,12 +304,12 @@ public class CFGTranslationPhaseThree {
             }
           }
         }
-        throw new Error("Unreachable");
+        throw new BugInCF("Unreachable");
       case REGULAR_BLOCK:
         RegularBlockImpl r = (RegularBlockImpl) pred;
         return singleSuccessorHolder(r, cur);
       default:
-        throw new Error("Unexpected block type " + pred.getType());
+        throw new BugInCF("Unexpected block type " + pred.getType());
     }
   }
 

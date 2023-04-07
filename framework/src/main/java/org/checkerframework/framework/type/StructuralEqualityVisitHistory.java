@@ -12,14 +12,12 @@ public class StructuralEqualityVisitHistory {
 
   /**
    * Types in this history are structurally equal. (Use {@link SubtypeVisitHistory} because it
-   * implements a {@code Map<Pair<AnnotatedTypeMirror, AnnotatedTypeMirror>,
-   * Set<AnnotationMirror>>})
+   * implements a {@code Map<Pair<AnnotatedTypeMirror, AnnotatedTypeMirror>, AnnotationMirrorSet>})
    */
   private final SubtypeVisitHistory trueHistory;
   /**
    * Types in this history are not structurally equal. (Use {@link SubtypeVisitHistory} because it
-   * implements a {@code Map<Pair<AnnotatedTypeMirror, AnnotatedTypeMirror>,
-   * Set<AnnotationMirror>>})
+   * implements a {@code Map<Pair<AnnotatedTypeMirror, AnnotatedTypeMirror>, AnnotationMirrorSet>})
    */
   private final SubtypeVisitHistory falseHistory;
 
@@ -74,5 +72,20 @@ public class StructuralEqualityVisitHistory {
       return true;
     }
     return null;
+  }
+
+  /**
+   * Remove the result of comparing {@code type1} and {@code type2} for structural equality for the
+   * given hierarchy.
+   *
+   * @param type1 the first type
+   * @param type2 the second type
+   * @param hierarchy the top of the relevant type hierarchy; only annotations from that hierarchy
+   *     are considered
+   */
+  public void remove(
+      AnnotatedTypeMirror type1, AnnotatedTypeMirror type2, AnnotationMirror hierarchy) {
+    falseHistory.remove(type1, type2, hierarchy);
+    trueHistory.remove(type1, type2, hierarchy);
   }
 }

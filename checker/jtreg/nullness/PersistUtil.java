@@ -2,23 +2,26 @@
 // is added to the invocation of the compiler!
 // TODO: add a @Processor method-annotation to parameterize
 
-/**
- * This class has auxiliary methods to compile a class and return its classfile. It is used by
- * defaultPersists/Driver and inheritDeclAnnoPersist/Driver.
- */
 import com.sun.tools.classfile.ClassFile;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.StringJoiner;
 
+/**
+ * This class has auxiliary methods to compile a class and return its classfile. It is used by
+ * defaultPersists/Driver and inheritDeclAnnoPersist/Driver.
+ */
 public class PersistUtil {
 
   public static String testClassOf(Method m) {
@@ -38,9 +41,9 @@ public class PersistUtil {
 
   public static File writeTestFile(String fullFile) throws IOException {
     File f = new File("Test.java");
-    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(f)));
-    out.println(fullFile);
-    out.close();
+    try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(f)))) {
+      out.println(fullFile);
+    }
     return f;
   }
 
@@ -48,8 +51,6 @@ public class PersistUtil {
     int rc =
         com.sun.tools.javac.Main.compile(
             new String[] {
-              "-source",
-              "1.8",
               "-g",
               "-processor",
               "org.checkerframework.checker.nullness.NullnessChecker",
@@ -58,14 +59,27 @@ public class PersistUtil {
     if (rc != 0) {
       throw new Error("compilation failed. rc=" + rc);
     }
-    String path;
-    if (f.getParent() != null) {
-      path = f.getParent();
-    } else {
-      path = "";
+
+    File result = new File(f.getParent(), testClass + ".class");
+
+    // This diagnostic code preserves temporary files and prints the paths where they are
+    // preserved.
+    if (false) {
+      try {
+        File tempDir = new File(System.getProperty("java.io.tmpdir"));
+        File fCopy = File.createTempFile("FCopy", ".java", tempDir);
+        File resultCopy = File.createTempFile("FCopy", ".class", tempDir);
+        // REPLACE_EXISTING is essential in the `Files.copy()` calls because createTempFile
+        // actually creates a file in addition to returning its name.
+        Files.copy(f.toPath(), fCopy.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(result.toPath(), resultCopy.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        System.out.printf("comileTestFile: copied to %s %s%n", fCopy, resultCopy);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
     }
 
-    return new File(path + testClass + ".class");
+    return result;
   }
 
   public static String wrap(String compact) {

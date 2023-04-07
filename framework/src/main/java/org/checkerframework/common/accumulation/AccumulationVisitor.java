@@ -7,8 +7,8 @@ import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
- * The visitor for an accumulation checker. Issues predicate.invalid errors if the user writes an
- * invalid predicate.
+ * The visitor for an accumulation checker. Issues predicate errors if the user writes an invalid
+ * predicate.
  */
 public class AccumulationVisitor extends BaseTypeVisitor<AccumulationAnnotatedTypeFactory> {
 
@@ -23,14 +23,14 @@ public class AccumulationVisitor extends BaseTypeVisitor<AccumulationAnnotatedTy
 
   /** Checks each predicate annotation to make sure the predicate is well-formed. */
   @Override
-  public Void visitAnnotation(final AnnotationTree node, final Void p) {
-    AnnotationMirror anno = TreeUtils.annotationFromAnnotationTree(node);
+  public Void visitAnnotation(final AnnotationTree tree, final Void p) {
+    AnnotationMirror anno = TreeUtils.annotationFromAnnotationTree(tree);
     if (atypeFactory.isPredicate(anno)) {
       String errorMessage = atypeFactory.isValidPredicate(anno);
       if (errorMessage != null) {
-        checker.reportError(node, "predicate.invalid", errorMessage);
+        checker.reportError(tree, "predicate", errorMessage);
       }
     }
-    return super.visitAnnotation(node, p);
+    return super.visitAnnotation(tree, p);
   }
 }

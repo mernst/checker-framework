@@ -33,10 +33,10 @@ import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
+import org.checkerframework.javacutil.SystemUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypeSystemError;
 import org.checkerframework.javacutil.UserError;
-import org.plumelib.util.CollectionsPlume;
 
 /**
  * An annotated type factory for an accumulation checker.
@@ -198,7 +198,7 @@ public abstract class AccumulationAnnotatedTypeFactory extends BaseAnnotatedType
    */
   public AnnotationMirror createAccumulatorAnnotation(List<String> values) {
     AnnotationBuilder builder = new AnnotationBuilder(processingEnv, accumulator);
-    builder.setValue("value", CollectionsPlume.withoutDuplicates(values));
+    builder.setValue("value", SystemUtil.withoutDuplicatesSorted(values));
     return builder.build();
   }
 
@@ -474,8 +474,9 @@ public abstract class AccumulationAnnotatedTypeFactory extends BaseAnnotatedType
         if (isPolymorphicQualifier(superAnno)) {
           return true;
         } else {
-          // Use this slightly more expensive conversion here because this is a rare code path and
-          // it's simpler to read than checking for both predicate and non-predicate forms of top.
+          // Use this slightly more expensive conversion here because this is a rare code
+          // path and it's simpler to read than checking for both predicate and
+          // non-predicate forms of top.
           return "".equals(convertToPredicate(superAnno));
         }
       } else if (isPolymorphicQualifier(superAnno)) {
@@ -535,14 +536,13 @@ public abstract class AccumulationAnnotatedTypeFactory extends BaseAnnotatedType
    *   <li>contains a parse-able predicate
    * </ul>
    *
-   * Used by the visitor to throw "predicate.invalid" errors; thus must be package-private.
+   * Used by the visitor to throw "predicate" errors; thus must be package-private.
    *
    * @param anm any annotation supported by this checker
    * @return null if there is nothing wrong with the annotation, or an error message indicating the
    *     problem if it has an invalid predicate
    */
-  /* package-private */
-  @Nullable String isValidPredicate(AnnotationMirror anm) {
+  /*package-private*/ @Nullable String isValidPredicate(AnnotationMirror anm) {
     String pred = convertToPredicate(anm);
     try {
       evaluatePredicate(Collections.emptyList(), pred);

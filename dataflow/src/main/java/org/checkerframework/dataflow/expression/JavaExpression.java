@@ -10,6 +10,7 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewArrayTree;
 import com.sun.source.tree.NewClassTree;
+import com.sun.source.tree.Tree;
 import com.sun.source.tree.UnaryTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
@@ -18,11 +19,13 @@ import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.interning.qual.EqualsMethod;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.analysis.Store;
 import org.checkerframework.dataflow.cfg.node.ArrayAccessNode;
@@ -107,7 +110,6 @@ public abstract class JavaExpression {
    * @param provider an annotation provider (a type factory)
    * @return true if all the expressions in the list are deterministic
    */
-  @SuppressWarnings("nullness:dereference.of.nullable") // flow within a lambda
   public static boolean listIsDeterministic(
       List<? extends @Nullable JavaExpression> list, AnnotationProvider provider) {
     return list.stream().allMatch(je -> je == null || je.isDeterministic(provider));
@@ -152,7 +154,7 @@ public abstract class JavaExpression {
    * @param lst2 the second list to compare
    * @return true if the corresponding list elements satisfy {@link #syntacticEquals}
    */
-  static boolean syntacticEqualsList(
+  public static boolean syntacticEqualsList(
       List<? extends @Nullable JavaExpression> lst1,
       List<? extends @Nullable JavaExpression> lst2) {
     if (lst1.size() != lst2.size()) {
@@ -193,7 +195,6 @@ public abstract class JavaExpression {
    * @return true if and only if the list contains a JavaExpression that is syntactically equal to
    *     {@code other}
    */
-  @SuppressWarnings("nullness:dereference.of.nullable") // flow within a lambda
   public static boolean listContainsSyntacticEqualJavaExpression(
       List<? extends @Nullable JavaExpression> list, JavaExpression other) {
     return list.stream()
@@ -225,15 +226,23 @@ public abstract class JavaExpression {
   ///
 
   /**
-   * Returns the internal representation (as {@link FieldAccess}) of a {@link FieldAccessNode}. The
-   * result may contain {@link Unknown} as receiver.
+   * Returns the Java expression for a {@link FieldAccessNode}. The result may contain {@link
+   * Unknown} as receiver.
    *
    * @param node the FieldAccessNode to convert to a JavaExpression
-   * @return the internal representation (as {@link FieldAccess}) of a {@link FieldAccessNode}. Can
-   *     contain {@link Unknown} as receiver.
+   * @return the {@link FieldAccess} or {@link ClassName} that corresponds to {@code node}
    */
-  public static FieldAccess fromNodeFieldAccess(FieldAccessNode node) {
+  public static JavaExpression fromNodeFieldAccess(FieldAccessNode node) {
     Node receiverNode = node.getReceiver();
+    String fieldName = node.getFieldName();
+    if (fieldName.equals("this")) {
+      // The CFG represents "className.this" as a FieldAccessNode, but it isn't a field
+      // access.
+      return new ThisReference(receiverNode.getType());
+    } else if (fieldName.equals("class")) {
+      // The CFG represents "className.class" as a FieldAccessNode; bit it is a class literal.
+      return new ClassName(receiverNode.getType());
+    }
     JavaExpression receiver;
     if (node.isStatic()) {
       receiver = new ClassName(receiverNode.getType());
@@ -266,21 +275,7 @@ public abstract class JavaExpression {
   public static JavaExpression fromNode(Node receiverNode) {
     JavaExpression result = null;
     if (receiverNode instanceof FieldAccessNode) {
-      FieldAccessNode fan = (FieldAccessNode) receiverNode;
-
-      if (fan.getFieldName().equals("this")) {
-        // For some reason, "className.this" is considered a field access.
-        // We right this wrong here.
-        result = new ThisReference(fan.getReceiver().getType());
-      } else if (fan.getFieldName().equals("class")) {
-        // "className.class" is considered a field access. This makes sense, since .class is similar
-        // to a field access which is the equivalent of a call to getClass(). However for the
-        // purposes of dataflow analysis, and value stores, this is the equivalent of a
-        // ClassNameNode.
-        result = new ClassName(fan.getReceiver().getType());
-      } else {
-        result = fromNodeFieldAccess(fan);
-      }
+      result = fromNodeFieldAccess((FieldAccessNode) receiverNode);
     } else if (receiverNode instanceof ExplicitThisNode) {
       result = new ThisReference(receiverNode.getType());
     } else if (receiverNode instanceof ThisNode) {
@@ -414,7 +409,11 @@ public abstract class JavaExpression {
             CollectionsPlume.mapList(JavaExpression::fromTree, mn.getArguments());
         JavaExpression methodReceiver;
         if (ElementUtils.isStatic(invokedMethod)) {
-          methodReceiver = new ClassName(TreeUtils.typeOf(mn.getMethodSelect()));
+          @SuppressWarnings(
+              "nullness:assignment" // enclosingTypeElement(ExecutableElement): @NonNull
+          )
+          @NonNull TypeElement methodType = ElementUtils.enclosingTypeElement(invokedMethod);
+          methodReceiver = new ClassName(methodType.asType());
         } else {
           methodReceiver = getReceiver(mn);
         }
@@ -429,18 +428,20 @@ public abstract class JavaExpression {
       case IDENTIFIER:
         IdentifierTree identifierTree = (IdentifierTree) tree;
         TypeMirror typeOfId = TreeUtils.typeOf(identifierTree);
-        if (identifierTree.getName().contentEquals("this")
-            || identifierTree.getName().contentEquals("super")) {
+        Name identifierName = identifierTree.getName();
+        if (identifierName.contentEquals("this") || identifierName.contentEquals("super")) {
           result = new ThisReference(typeOfId);
           break;
         }
         assert TreeUtils.isUseOfElement(identifierTree) : "@AssumeAssertion(nullness): tree kind";
         Element ele = TreeUtils.elementFromUse(identifierTree);
-        if (ElementUtils.isTypeElement(ele)) {
+        if (ele == null) {
+          result = null;
+        } else if (ElementUtils.isTypeElement(ele)) {
           result = new ClassName(ele.asType());
-          break;
+        } else {
+          result = fromVariableElement(typeOfId, (VariableElement) ele, identifierTree);
         }
-        result = fromVariableElement(typeOfId, ele);
         break;
 
       case UNARY_PLUS:
@@ -495,7 +496,8 @@ public abstract class JavaExpression {
    * @return a JavaExpression for {@code tree}
    */
   public static JavaExpression fromVariableTree(VariableTree tree) {
-    return fromVariableElement(TreeUtils.typeOf(tree), TreeUtils.elementFromDeclaration(tree));
+    return fromVariableElement(
+        TreeUtils.typeOf(tree), TreeUtils.elementFromDeclaration(tree), tree);
   }
 
   /**
@@ -503,9 +505,14 @@ public abstract class JavaExpression {
    *
    * @param typeOfEle the type of {@code ele}
    * @param ele element whose JavaExpression is returned
+   * @param tree the tree for the variable
    * @return the Java expression corresponding to the given variable element {@code ele}
    */
-  private static JavaExpression fromVariableElement(TypeMirror typeOfEle, Element ele) {
+  private static JavaExpression fromVariableElement(
+      TypeMirror typeOfEle, @Nullable VariableElement ele, Tree tree) {
+    if (ele == null) {
+      return new Unknown(tree);
+    }
     switch (ele.getKind()) {
       case LOCAL_VARIABLE:
       case RESOURCE_VARIABLE:
@@ -523,8 +530,11 @@ public abstract class JavaExpression {
         } else {
           fieldAccessExpression = new ThisReference(enclosingTypeElement);
         }
-        return new FieldAccess(fieldAccessExpression, typeOfEle, (VariableElement) ele);
+        return new FieldAccess(fieldAccessExpression, typeOfEle, ele);
       default:
+        if (ElementUtils.isBindingVariable(ele)) {
+          return new LocalVariable(ele);
+        }
         throw new BugInCF(
             "Unexpected kind of VariableTree: kind: %s element: %s", ele.getKind(), ele);
     }
@@ -539,8 +549,14 @@ public abstract class JavaExpression {
   private static JavaExpression fromMemberSelect(MemberSelectTree memberSelectTree) {
     TypeMirror expressionType = TreeUtils.typeOf(memberSelectTree.getExpression());
     if (TreeUtils.isClassLiteral(memberSelectTree)) {
+      // the identifier is "class"
       return new ClassName(expressionType);
     }
+    if (TreeUtils.isExplicitThisDereference(memberSelectTree)) {
+      // the identifier is "class"
+      return new ThisReference(expressionType);
+    }
+
     assert TreeUtils.isUseOfElement(memberSelectTree) : "@AssumeAssertion(nullness): tree kind";
     Element ele = TreeUtils.elementFromUse(memberSelectTree);
     if (ElementUtils.isTypeElement(ele)) {
@@ -594,9 +610,9 @@ public abstract class JavaExpression {
   ///
 
   /**
-   * Returns the receiver of the given invocation
+   * Returns the receiver of the given invocation.
    *
-   * @param accessTree method or constructor invocation
+   * @param accessTree a method or constructor invocation
    * @return the receiver of the given invocation
    */
   public static JavaExpression getReceiver(ExpressionTree accessTree) {
@@ -619,6 +635,9 @@ public abstract class JavaExpression {
    *
    * <p>Returns either a new ClassName or a new ThisReference depending on whether ele is static or
    * not. The passed element must be a field, method, or class.
+   *
+   * <p>When this returns a ThisReference, its type is the class that declares {@code ele}, which is
+   * not necessarily the type of {@code this} at the invocation site.
    *
    * @param ele a field, method, or class
    * @return either a new ClassName or a new ThisReference depending on whether ele is static or not
@@ -683,6 +702,7 @@ public abstract class JavaExpression {
    * @return viewpoint-adapted version of this
    */
   public final JavaExpression atMethodBody(MethodTree methodTree) {
+    @SuppressWarnings("nullness:argument") // elementFromDeclaration is non-null for a parameter
     List<JavaExpression> parametersJe =
         CollectionsPlume.mapList(
             (VariableTree param) -> new LocalVariable(TreeUtils.elementFromDeclaration(param)),

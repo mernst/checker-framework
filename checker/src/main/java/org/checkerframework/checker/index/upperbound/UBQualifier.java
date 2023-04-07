@@ -20,9 +20,9 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
-import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.Pair;
-import org.checkerframework.javacutil.SystemUtil;
+import org.checkerframework.javacutil.TypeSystemError;
+import org.plumelib.util.CollectionsPlume;
 
 /**
  * Abstraction for Upper Bound annotations. This abstract class has 4 subclasses, each of which is a
@@ -78,12 +78,12 @@ public abstract class UBQualifier {
         // TODO:  Ignores offset.  Should we check that offset is not set?
         return PolyQualifier.POLY;
       default:
-        throw new BugInCF("createUBQualifier(%s, %s, ...)", am, offset);
+        throw new TypeSystemError("createUBQualifier(%s, %s, ...)", am, offset);
     }
   }
 
   /** A cache for the {@link #nCopiesEmptyStringCache} method. */
-  private static List<List<String>> nCopiesEmptyStringCache = new ArrayList<>(10);
+  private static final List<List<String>> nCopiesEmptyStringCache = new ArrayList<>(10);
 
   static {
     nCopiesEmptyStringCache.add(Collections.emptyList());
@@ -125,6 +125,11 @@ public abstract class UBQualifier {
     List<String> sequences =
         AnnotationUtils.getElementValueArray(
             ltLengthOfAnno, ubChecker.ltLengthOfValueElement, String.class);
+    if (sequences.isEmpty()) {
+      // These annotations can be created by delocalization of an LTLengthOf annotation
+      // that only contains local variables at a call site.
+      return UpperBoundUnknownQualifier.UNKNOWN;
+    }
     List<String> offsets =
         AnnotationUtils.getElementValueArray(
             ltLengthOfAnno,
@@ -147,6 +152,11 @@ public abstract class UBQualifier {
     List<String> sequences =
         AnnotationUtils.getElementValueArray(
             substringIndexForAnno, ubChecker.substringIndexForValueElement, String.class);
+    if (sequences.isEmpty()) {
+      // These annotations can be created by delocalization of a SubstringIndexFor annotation
+      // that only contains local variables at a call site.
+      return UpperBoundUnknownQualifier.UNKNOWN;
+    }
     List<String> offsets =
         AnnotationUtils.getElementValueArray(
             substringIndexForAnno, ubChecker.substringIndexForOffsetElement, String.class);
@@ -169,7 +179,8 @@ public abstract class UBQualifier {
     List<String> sequences =
         AnnotationUtils.getElementValueArray(am, ubChecker.ltEqLengthOfValueElement, String.class);
     if (sequences.isEmpty()) {
-      // How did this AnnotationMirror even get made?  It seems invalid.
+      // These annotations can be created by delocalization of an LTEqLengthOf annotation
+      // that only contains local variables at a call site.
       return UpperBoundUnknownQualifier.UNKNOWN;
     }
     List<String> offset = Collections.nCopies(sequences.size(), "-1");
@@ -188,6 +199,11 @@ public abstract class UBQualifier {
       AnnotationMirror am, String extraOffset, UpperBoundChecker ubChecker) {
     List<String> sequences =
         AnnotationUtils.getElementValueArray(am, ubChecker.ltOMLengthOfValueElement, String.class);
+    if (sequences.isEmpty()) {
+      // These annotations can be created by delocalization of an LTOMLengthOf annotation
+      // that only contains local variables at a call site.
+      return UpperBoundUnknownQualifier.UNKNOWN;
+    }
     List<String> offset = Collections.nCopies(sequences.size(), "1");
     return createUBQualifier(sequences, offset, extraOffset);
   }
@@ -400,10 +416,11 @@ public abstract class UBQualifier {
      * @return a copy of the map
      */
     private Map<String, Set<OffsetEquation>> copyMap() {
-      Map<String, Set<OffsetEquation>> result = new HashMap<>(SystemUtil.mapCapacity(map));
+      Map<String, Set<OffsetEquation>> result = new HashMap<>(CollectionsPlume.mapCapacity(map));
       for (String sequenceName : map.keySet()) {
         Set<OffsetEquation> oldEquations = map.get(sequenceName);
-        Set<OffsetEquation> newEquations = new HashSet<>(SystemUtil.mapCapacity(oldEquations));
+        Set<OffsetEquation> newEquations =
+            new HashSet<>(CollectionsPlume.mapCapacity(oldEquations));
         for (OffsetEquation offsetEquation : oldEquations) {
           newEquations.add(new OffsetEquation(offsetEquation));
         }
@@ -445,7 +462,7 @@ public abstract class UBQualifier {
     private static @Nullable Map<String, Set<OffsetEquation>> sequencesAndOffsetsToMap(
         List<String> sequences, List<String> offsets, OffsetEquation extraEq) {
 
-      Map<String, Set<OffsetEquation>> map = new HashMap<>(SystemUtil.mapCapacity(sequences));
+      Map<String, Set<OffsetEquation>> map = new HashMap<>(CollectionsPlume.mapCapacity(sequences));
       if (offsets.isEmpty()) {
         for (String sequence : sequences) {
           // Not `Collections.singleton(extraEq)` because the values get modified
@@ -688,7 +705,7 @@ public abstract class UBQualifier {
         builder.setValue("value", sequences);
         builder.setValue("offset", offsets);
       } else {
-        throw new BugInCF("What annoClass? " + annoClass);
+        throw new TypeSystemError("What annoClass? " + annoClass);
       }
       return builder.build();
     }
@@ -818,7 +835,8 @@ public abstract class UBQualifier {
       Set<String> sequences = new HashSet<>(map.keySet());
       sequences.retainAll(otherLtl.map.keySet());
 
-      Map<String, Set<OffsetEquation>> lubMap = new HashMap<>(SystemUtil.mapCapacity(sequences));
+      Map<String, Set<OffsetEquation>> lubMap =
+          new HashMap<>(CollectionsPlume.mapCapacity(sequences));
       for (String sequence : sequences) {
         Set<OffsetEquation> offsets1 = map.get(sequence);
         Set<OffsetEquation> offsets2 = otherLtl.map.get(sequence);
@@ -1243,7 +1261,7 @@ public abstract class UBQualifier {
     }
 
     /** Functional interface that operates on {@link OffsetEquation}s. */
-    interface OffsetEquationFunction {
+    private interface OffsetEquationFunction {
       /**
        * Returns the result of the computation or null if the passed equation should be removed.
        *
@@ -1291,11 +1309,11 @@ public abstract class UBQualifier {
   public static class UpperBoundLiteralQualifier extends UBQualifier {
 
     /** Represents the value -1. */
-    public static UpperBoundLiteralQualifier NEGATIVEONE = new UpperBoundLiteralQualifier(-1);
+    public static final UpperBoundLiteralQualifier NEGATIVEONE = new UpperBoundLiteralQualifier(-1);
     /** Represents the value 0. */
-    public static UpperBoundLiteralQualifier ZERO = new UpperBoundLiteralQualifier(0);
+    public static final UpperBoundLiteralQualifier ZERO = new UpperBoundLiteralQualifier(0);
     /** Represents the value 1. */
-    public static UpperBoundLiteralQualifier ONE = new UpperBoundLiteralQualifier(1);
+    public static final UpperBoundLiteralQualifier ONE = new UpperBoundLiteralQualifier(1);
 
     /**
      * Creates a new UpperBoundLiteralQualifier, without using cached values.
@@ -1326,14 +1344,14 @@ public abstract class UBQualifier {
     }
 
     /** The integer value. */
-    int value;
+    private final int value;
 
     /**
      * Returns the integer value.
      *
      * @return the integer value
      */
-    int getValue() {
+    public int getValue() {
       return value;
     }
 
@@ -1347,6 +1365,8 @@ public abstract class UBQualifier {
       if (superType.isUnknown()) {
         return true;
       } else if (superType.isBottom()) {
+        return false;
+      } else if (superType.isPoly()) {
         return false;
       } else if (superType.isLiteral()) {
         int otherValue = ((UpperBoundLiteralQualifier) superType).value;
@@ -1384,7 +1404,7 @@ public abstract class UBQualifier {
   /** The top type qualifier. */
   public static class UpperBoundUnknownQualifier extends UBQualifier {
     /** The canonical representative. */
-    static final UBQualifier UNKNOWN = new UpperBoundUnknownQualifier();
+    public static final UBQualifier UNKNOWN = new UpperBoundUnknownQualifier();
 
     /** This class is a singleton. */
     private UpperBoundUnknownQualifier() {}
@@ -1415,8 +1435,13 @@ public abstract class UBQualifier {
     }
   }
 
+  /** The bottom qualifier for the upperbound type system. */
   private static class UpperBoundBottomQualifier extends UBQualifier {
+    /** The canonical bottom qualifier for the upperbound type system. */
     static final UBQualifier BOTTOM = new UpperBoundBottomQualifier();
+
+    /** This class is a singleton. */
+    private UpperBoundBottomQualifier() {}
 
     @Override
     public boolean isBottom() {
@@ -1444,8 +1469,13 @@ public abstract class UBQualifier {
     }
   }
 
+  /** The polymorphic qualifier. */
   private static class PolyQualifier extends UBQualifier {
-    static final UBQualifier POLY = new PolyQualifier();
+    /** The canonical representative. */
+    public static final UBQualifier POLY = new PolyQualifier();
+
+    /** This class is a singleton. */
+    private PolyQualifier() {}
 
     @Override
     @Pure

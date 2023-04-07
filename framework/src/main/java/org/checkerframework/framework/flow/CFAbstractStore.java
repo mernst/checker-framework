@@ -4,13 +4,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
@@ -32,7 +33,6 @@ import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.dataflow.expression.MethodCall;
 import org.checkerframework.dataflow.expression.ThisReference;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.dataflow.util.PurityUtils;
 import org.checkerframework.framework.qual.MonotonicQualifier;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
@@ -40,7 +40,7 @@ import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.Pair;
-import org.checkerframework.javacutil.SystemUtil;
+import org.plumelib.util.CollectionsPlume;
 import org.plumelib.util.ToStringComparator;
 import org.plumelib.util.UniqueId;
 
@@ -88,24 +88,27 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
    * Information collected about array elements, using the internal representation {@link
    * ArrayAccess}.
    */
-  protected Map<ArrayAccess, V> arrayValues;
+  protected final Map<ArrayAccess, V> arrayValues;
 
   /**
    * Information collected about method calls, using the internal representation {@link MethodCall}.
    */
-  protected Map<MethodCall, V> methodValues;
+  protected final Map<MethodCall, V> methodValues;
 
   /**
    * Information collected about <i>classname</i>.class values, using the internal representation
    * {@link ClassName}.
    */
-  protected Map<ClassName, V> classValues;
+  protected final Map<ClassName, V> classValues;
 
   /**
    * Should the analysis use sequential Java semantics (i.e., assume that only one thread is running
    * at all times)?
    */
   protected final boolean sequentialSemantics;
+
+  /** True if -AassumeSideEffectFree or -AassumePure was passed on the command line. */
+  private final boolean assumeSideEffectFree;
 
   /** The unique ID for the next-created object. */
   static final AtomicLong nextUid = new AtomicLong(0);
@@ -136,9 +139,15 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
     arrayValues = new HashMap<>();
     classValues = new HashMap<>();
     this.sequentialSemantics = sequentialSemantics;
+    assumeSideEffectFree =
+        analysis.checker.hasOption("assumeSideEffectFree")
+            || analysis.checker.hasOption("assumePure");
   }
-
-  /** Copy constructor. */
+  /**
+   * Copy constructor.
+   *
+   * @param other a CFAbstractStore to copy into this
+   */
   protected CFAbstractStore(CFAbstractStore<V, S> other) {
     this.analysis = other.analysis;
     localVariableValues = new HashMap<>(other.localVariableValues);
@@ -148,6 +157,7 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
     arrayValues = new HashMap<>(other.arrayValues);
     classValues = new HashMap<>(other.classValues);
     sequentialSemantics = other.sequentialSemantics;
+    assumeSideEffectFree = other.assumeSideEffectFree;
   }
 
   /**
@@ -180,9 +190,11 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
    * @param atypeFactory the type factory used to retrieve annotations on the method element
    * @param method the method element
    * @return whether the method is side-effect-free
+   * @deprecated use {@link org.checkerframework.javacutil.AnnotationProvider#isSideEffectFree}
    */
+  @Deprecated // 2022-09-27
   protected boolean isSideEffectFree(AnnotatedTypeFactory atypeFactory, ExecutableElement method) {
-    return PurityUtils.isSideEffectFree(atypeFactory, method);
+    return atypeFactory.isSideEffectFree(method);
   }
 
   /* --------------------------------------------------------- */
@@ -205,15 +217,17 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
    * </ol>
    *
    * Furthermore, if the method is deterministic, we store its result {@code val} in the store.
+   *
+   * @param methodInvocationNode method whose information is being updated
+   * @param atypeFactory AnnotatedTypeFactory of the associated checker
+   * @param val abstract value of the method call
    */
   public void updateForMethodCall(
-      MethodInvocationNode n, AnnotatedTypeFactory atypeFactory, V val) {
-    ExecutableElement method = n.getTarget().getMethod();
+      MethodInvocationNode methodInvocationNode, AnnotatedTypeFactory atypeFactory, V val) {
+    ExecutableElement method = methodInvocationNode.getTarget().getMethod();
 
     // case 1: remove information if necessary
-    if (!(analysis.checker.hasOption("assumeSideEffectFree")
-        || analysis.checker.hasOption("assumePure")
-        || isSideEffectFree(atypeFactory, method))) {
+    if (!(assumeSideEffectFree || atypeFactory.isSideEffectFree(method))) {
 
       boolean sideEffectsUnrefineAliases =
           ((GenericAnnotatedTypeFactory) atypeFactory).sideEffectsUnrefineAliases;
@@ -234,7 +248,8 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
       if (sideEffectsUnrefineAliases) {
         fieldValues.entrySet().removeIf(e -> !e.getKey().isUnmodifiableByOtherCode());
       } else {
-        Map<FieldAccess, V> newFieldValues = new HashMap<>(SystemUtil.mapCapacity(fieldValues));
+        Map<FieldAccess, V> newFieldValues =
+            new HashMap<>(CollectionsPlume.mapCapacity(fieldValues));
         for (Map.Entry<FieldAccess, V> e : fieldValues.entrySet()) {
           FieldAccess fieldAccess = e.getKey();
           V otherVal = e.getValue();
@@ -289,7 +304,7 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
     }
 
     // store information about method call if possible
-    JavaExpression methodCall = JavaExpression.fromNode(n);
+    JavaExpression methodCall = JavaExpression.fromNode(methodInvocationNode);
     replaceValue(methodCall, val);
   }
 
@@ -481,7 +496,8 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
     }
     if (!(permitNondeterministic || expr.isDeterministic(analysis.getTypeFactory()))) {
       // Nondeterministic expressions may not be stored.
-      // (They are likely to be quickly evicted, as soon as a side-effecting method is called.)
+      // (They are likely to be quickly evicted, as soon as a side-effecting method is
+      // called.)
       return false;
     }
     return true;
@@ -724,8 +740,20 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
    *     available
    */
   public @Nullable V getValue(FieldAccessNode n) {
-    FieldAccess fieldAccess = JavaExpression.fromNodeFieldAccess(n);
-    return fieldValues.get(fieldAccess);
+    JavaExpression je = JavaExpression.fromNodeFieldAccess(n);
+    if (je instanceof FieldAccess) {
+      return fieldValues.get((FieldAccess) je);
+    } else if (je instanceof ClassName) {
+      return classValues.get((ClassName) je);
+    } else if (je instanceof ThisReference) {
+      // "return thisValue" is wrong, because the node refers to an outer this.
+      // So, return null for now.  TODO: improve.
+      return null;
+    } else {
+      throw new BugInCF(
+          "Unexpected JavaExpression %s %s for FieldAccessNode %s",
+          je.getClass().getSimpleName(), je, n);
+    }
   }
 
   /**
@@ -1025,11 +1053,12 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
    * Returns the current abstract value of a local variable, or {@code null} if no information is
    * available.
    *
+   * @param n the local variable
    * @return the current abstract value of a local variable, or {@code null} if no information is
    *     available
    */
   public @Nullable V getValue(LocalVariableNode n) {
-    Element el = n.getElement();
+    VariableElement el = n.getElement();
     return localVariableValues.get(new LocalVariable(el));
   }
 
@@ -1073,8 +1102,8 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
     S newStore = analysis.createEmptyStore(sequentialSemantics);
 
     for (Map.Entry<LocalVariable, V> e : other.localVariableValues.entrySet()) {
-      // local variables that are only part of one store, but not the other are discarded, as one of
-      // store implicitly contains 'top' for that variable.
+      // local variables that are only part of one store, but not the other are discarded, as
+      // one of store implicitly contains 'top' for that variable.
       LocalVariable localVar = e.getKey();
       V thisVal = localVariableValues.get(localVar);
       if (thisVal != null) {
@@ -1098,8 +1127,8 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
     }
 
     for (Map.Entry<FieldAccess, V> e : other.fieldValues.entrySet()) {
-      // information about fields that are only part of one store, but not the other are discarded,
-      // as one store implicitly contains 'top' for that field.
+      // information about fields that are only part of one store, but not the other are
+      // discarded, as one store implicitly contains 'top' for that field.
       FieldAccess el = e.getKey();
       V thisVal = fieldValues.get(el);
       if (thisVal != null) {
@@ -1111,8 +1140,8 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
       }
     }
     for (Map.Entry<ArrayAccess, V> e : other.arrayValues.entrySet()) {
-      // information about arrays that are only part of one store, but not the other are discarded,
-      // as one store implicitly contains 'top' for that array access.
+      // information about arrays that are only part of one store, but not the other are
+      // discarded, as one store implicitly contains 'top' for that array access.
       ArrayAccess el = e.getKey();
       V thisVal = arrayValues.get(el);
       if (thisVal != null) {
@@ -1124,8 +1153,8 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
       }
     }
     for (Map.Entry<MethodCall, V> e : other.methodValues.entrySet()) {
-      // information about methods that are only part of one store, but not the other are discarded,
-      // as one store implicitly contains 'top' for that field.
+      // information about methods that are only part of one store, but not the other are
+      // discarded, as one store implicitly contains 'top' for that field.
       MethodCall el = e.getKey();
       V thisVal = methodValues.get(el);
       if (thisVal != null) {
@@ -1167,6 +1196,9 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
       if (value == null || !value.equals(e.getValue())) {
         return false;
       }
+    }
+    if (!Objects.equals(thisValue, other.thisValue)) {
+      return false;
     }
     for (Map.Entry<FieldAccess, V> e : other.fieldValues.entrySet()) {
       FieldAccess key = e.getKey();
@@ -1244,8 +1276,8 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
    */
   protected String internalVisualize(CFGVisualizer<V, S, ?> viz) {
     StringJoiner res = new StringJoiner(viz.getSeparator());
-    for (Map.Entry<LocalVariable, V> entry : localVariableValues.entrySet()) {
-      res.add(viz.visualizeStoreLocalVar(entry.getKey(), entry.getValue()));
+    for (LocalVariable lv : ToStringComparator.sorted(localVariableValues.keySet())) {
+      res.add(viz.visualizeStoreLocalVar(lv, localVariableValues.get(lv)));
     }
     if (thisValue != null) {
       res.add(viz.visualizeStoreThisVal(thisValue));

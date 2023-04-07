@@ -1,10 +1,10 @@
 package org.checkerframework.dataflow.cfg.builder;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.lang.model.element.Name;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.plumelib.util.ArrayMap;
 
 /**
  * A map that keeps track of new labels added within a try block. For names that are outside of the
@@ -12,13 +12,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * control flows outside of the try block.
  */
 @SuppressWarnings("serial")
-class TryFinallyScopeMap extends HashMap<Name, Label> {
+/*package-private*/ class TryFinallyScopeMap extends HashMap<Name, Label> {
   /** New labels within a try block that were added by this implementation. */
   private final Map<Name, Label> accessedNames;
 
   /** Create a new TryFinallyScopeMap. */
   protected TryFinallyScopeMap() {
-    this.accessedNames = new LinkedHashMap<>(2);
+    this.accessedNames = new ArrayMap<>(2);
   }
 
   @Override
@@ -39,8 +39,7 @@ class TryFinallyScopeMap extends HashMap<Name, Label> {
   }
 
   @Override
-  @SuppressWarnings(
-      "keyfor:contracts.conditional.postcondition.not.satisfied") // get adds everything
+  @SuppressWarnings("keyfor:contracts.conditional.postcondition") // get adds everything
   public boolean containsKey(@Nullable Object key) {
     return true;
   }

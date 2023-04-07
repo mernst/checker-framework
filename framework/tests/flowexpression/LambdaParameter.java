@@ -6,35 +6,32 @@ public class LambdaParameter {
   void method(String methodParam) {
     Function<String, String> func1 =
         (
-            // :: error: (lambda.param.type.incompatible)
+            // :: error: (lambda.param)
             @FlowExp("methodParam") String lambdaParam) -> {
           return "";
         };
     Function<String, String> func2 =
         (
-            // :: error: (lambda.param.type.incompatible) :: error:
-            // (expression.unparsable.type.invalid)
+            // :: error: (lambda.param) :: error: (expression.unparsable)
             @FlowExp("lambdaParam") String lambdaParam) -> {
           return "";
         };
     Function<String, String> func3 =
         (
-            // :: error: (lambda.param.type.incompatible)
+            // :: error: (lambda.param)
             @FlowExp("#1") String lambdaParam) -> {
           @FlowExp("lambdaParam") String s = lambdaParam;
           return "";
         };
     Function<@FlowExp("methodParam") String, String> func4 =
-        (
-            @FlowExp("methodParam") String lambdaParam) -> {
+        (@FlowExp("methodParam") String lambdaParam) -> {
           return "";
         };
   }
 
   void method2(String methodParam, @FlowExp("#1") String methodParam2) {
     Function<@FlowExp("methodParam") String, String> func1 =
-        (
-            @FlowExp("methodParam") String lambdaParam) -> {
+        (@FlowExp("methodParam") String lambdaParam) -> {
           @FlowExp("methodParam") String a = methodParam2;
           @FlowExp("methodParam") String b = lambdaParam;
           return "";
@@ -45,13 +42,12 @@ public class LambdaParameter {
     String local = "";
     Function<String, String> func1 =
         (
-            // :: error: (lambda.param.type.incompatible)
+            // :: error: (lambda.param)
             @FlowExp("local") String lambdaParam) -> {
           return "";
         };
     Function<@FlowExp("local") String, String> func2 =
-        (
-            @FlowExp("local") String lambdaParam) -> {
+        (@FlowExp("local") String lambdaParam) -> {
           return "";
         };
   }
@@ -60,8 +56,7 @@ public class LambdaParameter {
     String local = "";
     @FlowExp("local") String otherLocal = null;
     Function<@FlowExp("local") String, String> func1 =
-        (
-            @FlowExp("local") String lambdaParam) -> {
+        (@FlowExp("local") String lambdaParam) -> {
           @FlowExp("local") String a = otherLocal;
           @FlowExp("local") String b = lambdaParam;
           return "";

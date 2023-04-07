@@ -104,7 +104,7 @@ the type-system designer can specify an upper bound by using the meta-annotation
 
 If no annotation is present on a type declaration and if no \<@UpperBoundFor> mentions the type, then
 the bound is top. This can be changed by overriding
-\refmethodanchortext{framework/type}{AnnotatedTypeFactory}{getTypeDeclarationBounds}{-javax.lang.model.type.TypeMirror-}{AnnotatedTypeFactory\#getTypeDeclarationBounds}.
+\refmethodanchortext{framework/type}{AnnotatedTypeFactory}{getTypeDeclarationBounds}{(javax.lang.model.type.TypeMirror)}{AnnotatedTypeFactory\#getTypeDeclarationBounds}.
 
 There are two exceptions.
 \begin{itemize}
@@ -112,7 +112,8 @@ There are two exceptions.
   An expression can have a supertype of the upper bound; that is, some expression could
   have type \<@B MyClass>.  This type is not written explicitly, but results from viewpoint adaptation.
   \item
-  Using usual CLIMB-to-top rules, local variables of type MyClass default to \<@A MyClass>.
+  Using usual CLIMB-to-top rules (Section~\ref{climb-to-top}),
+  local variables of type MyClass default to \<@A MyClass>.
   It is legal for \<@A MyClass> to be the type of a local variable.
   For consistency, users are allowed to write such a type on a local variable declaration.
 \end{itemize}
@@ -162,7 +163,7 @@ qualifier at all.
 Most readers can skip this section on first reading, because you will
 probably find the system simply ``does what you mean'', without forcing
 you to write too many qualifiers in your program.
-particular, programmers rarely write qualifiers in method bodies (except occasionally on
+particular, programmers rarely write qualifiers in method bodies (except on
 type arguments and array component types).
 
 The following steps determine the effective
@@ -222,7 +223,7 @@ rules are used in order, until one applies.
   \<TypeKind> of \<MyClass>. (Section~\ref{default-for-use})
 \item
   The qualifier with a meta-annotation \<@DefaultFor(names = REGEX)>, where \<REGEX>
-  matches the name of the variable being defined (if any).  For return types, the  the name of
+  matches the name of the variable being defined (if any).  For return types, the name of
   the method is used. (Section~\ref{default-for-use})
 \item
   The qualifier in the innermost user-written \<@DefaultQualifier> for the location of the use of \<MyClass>.
@@ -255,7 +256,7 @@ This means any unannotated use of \<MyClass> is treated as \<@B MyClass> by the 
 (Except for locals, which can be refined.)
 
 Similarly, the meta-annotation \refqualclass{framework/qual}{DefaultFor} can be used to specify defaults
-for uses of of types, using the \<types> element, or type kinds, using the \<typeKinds> elements.
+for uses of types, using the \<types> element, or type kinds, using the \<typeKinds> elements.
 
 Interaction between qualifier bounds and \<DefaultQualifierForUse>:
 \begin{itemize}
@@ -423,9 +424,12 @@ refined, so writing the top annotation is not the same as writing no annotation.
 
 \item
 Implicit upper bounds are defaulted to top to allow them to be instantiated
-in any way.  If a user declared \code{class C<T> \ttlcb\ ...\ \ttrcb}, then
-the Checker Framework assumes that the user intended to allow any instantiation of the class,
-and the declaration is interpreted as \code{class C<T extends @Nullable
+in any way.
+
+Suppose a user declares a class as \code{class C<T> \ttlcb\ ...\ \ttrcb}.
+The Checker Framework assumes that the user intended to allow any
+instantiation of the class.  The Checker Framework interprets the
+declaration as \code{class C<T extends @Nullable
   Object> \ttlcb\ ...\ \ttrcb} rather than as \code{class C<T extends
   @NonNull Object> \ttlcb\ ...\ \ttrcb}.  The latter would forbid
 instantiations such as \code{C<@Nullable String>}, or would require
@@ -473,12 +477,12 @@ the CLIMB-to-top rule.
 
 \subsectionAndLabel{Inherited defaults}{inherited-defaults}
 
-When overriding a method, programmers must fully specify types in the overridding
+When overriding a method, programmers must fully specify types in the overriding
 method, which duplicates information on the overridden method.
 By contrast, declaration annotations that are meta-annotated with
 \<@InheritedAnnotation> are inherited by overriding methods.
 
-An example for type annotations is that when definining an \<equals()>
+An example for type annotations is that when defining an \<equals()>
 method, programmers must write the type annotation \<@Nullable>:
 
 \begin{Verbatim}
@@ -535,7 +539,7 @@ corresponding type parameter.
 By contrast, if the bounds of a wildcard
 were defaulted differently from the bounds of its corresponding type
 parameter, then there would be many false positive
-\code{type.argument.type.incompatible} warnings.
+\code{type.argument} warnings.
 
 Here is another example of two equivalent wildcard declarations:
 
@@ -726,8 +730,8 @@ than --- that is, a subtype of --- its declared or defaulted (Section~\ref{defau
 This is called ``flow-sensitive type refinement'' or ``local type inference''.
 
 Due to local type refinement, a programmer typically
-does not have to write any qualifiers on local variables within a method body
-(except occasionally on type arguments).
+does not write any qualifiers on local variables within a method body
+(except on type arguments and array component types).
 However, the programmer must write type annotations for method
 signatures (arguments and return values) and fields, unless the default
 annotations are correct.
@@ -916,6 +920,9 @@ Type systems that support a run-time test are:
   \ahrefloc{index-checker}{Index Checker} for array accesses
   (see \chapterpageref{index-checker})
 \item
+  \ahrefloc{resource-leak-checker}{Resource Leak Checker} for ensuring that resources are disposed of properly
+  (see \chapterpageref{resource-leak-checker})
+\item
   \ahrefloc{regex-checker}{Regex Checker} to prevent use of syntactically
   invalid regular expressions (see \chapterpageref{regex-checker})
 \item
@@ -966,6 +973,9 @@ Type systems that cannot support a run-time test are:
   fields are set in the constructor (see
   \chapterpageref{initialization-checker})
 \item
+  \ahrefloc{called-methods-checker}{Called Methods Checker} for
+  the builder pattern (see \chapterpageref{called-methods-checker})
+\item
   \ahrefloc{fenum-checker}{Fake Enum Checker} to allow type-safe fake enum
   patterns and type aliases or typedefs (see \chapterpageref{fenum-checker})
 \item
@@ -993,6 +1003,9 @@ Type systems that cannot support a run-time test are:
 \item
   \ahrefloc{aliasing-checker}{Aliasing Checker} to identify whether
   expressions have aliases (see \chapterpageref{aliasing-checker})
+\item
+  \ahrefloc{must-call-checker}{Must Call Checker} to over-approximate the
+  methods that should be called on an object before it is de-allocated (see \chapterpageref{must-call-checker})
 \item
   \ahrefloc{subtyping-checker}{Subtyping Checker} for customized checking without
   writing any code (see \chapterpageref{subtyping-checker})
@@ -1052,7 +1065,8 @@ issuing a warning about the call \<myField.toString()>.
 
 \begin{enumerate}
 \item
-  If \<computeValue> has no side effects, declare it as
+  If \<computeValue> has no side effects, declare the method as
+  \refqualclass{dataflow/qual}{SideEffectFree}:
 
 \begin{Verbatim}
   @SideEffectFree
@@ -1067,14 +1081,16 @@ the one in the test.
 \item
   If no method resets \<myField> to \<null> after it has been initialized
   to a non-null value (even if a method has some other side effect),
-  declare \<myField> as \refqualclass{checker/nullness/qual}{MonotonicNonNull}.
+  declare the field as \refqualclass{checker/nullness/qual}{MonotonicNonNull}:
 
 \begin{Verbatim}
   @MonotonicNonNull Object myField;
 \end{Verbatim}
 
 \item
-  If \<computeValue> sets \<myField> to a non-null value, declare it as
+  If \<computeValue> sets \<myField> to a non-null value (or maintains it
+  as a non-null value), declare the method as
+  \refqualclass{checker/nullness/qual}{EnsuresNonNull}:
 
 \begin{Verbatim}
   @EnsuresNonNull("myField")
@@ -1091,6 +1107,23 @@ the one in the test.
   int computeValue() { ... }
 \end{Verbatim}
 \end{enumerate}
+
+There are two other ways to suppress the warning:
+
+\begin{itemize}
+\item
+  Put the expression in a local variable before the invocation.  A method
+  call never affects the value of a local variable.
+\item
+  If the warning is about a formal parameter (including the receiver) to a
+  method \<foo()>, then instead of declaring \<foo()> as
+  \<@SideEffectFree>, you can supply the
+  \<-AinvocationPreservesArgumentNullness> command-line argument; see
+  % A better cross-reference is
+  % nullness-invocationPreservesArgumentNullness, but the LaTeX
+  % cross-reference number is an itemized list number, not a section number.
+  Section~\ref{nullness-lint}.
+\end{itemize}
 
 
 \subsubsectionAndLabel{Deterministic methods}{type-refinement-determinism}
@@ -1200,7 +1233,7 @@ systems) \code{<self>}.
   variable or declaration where you could write \<this> in code.
   Notably, it cannot be used in annotations on declarations of
   static fields or methods.  For a field, \<this> is the field's
-  receiver, i.e. its container.  For a local variable, it is the
+  receiver (sometimes called its container).  For a local variable, it is the
   method's receiver.
 
 \item
@@ -1209,7 +1242,7 @@ systems) \code{<self>}.
   discouraged in Java).
 
 \item
-  \code{<self>}, i.e. the value of the annotated reference (non-primitive) variable.
+  \code{<self>}, the value of the annotated reference (non-primitive) variable.
   Currently only defined for the \<@GuardedBy> type system.
   For example, \code{@GuardedBy("<self>") Object o} indicates that the value
   referenced by \<o> is guarded by the intrinsic (monitor) lock of the value
@@ -1552,16 +1585,16 @@ class @Marsupial-Animal {
 % TO DO:  give an example where @Dependent is actually needed
 
 
-% LocalWords:  MyClass qual PolymorphicQualifier DefaultQualifier subpackages
+% LocalWords:  MyClass qual DefaultQualifier subpackages lang
 % LocalWords:  actuals toArray CollectionToArrayHeuristics nn RegexBottom
-% LocalWords:  MyList Nullness DefaultLocation nullness PolyNull util java TODO
+% LocalWords:  MyList Nullness DefaultLocation nullness PolyNull util TODO
 % LocalWords:  QualifierDefaults nullable lub persistData updatedAt nble KeyFor
 % LocalWords:  subtype's RequiresNonNull EnsuresNonNull EnsuresNonNullIf
 % LocalWords:  myLocalVar myClass getPackage getSuperclass myString Regex
 % LocalWords:  getComponentType enum implementers dereferenced superclasses
 % LocalWords:  regex myStrings myVar pouchSize myMammal getter foo MyAnno
 % LocalWords:  getPouchSize TerminatesExecution myvar myField getField m1
-% LocalWords:  computeValue AsuggestPureMethods arg myInt Anno Im
+% LocalWords:  computeValue arg myInt Anno Im InheritedAnnotation
 % LocalWords:  AcheckPurityAnnotations AassumeSideEffectFree iMplicit m2
 % LocalWords:  AassumeAssertionsAreEnabled myArray vals propkey forName
 % LocalWords:  fenum i18n RequiresQualifier EnsuresQualifier ClassName

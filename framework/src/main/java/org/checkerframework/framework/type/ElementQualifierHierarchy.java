@@ -18,6 +18,7 @@ import org.checkerframework.framework.util.DefaultQualifierKindHierarchy;
 import org.checkerframework.framework.util.QualifierKind;
 import org.checkerframework.framework.util.QualifierKindHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TypeSystemError;
@@ -37,7 +38,7 @@ import org.checkerframework.javacutil.TypeSystemError;
 public abstract class ElementQualifierHierarchy implements QualifierHierarchy {
 
   /** {@link org.checkerframework.javacutil.ElementUtils}. */
-  private Elements elements;
+  private final Elements elements;
 
   /** {@link QualifierKindHierarchy}. */
   protected final QualifierKindHierarchy qualifierKindHierarchy;
@@ -49,13 +50,13 @@ public abstract class ElementQualifierHierarchy implements QualifierHierarchy {
   protected final Map<QualifierKind, AnnotationMirror> topsMap;
 
   /** The set of top annotation mirrors. */
-  protected final Set<AnnotationMirror> tops;
+  protected final AnnotationMirrorSet tops;
 
   /** A mapping from bottom QualifierKinds to their corresponding AnnotationMirror. */
   protected final Map<QualifierKind, AnnotationMirror> bottomsMap;
 
   /** The set of bottom annotation mirrors. */
-  protected final Set<AnnotationMirror> bottoms;
+  protected final AnnotationMirrorSet bottoms;
 
   /**
    * A mapping from QualifierKind to AnnotationMirror for all qualifiers whose annotations do not
@@ -75,10 +76,10 @@ public abstract class ElementQualifierHierarchy implements QualifierHierarchy {
     this.qualifierKindHierarchy = createQualifierKindHierarchy(qualifierClasses);
 
     this.topsMap = Collections.unmodifiableMap(createTopsMap());
-    this.tops = AnnotationUtils.createUnmodifiableAnnotationSet(topsMap.values());
+    this.tops = AnnotationMirrorSet.unmodifiableSet(topsMap.values());
 
     this.bottomsMap = Collections.unmodifiableMap(createBottomsMap());
-    this.bottoms = AnnotationUtils.createUnmodifiableAnnotationSet(bottomsMap.values());
+    this.bottoms = AnnotationMirrorSet.unmodifiableSet(bottomsMap.values());
 
     this.kindToElementlessQualifier = createElementlessQualifierMap();
   }
@@ -164,12 +165,16 @@ public abstract class ElementQualifierHierarchy implements QualifierHierarchy {
   /**
    * Returns the qualifier kind for the given annotation.
    *
-   * @param anno annotation mirror
+   * @param anno an annotation mirror that is in this hierarchy
    * @return the qualifier kind for the given annotation
    */
   protected QualifierKind getQualifierKind(AnnotationMirror anno) {
     String name = AnnotationUtils.annotationName(anno);
-    return getQualifierKind(name);
+    QualifierKind result = getQualifierKind(name);
+    if (result == null) {
+      throw new BugInCF("No qualifier kind for " + anno);
+    }
+    return result;
   }
 
   /**
@@ -194,7 +199,7 @@ public abstract class ElementQualifierHierarchy implements QualifierHierarchy {
   @Override
   public AnnotationMirror getTopAnnotation(AnnotationMirror start) {
     QualifierKind kind = getQualifierKind(start);
-    @SuppressWarnings("nullness:assignment.type.incompatible") // All tops are a key for topsMap.
+    @SuppressWarnings("nullness:assignment") // All tops are a key for topsMap.
     @NonNull AnnotationMirror result = topsMap.get(kind.getTop());
     return result;
   }
@@ -227,8 +232,7 @@ public abstract class ElementQualifierHierarchy implements QualifierHierarchy {
   @Override
   public AnnotationMirror getBottomAnnotation(AnnotationMirror start) {
     QualifierKind kind = getQualifierKind(start);
-    @SuppressWarnings(
-        "nullness:assignment.type.incompatible") // All bottoms are keys for bottomsMap.
+    @SuppressWarnings("nullness:assignment") // All bottoms are keys for bottomsMap.
     @NonNull AnnotationMirror result = bottomsMap.get(kind.getBottom());
     return result;
   }

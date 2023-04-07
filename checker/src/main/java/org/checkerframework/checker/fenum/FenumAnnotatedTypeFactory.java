@@ -20,7 +20,7 @@ import org.checkerframework.framework.util.QualifierKind;
 import org.checkerframework.framework.util.QualifierKindHierarchy;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
-import org.checkerframework.javacutil.BugInCF;
+import org.checkerframework.javacutil.TypeSystemError;
 import org.checkerframework.javacutil.UserError;
 import org.plumelib.reflection.Signatures;
 
@@ -28,11 +28,11 @@ import org.plumelib.reflection.Signatures;
 public class FenumAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   /** AnnotationMirror for {@link FenumUnqualified}. */
-  protected AnnotationMirror FENUM_UNQUALIFIED;
+  protected final AnnotationMirror FENUM_UNQUALIFIED;
   /** AnnotationMirror for {@link FenumBottom}. */
-  protected AnnotationMirror FENUM_BOTTOM;
+  protected final AnnotationMirror FENUM_BOTTOM;
   /** AnnotationMirror for {@link FenumTop}. */
-  protected AnnotationMirror FENUM_TOP;
+  protected final AnnotationMirror FENUM_TOP;
 
   /**
    * Create a FenumAnnotatedTypeFactory.
@@ -93,7 +93,7 @@ public class FenumAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   @Override
-  public QualifierHierarchy createQualifierHierarchy() {
+  protected QualifierHierarchy createQualifierHierarchy() {
     return new FenumQualifierHierarchy(getSupportedTypeQualifiers(), elements);
   }
 
@@ -149,7 +149,7 @@ public class FenumAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       } else if (qualifierKind2 == FENUM_KIND) {
         return a2;
       }
-      throw new BugInCF("Unexpected QualifierKinds %s %s", qualifierKind1, qualifierKind2);
+      throw new TypeSystemError("Unexpected QualifierKinds %s %s", qualifierKind1, qualifierKind2);
     }
 
     @Override
@@ -166,7 +166,7 @@ public class FenumAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       } else if (qualifierKind2 == FENUM_KIND) {
         return a1;
       }
-      throw new BugInCF("Unexpected QualifierKinds %s %s", qualifierKind1, qualifierKind2);
+      throw new TypeSystemError("Unexpected QualifierKinds %s %s", qualifierKind1, qualifierKind2);
     }
   }
 }
