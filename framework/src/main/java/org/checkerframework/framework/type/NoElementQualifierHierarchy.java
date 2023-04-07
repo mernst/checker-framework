@@ -214,6 +214,7 @@ public class NoElementQualifierHierarchy implements QualifierHierarchy {
 
   @Override
   public boolean isSubtype(AnnotationMirror subAnno, AnnotationMirror superAnno) {
+    System.out.printf("NEQH.isSubtype(%s, %s)%n", subAnno, superAnno);
     QualifierKind subKind = getQualifierKind(subAnno);
     QualifierKind superKind = getQualifierKind(superAnno);
     return subKind.isSubtypeOf(superKind);

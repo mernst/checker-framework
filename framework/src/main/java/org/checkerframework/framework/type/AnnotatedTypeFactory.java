@@ -2151,7 +2151,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * @return true if the erasure of {@code type1} is a subtype of the erasure of {@code type2}
    */
   private boolean isSubtype(TypeMirror type1, TypeMirror type2) {
-    return types.isSubtype(types.erasure(type1), types.erasure(type2));
+    System.out.printf("AnnotatedTypeFactory.isSubtype(%s, %s)%n", type1, type2);
+    boolean result = types.isSubtype(types.erasure(type1), types.erasure(type2));
+    return result;
   }
 
   /**

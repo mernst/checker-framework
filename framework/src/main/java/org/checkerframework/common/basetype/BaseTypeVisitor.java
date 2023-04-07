@@ -273,6 +273,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     targetValueElement = TreeUtils.getMethod(Target.class, "value", 0, env);
     unusedWhenElement = TreeUtils.getMethod(Unused.class, "when", 0, env);
     showchecks = checker.hasOption("showchecks");
+    System.out.println("showchecks = " + showchecks);
     infer = checker.hasOption("infer");
     suggestPureMethods = checker.hasOption("suggestPureMethods") || infer;
     checkPurity = checker.hasOption("checkPurityAnnotations") || suggestPureMethods;
@@ -745,6 +746,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     }
     AnnotationMirrorSet classBounds =
         atypeFactory.getTypeDeclarationBounds(TreeUtils.typeOf(classTree));
+    // TODO: Should -Ashowchecks produce output here?
     QualifierHierarchy qualifierHierarchy = atypeFactory.getQualifierHierarchy();
     // If "@B class Y extends @A X {}", then enforce that @B must be a subtype of @A.
     // classTree.getExtendsClause() is null when there is no explicitly-written extends clause,
@@ -2840,6 +2842,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       @CompilerMessageKey String errorKey,
       Object... extraArgs) {
 
+    System.out.printf(
+        "BaseTypeVisitor.commonAssignmentCheck(%s, %s, %s, ...)%n", varType, valueType, valueTree);
     commonAssignmentCheckStartDiagnostic(varType, valueType, valueTree);
 
     AnnotatedTypeMirror widenedValueType = atypeFactory.getWidenedType(valueType, varType);

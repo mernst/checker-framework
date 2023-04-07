@@ -127,6 +127,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
    */
   @Override
   public boolean isSubtype(final AnnotatedTypeMirror subtype, final AnnotatedTypeMirror supertype) {
+    System.out.printf("DefaultTypeFactory.isSubtype(%s, %s)%n", subtype, supertype);
     for (final AnnotationMirror top : qualifierHierarchy.getTopAnnotations()) {
       if (!isSubtype(subtype, supertype, top)) {
         return false;
@@ -150,6 +151,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
       final AnnotatedTypeMirror subtype,
       final AnnotatedTypeMirror supertype,
       final AnnotationMirror top) {
+    System.out.printf("DefaultTypeFactory.isSubtype(%s, %s, %s)%n", subtype, supertype, top);
     assert top != null;
     currentTop = top;
     return AtmCombo.accept(subtype, supertype, null, this);

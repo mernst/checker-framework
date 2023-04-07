@@ -50,15 +50,21 @@ public abstract class MostlyNoElementQualifierHierarchy extends ElementQualifier
 
   @Override
   public final boolean isSubtype(AnnotationMirror subAnno, AnnotationMirror superAnno) {
+    System.out.printf("MNEQH.isSubtype(%s, %s)%n", subAnno, superAnno);
+    // new Error().printStackTrace(System.out);
     QualifierKind subKind = getQualifierKind(subAnno);
     QualifierKind superKind = getQualifierKind(superAnno);
     if (subKind.isSubtypeOf(superKind)) {
       if (superKind.hasElements() && subKind.hasElements()) {
-        return isSubtypeWithElements(subAnno, subKind, superAnno, superKind);
+        boolean result = isSubtypeWithElements(subAnno, subKind, superAnno, superKind);
+        System.out.printf("MNEQH.isSubtype(%s, %s) => %s%n", subAnno, superAnno, result);
+        return result;
       } else {
+        System.out.printf("MNEQH.isSubtype(%s, %s) => %s%n", subAnno, superAnno, true);
         return true;
       }
     }
+    System.out.printf("MNEQH.isSubtype(%s, %s) => %s%n", subAnno, superAnno, false);
     return false;
   }
 

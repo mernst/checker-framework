@@ -45,6 +45,9 @@ public class SubtypeIsSubsetQualifierHierarchy extends MostlyNoElementQualifierH
       QualifierKind subKind,
       AnnotationMirror superAnno,
       QualifierKind superKind) {
+    System.out.printf(
+        "SISubsetQH.isSubtypeWithElements(%s, %s, %s, %s)%n",
+        subAnno, subKind, superAnno, superKind);
     if (subKind == superKind) {
       List<String> superValues = valuesStringList(superAnno);
       List<String> subValues = valuesStringList(subAnno);

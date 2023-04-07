@@ -131,6 +131,7 @@ public interface QualifierHierarchy {
   default boolean isSubtype(
       Collection<? extends AnnotationMirror> subQualifiers,
       Collection<? extends AnnotationMirror> superQualifiers) {
+    System.out.printf("QualifierHierarchy.isSubtype(%s, %s)%n", subQualifiers, superQualifiers);
     assertSameSize(subQualifiers, superQualifiers);
     for (AnnotationMirror subQual : subQualifiers) {
       AnnotationMirror superQual = findAnnotationInSameHierarchy(superQualifiers, subQual);
