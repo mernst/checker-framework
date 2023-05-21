@@ -270,7 +270,7 @@ public class FormatterTreeUtil {
       InvocationType type = InvocationType.VARARG;
 
       if (args.size() == 1) {
-        final ExpressionTree first = args.get(0);
+        ExpressionTree first = args.get(0);
         TypeMirror argType = atypeFactory.getAnnotatedType(first).getUnderlyingType();
         // figure out if argType is an array
         type =
@@ -441,8 +441,7 @@ public class FormatterTreeUtil {
    * @param invalidFormatString an invalid formatter string
    * @return an {@link InvalidFormat} annotation with the given string as its value
    */
-  /* package-private */
-  AnnotationMirror stringToInvalidFormatAnnotation(String invalidFormatString) {
+  /*package-private*/ AnnotationMirror stringToInvalidFormatAnnotation(String invalidFormatString) {
     AnnotationBuilder builder = new AnnotationBuilder(processingEnv, InvalidFormat.class);
     builder.setValue("value", invalidFormatString);
     return builder.build();

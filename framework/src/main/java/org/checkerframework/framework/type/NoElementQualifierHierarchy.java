@@ -154,6 +154,9 @@ public class NoElementQualifierHierarchy implements QualifierHierarchy {
   @Override
   public @Nullable AnnotationMirror findAnnotationInSameHierarchy(
       Collection<? extends AnnotationMirror> annos, AnnotationMirror annotationMirror) {
+    if (annos.isEmpty()) {
+      return null;
+    }
     QualifierKind kind = getQualifierKind(annotationMirror);
     for (AnnotationMirror candidate : annos) {
       QualifierKind candidateKind = getQualifierKind(candidate);
@@ -171,7 +174,7 @@ public class NoElementQualifierHierarchy implements QualifierHierarchy {
   }
 
   @Override
-  public Set<? extends AnnotationMirror> getTopAnnotations() {
+  public AnnotationMirrorSet getTopAnnotations() {
     return tops;
   }
 
@@ -185,7 +188,7 @@ public class NoElementQualifierHierarchy implements QualifierHierarchy {
   }
 
   @Override
-  public Set<? extends AnnotationMirror> getBottomAnnotations() {
+  public AnnotationMirrorSet getBottomAnnotations() {
     return bottoms;
   }
 

@@ -8,10 +8,8 @@ import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -305,15 +303,7 @@ public abstract class CFAbstractTransfer<
       @SuppressWarnings("interning:assignment") // used in == tests
       @InternedDistinct Tree enclosingTree =
           TreePathUtil.enclosingOfKind(
-              factory.getPath(lambda.getLambdaTree()),
-              new HashSet<>(
-                  Arrays.asList(
-                      Tree.Kind.METHOD,
-                      // Tree.Kind for which TreeUtils.isClassTree is true
-                      Tree.Kind.CLASS,
-                      Tree.Kind.INTERFACE,
-                      Tree.Kind.ANNOTATION_TYPE,
-                      Tree.Kind.ENUM)));
+              factory.getPath(lambda.getLambdaTree()), TreeUtils.classAndMethodTreeKinds());
 
       Element enclosingElement = null;
       if (enclosingTree.getKind() == Tree.Kind.METHOD) {
@@ -433,7 +423,7 @@ public abstract class CFAbstractTransfer<
       // TODO: There is a design flaw where the values of final local values leaks
       // into other methods of the same class. For example, in
       // class a { void b() {...} void c() {...} }
-      // final local values from b() would be visible in the store for c(),
+      // local values from b() would be visible in the store for c(),
       // even though they should only be visible in b() and in classes
       // defined inside the method body of b().
       // This is partly because GenericAnnotatedTypeFactory.performFlowAnalysis does not call
@@ -503,7 +493,7 @@ public abstract class CFAbstractTransfer<
       String stringExpr = p.expressionString;
       AnnotationMirror annotation =
           p.viewpointAdaptDependentTypeAnnotation(
-              analysis.atypeFactory, stringToJavaExpr, /*errorTree=*/ null);
+              analysis.atypeFactory, stringToJavaExpr, /* errorTree= */ null);
       JavaExpression exprJe;
       try {
         // TODO: currently, these expressions are parsed at the declaration (i.e. here) and
@@ -1124,7 +1114,7 @@ public abstract class CFAbstractTransfer<
       // Viewpoint-adapt to the method use (the call site).
       AnnotationMirror anno =
           p.viewpointAdaptDependentTypeAnnotation(
-              analysis.atypeFactory, stringToJavaExpr, /*errorTree=*/ null);
+              analysis.atypeFactory, stringToJavaExpr, /* errorTree= */ null);
 
       String expressionString = p.expressionString;
       try {

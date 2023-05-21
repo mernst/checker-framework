@@ -3,7 +3,8 @@ package org.checkerframework.common.util;
 import javax.lang.model.element.Element;
 
 /**
- * This interface contains a method {@link #isNonNull} that indicates whether an XXX is non-null.
+ * This interface contains a method {@link #isNonNull} that indicates whether an Element is
+ * non-null.
  *
  * <p>This interface enables a checker defined in the framework project to query the Nullness
  * Checker, which is defined in the checker project. The checker project is not visible in the

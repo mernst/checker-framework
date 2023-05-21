@@ -621,14 +621,9 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
 
     Tree enclosingParens = parenMapping.get(tree);
     while (enclosingParens != null) {
-      Set<Node> exp = treeToCfgNodes.get(enclosingParens);
-      if (exp == null) {
-        Set<Node> newSet = new IdentityArraySet<>(1);
-        newSet.add(node);
-        treeToCfgNodes.put(enclosingParens, newSet);
-      } else if (!existing.contains(node)) {
-        exp.add(node);
-      }
+      Set<Node> exp =
+          treeToCfgNodes.computeIfAbsent(enclosingParens, k -> new IdentityArraySet<>(1));
+      exp.add(node);
       enclosingParens = parenMapping.get(enclosingParens);
     }
   }
@@ -931,12 +926,12 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
   }
 
   private TreeInfo getTreeInfo(Tree tree) {
-    final TypeMirror type = TreeUtils.typeOf(tree);
-    final boolean boxed = TypesUtils.isBoxedPrimitive(type);
-    final TypeMirror unboxedType = boxed ? types.unboxedType(type) : type;
+    TypeMirror type = TreeUtils.typeOf(tree);
+    boolean boxed = TypesUtils.isBoxedPrimitive(type);
+    TypeMirror unboxedType = boxed ? types.unboxedType(type) : type;
 
-    final boolean bool = TypesUtils.isBooleanType(type);
-    final boolean numeric = TypesUtils.isNumeric(unboxedType);
+    boolean bool = TypesUtils.isBooleanType(type);
+    boolean numeric = TypesUtils.isNumeric(unboxedType);
 
     return new TreeInfo() {
       @Override
@@ -1238,7 +1233,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
   }
 
   /**
-   * Given a method element and as list of argument expressions, return a list of {@link Node}s
+   * Given a method element and a list of argument expressions, return a list of {@link Node}s
    * representing the arguments converted for a call of the method. This method applies to both
    * method invocations and constructor calls.
    *
@@ -1303,7 +1298,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
             new ArrayCreationNode(
                 wrappedVarargs,
                 lastParamType,
-                /*dimensions=*/ Collections.emptyList(),
+                /* dimensions= */ Collections.emptyList(),
                 initializers);
         extendWithNode(lastArgument);
 
@@ -2467,10 +2462,10 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
       // requires addition of InfeasibleExitBlock, a new SpecialBlock in the CFG.
       boolean isTerminalCase = isDefaultCase || isLastOfExhaustive;
 
-      final Label thisBodyLabel = caseBodyLabels[index];
-      final Label nextBodyLabel = caseBodyLabels[index + 1];
+      Label thisBodyLabel = caseBodyLabels[index];
+      Label nextBodyLabel = caseBodyLabels[index + 1];
       // `nextCaseLabel` is not used if isTerminalCase==FALSE.
-      final Label nextCaseLabel = new Label();
+      Label nextCaseLabel = new Label();
 
       // Handle the case expressions
       if (!isTerminalCase) {
@@ -2532,7 +2527,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
      * @param resultExpression the result of a switch expression; either from a yield or an
      *     expression in a case rule
      */
-    /* package-private */ void buildSwitchExpressionResult(ExpressionTree resultExpression) {
+    /*package-private*/ void buildSwitchExpressionResult(ExpressionTree resultExpression) {
       IdentifierTree switchExprVarUseTree = treeBuilder.buildVariableUse(switchExprVarTree);
       handleArtificialTree(switchExprVarUseTree);
 
@@ -3770,9 +3765,9 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
 
   @Override
   public Node visitTypeCast(TypeCastTree tree, Void p) {
-    final Node operand = scan(tree.getExpression(), p);
-    final TypeMirror type = TreeUtils.typeOf(tree.getType());
-    final Node node = new TypeCastNode(tree, operand, type, types);
+    Node operand = scan(tree.getExpression(), p);
+    TypeMirror type = TreeUtils.typeOf(tree.getType());
+    Node node = new TypeCastNode(tree, operand, type, types);
 
     extendWithNodeWithException(node, classCastExceptionType);
     return node;
@@ -3794,7 +3789,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
   public Node visitInstanceOf(InstanceOfTree tree, Void p) {
     Node operand = scan(tree.getExpression(), p);
     TypeMirror refType = TreeUtils.typeOf(tree.getType());
-    Tree binding = TreeUtils.instanceOfGetPattern(tree);
+    Tree binding = TreeUtils.instanceOfTreeGetPattern(tree);
     LocalVariableNode bindingNode =
         (LocalVariableNode) ((binding == null) ? null : scan(binding, p));
 

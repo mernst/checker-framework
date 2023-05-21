@@ -22,8 +22,8 @@ import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
- * This visitor implements the custom error message finalizer.invocation. It also supports counting
- * the number of framework build calls.
+ * This visitor implements the custom error message "finalizer.invocation". It also supports
+ * counting the number of framework build calls.
  */
 public class CalledMethodsVisitor extends AccumulationVisitor {
 
@@ -32,7 +32,7 @@ public class CalledMethodsVisitor extends AccumulationVisitor {
    *
    * @param checker the type-checker associated with this visitor
    */
-  public CalledMethodsVisitor(final BaseTypeChecker checker) {
+  public CalledMethodsVisitor(BaseTypeChecker checker) {
     super(checker);
   }
 
@@ -40,7 +40,7 @@ public class CalledMethodsVisitor extends AccumulationVisitor {
    * Issue an error at every EnsuresCalledMethodsVarArgs annotation, because using it is unsound.
    */
   @Override
-  public Void visitAnnotation(final AnnotationTree tree, final Void p) {
+  public Void visitAnnotation(AnnotationTree tree, Void p) {
     AnnotationMirror anno = TreeUtils.annotationFromAnnotationTree(tree);
     if (AnnotationUtils.areSameByName(
         anno, "org.checkerframework.checker.calledmethods.qual.EnsuresCalledMethodsVarArgs")) {
@@ -78,7 +78,7 @@ public class CalledMethodsVisitor extends AccumulationVisitor {
     return super.visitMethodInvocation(tree, p);
   }
 
-  /** Turns some method.invocation errors into finalizer.invocation errors. */
+  /** Turns some "method.invocation" errors into "finalizer.invocation" errors. */
   @Override
   protected void reportMethodInvocabilityError(
       MethodInvocationTree tree, AnnotatedTypeMirror found, AnnotatedTypeMirror expected) {

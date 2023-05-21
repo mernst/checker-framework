@@ -186,7 +186,7 @@ final class SupertypeFinder {
         supertypes.addAll(supertypesFromTree(type, classTree));
       } else {
         supertypes.addAll(supertypesFromElement(type, typeElement));
-        // final Element elem = type.getElement() == null ? typeElement : type.getElement();
+        // Element elem = type.getElement() == null ? typeElement : type.getElement();
       }
 
       if (typeElement.getKind() == ElementKind.ANNOTATION_TYPE) {
@@ -275,7 +275,8 @@ final class SupertypeFinder {
       // Find the super types: Start with enums and superclass
       if (typeElement.getKind() == ElementKind.ENUM) {
         supertypes.add(createEnumSuperType(type, typeElement));
-      } else if (typeElement.getSuperclass().getKind() != TypeKind.NONE) {
+      } else if (typeElement.getSuperclass().getKind() != TypeKind.NONE
+          && typeElement.getSuperclass().getKind() != TypeKind.ERROR) {
         DeclaredType superClass = (DeclaredType) typeElement.getSuperclass();
         AnnotatedDeclaredType dt =
             (AnnotatedDeclaredType) atypeFactory.toAnnotatedType(superClass, false);
@@ -286,6 +287,10 @@ final class SupertypeFinder {
       }
 
       for (TypeMirror st : typeElement.getInterfaces()) {
+        if (st.getKind() == TypeKind.ERROR) {
+          // This can happen while parsing the JDK.
+          continue;
+        }
         if (type.isUnderlyingTypeRaw()) {
           st = types.erasure(st);
         }
@@ -293,8 +298,8 @@ final class SupertypeFinder {
         supertypes.add(ast);
         if (type.isUnderlyingTypeRaw()) {
           if (st.getKind() == TypeKind.DECLARED) {
-            final List<? extends TypeMirror> typeArgs = ((DeclaredType) st).getTypeArguments();
-            final List<AnnotatedTypeMirror> annotatedTypeArgs = ast.getTypeArguments();
+            List<? extends TypeMirror> typeArgs = ((DeclaredType) st).getTypeArguments();
+            List<AnnotatedTypeMirror> annotatedTypeArgs = ast.getTypeArguments();
             for (int i = 0; i < typeArgs.size(); i++) {
               atypeFactory.addComputedTypeAnnotations(
                   types.asElement(typeArgs.get(i)), annotatedTypeArgs.get(i));
@@ -403,16 +408,15 @@ final class SupertypeFinder {
     public List<AnnotatedTypeMirror> visitArray(AnnotatedArrayType type, Void p) {
       List<AnnotatedTypeMirror> superTypes = new ArrayList<>();
       AnnotationMirrorSet annotations = type.getAnnotations();
-      final AnnotatedTypeMirror objectType = atypeFactory.getAnnotatedType(Object.class);
+      AnnotatedTypeMirror objectType = atypeFactory.getAnnotatedType(Object.class);
       objectType.addAnnotations(annotations);
       superTypes.add(objectType);
 
-      final AnnotatedTypeMirror cloneableType = atypeFactory.getAnnotatedType(Cloneable.class);
+      AnnotatedTypeMirror cloneableType = atypeFactory.getAnnotatedType(Cloneable.class);
       cloneableType.addAnnotations(annotations);
       superTypes.add(cloneableType);
 
-      final AnnotatedTypeMirror serializableType =
-          atypeFactory.getAnnotatedType(Serializable.class);
+      AnnotatedTypeMirror serializableType = atypeFactory.getAnnotatedType(Serializable.class);
       serializableType.addAnnotations(annotations);
       superTypes.add(serializableType);
 
