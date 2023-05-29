@@ -38,6 +38,9 @@ Class `FieldInvariants`:
 
 Removed methods that have been deprecated for over two years.
 
+Refined the return types of several `TreeUtils` `elementFromDeclaration` methods
+to be `@NonNull`.
+
 **Closed issues:**
 
 

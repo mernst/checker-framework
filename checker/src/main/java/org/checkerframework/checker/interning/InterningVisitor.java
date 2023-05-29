@@ -524,7 +524,6 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
     }
 
     ExecutableElement enclosingMethod = TreeUtils.elementFromDeclaration(methodTree);
-    assert enclosingMethod != null;
 
     Element lhs = TreeUtils.elementFromUse((IdentifierTree) left);
     Element rhs = TreeUtils.elementFromUse((IdentifierTree) right);
