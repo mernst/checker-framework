@@ -8,10 +8,8 @@ import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -237,6 +235,8 @@ public abstract class CFAbstractTransfer<
 
     S store;
 
+    AnnotatedTypeFactory atypeFactory = analysis.getTypeFactory();
+
     if (underlyingAST.getKind() == UnderlyingAST.Kind.METHOD) {
 
       if (fixedInitialStore != null) {
@@ -246,9 +246,8 @@ public abstract class CFAbstractTransfer<
         store = analysis.createEmptyStore(sequentialSemantics);
       }
 
-      AnnotatedTypeFactory factory = analysis.getTypeFactory();
       for (LocalVariableNode p : parameters) {
-        AnnotatedTypeMirror anno = factory.getAnnotatedType(p.getElement());
+        AnnotatedTypeMirror anno = atypeFactory.getAnnotatedType(p.getElement());
         store.initializeMethodParameter(p, analysis.createAbstractValue(anno));
       }
 
@@ -256,7 +255,7 @@ public abstract class CFAbstractTransfer<
       CFGMethod method = (CFGMethod) underlyingAST;
       MethodTree methodDeclTree = method.getMethod();
       ExecutableElement methodElem = TreeUtils.elementFromDeclaration(methodDeclTree);
-      addInformationFromPreconditions(store, factory, method, methodDeclTree, methodElem);
+      addInformationFromPreconditions(store, atypeFactory, method, methodDeclTree, methodElem);
 
       addInitialFieldValues(store, method.getClassTree(), methodDeclTree);
 
@@ -265,20 +264,19 @@ public abstract class CFAbstractTransfer<
       if (shouldPerformWholeProgramInference(methodDeclTree, methodElem)) {
         Map<AnnotatedDeclaredType, ExecutableElement> overriddenMethods =
             AnnotatedTypes.overriddenMethods(
-                analysis.atypeFactory.getElementUtils(), analysis.atypeFactory, methodElem);
+                atypeFactory.getElementUtils(), atypeFactory, methodElem);
         for (Map.Entry<AnnotatedDeclaredType, ExecutableElement> pair :
             overriddenMethods.entrySet()) {
           AnnotatedExecutableType overriddenMethod =
               AnnotatedTypes.asMemberOf(
-                  analysis.atypeFactory.getProcessingEnv().getTypeUtils(),
-                  analysis.atypeFactory,
+                  atypeFactory.getProcessingEnv().getTypeUtils(),
+                  atypeFactory,
                   pair.getKey(),
                   pair.getValue());
 
           // Infers parameter and receiver types of the method based
           // on the overridden method.
-          analysis
-              .atypeFactory
+          atypeFactory
               .getWholeProgramInference()
               .updateFromOverride(methodDeclTree, methodElem, overriddenMethod);
         }
@@ -295,9 +293,8 @@ public abstract class CFAbstractTransfer<
       store.arrayValues.clear();
       store.methodValues.clear();
 
-      AnnotatedTypeFactory factory = analysis.getTypeFactory();
       for (LocalVariableNode p : parameters) {
-        AnnotatedTypeMirror anno = factory.getAnnotatedType(p.getElement());
+        AnnotatedTypeMirror anno = atypeFactory.getAnnotatedType(p.getElement());
         store.initializeMethodParameter(p, analysis.createAbstractValue(anno));
       }
 
@@ -305,15 +302,7 @@ public abstract class CFAbstractTransfer<
       @SuppressWarnings("interning:assignment") // used in == tests
       @InternedDistinct Tree enclosingTree =
           TreePathUtil.enclosingOfKind(
-              factory.getPath(lambda.getLambdaTree()),
-              new HashSet<>(
-                  Arrays.asList(
-                      Tree.Kind.METHOD,
-                      // Tree.Kind for which TreeUtils.isClassTree is true
-                      Tree.Kind.CLASS,
-                      Tree.Kind.INTERFACE,
-                      Tree.Kind.ANNOTATION_TYPE,
-                      Tree.Kind.ENUM)));
+              atypeFactory.getPath(lambda.getLambdaTree()), TreeUtils.classAndMethodTreeKinds());
 
       Element enclosingElement = null;
       if (enclosingTree.getKind() == Tree.Kind.METHOD) {
@@ -327,7 +316,7 @@ public abstract class CFAbstractTransfer<
         // Find any enclosing element of the lambda (using trees).
         // Then go up the elements to find an initializer element (which can't be found with
         // the tree).
-        TreePath loopTree = factory.getPath(lambda.getLambdaTree()).getParentPath();
+        TreePath loopTree = atypeFactory.getPath(lambda.getLambdaTree()).getParentPath();
         Element anEnclosingElement = null;
         while (loopTree.getLeaf() != enclosingTree) {
           Element sym = TreeUtils.elementFromTree(loopTree.getLeaf());
@@ -354,7 +343,8 @@ public abstract class CFAbstractTransfer<
       // We want the initialization stuff, but need to throw out any refinements.
       Map<FieldAccess, V> fieldValuesClone = new HashMap<>(store.fieldValues);
       for (Map.Entry<FieldAccess, V> fieldValue : fieldValuesClone.entrySet()) {
-        AnnotatedTypeMirror declaredType = factory.getAnnotatedType(fieldValue.getKey().getField());
+        AnnotatedTypeMirror declaredType =
+            atypeFactory.getAnnotatedType(fieldValue.getKey().getField());
         V lubbedValue =
             analysis.createAbstractValue(declaredType).leastUpperBound(fieldValue.getValue());
         store.fieldValues.put(fieldValue.getKey(), lubbedValue);
@@ -433,7 +423,7 @@ public abstract class CFAbstractTransfer<
       // TODO: There is a design flaw where the values of final local values leaks
       // into other methods of the same class. For example, in
       // class a { void b() {...} void c() {...} }
-      // final local values from b() would be visible in the store for c(),
+      // local values from b() would be visible in the store for c(),
       // even though they should only be visible in b() and in classes
       // defined inside the method body of b().
       // This is partly because GenericAnnotatedTypeFactory.performFlowAnalysis does not call
@@ -503,7 +493,7 @@ public abstract class CFAbstractTransfer<
       String stringExpr = p.expressionString;
       AnnotationMirror annotation =
           p.viewpointAdaptDependentTypeAnnotation(
-              analysis.atypeFactory, stringToJavaExpr, /*errorTree=*/ null);
+              analysis.atypeFactory, stringToJavaExpr, /* errorTree= */ null);
       JavaExpression exprJe;
       try {
         // TODO: currently, these expressions are parsed at the declaration (i.e. here) and
@@ -1124,7 +1114,7 @@ public abstract class CFAbstractTransfer<
       // Viewpoint-adapt to the method use (the call site).
       AnnotationMirror anno =
           p.viewpointAdaptDependentTypeAnnotation(
-              analysis.atypeFactory, stringToJavaExpr, /*errorTree=*/ null);
+              analysis.atypeFactory, stringToJavaExpr, /* errorTree= */ null);
 
       String expressionString = p.expressionString;
       try {

@@ -39,6 +39,7 @@ import org.checkerframework.framework.type.treeannotator.PropagationTreeAnnotato
 import org.checkerframework.framework.type.treeannotator.TreeAnnotator;
 import org.checkerframework.framework.util.QualifierKind;
 import org.checkerframework.javacutil.AnnotationBuilder;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypeSystemError;
@@ -66,6 +67,7 @@ public class AinferTestAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The AinferSiblingWithFields.value field/element. */
   private final ExecutableElement siblingWithFieldsValueElement =
       TreeUtils.getMethod(AinferSiblingWithFields.class, "value", 0, processingEnv);
+
   /** The AinferSiblingWithFields.value2 field/element. */
   private final ExecutableElement siblingWithFieldsValue2Element =
       TreeUtils.getMethod(AinferSiblingWithFields.class, "value2", 0, processingEnv);
@@ -102,19 +104,6 @@ public class AinferTestAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         new PropagationTreeAnnotator(this),
         literalTreeAnnotator,
         new AinferTestTreeAnnotator(this));
-  }
-
-  @Override
-  public AnnotatedTypeMirror getAnnotatedType(Element elt) {
-    // By default, the CF does not look for declaration annotations
-    // that are aliases of type annotations in annotation files.
-    // For the test that the WPI places declaration annotations properly,
-    // adjust those rules for fields here. TODO: is that a bug in the CF or expected behavior?
-    AnnotatedTypeMirror result = super.getAnnotatedType(elt);
-    if (getDeclAnnotation(elt, AinferTreatAsSibling1.class) != null) {
-      result.replaceAnnotation(SIBLING1);
-    }
-    return result;
   }
 
   protected class AinferTestTreeAnnotator extends TreeAnnotator {
@@ -155,13 +144,26 @@ public class AinferTestAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         ExecutableElement execElt = TreeUtils.elementFromDeclaration(methodTree);
         for (int i = 0; i < execElt.getParameters().size(); ++i) {
           VariableElement param = execElt.getParameters().get(i);
-          if (param.getSimpleName().contentEquals("iShouldBeTreatedAsSibling1")
-              || param.getSimpleName().contentEquals("out")) {
+          if (param.getSimpleName().contentEquals("iShouldBeTreatedAsSibling1")) {
             wpi.addDeclarationAnnotationToFormalParameter(execElt, i, TREAT_AS_SIBLING1);
           }
         }
       }
       return super.visitMethod(methodTree, type);
+    }
+  }
+
+  @Override
+  public void addComputedTypeAnnotations(Element elt, AnnotatedTypeMirror type) {
+    super.addComputedTypeAnnotations(elt, type);
+    // If an element has an @AinferTreatAsSibling1 annotation, replace its type with
+    // @AinferSibling1.
+    // This should be handled by the fact that @AinferTreatAsSibling1 and @AinferSibling1 are
+    // aliases, but by default the CF does not look for declaration annotations
+    // that are aliases of type annotations in annotation files.
+    // TODO: is that a bug in the CF or expected behavior?
+    if (getDeclAnnotation(elt, AinferTreatAsSibling1.class) != null) {
+      type.replaceAnnotation(SIBLING1);
     }
   }
 
@@ -197,8 +199,8 @@ public class AinferTestAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
 
     @Override
-    public Set<? extends AnnotationMirror> getBottomAnnotations() {
-      return Collections.singleton(BOTTOM);
+    public AnnotationMirrorSet getBottomAnnotations() {
+      return new AnnotationMirrorSet(BOTTOM);
     }
 
     @Override

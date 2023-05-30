@@ -94,8 +94,10 @@ public abstract class InitializationAnnotatedTypeFactory<
 
   /** The Unused.when field/element. */
   protected final ExecutableElement unusedWhenElement;
+
   /** The UnderInitialization.value field/element. */
   protected final ExecutableElement underInitializationValueElement;
+
   /** The UnknownInitialization.value field/element. */
   protected final ExecutableElement unknownInitializationValueElement;
 
@@ -794,7 +796,7 @@ public abstract class InitializationAnnotatedTypeFactory<
       boolean allInitialized = true;
       Type type = ((JCTree) tree).type;
       for (ExpressionTree a : tree.getArguments()) {
-        final AnnotatedTypeMirror t = getAnnotatedType(a);
+        AnnotatedTypeMirror t = getAnnotatedType(a);
         allInitialized &= (isInitialized(t) || isFbcBottom(t));
       }
       if (!allInitialized) {
@@ -836,6 +838,7 @@ public abstract class InitializationAnnotatedTypeFactory<
 
     /** Qualifier kind for the @{@link UnknownInitialization} annotation. */
     private final QualifierKind UNKNOWN_INIT;
+
     /** Qualifier kind for the @{@link UnderInitialization} annotation. */
     private final QualifierKind UNDER_INIT;
 
@@ -924,7 +927,7 @@ public abstract class InitializationAnnotatedTypeFactory<
     }
 
     /**
-     * Returns the least upper bound of two types.
+     * Returns the least upper bound of two Java basetypes (without annotations).
      *
      * @param a the first argument
      * @param b the second argument

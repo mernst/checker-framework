@@ -46,7 +46,6 @@ import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.SynchronizedTree;
 import com.sun.source.tree.ThrowTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.TryTree;
 import com.sun.source.tree.TypeCastTree;
 import com.sun.source.tree.TypeParameterTree;
@@ -209,14 +208,19 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
 
   /** The javac element utilities. */
   protected final Elements elements;
+
   /** The javac type utilities. */
   protected final Types types;
+
   /** The javac tree utilities. */
   protected final Trees trees;
+
   /** The tree builder. */
   protected final TreeBuilder treeBuilder;
+
   /** The annotation provider, e.g., a type factory. */
   protected final AnnotationProvider annotationProvider;
+
   /** Can assertions be assumed to be disabled? */
   protected final boolean assumeAssertionsDisabled;
 
@@ -634,14 +638,9 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
 
     Tree enclosingParens = parenMapping.get(tree);
     while (enclosingParens != null) {
-      Set<Node> exp = treeToCfgNodes.get(enclosingParens);
-      if (exp == null) {
-        Set<Node> newSet = new IdentityArraySet<>(1);
-        newSet.add(node);
-        treeToCfgNodes.put(enclosingParens, newSet);
-      } else if (!existing.contains(node)) {
-        exp.add(node);
-      }
+      Set<Node> exp =
+          treeToCfgNodes.computeIfAbsent(enclosingParens, k -> new IdentityArraySet<>(1));
+      exp.add(node);
       enclosingParens = parenMapping.get(enclosingParens);
     }
   }
@@ -944,12 +943,12 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
   }
 
   private TreeInfo getTreeInfo(Tree tree) {
-    final TypeMirror type = TreeUtils.typeOf(tree);
-    final boolean boxed = TypesUtils.isBoxedPrimitive(type);
-    final TypeMirror unboxedType = boxed ? types.unboxedType(type) : type;
+    TypeMirror type = TreeUtils.typeOf(tree);
+    boolean boxed = TypesUtils.isBoxedPrimitive(type);
+    TypeMirror unboxedType = boxed ? types.unboxedType(type) : type;
 
-    final boolean bool = TypesUtils.isBooleanType(type);
-    final boolean numeric = TypesUtils.isNumeric(unboxedType);
+    boolean bool = TypesUtils.isBooleanType(type);
+    boolean numeric = TypesUtils.isNumeric(unboxedType);
 
     return new TreeInfo() {
       @Override
@@ -1251,7 +1250,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
   }
 
   /**
-   * Given a method element and as list of argument expressions, return a list of {@link Node}s
+   * Given a method element and a list of argument expressions, return a list of {@link Node}s
    * representing the arguments converted for a call of the method. This method applies to both
    * method invocations and constructor calls.
    *
@@ -1316,7 +1315,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
             new ArrayCreationNode(
                 wrappedVarargs,
                 lastParamType,
-                /*dimensions=*/ Collections.emptyList(),
+                /* dimensions= */ Collections.emptyList(),
                 initializers);
         extendWithNode(lastArgument);
 
@@ -1566,7 +1565,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
   private Element findOwner() {
     Tree enclosingMethodOrLambda = TreePathUtil.enclosingMethodOrLambda(getCurrentPath());
     if (enclosingMethodOrLambda != null) {
-      if (enclosingMethodOrLambda.getKind() == Kind.METHOD) {
+      if (enclosingMethodOrLambda.getKind() == Tree.Kind.METHOD) {
         return TreeUtils.elementFromDeclaration((MethodTree) enclosingMethodOrLambda);
       } else {
         // The current path is in a lambda tree.  In this case the owner is either a method
@@ -2520,10 +2519,10 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
       // requires addition of InfeasibleExitBlock, a new SpecialBlock in the CFG.
       boolean isTerminalCase = isDefaultCase || isLastOfExhaustive;
 
-      final Label thisBodyLabel = caseBodyLabels[index];
-      final Label nextBodyLabel = caseBodyLabels[index + 1];
+      Label thisBodyLabel = caseBodyLabels[index];
+      Label nextBodyLabel = caseBodyLabels[index + 1];
       // `nextCaseLabel` is not used if isTerminalCase==FALSE.
-      final Label nextCaseLabel = new Label();
+      Label nextCaseLabel = new Label();
 
       // Handle the case expressions
       if (!isTerminalCase) {
@@ -2585,7 +2584,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
      * @param resultExpression the result of a switch expression; either from a yield or an
      *     expression in a case rule
      */
-    /* package-private */ void buildSwitchExpressionResult(ExpressionTree resultExpression) {
+    /*package-private*/ void buildSwitchExpressionResult(ExpressionTree resultExpression) {
       IdentifierTree switchExprVarUseTree = treeBuilder.buildVariableUse(switchExprVarTree);
       handleArtificialTree(switchExprVarUseTree);
 
@@ -3828,9 +3827,9 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
 
   @Override
   public Node visitTypeCast(TypeCastTree tree, Void p) {
-    final Node operand = scan(tree.getExpression(), p);
-    final TypeMirror type = TreeUtils.typeOf(tree.getType());
-    final Node node = new TypeCastNode(tree, operand, type, types);
+    Node operand = scan(tree.getExpression(), p);
+    TypeMirror type = TreeUtils.typeOf(tree.getType());
+    Node node = new TypeCastNode(tree, operand, type, types);
 
     extendWithNodeWithException(node, classCastExceptionType);
     return node;
@@ -3852,7 +3851,7 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
   public Node visitInstanceOf(InstanceOfTree tree, Void p) {
     Node operand = scan(tree.getExpression(), p);
     TypeMirror refType = TreeUtils.typeOf(tree.getType());
-    Tree binding = TreeUtils.instanceOfGetPattern(tree);
+    Tree binding = TreeUtils.instanceOfTreeGetPattern(tree);
     LocalVariableNode bindingNode =
         (LocalVariableNode) ((binding == null) ? null : scan(binding, p));
 

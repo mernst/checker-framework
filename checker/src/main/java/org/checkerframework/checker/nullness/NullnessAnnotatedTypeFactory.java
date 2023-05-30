@@ -86,10 +86,13 @@ public class NullnessAnnotatedTypeFactory
 
   /** The @{@link NonNull} annotation. */
   protected final AnnotationMirror NONNULL = AnnotationBuilder.fromClass(elements, NonNull.class);
+
   /** The @{@link Nullable} annotation. */
   protected final AnnotationMirror NULLABLE = AnnotationBuilder.fromClass(elements, Nullable.class);
+
   /** The @{@link PolyNull} annotation. */
   protected final AnnotationMirror POLYNULL = AnnotationBuilder.fromClass(elements, PolyNull.class);
+
   /** The @{@link MonotonicNonNull} annotation. */
   protected final AnnotationMirror MONOTONIC_NONNULL =
       AnnotationBuilder.fromClass(elements, MonotonicNonNull.class);
@@ -102,6 +105,7 @@ public class NullnessAnnotatedTypeFactory
 
   /** The Class.getCanonicalName() method. */
   protected final ExecutableElement classGetCanonicalName;
+
   /** The Arrays.copyOf() methods that operate on arrays of references. */
   private final List<ExecutableElement> copyOfMethods;
 
@@ -485,16 +489,14 @@ public class NullnessAnnotatedTypeFactory
 
   @Override
   public void adaptGetClassReturnTypeToReceiver(
-      final AnnotatedExecutableType getClassType,
-      final AnnotatedTypeMirror receiverType,
-      ExpressionTree tree) {
+      AnnotatedExecutableType getClassType, AnnotatedTypeMirror receiverType, ExpressionTree tree) {
 
     super.adaptGetClassReturnTypeToReceiver(getClassType, receiverType, tree);
 
     // Make the captured wildcard always @NonNull, regardless of the declared type.
 
-    final AnnotatedDeclaredType returnAdt = (AnnotatedDeclaredType) getClassType.getReturnType();
-    final List<AnnotatedTypeMirror> typeArgs = returnAdt.getTypeArguments();
+    AnnotatedDeclaredType returnAdt = (AnnotatedDeclaredType) getClassType.getReturnType();
+    List<AnnotatedTypeMirror> typeArgs = returnAdt.getTypeArguments();
     AnnotatedTypeVariable classWildcardArg = (AnnotatedTypeVariable) typeArgs.get(0);
     classWildcardArg.getUpperBound().replaceAnnotation(NONNULL);
   }
@@ -576,7 +578,7 @@ public class NullnessAnnotatedTypeFactory
         AnnotationMirror NONNULL = ((NullnessAnnotatedTypeFactory) atypeFactory).NONNULL;
         // If a @Nullable expression is cast to a primitive, then an unboxing.of.nullable
         // error is issued.  Treat the cast as if it were annotated as @NonNull to avoid an
-        // annotations.on.use error.
+        // "annotations.on.use" error.
         if (!type.isAnnotatedInHierarchy(NONNULL)) {
           type.addAnnotation(NONNULL);
         }

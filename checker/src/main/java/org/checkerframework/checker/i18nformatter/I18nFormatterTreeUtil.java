@@ -56,13 +56,16 @@ import org.checkerframework.javacutil.TreeUtils;
 public class I18nFormatterTreeUtil {
   /** The checker. */
   public final BaseTypeChecker checker;
+
   /** The processing environment. */
   public final ProcessingEnvironment processingEnv;
 
   /** The value() element/field of an @I18nFormat annotation. */
   protected final ExecutableElement i18nFormatValueElement;
+
   /** The value() element/field of an @I18nFormatFor annotation. */
   protected final ExecutableElement i18nFormatForValueElement;
+
   /** The value() element/field of an @I18nInvalidFormat annotation. */
   protected final ExecutableElement i18nInvalidFormatValueElement;
 
@@ -102,8 +105,7 @@ public class I18nFormatterTreeUtil {
    * @param invalidFormatString an invalid formatter string
    * @return an {@link I18nInvalidFormat} annotation with the given string as its value
    */
-  /* package-private */
-  AnnotationMirror stringToInvalidFormatAnnotation(String invalidFormatString) {
+  /*package-private*/ AnnotationMirror stringToInvalidFormatAnnotation(String invalidFormatString) {
     AnnotationBuilder builder = new AnnotationBuilder(processingEnv, I18nInvalidFormat.class);
     builder.setValue("value", invalidFormatString);
     return builder.build();
@@ -115,8 +117,7 @@ public class I18nFormatterTreeUtil {
    * @param anno an I18nInvalidFormat annotation
    * @return its value() element/field, or null if it does not have one
    */
-  /* package-private */
-  @Nullable String getI18nInvalidFormatValue(AnnotationMirror anno) {
+  /*package-private*/ @Nullable String getI18nInvalidFormatValue(AnnotationMirror anno) {
     return AnnotationUtils.getElementValue(anno, i18nInvalidFormatValueElement, String.class, null);
   }
 
@@ -126,7 +127,7 @@ public class I18nFormatterTreeUtil {
    * @param anno an I18NFormatFor annotation
    * @return its value() element/field
    */
-  /* package-private */ String getI18nFormatForValue(AnnotationMirror anno) {
+  /*package-private*/ String getI18nFormatForValue(AnnotationMirror anno) {
     return AnnotationUtils.getElementValue(anno, i18nFormatForValueElement, String.class);
   }
 
@@ -289,12 +290,16 @@ public class I18nFormatterTreeUtil {
 
     /** The AST node for the call. */
     private final MethodInvocationTree tree;
+
     /** The format string argument. */
     private ExpressionTree formatArg;
+
     /** The type factory. */
     private final AnnotatedTypeFactory atypeFactory;
+
     /** The arguments to the format string. */
     private List<? extends ExpressionTree> args;
+
     /** Extra description for error messages. */
     private String invalidMessage;
 
@@ -420,7 +425,7 @@ public class I18nFormatterTreeUtil {
       InvocationType type = InvocationType.VARARG;
 
       if (args.size() == 1) {
-        final ExpressionTree first = args.get(0);
+        ExpressionTree first = args.get(0);
         TypeMirror argType = atypeFactory.getAnnotatedType(first).getUnderlyingType();
         // figure out if argType is an array
         type =
@@ -569,7 +574,7 @@ public class I18nFormatterTreeUtil {
    * @param type a TypeMirror
    * @return the class corresponding to the argument
    */
-  private static final Class<? extends Object> typeMirrorToClass(final TypeMirror type) {
+  private static Class<? extends Object> typeMirrorToClass(TypeMirror type) {
     return type.accept(typeMirrorToClassVisitor, Void.TYPE);
   }
 }

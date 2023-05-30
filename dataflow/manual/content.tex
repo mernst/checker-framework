@@ -13,7 +13,7 @@ The Dataflow Framework is used in the
 \href{https://checkerframework.org/}{Checker Framework},
 Google's \href{http://errorprone.info/}{Error Prone},
 Uber's \href{https://github.com/uber/NullAway}{NullAway},
-Facebook's \href{https://engineering.fb.com/2022/11/22/developer-tools/meta-java-nullsafe/}{Nullsafe},
+Meta's \href{https://engineering.fb.com/2022/11/22/developer-tools/meta-java-nullsafe/}{Nullsafe},
 and in other contexts.
 
 The primary purpose of the Dataflow Framework is to estimate values:
@@ -996,7 +996,8 @@ about node-tree mapping, see \autoref{sec:conversions}.
 \label{sec:cond-stores}
 
 The Dataflow Framework extracts information from control-flow splits
-that occur in \code{if}, \code{for}, \code{while}, and \code{switch} statements.  In order to have
+that occur in \code{if}, \code{for}, \code{while}, and \code{switch}
+statements and in conditional operator expressions.  In order to have
 the information available at the split, we eagerly produce two stores
 contained in a \code{ConditionalTransferResult} after certain
 boolean-valued expressions.  The stores are called the \emph{then} and

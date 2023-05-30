@@ -24,8 +24,8 @@ sourcesJar {
 }
 
 def versions = [
-  autoValue       : '1.7.4',
-  lombok          : '1.18.24',
+  autoValue       : '1.10.1',
+  lombok          : "${lombokVersion}",
 ]
 
 configurations {
@@ -46,9 +46,10 @@ dependencies {
   // External dependencies:
   // If you add an external dependency, you must shadow its packages.
   // See the comment in ../build.gradle in the shadowJar block.
+  implementation "org.plumelib:hashmap-util:${hashmapUtilVersion}"
   implementation "org.plumelib:plume-util:${plumeUtilVersion}"
   implementation "org.plumelib:reflection-util:${reflectionUtilVersion}"
-  implementation 'io.github.classgraph:classgraph:4.8.149'
+  implementation 'io.github.classgraph:classgraph:4.8.160'
 
   testImplementation group: 'junit', name: 'junit', version: '4.13.2'
   testImplementation project(':framework-test')
@@ -157,7 +158,10 @@ task allSourcesJar(type: Jar, group: 'Build') {
 
 task allJavadocJar(type: Jar, group: 'Build') {
   description 'Creates javadoc jar include Javadoc for all of the framework'
-  dependsOn rootProject.tasks.allJavadoc
+  dependsOn (project(':framework').tasks.javadoc,
+      project(':dataflow').tasks.javadoc,
+      project(':javacutil').tasks.javadoc)
+
   duplicatesStrategy = DuplicatesStrategy.EXCLUDE
   destinationDirectory = file("${projectDir}/dist")
   archiveFileName = 'framework-javadoc.jar'

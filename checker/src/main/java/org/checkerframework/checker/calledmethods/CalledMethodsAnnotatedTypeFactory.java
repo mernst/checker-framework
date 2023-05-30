@@ -65,11 +65,11 @@ public class CalledMethodsAnnotatedTypeFactory extends AccumulationAnnotatedType
       TreeUtils.getMethod("java.util.Collections", "singletonList", 1, getProcessingEnv());
 
   /** The {@link CalledMethods#value} element/argument. */
-  /* package-private */ final ExecutableElement calledMethodsValueElement =
+  /*package-private*/ final ExecutableElement calledMethodsValueElement =
       TreeUtils.getMethod(CalledMethods.class, "value", 0, processingEnv);
 
   /** The {@link EnsuresCalledMethodsVarArgs#value} element/argument. */
-  /* package-private */ final ExecutableElement ensuresCalledMethodsVarArgsValueElement =
+  /*package-private*/ final ExecutableElement ensuresCalledMethodsVarArgsValueElement =
       TreeUtils.getMethod(EnsuresCalledMethodsVarArgs.class, "value", 0, processingEnv);
 
   /**
@@ -79,6 +79,7 @@ public class CalledMethodsAnnotatedTypeFactory extends AccumulationAnnotatedType
    */
   public CalledMethodsAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker, CalledMethods.class, CalledMethodsBottom.class, CalledMethodsPredicate.class);
+
     this.builderFrameworkSupports = new ArrayList<>(2);
     String[] disabledFrameworks;
     if (checker.hasOption(CalledMethodsChecker.DISABLE_BUILDER_FRAMEWORK_SUPPORTS)) {
@@ -88,7 +89,9 @@ public class CalledMethodsAnnotatedTypeFactory extends AccumulationAnnotatedType
       disabledFrameworks = new String[0];
     }
     enableFrameworks(disabledFrameworks);
+
     this.useValueChecker = checker.hasOption(CalledMethodsChecker.USE_VALUE_CHECKER);
+
     // Lombok generates @CalledMethods annotations using an old package name,
     // so we maintain it as an alias.
     addAliasedTypeAnnotation(
@@ -171,8 +174,7 @@ public class CalledMethodsAnnotatedTypeFactory extends AccumulationAnnotatedType
    *     return the first argument.
    */
   // This cannot return a Name because filterTreeToMethodName cannot.
-  public String adjustMethodNameUsingValueChecker(
-      final String methodName, final MethodInvocationTree tree) {
+  public String adjustMethodNameUsingValueChecker(String methodName, MethodInvocationTree tree) {
     if (!useValueChecker) {
       return methodName;
     }
@@ -380,7 +382,7 @@ public class CalledMethodsAnnotatedTypeFactory extends AccumulationAnnotatedType
    *
    * @return a collection of builder frameworks that are enabled in this run of the checker
    */
-  /* package-private */ Collection<BuilderFrameworkSupport> getBuilderFrameworkSupports() {
+  /*package-private*/ Collection<BuilderFrameworkSupport> getBuilderFrameworkSupports() {
     return builderFrameworkSupports;
   }
 
@@ -411,8 +413,20 @@ public class CalledMethodsAnnotatedTypeFactory extends AccumulationAnnotatedType
    * @return a {@code @EnsuresCalledMethods("...")} annotation for the given expression
    */
   private AnnotationMirror ensuresCMAnno(String expression, List<String> calledMethods) {
+    return ensuresCMAnno(new String[] {expression}, calledMethods);
+  }
+
+  /**
+   * Returns a {@code @EnsuresCalledMethods("...")} annotation for the given expressions.
+   *
+   * @param expressions the expressions to put in the value field of the EnsuresCalledMethods
+   *     annotation
+   * @param calledMethods the methods that were definitely called on the expression
+   * @return a {@code @EnsuresCalledMethods("...")} annotation for the given expression
+   */
+  private AnnotationMirror ensuresCMAnno(String[] expressions, List<String> calledMethods) {
     AnnotationBuilder builder = new AnnotationBuilder(processingEnv, EnsuresCalledMethods.class);
-    builder.setValue("value", new String[] {expression});
+    builder.setValue("value", expressions);
     builder.setValue("methods", calledMethods.toArray(new String[calledMethods.size()]));
     AnnotationMirror am = builder.build();
     return am;

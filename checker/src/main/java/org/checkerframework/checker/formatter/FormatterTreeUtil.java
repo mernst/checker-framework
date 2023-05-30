@@ -41,13 +41,16 @@ import org.checkerframework.javacutil.TypesUtils;
 public class FormatterTreeUtil {
   /** The checker. */
   public final BaseTypeChecker checker;
+
   /** The processing environment. */
   public final ProcessingEnvironment processingEnv;
 
   /** The value() element/field of an @Format annotation. */
   protected final ExecutableElement formatValueElement;
+
   /** The value() element/field of an @InvalidFormat annotation. */
   protected final ExecutableElement invalidFormatValueElement;
+
   // private final ExecutableElement formatArgTypesElement;
 
   public FormatterTreeUtil(BaseTypeChecker checker) {
@@ -211,12 +214,16 @@ public class FormatterTreeUtil {
   public class FormatCall {
     /** The call itself. */
     /*package-private*/ final MethodInvocationTree invocationTree;
+
     /** The format string argument. */
     private final ExpressionTree formatStringTree;
+
     /** The type of the format string argument. */
     private final AnnotatedTypeMirror formatStringType;
+
     /** The arguments that follow the format string argument. */
     private final List<? extends ExpressionTree> args;
+
     /** The type factory. */
     private final AnnotatedTypeFactory atypeFactory;
 
@@ -270,7 +277,7 @@ public class FormatterTreeUtil {
       InvocationType type = InvocationType.VARARG;
 
       if (args.size() == 1) {
-        final ExpressionTree first = args.get(0);
+        ExpressionTree first = args.get(0);
         TypeMirror argType = atypeFactory.getAnnotatedType(first).getUnderlyingType();
         // figure out if argType is an array
         type =
@@ -441,8 +448,7 @@ public class FormatterTreeUtil {
    * @param invalidFormatString an invalid formatter string
    * @return an {@link InvalidFormat} annotation with the given string as its value
    */
-  /* package-private */
-  AnnotationMirror stringToInvalidFormatAnnotation(String invalidFormatString) {
+  /*package-private*/ AnnotationMirror stringToInvalidFormatAnnotation(String invalidFormatString) {
     AnnotationBuilder builder = new AnnotationBuilder(processingEnv, InvalidFormat.class);
     builder.setValue("value", invalidFormatString);
     return builder.build();

@@ -200,6 +200,7 @@ public abstract class BaseTypeChecker extends SourceChecker {
    *
    * @return the subchecker classes on which this checker depends; will be modified by callees
    */
+  // This is never looked up in, but it is iterated over (and added to, which does a lookup).
   protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
     // This must return a modifiable set because clients modify it.
     // Most checkers have 1 or fewer subcheckers.
@@ -388,7 +389,7 @@ public abstract class BaseTypeChecker extends SourceChecker {
     BaseTypeVisitor<?> visitor = getVisitor();
     // Avoid NPE if this method is called during initialization.
     if (visitor == null) {
-      return null;
+      throw new TypeSystemError("Called getTypeFactory() before initialization was complete");
     }
     return visitor.getTypeFactory();
   }
@@ -403,7 +404,8 @@ public abstract class BaseTypeChecker extends SourceChecker {
    * returns the only such checker, or null if none was found. The caller must know the exact
    * checker class to request.
    *
-   * @param checkerClass the class of the subchecker
+   * @param <T> the class of the subchecker to return
+   * @param checkerClass the class of the subchecker to return
    * @return the requested subchecker or null if not found
    */
   @SuppressWarnings("unchecked")
@@ -472,7 +474,7 @@ public abstract class BaseTypeChecker extends SourceChecker {
       try {
         instance = subcheckerClass.getDeclaredConstructor().newInstance();
       } catch (Exception e) {
-        throw new BugInCF("Could not create an instance of " + subcheckerClass);
+        throw new BugInCF("Could not create an instance of " + subcheckerClass, e);
       }
 
       instance.setProcessingEnvironment(this.processingEnv);
@@ -518,14 +520,6 @@ public abstract class BaseTypeChecker extends SourceChecker {
       treePathCacher = new TreePathCacher();
     }
     return treePathCacher;
-  }
-
-  @Override
-  protected void reportJavacError(TreePath p) {
-    if (parentChecker == null) {
-      // Only the parent checker should report the "type.checking.not.run" error.
-      super.reportJavacError(p);
-    }
   }
 
   // AbstractTypeProcessor delegation
@@ -691,10 +685,13 @@ public abstract class BaseTypeChecker extends SourceChecker {
   private static class CheckerMessage {
     /** The severity of the message. */
     final Diagnostic.Kind kind;
+
     /** The message itself. */
     final String message;
+
     /** The source code that the message is about. */
     final @InternedDistinct Tree source;
+
     /** Stores the stack trace when the message is created. */
     final StackTraceElement[] trace;
 

@@ -85,24 +85,31 @@ public class LockAnnotatedTypeFactory
 
   /** The @{@link LockHeld} annotation. */
   protected final AnnotationMirror LOCKHELD = AnnotationBuilder.fromClass(elements, LockHeld.class);
+
   /** The @{@link LockPossiblyHeld} annotation. */
   protected final AnnotationMirror LOCKPOSSIBLYHELD =
       AnnotationBuilder.fromClass(elements, LockPossiblyHeld.class);
+
   /** The @{@link SideEffectFree} annotation. */
   protected final AnnotationMirror SIDEEFFECTFREE =
       AnnotationBuilder.fromClass(elements, SideEffectFree.class);
+
   /** The @{@link GuardedByUnknown} annotation. */
   protected final AnnotationMirror GUARDEDBYUNKNOWN =
       AnnotationBuilder.fromClass(elements, GuardedByUnknown.class);
+
   /** The @{@link GuardedBy} annotation. */
   protected final AnnotationMirror GUARDEDBY =
       createGuardedByAnnotationMirror(new ArrayList<String>());
+
   /** The @{@link NewObject} annotation. */
   protected final AnnotationMirror NEWOBJECT =
       AnnotationBuilder.fromClass(elements, NewObject.class);
+
   /** The @{@link GuardedByBottom} annotation. */
   protected final AnnotationMirror GUARDEDBYBOTTOM =
       AnnotationBuilder.fromClass(elements, GuardedByBottom.class);
+
   /** The @{@link GuardSatisfied} annotation. */
   protected final AnnotationMirror GUARDSATISFIED =
       AnnotationBuilder.fromClass(elements, GuardSatisfied.class);
@@ -110,12 +117,15 @@ public class LockAnnotatedTypeFactory
   /** The value() element/field of a @GuardedBy annotation. */
   protected final ExecutableElement guardedByValueElement =
       TreeUtils.getMethod(GuardedBy.class, "value", 0, processingEnv);
+
   /** The value() element/field of a @GuardSatisfied annotation. */
   protected final ExecutableElement guardSatisfiedValueElement =
       TreeUtils.getMethod(GuardSatisfied.class, "value", 0, processingEnv);
+
   /** The EnsuresLockHeld.value element/field. */
   protected final ExecutableElement ensuresLockHeldValueElement =
       TreeUtils.getMethod(EnsuresLockHeld.class, "value", 0, processingEnv);
+
   /** The EnsuresLockHeldIf.expression element/field. */
   protected final ExecutableElement ensuresLockHeldIfExpressionElement =
       TreeUtils.getMethod(EnsuresLockHeldIf.class, "expression", 0, processingEnv);
@@ -158,7 +168,7 @@ public class LockAnnotatedTypeFactory
       @Override
       protected void reportErrors(Tree errorTree, List<DependentTypesError> errors) {
         // If the error message is NOT_EFFECTIVELY_FINAL, then report
-        // lock.expression.not.final instead of expression.unparsable .
+        // "lock.expression.not.final" instead of "expression.unparsable".
         List<DependentTypesError> superErrors = new ArrayList<>(errors.size());
         for (DependentTypesError error : errors) {
           if (error.error.equals(NOT_EFFECTIVELY_FINAL)) {
@@ -269,12 +279,16 @@ public class LockAnnotatedTypeFactory
 
     /** Qualifier kind for the @{@link GuardedByUnknown} annotation. */
     private final QualifierKind GUARDEDBYUNKNOWN_KIND;
+
     /** Qualifier kind for the @{@link GuardedBy} annotation. */
     private final QualifierKind GUARDEDBY_KIND;
+
     /** Qualifier kind for the @{@link GuardSatisfied} annotation. */
     private final QualifierKind GUARDSATISFIED_KIND;
+
     /** Qualifier kind for the @{@link NewObject} annotation. */
     private final QualifierKind NEWOBJECT_KIND;
+
     /** Qualifier kind for the @{@link GuardedByBottom} annotation. */
     private final QualifierKind GUARDEDBYBOTTOM_KIND;
 
@@ -496,8 +510,7 @@ public class LockAnnotatedTypeFactory
    *     annotation is present on the method
    * @return the side effect annotation that is present on the given method
    */
-  /* package-private */
-  SideEffectAnnotation methodSideEffectAnnotation(
+  /*package-private*/ SideEffectAnnotation methodSideEffectAnnotation(
       ExecutableElement methodElement, boolean issueErrorIfMoreThanOnePresent) {
     if (methodElement == null) {
       // When there is not enough information to determine the correct side effect annotation,
@@ -544,8 +557,7 @@ public class LockAnnotatedTypeFactory
    * @param atm an AnnotatedTypeMirror containing a GuardSatisfied annotation
    * @return the index on the GuardSatisfied annotation
    */
-  /* package-private */
-  int getGuardSatisfiedIndex(AnnotatedTypeMirror atm) {
+  /*package-private*/ int getGuardSatisfiedIndex(AnnotatedTypeMirror atm) {
     return getGuardSatisfiedIndex(atm.getAnnotation(GuardSatisfied.class));
   }
 
@@ -556,8 +568,7 @@ public class LockAnnotatedTypeFactory
    * @param am an AnnotationMirror for a GuardSatisfied annotation
    * @return the index on the GuardSatisfied annotation
    */
-  /* package-private */
-  int getGuardSatisfiedIndex(AnnotationMirror am) {
+  /*package-private*/ int getGuardSatisfiedIndex(AnnotationMirror am) {
     return AnnotationUtils.getElementValueInt(am, guardSatisfiedValueElement, -1);
   }
 

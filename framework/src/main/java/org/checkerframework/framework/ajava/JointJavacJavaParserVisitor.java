@@ -144,7 +144,6 @@ import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.SynchronizedTree;
 import com.sun.source.tree.ThrowTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.TryTree;
 import com.sun.source.tree.TypeCastTree;
 import com.sun.source.tree.TypeParameterTree;
@@ -429,7 +428,7 @@ public abstract class JointJavacJavaParserVisitor extends SimpleTreeVisitor<Void
     if (javacTree.getStatements() == null) {
       Tree javacBody = TreeUtils.caseTreeGetBody(javacTree);
       Statement nodeBody = node.getStatement(0);
-      if (javacBody.getKind() == Kind.EXPRESSION_STATEMENT) {
+      if (javacBody.getKind() == Tree.Kind.EXPRESSION_STATEMENT) {
         javacBody.accept(this, node.getStatement(0));
       } else if (nodeBody.isExpressionStmt()) {
         javacBody.accept(this, nodeBody.asExpressionStmt().getExpression());
@@ -753,7 +752,7 @@ public abstract class JointJavacJavaParserVisitor extends SimpleTreeVisitor<Void
       } else {
         assert javacInitializers.hasNext();
         StatementTree javacInitializer = javacInitializers.next();
-        if (javacInitializer.getKind() == Kind.EXPRESSION_STATEMENT) {
+        if (javacInitializer.getKind() == Tree.Kind.EXPRESSION_STATEMENT) {
           // JavaParser doesn't wrap other kinds of expressions in an expression statement,
           // but javac does. For example, suppose that the initializer is "index++", as in
           // the test all-systems/LightWeightCache.java.
@@ -844,7 +843,7 @@ public abstract class JointJavacJavaParserVisitor extends SimpleTreeVisitor<Void
     processInstanceOf(javacTree, node);
     javacTree.getExpression().accept(this, node.getExpression());
     if (node.getPattern().isPresent()) {
-      Tree bindingPattern = TreeUtils.instanceOfGetPattern(javacTree);
+      Tree bindingPattern = TreeUtils.instanceOfTreeGetPattern(javacTree);
       visitBindingPattern17(bindingPattern, node.getPattern().get());
     } else {
       javacTree.getType().accept(this, node.getType());
@@ -1276,7 +1275,7 @@ public abstract class JointJavacJavaParserVisitor extends SimpleTreeVisitor<Void
    * Visit a switch expression.
    *
    * @param javacTree switch expression tree
-   * @param javaParserNode java parser node
+   * @param javaParserNode a JavaParser node
    * @return null
    */
   public Void visitSwitchExpression17(Tree javacTree, Node javaParserNode) {
@@ -1917,6 +1916,7 @@ public abstract class JointJavacJavaParserVisitor extends SimpleTreeVisitor<Void
    */
   public abstract void processMemberSelect(
       MemberSelectTree javacTree, ClassOrInterfaceType javaParserNode);
+
   /**
    * Process a {@code MemberSelectTree} for a field access expression like {@code myObj.myField}.
    *

@@ -15,7 +15,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.util.Elements;
-import javax.tools.Diagnostic.Kind;
+import javax.tools.Diagnostic;
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -77,9 +77,11 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The UnitsMultiple.prefix argument/element. */
   private final ExecutableElement unitsMultiplePrefixElement =
       TreeUtils.getMethod(UnitsMultiple.class, "prefix", 0, processingEnv);
+
   /** The UnitsMultiple.quantity argument/element. */
   private final ExecutableElement unitsMultipleQuantityElement =
       TreeUtils.getMethod(UnitsMultiple.class, "quantity", 0, processingEnv);
+
   /** The UnitsRelations.value argument/element. */
   private final ExecutableElement unitsRelationsValueElement =
       TreeUtils.getMethod(
@@ -251,7 +253,7 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /** Adds the annotation class to the external qualifier map if it is not an alias annotation. */
-  private void addUnitToExternalQualMap(final Class<? extends Annotation> annoClass) {
+  private void addUnitToExternalQualMap(Class<? extends Annotation> annoClass) {
     AnnotationMirror mirror =
         UnitsRelationsTools.buildAnnoMirrorWithNoPrefix(
             processingEnv, annoClass.getCanonicalName());
@@ -338,7 +340,7 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /** A class loader for looking up annotations. */
-  private static final ClassLoader classLoader =
+  private static final ClassLoader CLASSLOADER =
       InternalUtils.getClassLoaderForClass(AnnotationUtils.class);
 
   /**
@@ -361,7 +363,7 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         }
         Class<?> valueElement;
         try {
-          valueElement = Class.forName(theclassname, true, classLoader);
+          valueElement = Class.forName(theclassname, true, CLASSLOADER);
         } catch (ClassNotFoundException e) {
           String msg =
               String.format(
@@ -450,7 +452,7 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
         if (bestres != null && res != null && !bestres.equals(res)) {
           checker.message(
-              Kind.WARNING,
+              Diagnostic.Kind.WARNING,
               "UnitsRelation mismatch, taking neither! Previous: "
                   + bestres
                   + " and current: "

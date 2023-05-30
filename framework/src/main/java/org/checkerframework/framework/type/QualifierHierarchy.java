@@ -57,7 +57,7 @@ public interface QualifierHierarchy {
    *
    * @return the top (ultimate super) type qualifiers in the type system
    */
-  Set<? extends AnnotationMirror> getTopAnnotations();
+  AnnotationMirrorSet getTopAnnotations();
 
   /**
    * Return the top qualifier for the given qualifier, that is, the qualifier that is a supertype of
@@ -74,7 +74,7 @@ public interface QualifierHierarchy {
    *
    * @return the bottom type qualifiers in the hierarchy
    */
-  Set<? extends AnnotationMirror> getBottomAnnotations();
+  AnnotationMirrorSet getBottomAnnotations();
 
   /**
    * Return the bottom for the given qualifier, that is, the qualifier that is a subtype of {@code
@@ -113,8 +113,8 @@ public interface QualifierHierarchy {
    * Tests whether {@code subQualifier} is equal to or a sub-qualifier of {@code superQualifier},
    * according to the type qualifier hierarchy.
    *
-   * @param subQualifier possible subqualifier of {@code superQualifier}
-   * @param superQualifier possible superqualifier of {@code subQualifier}
+   * @param subQualifier possible subqualifier
+   * @param superQualifier possible superqualifier
    * @return true iff {@code subQualifier} is a subqualifier of, or equal to, {@code superQualifier}
    */
   boolean isSubtype(AnnotationMirror subQualifier, AnnotationMirror superQualifier);
@@ -149,6 +149,7 @@ public interface QualifierHierarchy {
   /**
    * Returns the least upper bound (LUB) of the qualifiers {@code qualifier1} and {@code
    * qualifier2}. Returns {@code null} if the qualifiers are not from the same qualifier hierarchy.
+   * Ignores Java basetypes.
    *
    * <p>Examples:
    *
@@ -232,13 +233,12 @@ public interface QualifierHierarchy {
    */
   default AnnotationMirror widenedUpperBound(
       AnnotationMirror newQualifier, AnnotationMirror previousQualifier) {
-    AnnotationMirror widenUpperBound = leastUpperBound(newQualifier, previousQualifier);
-    if (widenUpperBound == null) {
+    AnnotationMirror widenedUpperBound = leastUpperBound(newQualifier, previousQualifier);
+    if (widenedUpperBound == null) {
       throw new BugInCF(
-          "Passed two unrelated qualifiers to QualifierHierarchy#widenedUpperBound. %s %s.",
-          newQualifier, previousQualifier);
+          "widenedUpperBound(%s, %s): unrelated qualifiers", newQualifier, previousQualifier);
     }
-    return widenUpperBound;
+    return widenedUpperBound;
   }
 
   /**
@@ -247,8 +247,8 @@ public interface QualifierHierarchy {
    *
    * @param qualifier1 first qualifier
    * @param qualifier2 second qualifier
-   * @return greatest lower bound of the two annotations or null if the two annotations are not from
-   *     the same hierarchy
+   * @return greatest lower bound of the two annotations, or null if the two annotations are not
+   *     from the same hierarchy
    */
   // The fact that null is returned if the qualifiers are not in the same hierarchy is used by the
   // collection version of LUB below.

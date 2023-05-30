@@ -4,10 +4,12 @@ import com.sun.tools.javac.code.Type;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
 import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeVariable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
@@ -24,6 +26,7 @@ import org.checkerframework.javacutil.AnnotationFormatter;
 import org.checkerframework.javacutil.DefaultAnnotationFormatter;
 import org.checkerframework.javacutil.TypeAnnotationUtils;
 import org.checkerframework.javacutil.TypesUtils;
+import org.plumelib.util.WeakIdentityHashMap;
 
 /**
  * An AnnotatedTypeFormatter used by default by all AnnotatedTypeFactory (and therefore all
@@ -33,6 +36,8 @@ import org.checkerframework.javacutil.TypesUtils;
  * @see org.checkerframework.framework.type.AnnotatedTypeMirror#toString
  */
 public class DefaultAnnotatedTypeFormatter implements AnnotatedTypeFormatter {
+
+  /** The formatting visitor. */
   protected final FormattingVisitor formattingVisitor;
 
   /**
@@ -76,14 +81,44 @@ public class DefaultAnnotatedTypeFormatter implements AnnotatedTypeFormatter {
     this.formattingVisitor = visitor;
   }
 
+  /**
+   * Maps from type variables to deterministic IDs. This is useful for comparing output across two
+   * runs of the Checker Framework.
+   *
+   * <p>This map is necessary for deterministic and informative output. javac might print two
+   * distinct capture-converted variables as "capture#222" if the second is created after the first
+   * is garbage-collected, or if they just happen to have the same hash code based on memory layout.
+   * Such javac output is misleading because it looks like the two printed representations refer to
+   * the same variable.
+   *
+   * <p>This map contains type variables that have been formatted. Therefore, the numbers may differ
+   * between Checker Framework runs if the different runs print different values (say, one of them
+   * prints more type variables than the other).
+   */
+  protected static final Map<TypeVariable, Integer> captureConversionIds =
+      new WeakIdentityHashMap<>();
+
+  /** The last deterministic capture conversion ID that was used. */
+  protected static int prevCaptureConversionId = 0;
+
+  /**
+   * Returns a deterministic capture conversion ID for the given javac captured type.
+   *
+   * @param capturedType a type variable, which must be a capture-converted type variable
+   * @return a deterministic capture conversion ID
+   */
+  static int getCaptureConversionId(TypeVariable capturedType) {
+    return captureConversionIds.computeIfAbsent(capturedType, key -> ++prevCaptureConversionId);
+  }
+
   @Override
-  public String format(final AnnotatedTypeMirror type) {
+  public String format(AnnotatedTypeMirror type) {
     formattingVisitor.resetPrintVerboseSettings();
     return formattingVisitor.visit(type);
   }
 
   @Override
-  public String format(final AnnotatedTypeMirror type, final boolean printVerbose) {
+  public String format(AnnotatedTypeMirror type, boolean printVerbose) {
     formattingVisitor.setVerboseSettings(printVerbose);
     return formattingVisitor.visit(type);
   }
@@ -146,10 +181,10 @@ public class DefaultAnnotatedTypeFormatter implements AnnotatedTypeFormatter {
      */
     @SideEffectFree
     protected void printBound(
-        final String keyWord,
-        final AnnotatedTypeMirror field,
-        final Set<AnnotatedTypeMirror> visiting,
-        final StringBuilder sb) {
+        String keyWord,
+        AnnotatedTypeMirror field,
+        Set<AnnotatedTypeMirror> visiting,
+        StringBuilder sb) {
       if (!currentPrintVerboseGenerics && (field == null || field.getKind() == TypeKind.NULL)) {
         return;
       }
@@ -191,7 +226,7 @@ public class DefaultAnnotatedTypeFormatter implements AnnotatedTypeFormatter {
         sb.append(this.visit(type.getEnclosingType(), visiting));
         sb.append('.');
       }
-      final Element typeElt = type.getUnderlyingType().asElement();
+      Element typeElt = type.getUnderlyingType().asElement();
       String smpl = typeElt.getSimpleName().toString();
       if (smpl.isEmpty()) {
         // For anonymous classes smpl is empty - toString
@@ -205,7 +240,7 @@ public class DefaultAnnotatedTypeFormatter implements AnnotatedTypeFormatter {
 
       if (type.typeArgs != null) {
         // getTypeArguments sets the field if it does not already exist.
-        final List<AnnotatedTypeMirror> typeArgs = type.typeArgs;
+        List<AnnotatedTypeMirror> typeArgs = type.typeArgs;
         if (!typeArgs.isEmpty()) {
           StringJoiner sj = new StringJoiner(", ", "<", ">");
           for (AnnotatedTypeMirror typeArg : typeArgs) {
@@ -332,13 +367,18 @@ public class DefaultAnnotatedTypeFormatter implements AnnotatedTypeFormatter {
     public String visitTypeVariable(AnnotatedTypeVariable type, Set<AnnotatedTypeMirror> visiting) {
       StringBuilder sb = new StringBuilder();
       if (TypesUtils.isCapturedTypeVariable(type.underlyingType)) {
-        String underlyingType = type.underlyingType.toString();
-        // underlyingType has this form: "capture#826 of ? extends java.lang.Object".
+        // underlyingType.toString() has this form: "capture#826 of ? extends java.lang.Object".
+        //   assert underlyingType.toString().startsWith("capture#");
         // We output only the "capture#826" part.
-        // NOTE: The number is the hash code of the captured type variable, so it's
-        // nondeterministic, but it is still important to print it in order to tell the
-        // difference between two captured types.
-        sb.append(underlyingType, 0, underlyingType.indexOf(" of "));
+
+        // TODO: If deterministic output is not needed, we could avoid the use of
+        // getCaptureConversionId() by using this code instead:
+        //   sb.append(underlyingType, 0, underlyingType.indexOf(" of "));
+        // The choice would be controlled by a command-line argument.
+
+        // We output a deterministic number; we prefix it by "0"
+        // so we know whether a number is deterministic or from javac.
+        sb.append("capture#0").append(getCaptureConversionId((TypeVariable) type.underlyingType));
       } else {
         sb.append(type.underlyingType);
       }
@@ -420,7 +460,7 @@ public class DefaultAnnotatedTypeFormatter implements AnnotatedTypeFormatter {
     }
 
     @SideEffectFree
-    protected String formatFlatType(final AnnotatedTypeMirror flatType) {
+    protected String formatFlatType(AnnotatedTypeMirror flatType) {
       return annoFormatter.formatAnnotationString(
               flatType.getAnnotations(), currentPrintInvisibleSetting)
           + TypeAnnotationUtils.unannotatedType((Type) flatType.getUnderlyingType());

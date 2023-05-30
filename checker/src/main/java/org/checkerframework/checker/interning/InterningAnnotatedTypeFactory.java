@@ -66,8 +66,10 @@ public class InterningAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   /** The {@link UnknownInterned} annotation. */
   final AnnotationMirror TOP = AnnotationBuilder.fromClass(elements, UnknownInterned.class);
+
   /** The {@link Interned} annotation. */
   final AnnotationMirror INTERNED = AnnotationBuilder.fromClass(elements, Interned.class);
+
   /** The {@link InternedDistinct} annotation. */
   final AnnotationMirror INTERNED_DISTINCT =
       AnnotationBuilder.fromClass(elements, InternedDistinct.class);
@@ -117,7 +119,7 @@ public class InterningAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       if (receiverType != null
           // Intern method may be called on UnknownInterned object, so its receiver should
           // not be annotated as @Interned.
-          && typeFactory.getDeclAnnotation(methodElt, InternMethod.class) == null) {
+          && atypeFactory.getDeclAnnotation(methodElt, InternMethod.class) == null) {
         scanAndReduce(receiverType, p, null);
       }
       scanAndReduce(type.getParameterTypes(), p, null);
@@ -152,6 +154,14 @@ public class InterningAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     if (!type.isAnnotatedInHierarchy(INTERNED) && ElementUtils.isCompileTimeConstant(element)) {
       type.addAnnotation(INTERNED);
     }
+    super.addComputedTypeAnnotations(tree, type, useFlow);
+  }
+
+  @Override
+  public void addComputedTypeAnnotationsForWarnRedundant(
+      Tree tree, AnnotatedTypeMirror type, boolean useFlow) {
+    // Compared to `addComputedTypeAnnotations()`,
+    // does not check whether the element is a compile-time constant.
     super.addComputedTypeAnnotations(tree, type, useFlow);
   }
 
