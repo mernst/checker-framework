@@ -72,15 +72,16 @@ import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
 import org.checkerframework.framework.util.StringToJavaExpression;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
-import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypeSystemError;
 import org.checkerframework.javacutil.TypesUtils;
+import org.plumelib.util.IPair;
 
 /**
  * An analyzer that checks consistency of {@link MustCall} and {@link CalledMethods} types, thereby
@@ -299,10 +300,11 @@ class MustCallConsistencyAnalyzer {
       // Need to get the LUB (ie, union) of the MC values, because if a CreatesMustCallFor
       // method was called on just one of the aliases then they all need to be treated as if
       // they need to call the relevant methods.
+      QualifierHierarchy qualHierarchy = mustCallAnnotatedTypeFactory.getQualifierHierarchy();
       AnnotationMirror mcLub = mustCallAnnotatedTypeFactory.BOTTOM;
       for (ResourceAlias alias : this.resourceAliases) {
         AnnotationMirror mcAnno = getMustCallValue(alias, mcStore, mustCallAnnotatedTypeFactory);
-        mcLub = mustCallAnnotatedTypeFactory.getQualifierHierarchy().leastUpperBound(mcLub, mcAnno);
+        mcLub = qualHierarchy.leastUpperBound(mcLub, mcAnno);
       }
       if (AnnotationUtils.areSameByName(
           mcLub, "org.checkerframework.checker.mustcall.qual.MustCall")) {
@@ -396,7 +398,7 @@ class MustCallConsistencyAnalyzer {
     /** A local variable defined in the source code or a temporary variable for an expression. */
     public final LocalVariable reference;
 
-    /** The tree at which {@code reference} was assigned, for the purpose of error reporting */
+    /** The tree at which {@code reference} was assigned, for the purpose of error reporting. */
     public final Tree tree;
 
     /**
@@ -1664,14 +1666,15 @@ class MustCallConsistencyAnalyzer {
    * @return set of pairs (b, t), where b is a successor block, and t is the type of exception for
    *     the CFG edge from block to b, or {@code null} if b is a non-exceptional successor
    */
-  private Set<Pair<Block, @Nullable TypeMirror>> getSuccessorsExceptIgnoredExceptions(Block block) {
+  private Set<IPair<Block, @Nullable TypeMirror>> getSuccessorsExceptIgnoredExceptions(
+      Block block) {
     if (block.getType() == Block.BlockType.EXCEPTION_BLOCK) {
       ExceptionBlock excBlock = (ExceptionBlock) block;
-      Set<Pair<Block, @Nullable TypeMirror>> result = new LinkedHashSet<>();
+      Set<IPair<Block, @Nullable TypeMirror>> result = new LinkedHashSet<>();
       // regular successor
       Block regularSucc = excBlock.getSuccessor();
       if (regularSucc != null) {
-        result.add(Pair.of(regularSucc, null));
+        result.add(IPair.of(regularSucc, null));
       }
       // non-ignored exception successors
       Map<TypeMirror, Set<Block>> exceptionalSuccessors = excBlock.getExceptionalSuccessors();
@@ -1679,15 +1682,15 @@ class MustCallConsistencyAnalyzer {
         TypeMirror exceptionType = entry.getKey();
         if (!isIgnoredExceptionType(((Type) exceptionType).tsym.getQualifiedName())) {
           for (Block exSucc : entry.getValue()) {
-            result.add(Pair.of(exSucc, exceptionType));
+            result.add(IPair.of(exSucc, exceptionType));
           }
         }
       }
       return result;
     } else {
-      Set<Pair<Block, @Nullable TypeMirror>> result = new LinkedHashSet<>();
+      Set<IPair<Block, @Nullable TypeMirror>> result = new LinkedHashSet<>();
       for (Block b : block.getSuccessors()) {
-        result.add(Pair.of(b, null));
+        result.add(IPair.of(b, null));
       }
       return result;
     }
@@ -1722,7 +1725,7 @@ class MustCallConsistencyAnalyzer {
     // computes the set of Obligations that should be propagated to it and then adds it to the
     // worklist if any of its resource aliases are still in scope in the successor block. If
     // none are, then the loop performs a consistency check for that Obligation.
-    for (Pair<Block, @Nullable TypeMirror> successorAndExceptionType :
+    for (IPair<Block, @Nullable TypeMirror> successorAndExceptionType :
         getSuccessorsExceptIgnoredExceptions(currentBlock)) {
       Block successor = successorAndExceptionType.first;
       // If nonnull, currentBlock is an ExceptionBlock.

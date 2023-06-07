@@ -48,7 +48,6 @@ import org.checkerframework.dataflow.cfg.node.NumericalMultiplicationNode;
 import org.checkerframework.dataflow.cfg.node.NumericalPlusNode;
 import org.checkerframework.dataflow.cfg.node.NumericalSubtractionNode;
 import org.checkerframework.dataflow.cfg.node.SignedRightShiftNode;
-import org.checkerframework.dataflow.cfg.node.StringConcatenateAssignmentNode;
 import org.checkerframework.dataflow.cfg.node.StringConcatenateNode;
 import org.checkerframework.dataflow.cfg.node.StringConversionNode;
 import org.checkerframework.dataflow.cfg.node.StringLiteralNode;
@@ -533,7 +532,7 @@ public class ValueTransfer extends CFTransfer {
   }
 
   /**
-   * Transform @IntVal or @IntRange annotations of a array or string length into an @ArrayLen
+   * Transform @IntVal or @IntRange annotations of an array or string length into an @ArrayLen
    * or @ArrayLenRange annotation for the array or string.
    *
    * @param lengthNode an invocation of method {@code length} or an access of the {@code length}
@@ -559,11 +558,11 @@ public class ValueTransfer extends CFTransfer {
     if (lengthAnno == null) {
       return;
     }
+    JavaExpression receiverJE = JavaExpression.fromNode(receiverNode);
     if (AnnotationUtils.areSameByName(lengthAnno, ValueAnnotatedTypeFactory.BOTTOMVAL_NAME)) {
       // If the length is bottom, then this is dead code, so the receiver type
       // should also be bottom.
-      JavaExpression receiver = JavaExpression.fromNode(receiverNode);
-      store.insertValue(receiver, lengthAnno);
+      store.insertValue(receiverJE, lengthAnno);
       return;
     }
 
@@ -588,13 +587,14 @@ public class ValueTransfer extends CFTransfer {
     } else {
       combinedRecAnno = qualHierarchy.greatestLowerBound(oldRecAnno, newRecAnno);
     }
-    JavaExpression receiver = JavaExpression.fromNode(receiverNode);
-    store.insertValue(receiver, combinedRecAnno);
+    store.insertValue(receiverJE, combinedRecAnno);
   }
 
   @Override
+  @Deprecated // 2022-03-22
   public TransferResult<CFValue, CFStore> visitStringConcatenateAssignment(
-      StringConcatenateAssignmentNode n, TransferInput<CFValue, CFStore> p) {
+      org.checkerframework.dataflow.cfg.node.StringConcatenateAssignmentNode n,
+      TransferInput<CFValue, CFStore> p) {
     TransferResult<CFValue, CFStore> result = super.visitStringConcatenateAssignment(n, p);
     return stringConcatenation(n.getLeftOperand(), n.getRightOperand(), p, result);
   }

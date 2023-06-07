@@ -64,7 +64,7 @@ dependencies {
   testImplementation 'com.amazonaws:aws-java-sdk-ec2'
   testImplementation 'com.amazonaws:aws-java-sdk-kms'
   // The AWS SDK is used for testing the Called Methods Checker.
-  testImplementation platform('com.amazonaws:aws-java-sdk-bom:1.12.459')
+  testImplementation platform('com.amazonaws:aws-java-sdk-bom:1.12.479')
   // For the Resource Leak Checker's support for JavaEE.
   testImplementation 'javax.servlet:javax.servlet-api:4.0.1'
   // For the Resource Leak Checker's support for IOUtils.
@@ -93,6 +93,8 @@ jar {
   }
 }
 
+// This task differs from the `assemble` task in that it does not build Javadoc.
+// It is useful for those who only want to run `javac`.
 // checker.jar is copied to checker/dist/ when it is built by the shadowJar task.
 task assembleForJavac(dependsOn: shadowJar, group: 'Build') {
   description 'Builds or downloads jars required by CheckerMain and puts them in checker/dist/.'
