@@ -132,6 +132,9 @@ public abstract class CFAbstractStore<V extends CFAbstractValue<V>, S extends CF
    * @param sequentialSemantics should the analysis use sequential Java semantics?
    */
   protected CFAbstractStore(CFAbstractAnalysis<V, S, ?> analysis, boolean sequentialSemantics) {
+    if (analysis == null) {
+      throw new TypeSystemError("analysis is null in " + this.getClass());
+    }
     this.analysis = analysis;
     localVariableValues = new HashMap<>();
     thisValue = null;
