@@ -279,7 +279,7 @@ public class LockExpressionIsFinal {
     return t;
   }
 
-  class MyParameterizedClass1<T extends @GuardedByUnknown Object> {}
+  class MyParameterizedClass1<T> {}
 
   MyParameterizedClass1<? super @GuardedBy("finalField") String> m1;
   // :: error: (lock.expression.not.final)

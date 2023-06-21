@@ -4,7 +4,7 @@ import org.checkerframework.checker.guieffect.qual.PolyUIType;
 import org.checkerframework.checker.guieffect.qual.UI;
 
 public class ThrowCatchTest {
-  List<? extends @UI Object> ooo;
+  List<?> ooo;
 
   // :: error: (annotations.on.use)
   List<? extends @UI Inner> iii;

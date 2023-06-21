@@ -1,6 +1,5 @@
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.lock.qual.GuardedBy;
-import org.checkerframework.checker.lock.qual.GuardedByUnknown;
 import org.checkerframework.checker.lock.qual.MayReleaseLocks;
 
 public class GuardSatisfiedTest {
@@ -232,7 +231,7 @@ public class GuardSatisfiedTest {
     return t;
   }
 
-  class MyParameterizedClass1<T extends @GuardedByUnknown Object> {
+  class MyParameterizedClass1<T> {
     void testGuardSatisfiedOnReceiverOfParameterizedClass(
         @GuardSatisfied MyParameterizedClass1<T> this) {}
 

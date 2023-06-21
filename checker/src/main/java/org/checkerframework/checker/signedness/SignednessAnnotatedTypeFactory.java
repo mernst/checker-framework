@@ -323,12 +323,8 @@ public class SignednessAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
           break;
         case PLUS:
           if (TreeUtils.isStringConcatenation(tree)) {
-            TypeMirror lht = TreeUtils.typeOf(tree.getLeftOperand());
-            TypeMirror rht = TreeUtils.typeOf(tree.getRightOperand());
-
-            if (TypesUtils.isCharOrCharacter(lht) || TypesUtils.isCharOrCharacter(rht)) {
-              type.replaceAnnotation(SIGNED);
-            }
+            // String is always @Signed
+            type.replaceAnnotation(SIGNED);
           }
           break;
         default:
