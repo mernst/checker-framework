@@ -25,6 +25,7 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.interning.qual.FindDistinct;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.DefaultQualifier;
 import org.checkerframework.framework.qual.TypeUseLocation;
@@ -436,7 +437,7 @@ public class QualifierDefaults {
    * @param tree the tree
    * @return the nearest enclosing element for a tree
    */
-  private Element nearestEnclosingExceptLocal(Tree tree) {
+  private @Nullable Element nearestEnclosingExceptLocal(Tree tree) {
     TreePath path = atypeFactory.getPath(tree);
     if (path == null) {
       Element element = atypeFactory.getEnclosingElementForArtificialTree(tree);
@@ -562,7 +563,7 @@ public class QualifierDefaults {
    * @param dq a @DefaultQualifier annotation
    * @return a DefaultSet corresponding to the @DefaultQualifier annotation
    */
-  private DefaultSet fromDefaultQualifier(AnnotationMirror dq) {
+  private @Nullable DefaultSet fromDefaultQualifier(AnnotationMirror dq) {
     @SuppressWarnings("unchecked")
     Name cls = AnnotationUtils.getElementValueClassName(dq, defaultQualifierValueElement);
     AnnotationMirror anno = AnnotationBuilder.fromName(elements, cls);
