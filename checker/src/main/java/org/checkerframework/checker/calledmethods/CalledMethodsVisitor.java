@@ -32,7 +32,7 @@ public class CalledMethodsVisitor extends AccumulationVisitor {
    *
    * @param checker the type-checker associated with this visitor
    */
-  public CalledMethodsVisitor(final BaseTypeChecker checker) {
+  public CalledMethodsVisitor(BaseTypeChecker checker) {
     super(checker);
   }
 
@@ -40,7 +40,7 @@ public class CalledMethodsVisitor extends AccumulationVisitor {
    * Issue an error at every EnsuresCalledMethodsVarArgs annotation, because using it is unsound.
    */
   @Override
-  public Void visitAnnotation(final AnnotationTree tree, final Void p) {
+  public Void visitAnnotation(AnnotationTree tree, Void p) {
     AnnotationMirror anno = TreeUtils.annotationFromAnnotationTree(tree);
     if (AnnotationUtils.areSameByName(
         anno, "org.checkerframework.checker.calledmethods.qual.EnsuresCalledMethodsVarArgs")) {
@@ -83,9 +83,9 @@ public class CalledMethodsVisitor extends AccumulationVisitor {
   protected void reportMethodInvocabilityError(
       MethodInvocationTree tree, AnnotatedTypeMirror found, AnnotatedTypeMirror expected) {
 
-    AnnotationMirror expectedCM = expected.getAnnotation(CalledMethods.class);
+    AnnotationMirror expectedCM = expected.getPrimaryAnnotation(CalledMethods.class);
     if (expectedCM != null) {
-      AnnotationMirror foundCM = found.getAnnotation(CalledMethods.class);
+      AnnotationMirror foundCM = found.getPrimaryAnnotation(CalledMethods.class);
       Set<String> foundMethods =
           foundCM == null
               ? Collections.emptySet()

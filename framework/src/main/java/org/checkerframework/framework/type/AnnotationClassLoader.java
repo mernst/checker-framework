@@ -8,6 +8,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 import java.net.JarURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -27,7 +29,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
-import javax.tools.Diagnostic.Kind;
+import javax.tools.Diagnostic;
 import org.checkerframework.checker.calledmethods.qual.EnsuresCalledMethods;
 import org.checkerframework.checker.mustcall.qual.InheritableMustCall;
 import org.checkerframework.checker.mustcall.qual.Owning;
@@ -76,22 +78,27 @@ public class AnnotationClassLoader implements Closeable {
   // For loading from a source package directory
   /** The package name. */
   private final @DotSeparatedIdentifiers String packageName;
+
   /** The package name, with periods replaced by slashes. */
   private final String packageNameWithSlashes;
+
   /** The atomic package names (the package name split at dots). */
   private final List<@Identifier String> fullyQualifiedPackageNameSegments;
+
   /** The name of a Checker's qualifier package. */
   private static final String QUAL_PACKAGE = "qual";
 
   // For loading from a Jar file
   /** The suffix for a .jar file. */
   private static final String JAR_SUFFIX = ".jar";
+
   /** The suffix for a .class file. */
   private static final String CLASS_SUFFIX = ".class";
 
   // Constants
   /** The package separator. */
   private static final char DOT = '.';
+
   /** The path separator, in .jar files, binary names, etc. */
   private static final char SLASH = '/';
 
@@ -126,7 +133,7 @@ public class AnnotationClassLoader implements Closeable {
    * @param checker a {@link BaseTypeChecker} or its subclass
    */
   @SuppressWarnings("signature") // TODO: reduce use of string manipulation
-  public AnnotationClassLoader(final BaseTypeChecker checker) {
+  public AnnotationClassLoader(BaseTypeChecker checker) {
     this.checker = checker;
     processingEnv = checker.getProcessingEnvironment();
 
@@ -185,7 +192,7 @@ public class AnnotationClassLoader implements Closeable {
     try {
       classLoader.close();
     } catch (IOException e) {
-      checker.message(Kind.NOTE, "Failed to close AnnotationClassLoader");
+      checker.message(Diagnostic.Kind.NOTE, "Failed to close AnnotationClassLoader");
     }
   }
 
@@ -197,7 +204,7 @@ public class AnnotationClassLoader implements Closeable {
    * @return a URL to the jar that contains the qual package, or to the qual package's directory, or
    *     null if no jar or directory contains the qual package
    */
-  private final @Nullable URL getURLFromClasspaths() {
+  private @Nullable URL getURLFromClasspaths() {
     // TODO: This method could probably be replaced with
     // io.github.classgraph.ClassGraph#getClasspathURIs()
 
@@ -264,7 +271,7 @@ public class AnnotationClassLoader implements Closeable {
    * @param url a URL referring to either a jar or a directory
    * @return true if the jar or the directory contains the qual package, false otherwise
    */
-  private final boolean containsPackage(final URL url) {
+  private boolean containsPackage(URL url) {
     // see whether the resource URL has a protocol of jar or file
     if (url.getProtocol().equals("jar")) {
       // try to open up the jar file
@@ -295,7 +302,7 @@ public class AnnotationClassLoader implements Closeable {
    * @return true if the jar file contains the qual package, false otherwise
    */
   @SuppressWarnings("JdkObsolete")
-  private final boolean checkJarForPackage(final JarFile jar) {
+  private boolean checkJarForPackage(JarFile jar) {
     Enumeration<JarEntry> jarEntries = jar.entries();
 
     // loop through the entries in the jar
@@ -336,7 +343,7 @@ public class AnnotationClassLoader implements Closeable {
    *     name
    * @return true if the qual package exists within the root directory, false otherwise
    */
-  private final boolean checkDirForPackage(final File currentDir, final Iterator<String> pkgNames) {
+  private boolean checkDirForPackage(File currentDir, Iterator<String> pkgNames) {
     // if the iterator has no more package name segments, then we've found
     // the qual directory of interest
     if (!pkgNames.hasNext()) {
@@ -372,7 +379,7 @@ public class AnnotationClassLoader implements Closeable {
    * @param absolutePathToDirectory an absolute path to a directory
    * @return a URL reference to the directory, or null if the URL is malformed
    */
-  private final @Nullable URL getDirectoryURL(final String absolutePathToDirectory) {
+  private @Nullable URL getDirectoryURL(String absolutePathToDirectory) {
     URL directoryURL = null;
 
     try {
@@ -380,7 +387,8 @@ public class AnnotationClassLoader implements Closeable {
     } catch (MalformedURLException e) {
       processingEnv
           .getMessager()
-          .printMessage(Kind.NOTE, "Directory URL " + absolutePathToDirectory + " is malformed");
+          .printMessage(
+              Diagnostic.Kind.NOTE, "Directory URL " + absolutePathToDirectory + " is malformed");
     }
 
     return directoryURL;
@@ -392,15 +400,15 @@ public class AnnotationClassLoader implements Closeable {
    * @param absolutePathToJarFile an absolute path to a jar file
    * @return a URL reference to the jar file, or null if the URL is malformed
    */
-  private final @Nullable URL getJarURL(final String absolutePathToJarFile) {
+  private @Nullable URL getJarURL(String absolutePathToJarFile) {
     URL jarURL = null;
 
     try {
-      jarURL = new URL("jar:file:" + absolutePathToJarFile + "!/");
-    } catch (MalformedURLException e) {
+      jarURL = new URI("jar:file:" + absolutePathToJarFile + "!/").toURL();
+    } catch (URISyntaxException | MalformedURLException e) {
       processingEnv
           .getMessager()
-          .printMessage(Kind.NOTE, "Jar URL " + absolutePathToJarFile + " is malformed");
+          .printMessage(Diagnostic.Kind.NOTE, "Jar URL " + absolutePathToJarFile + " is malformed");
     }
 
     return jarURL;
@@ -423,7 +431,7 @@ public class AnnotationClassLoader implements Closeable {
    *
    * @return an immutable linked hashset of the classpaths
    */
-  private final Set<String> getClasspaths() {
+  private Set<String> getClasspaths() {
     Set<String> paths = new LinkedHashSet<>();
 
     // add all extension paths
@@ -453,7 +461,7 @@ public class AnnotationClassLoader implements Closeable {
    * @return the classloader used to load the checker class, or the system classloader, or null if
    *     both are unavailable
    */
-  private final @Nullable URLClassLoader getClassLoader() {
+  private @Nullable URLClassLoader getClassLoader() {
     ClassLoader result = InternalUtils.getClassLoaderForClass(checker.getClass());
     if (result instanceof URLClassLoader) {
       return (@Nullable URLClassLoader) result;
@@ -468,33 +476,33 @@ public class AnnotationClassLoader implements Closeable {
   protected final void printPaths() {
     // all paths in Xbootclasspath
     String[] bootclassPaths = System.getProperty("sun.boot.class.path").split(File.pathSeparator);
-    processingEnv.getMessager().printMessage(Kind.NOTE, "bootclass path:");
+    processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "bootclass path:");
     for (String path : bootclassPaths) {
-      processingEnv.getMessager().printMessage(Kind.NOTE, "\t" + path);
+      processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "\t" + path);
     }
 
     // all extension paths
     String[] extensionDirs = System.getProperty("java.ext.dirs").split(File.pathSeparator);
-    processingEnv.getMessager().printMessage(Kind.NOTE, "extension dirs:");
+    processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "extension dirs:");
     for (String path : extensionDirs) {
-      processingEnv.getMessager().printMessage(Kind.NOTE, "\t" + path);
+      processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "\t" + path);
     }
 
     // all paths in CLASSPATH, -cp, and -classpath
-    processingEnv.getMessager().printMessage(Kind.NOTE, "java.class.path property:");
+    processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "java.class.path property:");
     for (String path : System.getProperty("java.class.path").split(File.pathSeparator)) {
-      processingEnv.getMessager().printMessage(Kind.NOTE, "\t" + path);
+      processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "\t" + path);
     }
 
     // add all paths that are examined by the classloader
-    processingEnv.getMessager().printMessage(Kind.NOTE, "classloader examined paths:");
+    processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "classloader examined paths:");
     if (classLoader != null) {
       URL[] urls = classLoader.getURLs();
       for (int i = 0; i < urls.length; i++) {
-        processingEnv.getMessager().printMessage(Kind.NOTE, "\t" + urls[i].getFile());
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "\t" + urls[i].getFile());
       }
     } else {
-      processingEnv.getMessager().printMessage(Kind.NOTE, "classloader unavailable");
+      processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "classloader unavailable");
     }
   }
 
@@ -588,7 +596,7 @@ public class AnnotationClassLoader implements Closeable {
    * @return a set of fully qualified class names of the annotations
    */
   @SuppressWarnings("JdkObsolete")
-  private final Set<@BinaryName String> getBundledAnnotationNamesFromJar(final JarFile jar) {
+  private Set<@BinaryName String> getBundledAnnotationNamesFromJar(JarFile jar) {
     Set<@BinaryName String> annos = new LinkedHashSet<>();
 
     // get an enumeration iterator for all the content entries in the jar file
@@ -626,7 +634,7 @@ public class AnnotationClassLoader implements Closeable {
    *     {@link #isSupportedAnnotationClass(Class)}
    */
   public final @Nullable Class<? extends Annotation> loadExternalAnnotationClass(
-      final @BinaryName String annoName) {
+      @BinaryName String annoName) {
     return loadAnnotationClass(annoName, true);
   }
 
@@ -638,7 +646,7 @@ public class AnnotationClassLoader implements Closeable {
    * @return a set of annotation classes
    */
   public final Set<Class<? extends Annotation>> loadExternalAnnotationClassesFromDirectory(
-      final String dirName) {
+      String dirName) {
     File rootDirectory = new File(dirName);
     Set<@BinaryName String> annoNames =
         getAnnotationNamesFromDirectory(null, rootDirectory, rootDirectory);
@@ -659,10 +667,10 @@ public class AnnotationClassLoader implements Closeable {
    *     its sub-directories
    */
   @SuppressWarnings("signature") // TODO: reduce use of string manipulation
-  private final Set<@BinaryName String> getAnnotationNamesFromDirectory(
-      final @Nullable @DotSeparatedIdentifiers String packageName,
-      final File rootDirectory,
-      final File currentDirectory) {
+  private Set<@BinaryName String> getAnnotationNamesFromDirectory(
+      @Nullable @DotSeparatedIdentifiers String packageName,
+      File rootDirectory,
+      File currentDirectory) {
     Set<@BinaryName String> results = new LinkedHashSet<>();
 
     // Full path to root directory
@@ -670,14 +678,10 @@ public class AnnotationClassLoader implements Closeable {
 
     // check every file and directory within the current directory
     File[] directoryContents = currentDirectory.listFiles();
-    Arrays.sort(
-        directoryContents,
-        new Comparator<File>() {
-          @Override
-          public int compare(File o1, File o2) {
-            return o1.getName().compareTo(o2.getName());
-          }
-        });
+    if (directoryContents == null) {
+      throw new UserError("Directory does not exist: %s", currentDirectory);
+    }
+    Arrays.sort(directoryContents, Comparator.comparing(File::getName));
     for (File file : directoryContents) {
       if (file.isFile()) {
         // TODO: simplify all this string manipulation.
@@ -734,7 +738,7 @@ public class AnnotationClassLoader implements Closeable {
    *     is not supported by a checker, null is returned.
    */
   protected final @Nullable Class<? extends Annotation> loadAnnotationClass(
-      final @BinaryName String className, boolean issueError) {
+      @BinaryName String className, boolean issueError) {
 
     // load the class
     Class<?> cls = null;
@@ -799,7 +803,7 @@ public class AnnotationClassLoader implements Closeable {
    * @see #loadAnnotationClass(String, boolean)
    */
   protected final Set<Class<? extends Annotation>> loadAnnotationClasses(
-      final @Nullable Set<@BinaryName String> annoNames) {
+      @Nullable Set<@BinaryName String> annoNames) {
     Set<Class<? extends Annotation>> loadedClasses = new LinkedHashSet<>();
 
     if (annoNames != null && !annoNames.isEmpty()) {
@@ -826,8 +830,7 @@ public class AnnotationClassLoader implements Closeable {
    * @param annoClass an annotation class
    * @return true if the annotation is well defined, false if it isn't
    */
-  protected boolean hasWellDefinedTargetMetaAnnotation(
-      final Class<? extends Annotation> annoClass) {
+  protected boolean hasWellDefinedTargetMetaAnnotation(Class<? extends Annotation> annoClass) {
     return annoClass.getAnnotation(Target.class) != null
         && AnnotationUtils.hasTypeQualifierElementTypes(
             annoClass.getAnnotation(Target.class).value(), annoClass);
@@ -845,7 +848,7 @@ public class AnnotationClassLoader implements Closeable {
    * @param annoClass an annotation class
    * @return true if the annotation is supported, false if it isn't
    */
-  protected boolean isSupportedAnnotationClass(final Class<? extends Annotation> annoClass) {
+  protected boolean isSupportedAnnotationClass(Class<? extends Annotation> annoClass) {
     return true;
   }
 }

@@ -71,6 +71,9 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
   /** True if -AnoResourceAliases was passed on the command line. */
   private final boolean noResourceAliases;
 
+  /** True if -AnoLightweightOwnership was passed on the command line. */
+  public final boolean noLightweightOwnership;
+
   /**
    * Bidirectional map to store temporary variables created for expressions with non-empty @MustCall
    * obligations and the corresponding trees. Keys are the artificial local variable nodes created
@@ -92,9 +95,10 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
    *
    * @param checker the checker associated with this type factory
    */
-  public ResourceLeakAnnotatedTypeFactory(final BaseTypeChecker checker) {
+  public ResourceLeakAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
     this.noResourceAliases = checker.hasOption(MustCallChecker.NO_RESOURCE_ALIASES);
+    this.noLightweightOwnership = checker.hasOption(MustCallChecker.NO_LIGHTWEIGHT_OWNERSHIP);
     this.postInit();
   }
 
@@ -108,7 +112,7 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
   /*package-private*/ boolean isCandidateOwningField(Element element) {
     return (element.getKind().isField()
         && ElementUtils.isFinal(element)
-        && !getMustCallValue(element).isEmpty());
+        && !hasEmptyMustCallValue(element));
   }
 
   @Override
@@ -123,7 +127,7 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
    * @param val the methods that have been called
    * @return an annotation indicating that the given methods have been called
    */
-  public AnnotationMirror createCalledMethods(final String... val) {
+  public AnnotationMirror createCalledMethods(String... val) {
     return createAccumulatorAnnotation(Arrays.asList(val));
   }
 
@@ -151,32 +155,68 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
   }
 
   /**
-   * Returns the {@link MustCall#value} element/argument of the @MustCall annotation on the type of
-   * {@code tree}.
+   * Returns whether the {@link MustCall#value} element/argument of the @MustCall annotation on the
+   * type of {@code tree} is definitely empty.
    *
-   * <p>If possible, prefer {@link #getMustCallValue(Tree)}, which accounts for flow-sensitive
+   * <p>This method only considers the declared type: it does not consider flow-sensitive
    * refinement.
    *
    * @param tree a tree
-   * @return the strings in its must-call type
+   * @return true if the Must Call type is non-empty or top
    */
-  /*package-private*/ List<String> getMustCallValue(Tree tree) {
+  /*package-private*/ boolean hasEmptyMustCallValue(Tree tree) {
     MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
         getTypeFactoryOfSubchecker(MustCallChecker.class);
     AnnotatedTypeMirror mustCallAnnotatedType = mustCallAnnotatedTypeFactory.getAnnotatedType(tree);
-    AnnotationMirror mustCallAnnotation = mustCallAnnotatedType.getAnnotation(MustCall.class);
-    return getMustCallValues(mustCallAnnotation);
+    AnnotationMirror mustCallAnnotation =
+        mustCallAnnotatedType.getPrimaryAnnotation(MustCall.class);
+    if (mustCallAnnotation != null) {
+      return getMustCallValues(mustCallAnnotation).isEmpty();
+    } else {
+      // Indicates @MustCallUnknown, which should be treated (conservatively) as if it contains
+      // some must call values.
+      return false;
+    }
+  }
+
+  /**
+   * Returns whether the {@link MustCall#value} element/argument of the @MustCall annotation on the
+   * type of {@code element} is definitely empty.
+   *
+   * <p>This method only considers the declared type: it does not consider flow-sensitive
+   * refinement.
+   *
+   * @param element an element
+   * @return true if the Must Call type is non-empty or top
+   */
+  /*package-private*/ boolean hasEmptyMustCallValue(Element element) {
+    MustCallAnnotatedTypeFactory mustCallAnnotatedTypeFactory =
+        getTypeFactoryOfSubchecker(MustCallChecker.class);
+    AnnotatedTypeMirror mustCallAnnotatedType =
+        mustCallAnnotatedTypeFactory.getAnnotatedType(element);
+    AnnotationMirror mustCallAnnotation =
+        mustCallAnnotatedType.getPrimaryAnnotation(MustCall.class);
+    if (mustCallAnnotation != null) {
+      return getMustCallValues(mustCallAnnotation).isEmpty();
+    } else {
+      // Indicates @MustCallUnknown, which should be treated (conservatively) as if it contains
+      // some must call values.
+      return false;
+    }
   }
 
   /**
    * Returns the {@link MustCall#value} element/argument of the @MustCall annotation on the class
-   * type of {@code element}.
+   * type of {@code element}. If there is no such annotation, returns the empty list.
    *
    * <p>Do not use this method to get the MustCall value of an {@link
    * org.checkerframework.checker.resourceleak.MustCallConsistencyAnalyzer.Obligation}. Instead, use
    * {@link
    * org.checkerframework.checker.resourceleak.MustCallConsistencyAnalyzer.Obligation#getMustCallMethods(ResourceLeakAnnotatedTypeFactory,
    * CFStore)}.
+   *
+   * <p>Do not call {@link List#isEmpty()} on the result of this method: prefer to call {@link
+   * #hasEmptyMustCallValue(Element)}, which correctly accounts for @MustCallUnknown, instead.
    *
    * @param element an element
    * @return the strings in its must-call type
@@ -186,7 +226,8 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
         getTypeFactoryOfSubchecker(MustCallChecker.class);
     AnnotatedTypeMirror mustCallAnnotatedType =
         mustCallAnnotatedTypeFactory.getAnnotatedType(element);
-    AnnotationMirror mustCallAnnotation = mustCallAnnotatedType.getAnnotation(MustCall.class);
+    AnnotationMirror mustCallAnnotation =
+        mustCallAnnotatedType.getPrimaryAnnotation(MustCall.class);
     return getMustCallValues(mustCallAnnotation);
   }
 
@@ -238,6 +279,7 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
     }
     return tempVarToTree.get(node);
   }
+
   /**
    * Registers a temporary variable by adding it to this type factory's tempvar map.
    *
@@ -271,7 +313,7 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
             || tree.getKind() == Tree.Kind.NEW_CLASS
             || tree.getKind() == Tree.Kind.METHOD_INVOCATION
         : "unexpected declaration tree kind: " + tree.getKind();
-    return !getMustCallValue(tree).isEmpty();
+    return !hasEmptyMustCallValue(tree);
   }
 
   /**
@@ -330,14 +372,13 @@ public class ResourceLeakAnnotatedTypeFactory extends CalledMethodsAnnotatedType
 
   @Override
   @SuppressWarnings("TypeParameterUnusedInFormals") // Intentional abuse
-  public <T extends GenericAnnotatedTypeFactory<?, ?, ?, ?>> @Nullable T getTypeFactoryOfSubchecker(
-      Class<? extends BaseTypeChecker> subCheckerClass) {
+  public <T extends GenericAnnotatedTypeFactory<?, ?, ?, ?>> @Nullable T getTypeFactoryOfSubcheckerOrNull(Class<? extends BaseTypeChecker> subCheckerClass) {
     if (subCheckerClass == MustCallChecker.class) {
       if (!canCreateObligations()) {
-        return super.getTypeFactoryOfSubchecker(MustCallNoCreatesMustCallForChecker.class);
+        return super.getTypeFactoryOfSubcheckerOrNull(MustCallNoCreatesMustCallForChecker.class);
       }
     }
-    return super.getTypeFactoryOfSubchecker(subCheckerClass);
+    return super.getTypeFactoryOfSubcheckerOrNull(subCheckerClass);
   }
 
   /**

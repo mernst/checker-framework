@@ -53,10 +53,10 @@ import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
-import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 import org.plumelib.util.CollectionsPlume;
+import org.plumelib.util.IPair;
 import org.plumelib.util.StringsPlume;
 
 /**
@@ -121,17 +121,16 @@ public class AnnotatedTypes {
   /**
    * Calls asSuper and casts the result to the same type as the input supertype.
    *
+   * @param <T> the type of supertype and return type
+   * @param atypeFactory the type factory
    * @param subtype subtype to be transformed to supertype
    * @param supertype supertype that subtype is transformed to
-   * @param <T> the type of supertype and return type
    * @return subtype as an instance of supertype
    */
   public static <T extends AnnotatedTypeMirror> T castedAsSuper(
-      final AnnotatedTypeFactory atypeFactory,
-      final AnnotatedTypeMirror subtype,
-      final T supertype) {
-    final Types types = atypeFactory.getProcessingEnv().getTypeUtils();
-    final Elements elements = atypeFactory.getProcessingEnv().getElementUtils();
+      AnnotatedTypeFactory atypeFactory, AnnotatedTypeMirror subtype, T supertype) {
+    Types types = atypeFactory.getProcessingEnv().getTypeUtils();
+    Elements elements = atypeFactory.getProcessingEnv().getElementUtils();
 
     if (subtype.getKind() == TypeKind.NULL) {
       // Make a copy of the supertype so that if supertype is a composite type, the
@@ -139,11 +138,11 @@ public class AnnotatedTypes {
       // @A List<@B String>, then the returned type is @C List<@B String>.)
       @SuppressWarnings("unchecked")
       T copy = (T) supertype.deepCopy();
-      copy.replaceAnnotations(subtype.getAnnotations());
+      copy.replaceAnnotations(subtype.getPrimaryAnnotations());
       return copy;
     }
 
-    final T asSuperType = AnnotatedTypes.asSuper(atypeFactory, subtype, supertype);
+    T asSuperType = AnnotatedTypes.asSuper(atypeFactory, subtype, supertype);
 
     fixUpRawTypes(subtype, asSuperType, supertype, types);
 
@@ -157,19 +156,19 @@ public class AnnotatedTypes {
     if (asSuperType != null
         && AnnotatedTypes.isEnum(asSuperType)
         && AnnotatedTypes.isDeclarationOfJavaLangEnum(types, elements, supertype)) {
-      final AnnotatedDeclaredType resultAtd = ((AnnotatedDeclaredType) supertype).deepCopy();
+      AnnotatedDeclaredType resultAtd = ((AnnotatedDeclaredType) supertype).deepCopy();
       resultAtd.clearPrimaryAnnotations();
-      resultAtd.addAnnotations(asSuperType.getAnnotations());
+      resultAtd.addAnnotations(asSuperType.getPrimaryAnnotations());
 
-      final AnnotatedDeclaredType asSuperAdt = (AnnotatedDeclaredType) asSuperType;
+      AnnotatedDeclaredType asSuperAdt = (AnnotatedDeclaredType) asSuperType;
       if (!resultAtd.getTypeArguments().isEmpty() && !asSuperAdt.getTypeArguments().isEmpty()) {
-        final AnnotatedTypeMirror sourceTypeArg = asSuperAdt.getTypeArguments().get(0);
-        final AnnotatedTypeMirror resultTypeArg = resultAtd.getTypeArguments().get(0);
+        AnnotatedTypeMirror sourceTypeArg = asSuperAdt.getTypeArguments().get(0);
+        AnnotatedTypeMirror resultTypeArg = resultAtd.getTypeArguments().get(0);
         resultTypeArg.clearPrimaryAnnotations();
         if (resultTypeArg.getKind() == TypeKind.TYPEVAR) {
           // Only change the upper bound of a type variable.
           AnnotatedTypeVariable resultTypeArgTV = (AnnotatedTypeVariable) resultTypeArg;
-          resultTypeArgTV.getUpperBound().addAnnotations(sourceTypeArg.getAnnotations());
+          resultTypeArgTV.getUpperBound().addAnnotations(sourceTypeArg.getPrimaryAnnotations());
         } else {
           resultTypeArg.addAnnotations(sourceTypeArg.getEffectiveAnnotations());
         }
@@ -196,18 +195,18 @@ public class AnnotatedTypes {
    * @param types the types utility
    */
   private static void fixUpRawTypes(
-      final AnnotatedTypeMirror originalSubtype,
-      final AnnotatedTypeMirror asSuperType,
-      final AnnotatedTypeMirror supertype,
-      final Types types) {
+      AnnotatedTypeMirror originalSubtype,
+      AnnotatedTypeMirror asSuperType,
+      AnnotatedTypeMirror supertype,
+      Types types) {
     if (asSuperType == null
         || asSuperType.getKind() != TypeKind.DECLARED
         || originalSubtype.getKind() != TypeKind.DECLARED) {
       return;
     }
 
-    final AnnotatedDeclaredType declaredAsSuper = (AnnotatedDeclaredType) asSuperType;
-    final AnnotatedDeclaredType declaredSubtype = (AnnotatedDeclaredType) originalSubtype;
+    AnnotatedDeclaredType declaredAsSuper = (AnnotatedDeclaredType) asSuperType;
+    AnnotatedDeclaredType declaredSubtype = (AnnotatedDeclaredType) originalSubtype;
 
     if (!declaredAsSuper.isUnderlyingTypeRaw()
         || !declaredAsSuper.getTypeArguments().isEmpty()
@@ -215,7 +214,7 @@ public class AnnotatedTypes {
       return;
     }
 
-    Set<Pair<Integer, Integer>> typeArgMap =
+    Set<IPair<Integer, Integer>> typeArgMap =
         TypeArgumentMapper.mapTypeArgumentIndices(
             (TypeElement) declaredSubtype.getUnderlyingType().asElement(),
             (TypeElement) declaredAsSuper.getUnderlyingType().asElement(),
@@ -225,7 +224,7 @@ public class AnnotatedTypes {
       return;
     }
 
-    List<Pair<Integer, Integer>> orderedByDestination = new ArrayList<>(typeArgMap);
+    List<IPair<Integer, Integer>> orderedByDestination = new ArrayList<>(typeArgMap);
     orderedByDestination.sort(Comparator.comparingInt(o -> o.second));
 
     if (typeArgMap.size() == ((AnnotatedDeclaredType) supertype).getTypeArguments().size()) {
@@ -240,11 +239,26 @@ public class AnnotatedTypes {
   }
 
   /**
-   * Return the base type of type or any of its outer types that starts with the given type. If none
-   * exists, return null.
+   * Returns the result of calling {@link #asSuper(AnnotatedTypeFactory, AnnotatedTypeMirror,
+   * AnnotatedTypeMirror)} on {@code type} and {@code superType} or an enclosing type of {@code
+   * type}.
    *
+   * <p>If the underlying type of {@code type} is a subtype of the underlying type of {@code
+   * superType}, then this method returns the result of calling {@code asSuper(atypeFactory, type,
+   * superType)}.
+   *
+   * <p>If the underlying type of an enclosing of {@code type} is a subtype of the underlying type
+   * of {@code superType}, then this method returns the result of calling {@code
+   * asSuper(atypeFactory, type.getEnclosingType(), superType)}.
+   *
+   * <p>Otherwise, throws {@link BugInCF}.
+   *
+   * @param types types utils
+   * @param atypeFactory the type factory
    * @param type a type
-   * @param superType a type
+   * @param superType a supertype of {@code type} or a supertype of an enclosing type of {@code
+   *     type}
+   * @return {@code type} or an enclosing type of {@code type} as {@code superType}
    */
   private static AnnotatedTypeMirror asOuterSuper(
       Types types,
@@ -264,13 +278,7 @@ public class AnnotatedTypes {
         enclosingType = enclosingType.getEnclosingType();
       }
       if (enclosingType == null) {
-        // TODO: https://github.com/typetools/checker-framework/issues/724
-        // testcase javacheck -processor nullness src/java/util/AbstractMap.java
-        //                SourceChecker checker =  atypeFactory.getChecker().getChecker();
-        //                String msg = (String.format("OuterAsSuper did not find outer
-        // class. type: %s superType: %s", type, superType));
-        //                checker.message(Kind.WARNING, msg);
-        return superType;
+        throw new BugInCF("Enclosing type not found %s %s", dt, superType);
       }
       return asSuper(atypeFactory, dt, superType);
     }
@@ -338,7 +346,7 @@ public class AnnotatedTypes {
    */
   public static AnnotatedTypeMirror asMemberOf(
       Types types, AnnotatedTypeFactory atypeFactory, AnnotatedTypeMirror t, Element elem) {
-    final AnnotatedTypeMirror memberType = atypeFactory.getAnnotatedType(elem);
+    AnnotatedTypeMirror memberType = atypeFactory.getAnnotatedType(elem);
     return asMemberOf(types, atypeFactory, t, elem, memberType);
   }
 
@@ -393,11 +401,11 @@ public class AnnotatedTypes {
    * @return the type of member as a member of receiverType; can be an alias to memberType
    */
   private static AnnotatedTypeMirror asMemberOfImpl(
-      final Types types,
-      final AnnotatedTypeFactory atypeFactory,
-      final AnnotatedTypeMirror receiverType,
-      final Element member,
-      final AnnotatedTypeMirror memberType) {
+      Types types,
+      AnnotatedTypeFactory atypeFactory,
+      AnnotatedTypeMirror receiverType,
+      Element member,
+      AnnotatedTypeMirror memberType) {
     switch (receiverType.getKind()) {
       case ARRAY:
         // Method references like String[]::clone should have a return type of String[]
@@ -440,11 +448,57 @@ public class AnnotatedTypes {
         }
         return result;
       case UNION:
+        return substituteTypeVariables(types, atypeFactory, receiverType, member, memberType);
       case DECLARED:
+        AnnotatedDeclaredType receiverTypeDT = (AnnotatedDeclaredType) receiverType;
+        if (isRawCall(receiverTypeDT, member, types)) {
+          return memberType.getErased();
+        }
         return substituteTypeVariables(types, atypeFactory, receiverType, member, memberType);
       default:
         throw new BugInCF("asMemberOf called on unexpected type.%nt: %s", receiverType);
     }
+  }
+
+  /**
+   * Is the call to {@code method} with {@code receiver} raw?
+   *
+   * @param receiver type of the receiver of the call
+   * @param method the element of a method or constructor
+   * @param types type utilities
+   * @return whether the call to {@code method} with {@code receiver} raw
+   */
+  private static boolean isRawCall(AnnotatedDeclaredType receiver, Element method, Types types) {
+    // Section 4.8, "Raw Types".
+    // (https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.8)
+    //
+    // The type of a constructor (§8.8), instance method (8.4, 9.4), or non-static field
+    // (8.3) of a raw type C that is not inherited from its superclasses or superinterfaces
+    // is the raw type that corresponds to the erasure of its type in the generic declaration
+    // corresponding to C.
+    if (method.getEnclosingElement().equals(receiver.getUnderlyingType().asElement())) {
+      return receiver.isUnderlyingTypeRaw();
+    }
+
+    // The below is checking for a super() call where the super type is a raw type.
+    // See framework/tests/all-systems/RawSuper.java for an example.
+    if ("<init>".contentEquals(method.getSimpleName())) {
+      ExecutableElement constructor = (ExecutableElement) method;
+      TypeMirror constructorClass = types.erasure(constructor.getEnclosingElement().asType());
+      TypeMirror directSuper = types.directSupertypes(receiver.getUnderlyingType()).get(0);
+      while (!types.isSameType(types.erasure(directSuper), constructorClass)
+          && !TypesUtils.isObject(directSuper)) {
+        directSuper = types.directSupertypes(directSuper).get(0);
+      }
+      if (directSuper.getKind() == TypeKind.DECLARED) {
+        DeclaredType declaredType = (DeclaredType) directSuper;
+        TypeElement typeelem = (TypeElement) declaredType.asElement();
+        DeclaredType declty = (DeclaredType) typeelem.asType();
+        return !declty.getTypeArguments().isEmpty() && declaredType.getTypeArguments().isEmpty();
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -470,14 +524,20 @@ public class AnnotatedTypes {
     //      supertype of passed type)
     // 3. Substitute for type variables if any exist
     TypeElement enclosingClassOfMember = ElementUtils.enclosingTypeElement(member);
-    final Map<TypeVariable, AnnotatedTypeMirror> mappings = new HashMap<>();
+    DeclaredType enclosingType = (DeclaredType) enclosingClassOfMember.asType();
+    Map<TypeVariable, AnnotatedTypeMirror> mappings = new HashMap<>();
 
-    // Look for all enclosing classes that have type variables
+    // Look for all enclosing types that have type variables
     // and collect type to be substituted for those type variables
-    while (enclosingClassOfMember != null) {
-      addTypeVarMappings(types, atypeFactory, receiverType, enclosingClassOfMember, mappings);
-      enclosingClassOfMember =
-          ElementUtils.enclosingTypeElement(enclosingClassOfMember.getEnclosingElement());
+    while (enclosingType != null) {
+      TypeElement enclosingTypeElement = (TypeElement) enclosingType.asElement();
+      addTypeVarMappings(types, atypeFactory, receiverType, enclosingTypeElement, mappings);
+      if (enclosingType.getEnclosingType() != null
+          && enclosingType.getEnclosingType().getKind() == TypeKind.DECLARED) {
+        enclosingType = (DeclaredType) enclosingType.getEnclosingType();
+      } else {
+        enclosingType = null;
+      }
     }
 
     if (!mappings.isEmpty()) {
@@ -501,9 +561,9 @@ public class AnnotatedTypes {
         (AnnotatedDeclaredType) asOuterSuper(types, atypeFactory, t, enclosingType);
     base = (AnnotatedDeclaredType) atypeFactory.applyCaptureConversion(base);
 
-    final List<AnnotatedTypeVariable> ownerParams =
+    List<AnnotatedTypeVariable> ownerParams =
         new ArrayList<>(enclosingType.getTypeArguments().size());
-    for (final AnnotatedTypeMirror typeParam : enclosingType.getTypeArguments()) {
+    for (AnnotatedTypeMirror typeParam : enclosingType.getTypeArguments()) {
       if (typeParam.getKind() != TypeKind.TYPEVAR) {
         throw new BugInCF(
             StringsPlume.joinLines(
@@ -545,12 +605,12 @@ public class AnnotatedTypes {
   private static AnnotatedTypeMirror substituteUninferredTypeArgs(
       AnnotatedTypeFactory atypeFactory, Element member, AnnotatedTypeMirror memberType) {
     TypeElement enclosingClassOfMember = ElementUtils.enclosingTypeElement(member);
-    final Map<TypeVariable, AnnotatedTypeMirror> mappings = new HashMap<>();
+    Map<TypeVariable, AnnotatedTypeMirror> mappings = new HashMap<>();
 
     while (enclosingClassOfMember != null) {
       if (!enclosingClassOfMember.getTypeParameters().isEmpty()) {
         AnnotatedDeclaredType enclosingType = atypeFactory.getAnnotatedType(enclosingClassOfMember);
-        for (final AnnotatedTypeMirror type : enclosingType.getTypeArguments()) {
+        for (AnnotatedTypeMirror type : enclosingType.getTypeArguments()) {
           AnnotatedTypeVariable typeParameter = (AnnotatedTypeVariable) type;
           mappings.put(
               typeParameter.getUnderlyingType(),
@@ -611,9 +671,9 @@ public class AnnotatedTypes {
    */
   public static Map<AnnotatedDeclaredType, ExecutableElement> overriddenMethods(
       Elements elements, AnnotatedTypeFactory atypeFactory, ExecutableElement method) {
-    final TypeElement elem = (TypeElement) method.getEnclosingElement();
-    final AnnotatedDeclaredType type = atypeFactory.getAnnotatedType(elem);
-    final Collection<AnnotatedDeclaredType> supertypes = getSuperTypes(type);
+    TypeElement elem = (TypeElement) method.getEnclosingElement();
+    AnnotatedDeclaredType type = atypeFactory.getAnnotatedType(elem);
+    Collection<AnnotatedDeclaredType> supertypes = getSuperTypes(type);
     return overriddenMethods(elements, method, supertypes);
   }
 
@@ -632,7 +692,7 @@ public class AnnotatedTypes {
     Map<AnnotatedDeclaredType, ExecutableElement> overrides = new LinkedHashMap<>();
 
     for (AnnotatedDeclaredType supertype : supertypes) {
-      @Nullable TypeElement superElement = (TypeElement) supertype.getUnderlyingType().asElement();
+      TypeElement superElement = (TypeElement) supertype.getUnderlyingType().asElement();
       assert superElement != null;
       // For all method in the supertype, add it to the set if
       // it overrides the given method.
@@ -666,11 +726,11 @@ public class AnnotatedTypes {
    *     invocation
    */
   public static Map<TypeVariable, AnnotatedTypeMirror> findTypeArguments(
-      final ProcessingEnvironment processingEnv,
-      final AnnotatedTypeFactory atypeFactory,
-      final ExpressionTree expr,
-      final ExecutableElement elt,
-      final AnnotatedExecutableType preType) {
+      ProcessingEnvironment processingEnv,
+      AnnotatedTypeFactory atypeFactory,
+      ExpressionTree expr,
+      ExecutableElement elt,
+      AnnotatedExecutableType preType) {
 
     // Is the method a generic method?
     if (elt.getTypeParameters().isEmpty()) {
@@ -696,6 +756,10 @@ public class AnnotatedTypes {
     // Has the user supplied type arguments?
     if (!targs.isEmpty()) {
       List<? extends AnnotatedTypeVariable> tvars = preType.getTypeVariables();
+      if (tvars.isEmpty()) {
+        // This happens when the method is invoked with a raw receiver.
+        return Collections.emptyMap();
+      }
 
       Map<TypeVariable, AnnotatedTypeMirror> typeArguments = new HashMap<>();
       for (int i = 0; i < elt.getTypeParameters().size(); ++i) {
@@ -716,10 +780,10 @@ public class AnnotatedTypes {
   /**
    * Returns the lub of two annotated types.
    *
-   * @param atypeFactory AnnotatedTypeFactory
-   * @param type1 annotated type
-   * @param type2 annotated type
-   * @return the lub of type1 and type2
+   * @param atypeFactory the type factory
+   * @param type1 a type
+   * @param type2 another type
+   * @return the lub of {@code type1} and {@code type2}
    */
   public static AnnotatedTypeMirror leastUpperBound(
       AnnotatedTypeFactory atypeFactory, AnnotatedTypeMirror type1, AnnotatedTypeMirror type2) {
@@ -732,7 +796,7 @@ public class AnnotatedTypes {
   /**
    * Returns the lub, whose underlying type is {@code lubTypeMirror} of two annotated types.
    *
-   * @param atypeFactory AnnotatedTypeFactory
+   * @param atypeFactory a type factory
    * @param type1 annotated type whose underlying type must be a subtype or convertible to
    *     lubTypeMirror
    * @param type2 annotated type whose underlying type must be a subtype or convertible to
@@ -782,20 +846,21 @@ public class AnnotatedTypes {
    */
   public static AnnotatedTypeMirror annotatedGLB(
       AnnotatedTypeFactory atypeFactory, AnnotatedTypeMirror type1, AnnotatedTypeMirror type2) {
-    TypeMirror glbJava =
-        TypesUtils.greatestLowerBound(
-            type1.getUnderlyingType(), type2.getUnderlyingType(), atypeFactory.getProcessingEnv());
+    TypeMirror tm1 = type1.getUnderlyingType();
+    TypeMirror tm2 = type2.getUnderlyingType();
+    TypeMirror glbJava = TypesUtils.greatestLowerBound(tm1, tm2, atypeFactory.getProcessingEnv());
     Types types = atypeFactory.types;
-    if (types.isSubtype(type1.getUnderlyingType(), type2.getUnderlyingType())) {
-      return glbSubtype(atypeFactory.getQualifierHierarchy(), type1, type2);
-    } else if (types.isSubtype(type2.getUnderlyingType(), type1.getUnderlyingType())) {
-      return glbSubtype(atypeFactory.getQualifierHierarchy(), type2, type1);
+    QualifierHierarchy qualHierarchy = atypeFactory.getQualifierHierarchy();
+    if (types.isSubtype(tm1, tm2)) {
+      return glbSubtype(qualHierarchy, type1, type2);
+    } else if (types.isSubtype(tm2, tm1)) {
+      return glbSubtype(qualHierarchy, type2, type1);
     }
 
-    if (types.isSameType(type1.getUnderlyingType(), glbJava)) {
-      return glbSubtype(atypeFactory.getQualifierHierarchy(), type1, type2);
-    } else if (types.isSameType(type2.getUnderlyingType(), glbJava)) {
-      return glbSubtype(atypeFactory.getQualifierHierarchy(), type2, type1);
+    if (types.isSameType(tm1, glbJava)) {
+      return glbSubtype(qualHierarchy, type1, type2);
+    } else if (types.isSameType(tm2, glbJava)) {
+      return glbSubtype(qualHierarchy, type2, type1);
     }
 
     if (glbJava.getKind() != TypeKind.INTERSECTION) {
@@ -805,21 +870,21 @@ public class AnnotatedTypes {
               + "type1: %s, type2: %s",
           glbJava.getKind(), glbJava, type1, type2);
     }
-    QualifierHierarchy qualifierHierarchy = atypeFactory.getQualifierHierarchy();
     AnnotationMirrorSet set1 =
-        AnnotatedTypes.findEffectiveLowerBoundAnnotations(qualifierHierarchy, type1);
+        AnnotatedTypes.findEffectiveLowerBoundAnnotations(qualHierarchy, type1);
     AnnotationMirrorSet set2 =
-        AnnotatedTypes.findEffectiveLowerBoundAnnotations(qualifierHierarchy, type2);
-    Set<? extends AnnotationMirror> glbAnno = qualifierHierarchy.greatestLowerBounds(set1, set2);
+        AnnotatedTypes.findEffectiveLowerBoundAnnotations(qualHierarchy, type2);
+    Set<? extends AnnotationMirror> glbAnno =
+        qualHierarchy.greatestLowerBoundsShallow(set1, tm1, set2, tm2);
 
     AnnotatedIntersectionType glb =
         (AnnotatedIntersectionType) AnnotatedTypeMirror.createType(glbJava, atypeFactory, false);
 
     List<AnnotatedTypeMirror> newBounds = new ArrayList<>(2);
     for (AnnotatedTypeMirror bound : glb.getBounds()) {
-      if (types.isSameType(bound.getUnderlyingType(), type1.getUnderlyingType())) {
+      if (types.isSameType(bound.getUnderlyingType(), tm1)) {
         newBounds.add(type1.deepCopy());
-      } else if (types.isSameType(bound.getUnderlyingType(), type2.getUnderlyingType())) {
+      } else if (types.isSameType(bound.getUnderlyingType(), tm2)) {
         newBounds.add(type2.deepCopy());
       } else if (type1.getKind() == TypeKind.INTERSECTION) {
         AnnotatedIntersectionType intertype1 = (AnnotatedIntersectionType) type1;
@@ -854,23 +919,26 @@ public class AnnotatedTypes {
    * <p>This handles cases 1, 2, and 3 mentioned in the Javadoc of {@link
    * #annotatedGLB(AnnotatedTypeFactory, AnnotatedTypeMirror, AnnotatedTypeMirror)}.
    *
-   * @param qualifierHierarchy QualifierHierarchy
+   * @param qualHierarchy the qualifier hierarchy
    * @param subtype annotated type whose underlying type is a subtype of {@code supertype}
    * @param supertype annotated type whose underlying type is a supertype of {@code subtype}
    * @return the annotated greatest lower bound of {@code subtype} and {@code supertype}
    */
   private static AnnotatedTypeMirror glbSubtype(
-      QualifierHierarchy qualifierHierarchy,
+      QualifierHierarchy qualHierarchy,
       AnnotatedTypeMirror subtype,
       AnnotatedTypeMirror supertype) {
     AnnotatedTypeMirror glb = subtype.deepCopy();
     glb.clearPrimaryAnnotations();
 
-    for (AnnotationMirror top : qualifierHierarchy.getTopAnnotations()) {
-      AnnotationMirror subAnno = subtype.getAnnotationInHierarchy(top);
-      AnnotationMirror superAnno = supertype.getAnnotationInHierarchy(top);
+    TypeMirror subTM = subtype.getUnderlyingType();
+    TypeMirror superTM = supertype.getUnderlyingType();
+    for (AnnotationMirror top : qualHierarchy.getTopAnnotations()) {
+      AnnotationMirror subAnno = subtype.getPrimaryAnnotationInHierarchy(top);
+      AnnotationMirror superAnno = supertype.getPrimaryAnnotationInHierarchy(top);
       if (subAnno != null && superAnno != null) {
-        glb.addAnnotation(qualifierHierarchy.greatestLowerBound(subAnno, superAnno));
+        glb.addAnnotation(
+            qualHierarchy.greatestLowerBoundShallow(subAnno, subTM, superAnno, superTM));
       } else if (subAnno == null && superAnno == null) {
         if (subtype.getKind() != TypeKind.TYPEVAR || supertype.getKind() != TypeKind.TYPEVAR) {
           throw new BugInCF(
@@ -880,9 +948,9 @@ public class AnnotatedTypes {
         if (subtype.getKind() != TypeKind.TYPEVAR) {
           throw new BugInCF("Missing primary annotations: subtype: %s", subtype);
         }
-        AnnotationMirrorSet lb = findEffectiveLowerBoundAnnotations(qualifierHierarchy, subtype);
-        AnnotationMirror lbAnno = qualifierHierarchy.findAnnotationInHierarchy(lb, top);
-        if (lbAnno != null && !qualifierHierarchy.isSubtype(lbAnno, superAnno)) {
+        AnnotationMirrorSet lb = findEffectiveLowerBoundAnnotations(qualHierarchy, subtype);
+        AnnotationMirror lbAnno = qualHierarchy.findAnnotationInHierarchy(lb, top);
+        if (lbAnno != null && !qualHierarchy.isSubtypeShallow(lbAnno, subTM, superAnno, superTM)) {
           // The superAnno is lower than the lower bound annotation, so add it.
           glb.addAnnotation(superAnno);
         } // else don't add any annotation.
@@ -1029,22 +1097,21 @@ public class AnnotatedTypes {
    * Given an AnnotatedExecutableType of a method or constructor declaration, get the parameter type
    * expected at the indexth position (unwrapping varargs if necessary).
    *
-   * @param methodType AnnotatedExecutableType of method or constructor containing parameter to
-   *     return
-   * @param index position of parameter type to return
-   * @return if that parameter is a varArgs, return the component of the var args and NOT the array
-   *     type. Otherwise, return the exact type of the parameter in the index position.
+   * @param methodType the type of a method or constructor containing the parameter to return
+   * @param index position of the parameter type to return
+   * @return the type of the parameter in the index position. If that parameter is a varArgs, return
+   *     the component type of the varargs and NOT the array type.
    */
   public static AnnotatedTypeMirror getAnnotatedTypeMirrorOfParameter(
       AnnotatedExecutableType methodType, int index) {
     List<AnnotatedTypeMirror> parameterTypes = methodType.getParameterTypes();
     boolean hasVarArg = methodType.getElement().isVarArgs();
 
-    final int lastIndex = parameterTypes.size() - 1;
-    final AnnotatedTypeMirror lastType = parameterTypes.get(lastIndex);
-    final boolean parameterBeforeVarargs = index < lastIndex;
+    int lastIndex = parameterTypes.size() - 1;
+    AnnotatedTypeMirror lastType = parameterTypes.get(lastIndex);
+    boolean parameterBeforeVarargs = index < lastIndex;
     if (!parameterBeforeVarargs && lastType instanceof AnnotatedArrayType) {
-      final AnnotatedArrayType arrayType = (AnnotatedArrayType) lastType;
+      AnnotatedArrayType arrayType = (AnnotatedArrayType) lastType;
       if (hasVarArg) {
         return arrayType.getComponentType();
       }
@@ -1107,7 +1174,8 @@ public class AnnotatedTypes {
   /**
    * Checks whether type contains the given modifier, also recursively in type arguments and arrays.
    * This method might be easier to implement directly as instance method in AnnotatedTypeMirror; it
-   * corresponds to a "deep" version of {@link AnnotatedTypeMirror#hasAnnotation(AnnotationMirror)}.
+   * corresponds to a "deep" version of {@link
+   * AnnotatedTypeMirror#hasPrimaryAnnotation(AnnotationMirror)}.
    *
    * @param type the type to search
    * @param modifier the modifier to search for
@@ -1122,7 +1190,7 @@ public class AnnotatedTypes {
    */
   private static boolean containsModifierImpl(
       AnnotatedTypeMirror type, AnnotationMirror modifier, List<AnnotatedTypeMirror> visited) {
-    boolean found = type.hasAnnotation(modifier);
+    boolean found = type.hasPrimaryAnnotation(modifier);
     boolean vis = visited.contains(type);
     visited.add(type);
 
@@ -1169,7 +1237,7 @@ public class AnnotatedTypes {
    *
    * @return true if the underlying type of this atm is a java.lang.annotation.Annotation
    */
-  public static boolean isJavaLangAnnotation(final AnnotatedTypeMirror atm) {
+  public static boolean isJavaLangAnnotation(AnnotatedTypeMirror atm) {
     return TypesUtils.isDeclaredOfName(atm.getUnderlyingType(), annotationClassName);
   }
 
@@ -1181,16 +1249,16 @@ public class AnnotatedTypes {
    *
    * @return true if atm is an Annotation interface
    */
-  public static boolean implementsAnnotation(final AnnotatedTypeMirror atm) {
+  public static boolean implementsAnnotation(AnnotatedTypeMirror atm) {
     if (atm.getKind() != TypeKind.DECLARED) {
       return false;
     }
-    final AnnotatedTypeMirror.AnnotatedDeclaredType declaredType =
+    AnnotatedTypeMirror.AnnotatedDeclaredType declaredType =
         (AnnotatedTypeMirror.AnnotatedDeclaredType) atm;
 
     Symbol.ClassSymbol classSymbol =
         (Symbol.ClassSymbol) declaredType.getUnderlyingType().asElement();
-    for (final Type iface : classSymbol.getInterfaces()) {
+    for (Type iface : classSymbol.getInterfaces()) {
       if (TypesUtils.isDeclaredOfName(iface, annotationClassName)) {
         return true;
       }
@@ -1199,9 +1267,9 @@ public class AnnotatedTypes {
     return false;
   }
 
-  public static boolean isEnum(final AnnotatedTypeMirror typeMirror) {
+  public static boolean isEnum(AnnotatedTypeMirror typeMirror) {
     if (typeMirror.getKind() == TypeKind.DECLARED) {
-      final AnnotatedDeclaredType adt = (AnnotatedDeclaredType) typeMirror;
+      AnnotatedDeclaredType adt = (AnnotatedDeclaredType) typeMirror;
       return TypesUtils.isDeclaredOfName(adt.getUnderlyingType(), java.lang.Enum.class.getName());
     }
 
@@ -1209,7 +1277,7 @@ public class AnnotatedTypes {
   }
 
   public static boolean isDeclarationOfJavaLangEnum(
-      final Types types, final Elements elements, final AnnotatedTypeMirror typeMirror) {
+      Types types, Elements elements, AnnotatedTypeMirror typeMirror) {
     if (isEnum(typeMirror)) {
       return elements
           .getTypeElement(Enum.class.getCanonicalName())
@@ -1232,7 +1300,7 @@ public class AnnotatedTypes {
   // because this method has 3 arguments.
   )
   public static boolean haveSameDeclaration(
-      Types types, final AnnotatedTypeVariable typeVar1, final AnnotatedTypeVariable typeVar2) {
+      Types types, AnnotatedTypeVariable typeVar1, AnnotatedTypeVariable typeVar2) {
 
     if (typeVar1.getUnderlyingType() == typeVar2.getUnderlyingType()) {
       return true;
@@ -1258,20 +1326,18 @@ public class AnnotatedTypes {
    */
   public static boolean areCorrespondingTypeVariables(
       Elements elements, AnnotatedTypeVariable type1, AnnotatedTypeVariable type2) {
-    final TypeParameterElement type1ParamElem =
+    TypeParameterElement type1ParamElem =
         (TypeParameterElement) type1.getUnderlyingType().asElement();
-    final TypeParameterElement type2ParamElem =
+    TypeParameterElement type2ParamElem =
         (TypeParameterElement) type2.getUnderlyingType().asElement();
 
     if (type1ParamElem.getGenericElement() instanceof ExecutableElement
         && type2ParamElem.getGenericElement() instanceof ExecutableElement) {
-      final ExecutableElement type1Executable =
-          (ExecutableElement) type1ParamElem.getGenericElement();
-      final ExecutableElement type2Executable =
-          (ExecutableElement) type2ParamElem.getGenericElement();
+      ExecutableElement type1Executable = (ExecutableElement) type1ParamElem.getGenericElement();
+      ExecutableElement type2Executable = (ExecutableElement) type2ParamElem.getGenericElement();
 
-      final TypeElement type1Class = (TypeElement) type1Executable.getEnclosingElement();
-      final TypeElement type2Class = (TypeElement) type2Executable.getEnclosingElement();
+      TypeElement type1Class = (TypeElement) type1Executable.getEnclosingElement();
+      TypeElement type2Class = (TypeElement) type2Executable.getEnclosingElement();
 
       boolean methodIsOverridden =
           elements.overrides(type1Executable, type2Executable, type1Class)
@@ -1296,10 +1362,8 @@ public class AnnotatedTypes {
    * @return the AnnotationMirror that represents the type of toSearch in the hierarchy of top
    */
   public static AnnotationMirror findEffectiveAnnotationInHierarchy(
-      final QualifierHierarchy qualifierHierarchy,
-      final AnnotatedTypeMirror toSearch,
-      final AnnotationMirror top) {
-    return findEffectiveAnnotationInHierarchy(qualifierHierarchy, toSearch, top, false);
+      QualifierHierarchy qualHierarchy, AnnotatedTypeMirror toSearch, AnnotationMirror top) {
+    return findEffectiveAnnotationInHierarchy(qualHierarchy, toSearch, top, false);
   }
 
   /**
@@ -1309,17 +1373,18 @@ public class AnnotatedTypes {
    *
    * @param top the top of the hierarchy for which you are searching
    * @param canBeEmpty whether or not the effective type can have NO annotation in the hierarchy
-   *     specified by top If this param is false, an exception will be thrown if no annotation is
-   *     found Otherwise the result is null
-   * @return the AnnotationMirror that represents the type of toSearch in the hierarchy of top
+   *     specified by top. If this param is false, an exception will be thrown if no annotation is
+   *     found. Otherwise the result is null.
+   * @return the AnnotationMirror that represents the type of {@code toSearch} in the hierarchy of
+   *     {@code top}
    */
-  public static AnnotationMirror findEffectiveAnnotationInHierarchy(
-      final QualifierHierarchy qualifierHierarchy,
-      final AnnotatedTypeMirror toSearch,
-      final AnnotationMirror top,
-      final boolean canBeEmpty) {
+  public static @Nullable AnnotationMirror findEffectiveAnnotationInHierarchy(
+      QualifierHierarchy qualHierarchy,
+      AnnotatedTypeMirror toSearch,
+      AnnotationMirror top,
+      boolean canBeEmpty) {
     AnnotatedTypeMirror source = toSearch;
-    while (source.getAnnotationInHierarchy(top) == null) {
+    while (source.getPrimaryAnnotationInHierarchy(top) == null) {
 
       switch (source.getKind()) {
         case TYPEVAR:
@@ -1332,8 +1397,8 @@ public class AnnotatedTypes {
 
         case INTERSECTION:
           // if there are multiple conflicting annotations, choose the lowest
-          final AnnotationMirror glb =
-              glbOfBoundsInHierarchy((AnnotatedIntersectionType) source, top, qualifierHierarchy);
+          AnnotationMirror glb =
+              glbOfBoundsInHierarchy((AnnotatedIntersectionType) source, top, qualHierarchy);
 
           if (glb == null) {
             throw new BugInCF(
@@ -1359,19 +1424,19 @@ public class AnnotatedTypes {
       }
     }
 
-    return source.getAnnotationInHierarchy(top);
+    return source.getPrimaryAnnotationInHierarchy(top);
   }
 
   /**
    * This method returns the effective annotation on the lower bound of a type, or on the type
    * itself if the type has no lower bound (it is not a type variable, wildcard, or intersection).
    *
-   * @param qualifierHierarchy the qualifier hierarchy
+   * @param qualHierarchy the qualifier hierarchy
    * @param toSearch the type whose lower bound to examine
    * @return the set of effective annotation mirrors in all hierarchies
    */
   public static AnnotationMirrorSet findEffectiveLowerBoundAnnotations(
-      final QualifierHierarchy qualifierHierarchy, final AnnotatedTypeMirror toSearch) {
+      QualifierHierarchy qualHierarchy, AnnotatedTypeMirror toSearch) {
     AnnotatedTypeMirror source = toSearch;
     TypeKind kind = source.getKind();
     while (kind == TypeKind.TYPEVAR || kind == TypeKind.WILDCARD || kind == TypeKind.INTERSECTION) {
@@ -1387,8 +1452,7 @@ public class AnnotatedTypes {
 
         case INTERSECTION:
           // if there are multiple conflicting annotations, choose the lowest
-          final AnnotationMirrorSet glb =
-              glbOfBounds((AnnotatedIntersectionType) source, qualifierHierarchy);
+          AnnotationMirrorSet glb = glbOfBounds((AnnotatedIntersectionType) source, qualHierarchy);
           return glb;
 
         default:
@@ -1403,7 +1467,7 @@ public class AnnotatedTypes {
       kind = source.getKind();
     }
 
-    return source.getAnnotations();
+    return source.getPrimaryAnnotations();
   }
 
   /**
@@ -1412,12 +1476,12 @@ public class AnnotatedTypes {
    * it finds a concrete type from which it can pull an annotation. This occurs for every hierarchy
    * in QualifierHierarchy.
    *
-   * @param qualifierHierarchy the qualifier hierarchy
+   * @param qualHierarchy the qualifier hierarchy
    * @param toSearch the type whose effective annotations to determine
    * @return the set of effective annotation mirrors in all hierarchies
    */
   public static AnnotationMirrorSet findEffectiveAnnotations(
-      final QualifierHierarchy qualifierHierarchy, final AnnotatedTypeMirror toSearch) {
+      QualifierHierarchy qualHierarchy, AnnotatedTypeMirror toSearch) {
     AnnotatedTypeMirror source = toSearch;
     TypeKind kind = source.getKind();
     while (kind == TypeKind.TYPEVAR || kind == TypeKind.WILDCARD || kind == TypeKind.INTERSECTION) {
@@ -1433,8 +1497,7 @@ public class AnnotatedTypes {
 
         case INTERSECTION:
           // if there are multiple conflicting annotations, choose the lowest
-          final AnnotationMirrorSet glb =
-              glbOfBounds((AnnotatedIntersectionType) source, qualifierHierarchy);
+          AnnotationMirrorSet glb = glbOfBounds((AnnotatedIntersectionType) source, qualHierarchy);
           return glb;
 
         default:
@@ -1449,17 +1512,18 @@ public class AnnotatedTypes {
       kind = source.getKind();
     }
 
-    return source.getAnnotations();
+    return source.getPrimaryAnnotations();
   }
 
   private static AnnotationMirror glbOfBoundsInHierarchy(
-      final AnnotatedIntersectionType isect,
-      final AnnotationMirror top,
-      final QualifierHierarchy qualifierHierarchy) {
-    AnnotationMirror anno = isect.getAnnotationInHierarchy(top);
+      AnnotatedIntersectionType isect, AnnotationMirror top, QualifierHierarchy qualHierarchy) {
+    AnnotationMirror anno = isect.getPrimaryAnnotationInHierarchy(top);
     for (AnnotatedTypeMirror bound : isect.getBounds()) {
-      AnnotationMirror boundAnno = bound.getAnnotationInHierarchy(top);
-      if (boundAnno != null && (anno == null || qualifierHierarchy.isSubtype(boundAnno, anno))) {
+      AnnotationMirror boundAnno = bound.getPrimaryAnnotationInHierarchy(top);
+      if (boundAnno != null
+          && (anno == null
+              || qualHierarchy.isSubtypeShallow(
+                  boundAnno, bound.getUnderlyingType(), anno, isect.getUnderlyingType()))) {
         anno = boundAnno;
       }
     }
@@ -1471,14 +1535,14 @@ public class AnnotatedTypes {
    * Gets the lowest primary annotation of all bounds in the intersection.
    *
    * @param isect the intersection for which we are glbing bounds
-   * @param qualifierHierarchy the qualifier used to get the hierarchies in which to glb
+   * @param qualHierarchy the qualifier used to get the hierarchies in which to glb
    * @return a set of annotations representing the glb of the intersection's bounds
    */
   public static AnnotationMirrorSet glbOfBounds(
-      final AnnotatedIntersectionType isect, final QualifierHierarchy qualifierHierarchy) {
+      AnnotatedIntersectionType isect, QualifierHierarchy qualHierarchy) {
     AnnotationMirrorSet result = new AnnotationMirrorSet();
-    for (final AnnotationMirror top : qualifierHierarchy.getTopAnnotations()) {
-      final AnnotationMirror glbAnno = glbOfBoundsInHierarchy(isect, top, qualifierHierarchy);
+    for (AnnotationMirror top : qualHierarchy.getTopAnnotations()) {
+      AnnotationMirror glbAnno = glbOfBoundsInHierarchy(isect, top, qualHierarchy);
       if (glbAnno != null) {
         result.add(glbAnno);
       }
@@ -1496,7 +1560,7 @@ public class AnnotatedTypes {
    * @param wildcard the type to check
    * @return true if the given card is an unbounded wildcard
    */
-  public static boolean hasNoExplicitBound(final AnnotatedTypeMirror wildcard) {
+  public static boolean hasNoExplicitBound(AnnotatedTypeMirror wildcard) {
     return ((Type.WildcardType) wildcard.getUnderlyingType()).kind == BoundKind.UNBOUND;
   }
 
@@ -1508,7 +1572,7 @@ public class AnnotatedTypes {
    * @deprecated Use {@link #hasExplicitSuperBound(AnnotatedTypeMirror)}
    */
   @Deprecated
-  public static boolean isExplicitlySuperBounded(final AnnotatedWildcardType wildcardType) {
+  public static boolean isExplicitlySuperBounded(AnnotatedWildcardType wildcardType) {
     return hasExplicitSuperBound(wildcardType);
   }
 
@@ -1518,7 +1582,7 @@ public class AnnotatedTypes {
    * @param wildcard the wildcard type to test
    * @return true if wildcard type is explicitly super bounded
    */
-  public static boolean hasExplicitSuperBound(final AnnotatedTypeMirror wildcard) {
+  public static boolean hasExplicitSuperBound(AnnotatedTypeMirror wildcard) {
     return ((Type.WildcardType) wildcard.getUnderlyingType()).isSuperBound()
         && ((Type.WildcardType) wildcard.getUnderlyingType()).kind != BoundKind.UNBOUND;
   }
@@ -1531,7 +1595,7 @@ public class AnnotatedTypes {
    * @deprecated Use {@link #hasExplicitExtendsBound(AnnotatedTypeMirror)}.
    */
   @Deprecated
-  public static boolean isExplicitlyExtendsBounded(final AnnotatedWildcardType wildcardType) {
+  public static boolean isExplicitlyExtendsBounded(AnnotatedWildcardType wildcardType) {
     return hasExplicitExtendsBound(wildcardType);
   }
 
@@ -1541,7 +1605,7 @@ public class AnnotatedTypes {
    * @param wildcardType the wildcard type to test
    * @return true if wildcard type is explicitly extends bounded
    */
-  public static boolean hasExplicitExtendsBound(final AnnotatedTypeMirror wildcardType) {
+  public static boolean hasExplicitExtendsBound(AnnotatedTypeMirror wildcardType) {
     return ((Type.WildcardType) wildcardType.getUnderlyingType()).isExtendsBound()
         && ((Type.WildcardType) wildcardType.getUnderlyingType()).kind != BoundKind.UNBOUND;
   }
@@ -1552,7 +1616,7 @@ public class AnnotatedTypes {
    * @param wildcardType the wildcard type to test
    * @return true if this type is super bounded or unbounded
    */
-  public static boolean isUnboundedOrSuperBounded(final AnnotatedWildcardType wildcardType) {
+  public static boolean isUnboundedOrSuperBounded(AnnotatedWildcardType wildcardType) {
     return ((Type.WildcardType) wildcardType.getUnderlyingType()).isSuperBound();
   }
 
@@ -1562,7 +1626,7 @@ public class AnnotatedTypes {
    * @param wildcardType the wildcard type to test
    * @return true if this type is extends bounded or unbounded
    */
-  public static boolean isUnboundedOrExtendsBounded(final AnnotatedWildcardType wildcardType) {
+  public static boolean isUnboundedOrExtendsBounded(AnnotatedWildcardType wildcardType) {
     return ((Type.WildcardType) wildcardType.getUnderlyingType()).isExtendsBound();
   }
 
@@ -1590,24 +1654,26 @@ public class AnnotatedTypes {
       }
     }
 
+    QualifierHierarchy qualHierarchy = atypeFactory.getQualifierHierarchy();
+
     // Collect all polymorphic qualifiers; we should substitute them.
     AnnotationMirrorSet polys = new AnnotationMirrorSet();
-    for (AnnotationMirror anno : returnType.getAnnotations()) {
-      if (atypeFactory.getQualifierHierarchy().isPolymorphicQualifier(anno)) {
+    for (AnnotationMirror anno : returnType.getPrimaryAnnotations()) {
+      if (qualHierarchy.isPolymorphicQualifier(anno)) {
         polys.add(anno);
       }
     }
 
-    for (AnnotationMirror cta : constructor.getReturnType().getAnnotations()) {
-      AnnotationMirror ctatop = atypeFactory.getQualifierHierarchy().getTopAnnotation(cta);
-      if (returnType.isAnnotatedInHierarchy(cta)) {
+    for (AnnotationMirror cta : constructor.getReturnType().getPrimaryAnnotations()) {
+      AnnotationMirror ctatop = qualHierarchy.getTopAnnotation(cta);
+      if (returnType.hasPrimaryAnnotationInHierarchy(cta)) {
         continue;
       }
-      if (atypeFactory.isSupportedQualifier(cta) && !returnType.isAnnotatedInHierarchy(cta)) {
+      if (atypeFactory.isSupportedQualifier(cta)
+          && !returnType.hasPrimaryAnnotationInHierarchy(cta)) {
         for (AnnotationMirror fromDecl : decret) {
           if (atypeFactory.isSupportedQualifier(fromDecl)
-              && AnnotationUtils.areSame(
-                  ctatop, atypeFactory.getQualifierHierarchy().getTopAnnotation(fromDecl))) {
+              && AnnotationUtils.areSame(ctatop, qualHierarchy.getTopAnnotation(fromDecl))) {
             returnType.addAnnotation(cta);
             break;
           }
@@ -1617,8 +1683,7 @@ public class AnnotatedTypes {
       // Go through the polymorphic qualifiers and see whether
       // there is anything left to replace.
       for (AnnotationMirror pa : polys) {
-        if (AnnotationUtils.areSame(
-            ctatop, atypeFactory.getQualifierHierarchy().getTopAnnotation(pa))) {
+        if (AnnotationUtils.areSame(ctatop, qualHierarchy.getTopAnnotation(pa))) {
           returnType.replaceAnnotation(cta);
           break;
         }
@@ -1629,11 +1694,11 @@ public class AnnotatedTypes {
   /**
    * Add all the annotations in {@code declaredType} to {@code annotatedDeclaredType}.
    *
-   * <p>(The {@code TypeMirror} returned by {@code annotatedDeclaredType#getUnderlyingType} may have
-   * not have all the annotations on the type, so allow the user to specify a different one.)
+   * <p>(The {@code TypeMirror} returned by {@code annotatedDeclaredType#getUnderlyingType} may not
+   * have all the annotations on the type, so allow the user to specify a different one.)
    *
    * @param annotatedDeclaredType annotated type to which annotations are added
-   * @param declaredType TypeMirror that may have annotations
+   * @param declaredType a type that may have annotations
    */
   public static void applyAnnotationsFromDeclaredType(
       AnnotatedDeclaredType annotatedDeclaredType, DeclaredType declaredType) {

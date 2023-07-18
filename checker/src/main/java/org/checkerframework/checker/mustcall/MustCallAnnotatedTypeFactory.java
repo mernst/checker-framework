@@ -116,7 +116,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
    *
    * @param checker the checker associated with this type factory
    */
-  public MustCallAnnotatedTypeFactory(final BaseTypeChecker checker) {
+  public MustCallAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
     TOP = AnnotationBuilder.fromClass(elements, MustCallUnknown.class);
     BOTTOM = createMustCall(Collections.emptyList());
@@ -184,16 +184,6 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
     }
   }
 
-  /**
-   * Returns true iff the given element is a resource variable.
-   *
-   * @param elt an element; may be null, in which case this method always returns false
-   * @return true iff the given element represents a resource variable
-   */
-  /*package-private*/ boolean isResourceVariable(@Nullable Element elt) {
-    return elt != null && elt.getKind() == ElementKind.RESOURCE_VARIABLE;
-  }
-
   /** Treat non-owning method parameters as @MustCallUnknown (top) when the method is called. */
   @Override
   public void methodFromUsePreSubstitution(ExpressionTree tree, AnnotatedExecutableType type) {
@@ -233,7 +223,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
       Element paramDecl = declaration.getParameters().get(i);
       if (noLightweightOwnership || getDeclAnnotation(paramDecl, Owning.class) == null) {
         AnnotatedTypeMirror paramType = parameterTypes.get(i);
-        if (!paramType.hasAnnotation(POLY)) {
+        if (!paramType.hasPrimaryAnnotation(POLY)) {
           paramType.replaceAnnotation(TOP);
         }
       }
@@ -242,7 +232,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
       // also modify the component type of a varargs array
       AnnotatedTypeMirror varargsType =
           ((AnnotatedArrayType) parameterTypes.get(parameterTypes.size() - 1)).getComponentType();
-      if (!varargsType.hasAnnotation(POLY)) {
+      if (!varargsType.hasPrimaryAnnotation(POLY)) {
         varargsType.replaceAnnotation(TOP);
       }
     }
@@ -333,7 +323,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
    * @param val the methods that should be called
    * @return an annotation indicating that the given methods should be called
    */
-  public AnnotationMirror createMustCall(final List<String> val) {
+  public AnnotationMirror createMustCall(List<String> val) {
     return mustCallAnnotations.computeIfAbsent(val, this::createMustCallImpl);
   }
 
@@ -356,7 +346,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
   @Override
   protected QualifierHierarchy createQualifierHierarchy() {
     return new SubtypeIsSubsetQualifierHierarchy(
-        this.getSupportedTypeQualifiers(), this.getProcessingEnv());
+        this.getSupportedTypeQualifiers(), this.getProcessingEnv(), this);
   }
 
   /**
@@ -423,10 +413,16 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
       Element elt = TreeUtils.elementFromUse(tree);
       if (elt.getKind() == ElementKind.PARAMETER
           && (noLightweightOwnership || getDeclAnnotation(elt, Owning.class) == null)) {
-        type.replaceAnnotation(BOTTOM);
+        if (!type.hasPrimaryAnnotation(POLY)) {
+          // Parameters that are not annotated with @Owning should be treated as bottom
+          // (to suppress warnings about them). An exception is polymorphic parameters, which
+          // might be @MustCallAlias (and so wouldn't be annotated with @Owning): these are not
+          // modified, to support verification of @MustCallAlias annotations.
+          type.replaceAnnotation(BOTTOM);
+        }
       }
-      if (isResourceVariable(elt)) {
-        type.replaceAnnotation(withoutClose(type.getAnnotationInHierarchy(TOP)));
+      if (ElementUtils.isResourceVariable(elt)) {
+        type.replaceAnnotation(withoutClose(type.getPrimaryAnnotationInHierarchy(TOP)));
       }
       return super.visitIdentifier(tree, type);
     }

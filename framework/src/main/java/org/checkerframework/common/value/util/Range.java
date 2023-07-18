@@ -49,8 +49,10 @@ public class Range {
 
   /** Long.MIN_VALUE, as a BigInteger. */
   private static final BigInteger BIG_LONG_MIN_VALUE = BigInteger.valueOf(Long.MIN_VALUE);
+
   /** Long.MAX_VALUE, as a BigInteger. */
   private static final BigInteger BIG_LONG_MAX_VALUE = BigInteger.valueOf(Long.MAX_VALUE);
+
   /** The number of Long values, as a BigInteger. */
   private static final BigInteger BIG_LONG_WIDTH =
       BIG_LONG_MAX_VALUE.subtract(BIG_LONG_MIN_VALUE).add(BigInteger.ONE);
@@ -590,10 +592,10 @@ public class Range {
           Arrays.asList(from * right.from, from * right.to, to * right.from, to * right.to);
       return create(possibleValues);
     } else {
-      final BigInteger bigLeftFrom = BigInteger.valueOf(from);
-      final BigInteger bigRightFrom = BigInteger.valueOf(right.from);
-      final BigInteger bigRightTo = BigInteger.valueOf(right.to);
-      final BigInteger bigLeftTo = BigInteger.valueOf(to);
+      BigInteger bigLeftFrom = BigInteger.valueOf(from);
+      BigInteger bigRightFrom = BigInteger.valueOf(right.from);
+      BigInteger bigRightTo = BigInteger.valueOf(right.to);
+      BigInteger bigLeftTo = BigInteger.valueOf(to);
       List<BigInteger> bigPossibleValues =
           Arrays.asList(
               bigLeftFrom.multiply(bigRightFrom),

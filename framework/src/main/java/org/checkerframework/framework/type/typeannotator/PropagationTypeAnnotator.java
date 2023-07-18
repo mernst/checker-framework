@@ -14,6 +14,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclared
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedTypeVariable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedWildcardType;
 import org.checkerframework.framework.util.AnnotatedTypes;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TypesUtils;
 import org.plumelib.util.StringsPlume;
@@ -37,6 +38,7 @@ public class PropagationTypeAnnotator extends TypeAnnotator {
    * TypeAnnotatorUtil.eraseBoundsThenAnnotate. This flag prevents infinite recursion.
    */
   private boolean pause = false;
+
   /** The parents. */
   private final ArrayDeque<AnnotatedDeclaredType> parents = new ArrayDeque<>();
 
@@ -87,7 +89,7 @@ public class PropagationTypeAnnotator extends TypeAnnotator {
       // Copy annotations from the declaration to the wildcards.
       AnnotatedDeclaredType declaration =
           (AnnotatedDeclaredType)
-              typeFactory.fromElement(declaredType.getUnderlyingType().asElement());
+              atypeFactory.fromElement(declaredType.getUnderlyingType().asElement());
       List<AnnotatedTypeMirror> typeArgs = declaredType.getTypeArguments();
       for (int i = 0; i < typeArgs.size(); i++) {
         if (typeArgs.get(i).getKind() != TypeKind.WILDCARD
@@ -98,9 +100,9 @@ public class PropagationTypeAnnotator extends TypeAnnotator {
         AnnotatedTypeVariable typeParam =
             (AnnotatedTypeVariable) declaration.getTypeArguments().get(i);
         AnnotatedWildcardType wct = (AnnotatedWildcardType) typeArgs.get(i);
-        wct.getExtendsBound().replaceAnnotations(typeParam.getUpperBound().getAnnotations());
-        wct.getSuperBound().replaceAnnotations(typeParam.getLowerBound().getAnnotations());
-        wct.replaceAnnotations(typeParam.getAnnotations());
+        wct.getExtendsBound().replaceAnnotations(typeParam.getUpperBound().getPrimaryAnnotations());
+        wct.getSuperBound().replaceAnnotations(typeParam.getLowerBound().getPrimaryAnnotations());
+        wct.replaceAnnotations(typeParam.getPrimaryAnnotations());
       }
     }
 
@@ -131,11 +133,10 @@ public class PropagationTypeAnnotator extends TypeAnnotator {
     if (typeParamElement != null) {
       pause = true;
       AnnotatedTypeVariable typeParam =
-          (AnnotatedTypeVariable) typeFactory.getAnnotatedType(typeParamElement);
+          (AnnotatedTypeVariable) atypeFactory.getAnnotatedType(typeParamElement);
       pause = false;
 
-      final Set<? extends AnnotationMirror> tops =
-          typeFactory.getQualifierHierarchy().getTopAnnotations();
+      AnnotationMirrorSet tops = atypeFactory.getQualifierHierarchy().getTopAnnotations();
 
       if (AnnotatedTypes.hasNoExplicitBound(wildcard)) {
         propagateExtendsBound(wildcard, typeParam, tops);
@@ -175,9 +176,9 @@ public class PropagationTypeAnnotator extends TypeAnnotator {
    * wildcard bound.
    */
   private void applyAnnosFromBound(
-      final AnnotatedTypeMirror wildcardBound,
-      final AnnotatedTypeMirror typeParamBound,
-      final Set<? extends AnnotationMirror> tops) {
+      AnnotatedTypeMirror wildcardBound,
+      AnnotatedTypeMirror typeParamBound,
+      Set<? extends AnnotationMirror> tops) {
     // Type variables do not need primary annotations.
     // The type variable will have annotations placed on its
     // bounds via its declaration or defaulting rules
@@ -186,9 +187,9 @@ public class PropagationTypeAnnotator extends TypeAnnotator {
       return;
     }
 
-    for (final AnnotationMirror top : tops) {
-      if (wildcardBound.getAnnotationInHierarchy(top) == null) {
-        final AnnotationMirror typeParamAnno = typeParamBound.getAnnotationInHierarchy(top);
+    for (AnnotationMirror top : tops) {
+      if (wildcardBound.getPrimaryAnnotationInHierarchy(top) == null) {
+        AnnotationMirror typeParamAnno = typeParamBound.getPrimaryAnnotationInHierarchy(top);
         if (typeParamAnno == null) {
           throw new BugInCF(
               StringsPlume.joinLines(
@@ -211,7 +212,7 @@ public class PropagationTypeAnnotator extends TypeAnnotator {
    * @return the type parameter in {@code declaredType} that corresponds to {@code typeArg}
    */
   private Element getTypeParameterElement(
-      final @FindDistinct AnnotatedTypeMirror typeArg, final AnnotatedDeclaredType declaredType) {
+      @FindDistinct AnnotatedTypeMirror typeArg, AnnotatedDeclaredType declaredType) {
     for (int i = 0; i < declaredType.getTypeArguments().size(); i++) {
       if (declaredType.getTypeArguments().get(i) == typeArg) {
         TypeElement typeElement = TypesUtils.getTypeElement(declaredType.getUnderlyingType());

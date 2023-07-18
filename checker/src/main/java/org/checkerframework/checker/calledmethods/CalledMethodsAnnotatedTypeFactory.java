@@ -79,16 +79,14 @@ public class CalledMethodsAnnotatedTypeFactory extends AccumulationAnnotatedType
    */
   public CalledMethodsAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker, CalledMethods.class, CalledMethodsBottom.class, CalledMethodsPredicate.class);
+
     this.builderFrameworkSupports = new ArrayList<>(2);
-    String[] disabledFrameworks;
-    if (checker.hasOption(CalledMethodsChecker.DISABLE_BUILDER_FRAMEWORK_SUPPORTS)) {
-      disabledFrameworks =
-          checker.getOption(CalledMethodsChecker.DISABLE_BUILDER_FRAMEWORK_SUPPORTS).split(",");
-    } else {
-      disabledFrameworks = new String[0];
-    }
+    List<String> disabledFrameworks =
+        checker.getStringsOption(CalledMethodsChecker.DISABLE_BUILDER_FRAMEWORK_SUPPORTS, ',');
     enableFrameworks(disabledFrameworks);
+
     this.useValueChecker = checker.hasOption(CalledMethodsChecker.USE_VALUE_CHECKER);
+
     // Lombok generates @CalledMethods annotations using an old package name,
     // so we maintain it as an alias.
     addAliasedTypeAnnotation(
@@ -112,7 +110,7 @@ public class CalledMethodsAnnotatedTypeFactory extends AccumulationAnnotatedType
    *
    * @param disabledFrameworks the disabled builder frameworks
    */
-  private void enableFrameworks(String[] disabledFrameworks) {
+  private void enableFrameworks(List<String> disabledFrameworks) {
     boolean enableAutoValueSupport = true;
     boolean enableLombokSupport = true;
     for (String framework : disabledFrameworks) {
@@ -171,8 +169,7 @@ public class CalledMethodsAnnotatedTypeFactory extends AccumulationAnnotatedType
    *     return the first argument.
    */
   // This cannot return a Name because filterTreeToMethodName cannot.
-  public String adjustMethodNameUsingValueChecker(
-      final String methodName, final MethodInvocationTree tree) {
+  public String adjustMethodNameUsingValueChecker(String methodName, MethodInvocationTree tree) {
     if (!useValueChecker) {
       return methodName;
     }
@@ -292,11 +289,13 @@ public class CalledMethodsAnnotatedTypeFactory extends AccumulationAnnotatedType
     public Void visitMethodInvocation(MethodInvocationTree tree, AnnotatedTypeMirror type) {
       // Accumulate a method call, by adding the method being invoked to the return type.
       if (returnsThis(tree)) {
+        TypeMirror typeMirror = type.getUnderlyingType();
         String methodName = TreeUtils.getMethodName(tree.getMethodSelect());
         methodName = adjustMethodNameUsingValueChecker(methodName, tree);
-        AnnotationMirror oldAnno = type.getAnnotationInHierarchy(top);
+        AnnotationMirror oldAnno = type.getPrimaryAnnotationInHierarchy(top);
         AnnotationMirror newAnno =
-            qualHierarchy.greatestLowerBound(oldAnno, createAccumulatorAnnotation(methodName));
+            qualHierarchy.greatestLowerBoundShallow(
+                oldAnno, typeMirror, createAccumulatorAnnotation(methodName), typeMirror);
         type.replaceAnnotation(newAnno);
       }
 
@@ -411,8 +410,20 @@ public class CalledMethodsAnnotatedTypeFactory extends AccumulationAnnotatedType
    * @return a {@code @EnsuresCalledMethods("...")} annotation for the given expression
    */
   private AnnotationMirror ensuresCMAnno(String expression, List<String> calledMethods) {
+    return ensuresCMAnno(new String[] {expression}, calledMethods);
+  }
+
+  /**
+   * Returns a {@code @EnsuresCalledMethods("...")} annotation for the given expressions.
+   *
+   * @param expressions the expressions to put in the value field of the EnsuresCalledMethods
+   *     annotation
+   * @param calledMethods the methods that were definitely called on the expression
+   * @return a {@code @EnsuresCalledMethods("...")} annotation for the given expression
+   */
+  private AnnotationMirror ensuresCMAnno(String[] expressions, List<String> calledMethods) {
     AnnotationBuilder builder = new AnnotationBuilder(processingEnv, EnsuresCalledMethods.class);
-    builder.setValue("value", new String[] {expression});
+    builder.setValue("value", expressions);
     builder.setValue("methods", calledMethods.toArray(new String[calledMethods.size()]));
     AnnotationMirror am = builder.build();
     return am;

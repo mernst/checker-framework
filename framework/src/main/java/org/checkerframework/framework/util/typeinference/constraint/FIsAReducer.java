@@ -29,7 +29,7 @@ public class FIsAReducer implements AFReducer {
   protected final FIsAReducingVisitor visitor;
   private final AnnotatedTypeFactory typeFactory;
 
-  public FIsAReducer(final AnnotatedTypeFactory typeFactory) {
+  public FIsAReducer(AnnotatedTypeFactory typeFactory) {
     this.typeFactory = typeFactory;
     this.visitor = new FIsAReducingVisitor();
   }
@@ -37,7 +37,7 @@ public class FIsAReducer implements AFReducer {
   @Override
   public boolean reduce(AFConstraint constraint, Set<AFConstraint> newConstraints) {
     if (constraint instanceof FIsA) {
-      final FIsA fIsA = (FIsA) constraint;
+      FIsA fIsA = (FIsA) constraint;
       visitor.visit(fIsA.formalParameter, fIsA.argument, newConstraints);
       return true;
 
@@ -72,18 +72,17 @@ public class FIsAReducer implements AFReducer {
    */
   private class FIsAReducingVisitor extends AbstractAtmComboVisitor<Void, Set<AFConstraint>> {
     @Override
-    protected String defaultErrorMessage(
+    public String defaultErrorMessage(
         AnnotatedTypeMirror argument,
         AnnotatedTypeMirror parameter,
         Set<AFConstraint> afConstraints) {
-      return StringsPlume.joinLines(
-          "Unexpected FIsA Combination:",
-          "argument=" + argument,
-          "parameter=" + parameter,
-          "constraints=[",
-          StringsPlume.join(", ", afConstraints),
-          "]");
+      return super.defaultErrorMessage(argument, parameter, afConstraints)
+          + System.lineSeparator()
+          + "  constraints = ["
+          + StringsPlume.join(", ", afConstraints)
+          + "]";
     }
+
     // ------------------------------------------------------------------------
     // Arrays as arguments
 
@@ -143,17 +142,17 @@ public class FIsAReducer implements AFReducer {
         return null;
       }
 
-      final List<AnnotatedTypeMirror> argTypeArgs = argumentAsParam.getTypeArguments();
-      final List<AnnotatedTypeMirror> paramTypeArgs = parameter.getTypeArguments();
+      List<AnnotatedTypeMirror> argTypeArgs = argumentAsParam.getTypeArguments();
+      List<AnnotatedTypeMirror> paramTypeArgs = parameter.getTypeArguments();
       for (int i = 0; i < argTypeArgs.size(); i++) {
-        final AnnotatedTypeMirror argTypeArg = argTypeArgs.get(i);
-        final AnnotatedTypeMirror paramTypeArg = paramTypeArgs.get(i);
+        AnnotatedTypeMirror argTypeArg = argTypeArgs.get(i);
+        AnnotatedTypeMirror paramTypeArg = paramTypeArgs.get(i);
 
         if (paramTypeArg.getKind() == TypeKind.WILDCARD) {
-          final AnnotatedWildcardType paramWc = (AnnotatedWildcardType) paramTypeArg;
+          AnnotatedWildcardType paramWc = (AnnotatedWildcardType) paramTypeArg;
 
           if (argTypeArg.getKind() == TypeKind.WILDCARD) {
-            final AnnotatedWildcardType argWc = (AnnotatedWildcardType) argTypeArg;
+            AnnotatedWildcardType argWc = (AnnotatedWildcardType) argTypeArg;
             constraints.add(new FIsA(paramWc.getExtendsBound(), argWc.getExtendsBound()));
             constraints.add(new FIsA(paramWc.getSuperBound(), argWc.getSuperBound()));
           }
