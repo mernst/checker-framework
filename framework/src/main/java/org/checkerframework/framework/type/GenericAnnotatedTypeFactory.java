@@ -18,6 +18,7 @@ import com.sun.source.util.TreePath;
 import java.lang.annotation.Annotation;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -1645,8 +1646,8 @@ public abstract class GenericAnnotatedTypeFactory<
    * this default is too conservative. So this method is used instead of {@link
    * GenericAnnotatedTypeFactory#getAnnotatedTypeLhs(Tree)}.
    *
-   * <p>{@link TypeArgInferenceUtil#assignedToVariable(AnnotatedTypeFactory, Tree)} explains why a
-   * different type is used.
+   * <p>{@link TypeArgInferenceUtil#assignedToVariable(AnnotatedTypeFactory, VariableTree)} explains
+   * why a different type is used.
    *
    * @param lhsTree left-hand side of an assignment
    * @return AnnotatedTypeMirror of {@code lhsTree}
@@ -2236,7 +2237,6 @@ public abstract class GenericAnnotatedTypeFactory<
    *
    * @return a new CFGVisualizer, or null if none will be used on this run
    */
-  @SuppressWarnings("mustcall:return") // hairy generics error message
   protected @Nullable CFGVisualizer<Value, Store, TransferFunction> createCFGVisualizer() {
     if (checker.hasOption("flowdotdir")) {
       String flowdotdir = checker.getOption("flowdotdir");
@@ -2259,8 +2259,8 @@ public abstract class GenericAnnotatedTypeFactory<
         throw new UserError(
             "-Acfgviz specified without arguments, should be -Acfgviz=VizClassName[,opts,...]");
       }
-      String[] opts = cfgviz.split(",");
-      String vizClassName = opts[0];
+      List<String> opts = Arrays.asList(cfgviz.split(","));
+      String vizClassName = opts.get(0);
       if (!Signatures.isBinaryName(vizClassName)) {
         throw new UserError(
             "Bad -Acfgviz class name \"%s\", should be a binary name.", vizClassName);
@@ -2299,11 +2299,11 @@ public abstract class GenericAnnotatedTypeFactory<
    * @param opts the CFG visualization options
    * @return a map that represents the options
    */
-  private Map<String, Object> processCFGVisualizerOption(String[] opts) {
-    Map<String, Object> res = new HashMap<>(opts.length - 1);
+  private Map<String, Object> processCFGVisualizerOption(List<String> opts) {
+    Map<String, Object> res = new HashMap<>(CollectionsPlume.mapCapacity(opts.size() - 1));
     // Index 0 is the visualizer class name and can be ignored.
-    for (int i = 1; i < opts.length; ++i) {
-      String opt = opts[i];
+    for (int i = 1; i < opts.size(); ++i) {
+      String opt = opts.get(i);
       String[] split = opt.split("=");
       switch (split.length) {
         case 1:
@@ -2513,6 +2513,11 @@ public abstract class GenericAnnotatedTypeFactory<
               return true;
           }
         }
+        return false;
+
+      case EXECUTABLE:
+      case MODULE:
+      case PACKAGE:
         return false;
 
       default:

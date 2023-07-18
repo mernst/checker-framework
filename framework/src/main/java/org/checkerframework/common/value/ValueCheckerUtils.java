@@ -172,7 +172,6 @@ public class ValueCheckerUtils {
    * @param origValues the objects to format
    * @return a list of the formatted objects
    */
-  @SuppressWarnings("mustcall:methodref.receiver") // generics; #979 ?
   private static @Nullable List<?> convertToStringVal(List<?> origValues) {
     if (origValues == null) {
       return null;

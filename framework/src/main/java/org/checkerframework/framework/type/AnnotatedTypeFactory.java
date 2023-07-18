@@ -825,24 +825,23 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * @return the names of the annotation processors that are being run
    */
   @SuppressWarnings("JdkObsolete") // ClassLoader.getResources returns an Enumeration
-  public String[] getCheckerNames() {
+  public List<String> getCheckerNames() {
     com.sun.tools.javac.util.Context context =
         ((JavacProcessingEnvironment) processingEnv).getContext();
     String processorArg = Options.instance(context).get("-processor");
     if (processorArg != null) {
-      return processorArg.split(",");
+      return Arrays.asList(processorArg.split(","));
     }
     try {
       String filename = "META-INF/services/javax.annotation.processing.Processor";
-      List<String> lines = new ArrayList<>();
+      List<String> result = new ArrayList<>();
       Enumeration<URL> urls = getClass().getClassLoader().getResources(filename);
       while (urls.hasMoreElements()) {
         URL url = urls.nextElement();
         try (BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()))) {
-          lines.addAll(in.lines().collect(Collectors.toList()));
+          result.addAll(in.lines().collect(Collectors.toList()));
         }
       }
-      String[] result = lines.toArray(new String[lines.size()]);
       return result;
     } catch (IOException e) {
       throw new BugInCF(e);
@@ -969,7 +968,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
               + "-"
               + checker.getClass().getCanonicalName()
               + ".ajava";
-      for (String ajavaLocation : checker.getOption("ajava").split(File.pathSeparator)) {
+      for (String ajavaLocation : checker.getStringsOption("ajava", File.pathSeparator)) {
         // ajavaLocation might either be (1) a directory, or (2) the name of a specific
         // ajava file. This code must handle both possible cases.
         // Case (1): ajavaPath is a directory
@@ -1033,7 +1032,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * @return a QualifierHierarchy for this type system
    */
   protected QualifierHierarchy createQualifierHierarchy() {
-    return new NoElementQualifierHierarchy(this.getSupportedTypeQualifiers(), elements);
+    return new NoElementQualifierHierarchy(
+        this.getSupportedTypeQualifiers(),
+        elements,
+        (GenericAnnotatedTypeFactory<?, ?, ?, ?>) this);
   }
 
   /**
@@ -2184,6 +2186,23 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
+   * Returns the {@link AnnotatedTypeMirror} of the enclosing type at the location of {@code tree}
+   * that is a subtype of {@code typeElement}.
+   *
+   * @param typeElement super type of the enclosing type to return
+   * @param tree location to use
+   * @return the enclosing type at the location of {@code tree} that is a subtype of {@code
+   *     typeElement}
+   */
+  public AnnotatedDeclaredType getEnclosingSubType(TypeElement typeElement, Tree tree) {
+    AnnotatedDeclaredType thisType = getSelfType(tree);
+    while (!isSubtype(thisType.getUnderlyingType(), typeElement.asType())) {
+      thisType = thisType.getEnclosingType();
+    }
+    return thisType;
+  }
+
+  /**
    * Returns true if the erasure of {@code type1} is a Java subtype of the erasure of {@code type2}.
    *
    * @param type1 a type
@@ -2543,12 +2562,11 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     AnnotationMirrorSet newAnnos = new AnnotationMirrorSet();
     AnnotationMirrorSet receiverTypeBoundAnnos =
         getTypeDeclarationBounds(receiverType.getErased().getUnderlyingType());
-    AnnotationMirrorSet wildcardBoundAnnos =
-        classWildcardArg.getExtendsBound().getPrimaryAnnotations();
+    AnnotationMirrorSet wildcardBoundAnnos = classWildcardArg.getEffectiveAnnotations();
     for (AnnotationMirror receiverTypeBoundAnno : receiverTypeBoundAnnos) {
       AnnotationMirror wildcardAnno =
           qualHierarchy.findAnnotationInSameHierarchy(wildcardBoundAnnos, receiverTypeBoundAnno);
-      if (qualHierarchy.isSubtype(receiverTypeBoundAnno, wildcardAnno)) {
+      if (typeHierarchy.isSubtypeShallowEffective(receiverTypeBoundAnno, classWildcardArg)) {
         newAnnos.add(receiverTypeBoundAnno);
       } else {
         newAnnos.add(wildcardAnno);
