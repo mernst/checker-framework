@@ -610,7 +610,8 @@ public abstract class QualifierHierarchy {
    * @param c1 the first collection
    * @param c2 the second collection
    */
-  public static void assertSameSize(Collection<?> c1, Collection<?> c2) {
+  public static void assertSameSize(
+      Collection<? extends @Signed Object> c1, Collection<? extends @Signed Object> c2) {
     if (c1.size() != c2.size()) {
       throw new BugInCF(
           "inconsistent sizes (%d, %d):%n  [%s]%n  [%s]",

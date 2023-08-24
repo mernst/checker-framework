@@ -6,6 +6,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import org.checkerframework.checker.signedness.qual.Unsigned;
+import org.checkerframework.common.value.qual.IntRange;
 import org.checkerframework.framework.qual.AnnotatedFor;
 
 /**
@@ -383,7 +384,7 @@ public final class SignednessUtil {
 
   /** Produces a string representation of the unsigned short s in base radix. */
   @SuppressWarnings("signedness")
-  public static String toUnsignedString(@Unsigned short s, int radix) {
+  public static String toUnsignedString(@Unsigned short s, @IntRange(from = 2, to = 36) int radix) {
     return Integer.toUnsignedString(Short.toUnsignedInt(s), radix);
   }
 
@@ -395,7 +396,7 @@ public final class SignednessUtil {
 
   /** Produces a string representation of the unsigned byte b in base radix. */
   @SuppressWarnings("signedness")
-  public static String toUnsignedString(@Unsigned byte b, int radix) {
+  public static String toUnsignedString(@Unsigned byte b, @IntRange(from = 2, to = 36) int radix) {
     return Integer.toUnsignedString(Byte.toUnsignedInt(b), radix);
   }
 
@@ -427,17 +428,17 @@ public final class SignednessUtil {
   }
 
   /** Returns an unsigned long representing the same value as an unsigned char. */
-  public static @Unsigned long toUnsignedLong(@Unsigned char c) {
+  public static @Unsigned long toUnsignedLong(char c) {
     return ((long) c) & 0xffL;
   }
 
   /** Returns an unsigned int representing the same value as an unsigned char. */
-  public static @Unsigned int toUnsignedInt(@Unsigned char c) {
+  public static @Unsigned int toUnsignedInt(char c) {
     return ((int) c) & 0xff;
   }
 
   /** Returns an unsigned short representing the same value as an unsigned char. */
-  public static @Unsigned short toUnsignedShort(@Unsigned char c) {
+  public static @Unsigned short toUnsignedShort(char c) {
     return (short) (((int) c) & 0xff);
   }
 

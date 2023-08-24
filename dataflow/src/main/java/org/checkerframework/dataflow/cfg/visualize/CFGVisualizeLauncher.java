@@ -15,6 +15,7 @@ import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 import org.checkerframework.checker.mustcall.qual.MustCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.dataflow.analysis.AbstractValue;
 import org.checkerframework.dataflow.analysis.Analysis;
 import org.checkerframework.dataflow.analysis.Store;
@@ -243,7 +244,7 @@ public final class CFGVisualizeLauncher {
           // In JDK 11+, this can be just "OutputStream.nullOutputStream()".
           new OutputStream() {
             @Override
-            public void write(int b) throws IOException {}
+            public void write(@PolySigned int b) throws IOException {}
           };
       System.setErr(new PrintStream(nullOS));
       javac.compile(List.of(l), List.of(clas), List.of(cfgProcessor), List.nil());

@@ -139,12 +139,12 @@ public class UnitsTools {
   public static final @K int K = 1;
   public static final @C int C = 1;
 
-  public static @C int fromKelvinToCelsius(@K int k) {
-    return k - (int) 273.15;
+  public static @C double fromKelvinToCelsius(@K double k) {
+    return k - 273.15;
   }
 
-  public static @K int fromCelsiusToKelvin(@C int c) {
-    return c + (int) 273.15;
+  public static @K double fromCelsiusToKelvin(@C double c) {
+    return c + 273.15;
   }
 
   // Time
@@ -152,19 +152,19 @@ public class UnitsTools {
   public static final @min int min = 1;
   public static final @h int h = 1;
 
-  public static @min int fromSecondToMinute(@s int s) {
-    return s / 60;
+  public static @min double fromSecondToMinute(@s double s) {
+    return s / 60.0;
   }
 
-  public static @s int fromMinuteToSecond(@min int min) {
-    return min * 60;
+  public static @s double fromMinuteToSecond(@min double min) {
+    return min * 60.0;
   }
 
-  public static @h int fromMinuteToHour(@min int min) {
-    return min / 60;
+  public static @h double fromMinuteToHour(@min double min) {
+    return min / 60.0;
   }
 
-  public static @min int fromHourToMinute(@h int h) {
-    return h * 60;
+  public static @min double fromHourToMinute(@h double h) {
+    return h * 60.0;
   }
 }

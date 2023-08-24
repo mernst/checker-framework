@@ -496,7 +496,8 @@ public class SignednessAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       return true;
     }
 
-    long mask = getLong(maskLit.getValue());
+    @SuppressWarnings("signedness:assignment") // use as a bitmask
+    @Unsigned long mask = getLong(maskLit.getValue());
     // Shift the shiftAmount most significant bits to become the shiftAmount least significant
     // bits, zeroing out the rest.
     if (shiftedTypeKind == TypeKind.INT) {

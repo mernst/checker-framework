@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.lang.model.element.VariableElement;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.Signed;
 import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.javacutil.BugInCF;
@@ -480,7 +481,7 @@ public class AnalysisResult<V extends AbstractValue<V>, S extends Store<S>> impl
    * @param nodeValues a map to format
    * @return a printed representation of the given map
    */
-  public static <V> String nodeValuesToString(Map<Node, V> nodeValues) {
+  public static <V extends @Signed Object> String nodeValuesToString(Map<Node, V> nodeValues) {
     if (nodeValues.isEmpty()) {
       return "{}";
     }

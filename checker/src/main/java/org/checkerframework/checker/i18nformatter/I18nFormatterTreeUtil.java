@@ -547,18 +547,20 @@ public class I18nFormatterTreeUtil {
       }
     }
 
+    @SuppressWarnings("signedness:override.return") // unannotated superclass
     @Override
-    public Class<? extends Object> visitDeclared(DeclaredType dt, Class<Void> v) {
+    public Class<?> visitDeclared(DeclaredType dt, Class<Void> v) {
       return dt.asElement()
           .accept(
-              new SimpleElementVisitor8<Class<? extends Object>, Class<Void>>() {
+              new SimpleElementVisitor8<Class<?>, Class<Void>>() {
                 @Override
-                public Class<? extends Object> visitType(TypeElement te, Class<Void> v) {
+                public Class<?> visitType(TypeElement te, Class<Void> v) {
                   try {
                     @SuppressWarnings("signature") // https://tinyurl.com/cfissue/658:
                     // Name.toString should be @PolySignature
                     @BinaryName String cname = te.getQualifiedName().toString();
-                    return Class.forName(cname);
+                    Class<?> result = Class.forName(cname);
+                    return result;
                   } catch (ClassNotFoundException e) {
                     // The lookup should work for all the classes we care about.
                     throw new Error(e);

@@ -41,6 +41,7 @@ import org.checkerframework.checker.signature.qual.BinaryName;
 import org.checkerframework.checker.signature.qual.CanonicalNameOrEmpty;
 import org.checkerframework.checker.signature.qual.DotSeparatedIdentifiers;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
+import org.checkerframework.checker.signedness.qual.Signed;
 import org.plumelib.util.CollectionsPlume;
 import org.plumelib.util.ImmutableTypes;
 import org.plumelib.util.StringsPlume;
@@ -108,7 +109,7 @@ public final class TypesUtils {
    * @param typeMirror a TypeMirror
    * @return the class for {@code typeMirror}
    */
-  public static Class<?> getClassFromType(TypeMirror typeMirror) {
+  public static Class<? extends @Signed Object> getClassFromType(TypeMirror typeMirror) {
 
     switch (typeMirror.getKind()) {
       case INT:

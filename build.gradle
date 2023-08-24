@@ -825,6 +825,8 @@ subprojects {
         'org.checkerframework.checker.resourceleak.ResourceLeakChecker')
     createCheckTypeTask(project.name, 'Signature',
         'org.checkerframework.checker.signature.SignatureChecker')
+    createCheckTypeTask(project.name, 'Signedness',
+        'org.checkerframework.checker.signedness.SignednessChecker')
     // These pass on some subprojects, which the `typecheck` task runs.
     // TODO: Incrementally add @AnnotatedFor on more classes.
     createCheckTypeTask(project.name, 'Nullness',

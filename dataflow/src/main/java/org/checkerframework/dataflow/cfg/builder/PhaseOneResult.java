@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
 import javax.lang.model.util.Types;
+import org.checkerframework.checker.signedness.qual.Signed;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.builder.ExtendedNode.ExtendedNodeType;
 import org.checkerframework.dataflow.cfg.node.Node;
@@ -162,7 +163,7 @@ public class PhaseOneResult {
    * @param map a map
    * @return a representation of a map, one entry per line
    */
-  private <K, V> String mapToString(Map<K, V> map) {
+  private <K extends @Signed Object, V extends @Signed Object> String mapToString(Map<K, V> map) {
     if (map.isEmpty()) {
       return "{}";
     }
