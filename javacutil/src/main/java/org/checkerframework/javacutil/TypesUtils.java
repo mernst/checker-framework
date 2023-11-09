@@ -172,10 +172,10 @@ public final class TypesUtils {
   }
 
   /**
-   * Returns the simple type name, without annotations.
+   * Returns the simple type name, without annotations but including array brackets.
    *
    * @param type a type
-   * @return the simple type name, without annotations
+   * @return the simple type name
    */
   public static String simpleTypeName(TypeMirror type) {
     switch (type.getKind()) {
@@ -219,10 +219,10 @@ public final class TypesUtils {
   }
 
   /**
-   * Returns the binary name.
+   * Returns the binary name of a type.
    *
    * @param type a type
-   * @return the binary name
+   * @return its binary name
    */
   public static @BinaryName String binaryName(TypeMirror type) {
     if (type.getKind() != TypeKind.DECLARED) {
@@ -523,7 +523,17 @@ public final class TypesUtils {
    * @return whether the argument is an integral primitive type
    */
   public static boolean isIntegralPrimitive(TypeMirror type) {
-    switch (type.getKind()) {
+    return isIntegralPrimitive(type.getKind());
+  }
+
+  /**
+   * Returns true iff the argument is an integral primitive type.
+   *
+   * @param typeKind a type kind
+   * @return whether the argument is an integral primitive type
+   */
+  public static boolean isIntegralPrimitive(TypeKind typeKind) {
+    switch (typeKind) {
       case BYTE:
       case CHAR:
       case INT:

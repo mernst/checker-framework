@@ -39,16 +39,18 @@ import org.checkerframework.framework.qual.QualifierArgument;
  * </pre>
  *
  * @see EnsuresCalledMethodsIf
+ * @see EnsuresCalledMethodsOnException
  * @checker_framework.manual #called-methods-checker Called Methods Checker
  */
 @PostconditionAnnotation(qualifier = CalledMethods.class)
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
 @Repeatable(EnsuresCalledMethods.List.class)
+@InheritedAnnotation
 public @interface EnsuresCalledMethods {
   /**
-   * The Java expressions to which the qualifier applies.
+   * The Java expressions that will have methods called on them.
    *
-   * @return the Java expressions to which the qualifier applies
+   * @return the Java expressions that will have methods called on them
    * @see org.checkerframework.framework.qual.EnsuresQualifier
    */
   // Postconditions must use "value" as the name (conditional postconditions use "expression").
@@ -72,6 +74,7 @@ public @interface EnsuresCalledMethods {
   @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
   @InheritedAnnotation
+  @PostconditionAnnotation(qualifier = CalledMethods.class)
   public static @interface List {
     /**
      * Return the repeatable annotations.
