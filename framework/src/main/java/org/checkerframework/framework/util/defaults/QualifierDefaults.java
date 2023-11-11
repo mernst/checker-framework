@@ -713,7 +713,6 @@ public class QualifierDefaults {
     if (qualifiers == null || qualifiers.isEmpty()) {
       qualifiers = parentDefaults;
     } else {
-      // TODO(cpovirk): What should happen with conflicts?
       qualifiers.addAll(parentDefaults);
     }
 
