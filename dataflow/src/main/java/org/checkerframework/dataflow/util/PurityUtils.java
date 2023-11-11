@@ -2,7 +2,6 @@ package org.checkerframework.dataflow.util;
 
 import com.sun.source.tree.MethodTree;
 import java.util.EnumSet;
-import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.dataflow.qual.Deterministic;
 import org.checkerframework.dataflow.qual.Pure;
@@ -21,6 +20,27 @@ import org.checkerframework.javacutil.TreeUtils;
  * @see Pure
  */
 public class PurityUtils {
+
+  /** Do not instantiate. */
+  private PurityUtils() {
+    throw new Error("Do not instantiate PurityUtils.");
+  }
+
+  /** Represents a method that is both deterministic and side-effect free. */
+  private static final EnumSet<Pure.Kind> detAndSeFree =
+      Collections.unmodifiableSet(EnumSet.of(Pure.Kind.DETERMINISTIC, Pure.Kind.SIDE_EFFECT_FREE));
+
+  /** Represents a method that is deterministic and not side-effect free. */
+  private static final EnumSet<Pure.Kind> detAndNotSeFree =
+      Collections.unmodifiableSet(EnumSet.of(Pure.Kind.DETERMINISTIC));
+
+  /** Represents a method that is side-effect free and not deterministic . */
+  private static final EnumSet<Pure.Kind> SeFreeAndNotDet =
+      Collections.unmodifiableSet(EnumSet.of(Pure.Kind.SIDE_EFFECT_FREE));
+
+  /** Represents a method that is neither deterministic nor side-effect free. */
+  private static final EnumSet<Pure.Kind> notDetAndNotSeFree =
+      Collections.unmodifiableSet(EnumSet.noneOf());
 
   /**
    * Does the method {@code methodTree} have any purity annotation?
@@ -142,21 +162,21 @@ public class PurityUtils {
       return EnumSet.of(Pure.Kind.DETERMINISTIC, Pure.Kind.SIDE_EFFECT_FREE);
     }
 
-    AnnotationMirror pureAnnotation = provider.getDeclAnnotation(methodElement, Pure.class);
-    AnnotationMirror sefAnnotation =
-        provider.getDeclAnnotation(methodElement, SideEffectFree.class);
-    AnnotationMirror detAnnotation = provider.getDeclAnnotation(methodElement, Deterministic.class);
+    boolean isPure = provider.getDeclAnnotation(methodElement, Pure.class) != null;
+    if (isPure) {
+      return detAndSeFree;
+    }
 
-    if (pureAnnotation != null) {
-      return EnumSet.of(Pure.Kind.DETERMINISTIC, Pure.Kind.SIDE_EFFECT_FREE);
+    boolean isSideEffectFree =
+        provider.getDeclAnnotation(methodElement, SideEffectFree.class) != null
+            || provider.isSideEffectFree(methodElement);
+    boolean isDeterministic =
+        provider.getDeclAnnotation(methodElement, Deterministic.class) != null;
+
+    if (isSideEffectFree) {
+      return isDeterministic ? detAndSeFree : SeFreeAndNotDet;
+    } else {
+      return isDeterministic ? detAndNotSeFree : notDetAndNotSeFree;
     }
-    EnumSet<Pure.Kind> result = EnumSet.noneOf(Pure.Kind.class);
-    if (sefAnnotation != null) {
-      result.add(Pure.Kind.SIDE_EFFECT_FREE);
-    }
-    if (detAnnotation != null) {
-      result.add(Pure.Kind.DETERMINISTIC);
-    }
-    return result;
   }
 }
