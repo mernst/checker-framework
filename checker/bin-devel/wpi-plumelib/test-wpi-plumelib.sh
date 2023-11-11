@@ -47,6 +47,7 @@ clean_compile_output() {
     sed -i '/^warning: \[path\] bad path element /d' "$out"
     sed -i '/^.*warning: Option --illegal-access is deprecated and will be removed in a future release./d' "$out"
     sed -i '/^warning: \[options\] bootstrap class path not set/d' "$out"
+    sed -i '/^warning: \[options\] system modules path not set in conjunction with -source 11/d' "$out"
 
     # Remove warning count because it can differ between JDK 8 and later JDKs due to the bootstrap warning:
     sed -i '/^[0-9]* warning/d' "$out"
@@ -72,13 +73,14 @@ test_wpi_plume_lib() {
     # may become redundant and javac -Xlint:all yields "warning: [cast] redundant cast to ...".
     "$CHECKERFRAMEWORK"/checker/bin-devel/.plume-scripts/preplace -- "-Xlint:" "-Xlint:-cast," build.gradle
 
-    echo "wpi-many.sh about to call wpi.sh at $(date)"
-    "$CHECKERFRAMEWORK/checker/bin/wpi.sh" -b "-PskipCheckerFramework" -- --checker "$checkers" --extraJavacArgs='-AsuppressWarnings=type.checking.not.run'
-    echo "wpi-many.sh returned from wpi.sh at $(date)"
+    echo "test-wpi-plumelib.sh for ${project} about to call wpi.sh at $(date)."
+    "$CHECKERFRAMEWORK/checker/bin/wpi.sh" -b "-PskipCheckerFramework" -- --checker "$checkers"
+    echo "test-wpi-plumelib.sh for ${project} returned from wpi.sh at $(date)."
 
     EXPECTED_FILE="$SCRIPTDIR/$project.expected"
     DLJC_OUT_DIR="$TESTDIR/$project/dljc-out"
     ACTUAL_FILE="$DLJC_OUT_DIR"/typecheck.out
+    mkdir -p "$DLJC_OUT_DIR"
     touch "${ACTUAL_FILE}"
     clean_compile_output "$EXPECTED_FILE" "expected.txt"
     clean_compile_output "$ACTUAL_FILE" "actual.txt"

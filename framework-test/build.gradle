@@ -2,7 +2,6 @@ import org.gradle.internal.jvm.Jvm
 
 sourceSets {
   taglet
-  tagletJdk8
 }
 
 dependencies {
@@ -10,11 +9,8 @@ dependencies {
   implementation project(':javacutil')
   implementation project(':checker-qual')
 
-  implementation "org.plumelib:plume-util:${plumeUtilVersion}"
-
-  if (Jvm.current().toolsJar) {
-    tagletJdk8Implementation files(Jvm.current().toolsJar)
-  }
+  implementation "org.plumelib:plume-util:${versions.plumeUtil}"
+  testImplementation project(':framework')
 }
 
 jar.archiveBaseName = 'framework-test'

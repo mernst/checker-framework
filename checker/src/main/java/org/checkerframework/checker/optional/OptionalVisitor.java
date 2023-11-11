@@ -28,9 +28,9 @@ import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
-import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
+import org.plumelib.util.IPair;
 
 /**
  * The OptionalVisitor enforces the Optional Checker rules. These rules are described in the Checker
@@ -45,22 +45,30 @@ public class OptionalVisitor
 
   /** The element for java.util.Optional.get(). */
   private final ExecutableElement optionalGet;
+
   /** The element for java.util.Optional.isPresent(). */
   private final ExecutableElement optionalIsPresent;
+
   /** The element for java.util.Optional.isEmpty(), or null if running under JDK 8. */
   private final @Nullable ExecutableElement optionalIsEmpty;
+
   /** The element for java.util.Optional.of(). */
   private final ExecutableElement optionalOf;
+
   /** The element for java.util.Optional.ofNullable(). */
   private final ExecutableElement optionalOfNullable;
+
   /** The element for java.util.Optional.orElse(). */
   private final ExecutableElement optionalOrElse;
+
   /** The element for java.util.Optional.orElseGet(). */
   private final ExecutableElement optionalOrElseGet;
+
   /** The element for java.util.Optional.orElseThrow(). */
   private final @Nullable ExecutableElement optionalOrElseThrow;
+
   /** The element for java.util.Optional.orElseThrow(Supplier), or null if running under JDK 8. */
-  private final ExecutableElement optionalOrElseThrowSupplier;
+  private final @Nullable ExecutableElement optionalOrElseThrowSupplier;
 
   /** Create an OptionalVisitor. */
   public OptionalVisitor(BaseTypeChecker checker) {
@@ -106,7 +114,8 @@ public class OptionalVisitor
    *     Optional.isPresent} or to {@code Optional.isEmpty}) and its receiver; or null if not a call
    *     to either of the methods
    */
-  private @Nullable Pair<Boolean, ExpressionTree> isCallToIsPresent(ExpressionTree expression) {
+  private @Nullable IPair<Boolean, @Nullable ExpressionTree> isCallToIsPresent(
+      ExpressionTree expression) {
     ProcessingEnvironment env = checker.getProcessingEnvironment();
     boolean negate = false;
     while (true) {
@@ -120,10 +129,10 @@ public class OptionalVisitor
           break;
         case METHOD_INVOCATION:
           if (TreeUtils.isMethodInvocation(expression, optionalIsPresent, env)) {
-            return Pair.of(!negate, TreeUtils.getReceiverTree(expression));
+            return IPair.of(!negate, TreeUtils.getReceiverTree(expression));
           } else if (optionalIsEmpty != null
               && TreeUtils.isMethodInvocation(expression, optionalIsEmpty, env)) {
-            return Pair.of(negate, TreeUtils.getReceiverTree(expression));
+            return IPair.of(negate, TreeUtils.getReceiverTree(expression));
           } else {
             return null;
           }
@@ -134,7 +143,7 @@ public class OptionalVisitor
   }
 
   /**
-   * Returns true iff the method being callid is Optional creation: of, ofNullable.
+   * Returns true iff the method being called is Optional creation: of, ofNullable.
    *
    * @param methInvok a method invocation
    * @return true iff the method being called is Optional creation: of, ofNullable
@@ -153,7 +162,7 @@ public class OptionalVisitor
    * @return true iff the method being called is Optional elimination: get, orElse, orElseGet,
    *     orElseThrow
    */
-  private boolean isOptionalElimation(MethodInvocationTree methInvok) {
+  private boolean isOptionalElimination(MethodInvocationTree methInvok) {
     ProcessingEnvironment env = checker.getProcessingEnvironment();
     return TreeUtils.isMethodInvocation(methInvok, optionalGet, env)
         || TreeUtils.isMethodInvocation(methInvok, optionalOrElse, env)
@@ -182,7 +191,7 @@ public class OptionalVisitor
   public void handleTernaryIsPresentGet(ConditionalExpressionTree tree) {
 
     ExpressionTree condExpr = TreeUtils.withoutParens(tree.getCondition());
-    Pair<Boolean, ExpressionTree> isPresentCall = isCallToIsPresent(condExpr);
+    IPair<Boolean, ExpressionTree> isPresentCall = isCallToIsPresent(condExpr);
     if (isPresentCall == null) {
       return;
     }
@@ -230,7 +239,7 @@ public class OptionalVisitor
    */
   private boolean sameExpression(ExpressionTree tree1, ExpressionTree tree2) {
     JavaExpression r1 = JavaExpression.fromTree(tree1);
-    JavaExpression r2 = JavaExpression.fromTree(tree1);
+    JavaExpression r2 = JavaExpression.fromTree(tree2);
     if (r1 != null && !r1.containsUnknown() && r2 != null && !r2.containsUnknown()) {
       return r1.equals(r2);
     } else {
@@ -256,7 +265,7 @@ public class OptionalVisitor
   public void handleConditionalStatementIsPresentGet(IfTree tree) {
 
     ExpressionTree condExpr = TreeUtils.withoutParens(tree.getCondition());
-    Pair<Boolean, ExpressionTree> isPresentCall = isCallToIsPresent(condExpr);
+    IPair<Boolean, ExpressionTree> isPresentCall = isCallToIsPresent(condExpr);
     if (isPresentCall == null) {
       return;
     }
@@ -324,7 +333,7 @@ public class OptionalVisitor
    * @param tree a method invocation that can perhaps be simplified
    */
   public void handleCreationElimination(MethodInvocationTree tree) {
-    if (!isOptionalElimation(tree)) {
+    if (!isOptionalElimination(tree)) {
       return;
     }
     ExpressionTree receiver = TreeUtils.getReceiverTree(tree);
@@ -389,7 +398,7 @@ public class OptionalVisitor
         if (typeArgs.size() == 1) {
           TypeMirror typeArg = typeArgs.get(0);
           if (isCollectionType(typeArg)) {
-            checker.reportError(tree, "optional.collection");
+            checker.reportWarning(tree, "optional.collection");
           }
         }
       }
@@ -415,7 +424,7 @@ public class OptionalVisitor
    * @return the single enclosed statement, if it exists; otherwise, the same tree
    */
   // TODO: The Optional Checker should work over the CFG, then it would not need this any longer.
-  public static StatementTree skipBlocks(final StatementTree tree) {
+  public static StatementTree skipBlocks(StatementTree tree) {
     if (tree == null) {
       return tree;
     }

@@ -36,11 +36,11 @@ ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 SCRIPTDIR=$ROOTDIR/checker/bin-devel/
 
 # For debugging
-(cd "$CHECKERFRAMEWORK" && ./gradlew getPlumeScripts -q)
+(cd "$CHECKERFRAMEWORK" && ./gradlew getPlumeScripts)
 "${SCRIPTDIR}/plume-scripts/ci-info" typetools
 eval $("${SCRIPTDIR}/plume-scripts/ci-info" typetools)
 
-source "$SCRIPTDIR/build.sh"
+source "$SCRIPTDIR/clone-related"
 
 ###
 ### Run the test
@@ -53,11 +53,12 @@ echo "In checker-framework/.travis-build.sh GROUP=$GROUP"
 case  $GROUP  in
     all)
         # Run cftests-junit, cftests-nonjunit, and cftests-inference separately,
-        # because cftests-all takes too long to run on Travis under JDK 11.
+        # because cftests-all takes too long to run on Travis.
         "$SCRIPTDIR/test-cftests-junit.sh"
         "$SCRIPTDIR/test-cftests-nonjunit.sh"
         "$SCRIPTDIR/test-cftests-inference.sh"
         "$SCRIPTDIR/test-misc.sh"
+        "$SCRIPTDIR/test-typecheck.sh"
         "$SCRIPTDIR/test-plume-lib.sh"
         "$SCRIPTDIR/test-daikon.sh"
         "$SCRIPTDIR/test-guava.sh"

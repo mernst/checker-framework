@@ -17,8 +17,10 @@ public class Default implements Comparable<Default> {
   // please remember to add any fields to the hashcode calculation
   /** The default annotation mirror. */
   public final AnnotationMirror anno;
+
   /** The type use location. */
   public final TypeUseLocation location;
+
   /** Whether the default should be inherited by subpackages. */
   public final boolean applyToSubpackages;
 
@@ -29,10 +31,7 @@ public class Default implements Comparable<Default> {
    * @param location the type use location
    * @param applyToSubpackages whether the default should be inherited by subpackages
    */
-  public Default(
-      final AnnotationMirror anno,
-      final TypeUseLocation location,
-      final boolean applyToSubpackages) {
+  public Default(AnnotationMirror anno, TypeUseLocation location, boolean applyToSubpackages) {
     this.anno = anno;
     this.location = location;
     this.applyToSubpackages = applyToSubpackages;
