@@ -26,21 +26,20 @@ public class PurityUtils {
     throw new Error("Do not instantiate PurityUtils.");
   }
 
+  // These EnumSets cannot be made unmodifiable, unfortunately.
+
   /** Represents a method that is both deterministic and side-effect free. */
   private static final EnumSet<Pure.Kind> detAndSeFree =
-      Collections.unmodifiableSet(EnumSet.of(Pure.Kind.DETERMINISTIC, Pure.Kind.SIDE_EFFECT_FREE));
+      EnumSet.of(Pure.Kind.DETERMINISTIC, Pure.Kind.SIDE_EFFECT_FREE);
 
   /** Represents a method that is deterministic and not side-effect free. */
-  private static final EnumSet<Pure.Kind> detAndNotSeFree =
-      Collections.unmodifiableSet(EnumSet.of(Pure.Kind.DETERMINISTIC));
+  private static final EnumSet<Pure.Kind> detAndNotSeFree = EnumSet.of(Pure.Kind.DETERMINISTIC);
 
   /** Represents a method that is side-effect free and not deterministic . */
-  private static final EnumSet<Pure.Kind> SeFreeAndNotDet =
-      Collections.unmodifiableSet(EnumSet.of(Pure.Kind.SIDE_EFFECT_FREE));
+  private static final EnumSet<Pure.Kind> SeFreeAndNotDet = EnumSet.of(Pure.Kind.SIDE_EFFECT_FREE);
 
   /** Represents a method that is neither deterministic nor side-effect free. */
-  private static final EnumSet<Pure.Kind> notDetAndNotSeFree =
-      Collections.unmodifiableSet(EnumSet.noneOf());
+  private static final EnumSet<Pure.Kind> notDetAndNotSeFree = EnumSet.noneOf(Pure.Kind.class);
 
   /**
    * Does the method {@code methodTree} have any purity annotation?
