@@ -784,30 +784,28 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
   }
 
   /**
-   * Return the given skip pattern if supplied by the user, or else a pattern that matches nothing.
+   * Return the given skip pattern if supplied by the user, or null
    *
    * @param patternName "skipUses" or "skipDefs"
    * @param options the command-line options
-   * @return the user-supplied regex for the given pattern, or a regex that matches nothing
+   * @return the user-supplied regex for the given pattern, or null
    */
-  private Pattern getSkipPattern(String patternName, Map<String, String> options) {
+  private @Nullable Pattern getSkipPattern(String patternName, Map<String, String> options) {
     // Default is an illegal Java identifier substring
     // so that it won't match anything.
     // Note that AnnotatedType's toString output format contains characters such as "():{}".
-    return getPattern(patternName, options, "\\]'\"\\]");
+    return getPattern(patternName, options, null);
   }
 
   /**
-   * Return the given only pattern if supplied by the user, or else a pattern that matches
-   * everything.
+   * Return the given only pattern if supplied by the user, or null.
    *
    * @param patternName "onlyUses" or "onlyDefs"
    * @param options the command-line options
-   * @return the user-supplied regex for the given pattern, or a regex that matches everything
+   * @return the user-supplied regex for the given pattern, or null (meaning to match everything)
    */
-  private Pattern getOnlyPattern(String patternName, Map<String, String> options) {
-    // default matches everything
-    return getPattern(patternName, options, ".");
+  private @Nullable Pattern getOnlyPattern(String patternName, Map<String, String> options) {
+    return getPattern(patternName, options, null);
   }
 
   private Pattern getPattern(
@@ -816,51 +814,44 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
     if (options.containsKey(patternName)) {
       pattern = options.get(patternName);
       if (pattern == null) {
-        message(
-            Diagnostic.Kind.WARNING,
+        throw new UserError(
             "The " + patternName + " property is empty; please fix your command line");
-        pattern = "";
       }
     } else {
       pattern = System.getProperty("checkers." + patternName);
       if (pattern == null) {
         pattern = System.getenv(patternName);
       }
-      if (pattern == null) {
-        pattern = "";
-      }
     }
 
     if (pattern.indexOf("/") != -1) {
-      message(
-          Diagnostic.Kind.WARNING,
+      throw new UserError(
           "The "
               + patternName
               + " property contains \"/\", which will never match a class name: "
               + pattern);
     }
 
-    if (pattern.equals("")) {
+    if (pattern.equals(null)) {
       pattern = defaultPattern;
     }
 
-    return Pattern.compile(pattern);
+    if (pattern == null) {
+      return null;
+    }
+
+    try {
+      return Pattern.compile(pattern);
+    } catch (PatternSyntaxException e) {
+      throw new UserError(
+          "The " + patternName + " property is not a regular expression: " + pattern);
+    }
   }
 
-  private Pattern getSkipUsesPattern(Map<String, String> options) {
-    return getSkipPattern("skipUses", options);
-  }
-
-  private Pattern getOnlyUsesPattern(Map<String, String> options) {
-    return getOnlyPattern("onlyUses", options);
-  }
-
-  private Pattern getSkipDefsPattern(Map<String, String> options) {
-    return getSkipPattern("skipDefs", options);
-  }
-
-  private Pattern getOnlyDefsPattern(Map<String, String> options) {
-    return getOnlyPattern("onlyDefs", options);
+  private @Nullable Pattern computePatterns(Map<String, String> options) {
+    if (patternsComputed) {
+      return;
+    }
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -944,6 +935,11 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
     requirePrefixInWarningSuppressions = hasOption("requirePrefixInWarningSuppressions");
     showPrefixInWarningMessages = hasOption("showPrefixInWarningMessages");
     warnUnneededSuppressions = hasOption("warnUnneededSuppressions");
+
+    skipUsesPattern = getSkipPattern("skipUses", options);
+    onlyUsesPattern = getOnlyPattern("onlyUses", options);
+    skipDefsPattern = getSkipPattern("skipDefs", options);
+    onlyDefsPattern = getOnlyPattern("onlyDefs", options);
   }
 
   /** Output the warning about source level at most once. */
@@ -2495,12 +2491,10 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
     //     System.out.println("  " + stea[i]);
     // }
     // System.out.println();
-    if (skipUsesPattern == null) {
-      skipUsesPattern = getSkipUsesPattern(getOptions());
-    }
-    if (onlyUsesPattern == null) {
-      onlyUsesPattern = getOnlyUsesPattern(getOptions());
-    }
+
+    computePatterns();
+
+    boolean skipUsesPermits = skipUsesPermits || TODO;
     return skipUsesPattern.matcher(typeName).find() || !onlyUsesPattern.matcher(typeName).find();
   }
 
@@ -2520,15 +2514,18 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
     //                   onlyDefsPattern.matcher(qualifiedName).find(),
     //                   (skipDefsPattern.matcher(qualifiedName).find()
     //                    || ! onlyDefsPattern.matcher(qualifiedName).find()));
-    if (skipDefsPattern == null) {
+
+    if (!defsPatternsComputed) {
       skipDefsPattern = getSkipDefsPattern(getOptions());
-    }
-    if (onlyDefsPattern == null) {
       onlyDefsPattern = getOnlyDefsPattern(getOptions());
+      defsPatternsComputed = true;
     }
 
-    return skipDefsPattern.matcher(qualifiedName).find()
-        || !onlyDefsPattern.matcher(qualifiedName).find();
+    boolean skipDefsMatches =
+        skipDefsPattern != null && skipDefsPattern.matcher(qualifiedName).find();
+    boolean onlyDefsMatches =
+        onlyDefsPattern != null && !onlyDefsPattern.matcher(qualifiedName).find();
+    return skipDefsPermits || onlyDefsPermits;
   }
 
   /**
