@@ -77,7 +77,8 @@ public class OptionalTransfer extends CFTransfer {
           ExecutableElement methodElt = TreeUtils.elementFromUse(invok);
           if (methodElt.equals(optionalIfPresent)
               || methodElt.equals(optionalIfPresentOrElse)) {
-            // `underlyingAST` is an invocation of Optional.IfPresent() or Optional.ifPresentOrElse().
+            // `underlyingAST` is an invocation of `Optional.IfPresent()` or
+            // `Optional.ifPresentOrElse()`.  In the lambda, the receiver is @Present.
             AnnotatedTypeMirror paramAtm = atypeFactory.getAnnotatedType(lambdaParams.get(0));
             paramAtm.replaceAnnotation(PRESENT);
             paramValues = Collections.singletonList(analysis.createAbstractValue(paramAtm));
