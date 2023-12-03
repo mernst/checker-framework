@@ -1,6 +1,7 @@
 package org.checkerframework.dataflow.analysis;
 
 import java.util.List;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 
@@ -41,5 +42,7 @@ public interface ForwardTransferFunction<V extends AbstractValue<V>, S extends S
    * @return the initial store
    */
   S initialStore(
-      UnderlyingAST underlyingAST, List<LocalVariableNode> parameters, List<V> paramValues);
+      UnderlyingAST underlyingAST,
+      List<LocalVariableNode> parameters,
+      @Nullable List<V> paramValues);
 }
