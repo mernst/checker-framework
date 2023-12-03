@@ -29,7 +29,9 @@ public class ReachingDefinitionTransfer
 
   @Override
   public ReachingDefinitionStore initialStore(
-      UnderlyingAST underlyingAST, @Nullable List<LocalVariableNode> parameters) {
+      UnderlyingAST underlyingAST,
+      @Nullable List<LocalVariableNode> parameters,
+      @Nullable List<UnusedAbstractValue> paramValues) {
     return new ReachingDefinitionStore();
   }
 

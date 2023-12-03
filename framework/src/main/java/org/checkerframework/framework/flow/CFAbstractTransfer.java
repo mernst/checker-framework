@@ -84,10 +84,10 @@ import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
- * The default analysis transfer function for the Checker Framework propagates information through
- * assignments and uses the {@link AnnotatedTypeFactory} to provide checker-specific logic how to
- * combine types (e.g., what is the type of a string concatenation, given the types of the two
- * operands) and as an abstraction function (e.g., determine the annotations on literals).
+ * The default analysis transfer function for the Checker Framework. It propagates information
+ * through assignments. It uses the {@link AnnotatedTypeFactory} to provide checker-specific logic
+ * to combine types (e.g., what is the type of a string concatenation, given the types of the two
+ * operands) and acts as an abstraction function (e.g., determine the annotations on literals).
  *
  * <p>Design note: CFAbstractTransfer and its subclasses are supposed to act as transfer functions.
  * But, since the AnnotatedTypeFactory already existed and performed checker-independent type
@@ -228,7 +228,8 @@ public abstract class CFAbstractTransfer<
 
   /** The initial store maps method formal parameters to their currently most refined type. */
   @Override
-  public S initialStore(UnderlyingAST underlyingAST, List<LocalVariableNode> parameters) {
+  public S initialStore(
+      UnderlyingAST underlyingAST, List<LocalVariableNode> parameters, List<V> paramValues) {
     if (underlyingAST.getKind() != UnderlyingAST.Kind.LAMBDA
         && underlyingAST.getKind() != UnderlyingAST.Kind.METHOD) {
       if (fixedInitialStore != null) {
@@ -253,6 +254,7 @@ public abstract class CFAbstractTransfer<
 
       for (LocalVariableNode p : parameters) {
         AnnotatedTypeMirror anno = atypeFactory.getAnnotatedType(p.getElement());
+        // TODO: This should also use `paramValues`.
         store.initializeMethodParameter(p, analysis.createAbstractValue(anno));
       }
 
@@ -302,9 +304,16 @@ public abstract class CFAbstractTransfer<
         store = analysis.createEmptyStore(sequentialSemantics);
       }
 
-      for (LocalVariableNode p : parameters) {
-        AnnotatedTypeMirror anno = atypeFactory.getAnnotatedType(p.getElement());
-        store.initializeMethodParameter(p, analysis.createAbstractValue(anno));
+      for (int i = 0; i < parameters.size(); i++) {
+        LocalVariableNode p = parameters.get(i);
+        V abstractValue;
+        if (paramValues != null) {
+          abstractValue = paramValues.get(i);
+        } else {
+          AnnotatedTypeMirror anno = atypeFactory.getAnnotatedType(p.getElement());
+          abstractValue = analysis.createAbstractValue(anno);
+        }
+        store.initializeMethodParameter(p, abstractValue);
       }
 
       CFGLambda lambda = (CFGLambda) underlyingAST;
