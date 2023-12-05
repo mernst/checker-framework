@@ -29,7 +29,7 @@ import org.checkerframework.javacutil.TreeUtils;
 public class OptionalTransfer extends CFTransfer {
 
   /** The @{@link Present} annotation. */
-  public final AnnotationMirror PRESENT;
+  private final AnnotationMirror PRESENT;
 
   /** The element for java.util.Optional.ifPresent(). */
   private final ExecutableElement optionalIfPresent;
@@ -91,6 +91,9 @@ public class OptionalTransfer extends CFTransfer {
     CFStore result = super.initialStore(underlyingAST, parameters, paramValues);
 
     if (underlyingAST.getKind() == UnderlyingAST.Kind.LAMBDA) {
+      // Check whether this lambda is an argument to `Optional.ifPresent()` or
+      // `Optional.ifPresentOrElse()`.  If so, then within the lambda, the receiver of the
+      // `ifPresent*` method is @Present.
       CFGLambda cfgLambda = (CFGLambda) underlyingAST;
       LambdaExpressionTree lambdaTree = cfgLambda.getLambdaTree();
       List<? extends VariableTree> lambdaParams = lambdaTree.getParameters();
@@ -101,8 +104,8 @@ public class OptionalTransfer extends CFTransfer {
           MethodInvocationTree invok = (MethodInvocationTree) lambdaParent;
           ExecutableElement methodElt = TreeUtils.elementFromUse(invok);
           if (methodElt.equals(optionalIfPresent) || methodElt.equals(optionalIfPresentOrElse)) {
-            // `underlyingAST` is an invocation of Optional.IfPresent() or
-            // Optional.ifPresentOrElse().  In the lambda, the receiver is @Present.
+            // `underlyingAST` is an invocation of `Optional.ifPresent()` or
+            // `Optional.ifPresentOrElse()`.  In the lambda, the receiver is @Present.
             ExpressionTree methodSelectTree = TreeUtils.withoutParens(invok.getMethodSelect());
             ExpressionTree receiverTree = ((MemberSelectTree) methodSelectTree).getExpression();
             JavaExpression receiverJe = JavaExpression.fromTree(receiverTree);
@@ -111,6 +114,15 @@ public class OptionalTransfer extends CFTransfer {
         }
       }
     }
+
+    // TODO: Similar logic to the above can be applied in the Nullness Checker.
+    // Some methods take a function as an argument, guaranteeing that, if the function is called:
+    //  * the value passed to the function is non-null
+    //  * some other argument to the method is non-null
+    // Examples:
+    //  * Jodd's `StringUtil.ifNotNull()`
+    //  * `Opt.ifPresent()`
+    //  * `Opt.map()`
 
     return result;
   }
