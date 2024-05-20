@@ -17,7 +17,6 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.Positive;
 import org.checkerframework.checker.index.upperbound.OffsetEquation;
 import org.checkerframework.common.value.ValueCheckerUtils;
-import org.checkerframework.dataflow.analysis.RegularTransferResult;
 import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.analysis.TransferResult;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
@@ -919,6 +918,7 @@ public class LowerBoundTransfer extends IndexAbstractTransfer {
     CFValue newResultValue =
         analysis.createSingleAnnotationValue(
             resultAnno, result.getResultValue().getUnderlyingType());
-    return new RegularTransferResult<>(newResultValue, result.getRegularStore());
+    // return new RegularTransferResult<>(newResultValue, result.getRegularStore());
+    return recreateTransferResult(newResultValue, result);
   }
 }
