@@ -438,21 +438,6 @@ public class ValueTransfer extends CFTransfer {
     return isIntegralUnknownVal(node, getValueAnnotation(p.getValueOfSubNode(node)));
   }
 
-  /**
-   * Create a new transfer result based on the original result and the new annotation.
-   *
-   * @param result the original result
-   * @param resultAnno the new annotation
-   * @return the new transfer result
-   */
-  private TransferResult<CFValue, CFStore> createNewResult(
-      TransferResult<CFValue, CFStore> result, AnnotationMirror resultAnno) {
-    CFValue newResultValue =
-        analysis.createSingleAnnotationValue(
-            resultAnno, result.getResultValue().getUnderlyingType());
-    return new RegularTransferResult<>(newResultValue, result.getRegularStore());
-  }
-
   /** Create a boolean transfer result. */
   private TransferResult<CFValue, CFStore> createNewResultBoolean(
       CFStore thenStore, CFStore elseStore, List<Boolean> resultValues, TypeMirror underlyingType) {
