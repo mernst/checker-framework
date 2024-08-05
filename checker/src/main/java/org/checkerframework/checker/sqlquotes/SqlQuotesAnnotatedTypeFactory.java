@@ -87,7 +87,8 @@ public class SqlQuotesAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
     @Override
     public Void visitBinary(BinaryTree tree, AnnotatedTypeMirror type) {
-      if (TreeUtils.isStringConcatenation(tree)) {
+      if (!type.hasPrimaryAnnotationInHierarchy(SQL_QUOTES_UNKNOWN)
+          && TreeUtils.isStringConcatenation(tree)) {
         AnnotatedTypeMirror leftType = getAnnotatedType(tree.getLeftOperand());
         AnnotatedTypeMirror rightType = getAnnotatedType(tree.getRightOperand());
 
