@@ -3,6 +3,7 @@ package org.checkerframework.framework.util;
 import com.github.javaparser.ParseProblemException;
 import com.github.javaparser.ParserConfiguration.LanguageLevel;
 import com.github.javaparser.ast.ArrayCreationLevel;
+import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.expr.ArrayAccessExpr;
 import com.github.javaparser.ast.expr.ArrayCreationExpr;
 import com.github.javaparser.ast.expr.BinaryExpr;
@@ -16,6 +17,7 @@ import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.IntegerLiteralExpr;
 import com.github.javaparser.ast.expr.LongLiteralExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.MethodReferenceExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.NullLiteralExpr;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
@@ -35,6 +37,7 @@ import com.sun.tools.javac.code.Type.ClassType;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -63,6 +66,7 @@ import org.checkerframework.dataflow.expression.FormalParameter;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.dataflow.expression.MethodCall;
+import org.checkerframework.dataflow.expression.MethodReference;
 import org.checkerframework.dataflow.expression.SuperReference;
 import org.checkerframework.dataflow.expression.ThisReference;
 import org.checkerframework.dataflow.expression.UnaryOperation;
@@ -316,9 +320,13 @@ public class JavaExpressionParseUtil {
     /** If the expression is not supported, throw a {@link ParseRuntimeException} by default. */
     @Override
     public JavaExpression defaultAction(com.github.javaparser.ast.Node n, Void aVoid) {
-      throw new ParseRuntimeException(
-          constructJavaExpressionParseError(
-              n.toString(), n.getClass() + " is not a supported expression"));
+      ParseRuntimeException e =
+          new ParseRuntimeException(
+              constructJavaExpressionParseError(
+                  n.toString(), n.getClass() + " is not a supported expression"));
+      e.printStackTrace(System.out);
+      e.printStackTrace(System.err);
+      throw e;
     }
 
     @Override
@@ -378,6 +386,26 @@ public class JavaExpressionParseUtil {
             constructJavaExpressionParseError("super", enclosingType + " has no superclass"));
       }
       return new SuperReference(superclass);
+    }
+
+    @Override
+    public JavaExpression visit(MethodReferenceExpr n, Void aVoid) {
+      if (false) {
+        JavaExpression scope = n.getScope().accept(this, null);
+        Optional<NodeList<Type>> typeArgs = n.getTypeArguments();
+        String methodName = n.getIdentifier();
+
+        if (!typeArgs.isPresent()) {
+          // TODO: Handle type arguments later.
+          // return new Unknown(n);
+        }
+
+        // PROBLEM: JavaParser does not store the type of a MethodReferenceExpr.
+        // How can I determine it here?
+        // Maybe calculateResolvedType?
+        return new MethodReference(/* n.getType()*/ null, scope, methodName);
+      }
+      throw new Error("Cannot obtain type from parsed method reference: " + n);
     }
 
     // expr is an expression in parentheses.

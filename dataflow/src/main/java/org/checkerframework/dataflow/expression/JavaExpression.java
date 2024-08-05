@@ -5,6 +5,7 @@ import com.sun.source.tree.BinaryTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.LiteralTree;
+import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
@@ -36,6 +37,7 @@ import org.checkerframework.dataflow.cfg.node.ExplicitThisNode;
 import org.checkerframework.dataflow.cfg.node.FieldAccessNode;
 import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
+import org.checkerframework.dataflow.cfg.node.MethodReferenceNode;
 import org.checkerframework.dataflow.cfg.node.NarrowingConversionNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.StringConversionNode;
@@ -386,6 +388,9 @@ public abstract class JavaExpression {
       result = new ThisReference(receiverNode.getType());
     } else if (receiverNode instanceof SuperNode) {
       result = new SuperReference(receiverNode.getType());
+    } else if (receiverNode instanceof MethodReferenceNode) {
+      MethodReferenceNode mrn = (MethodReferenceNode) receiverNode;
+      result = new MethodReference(mrn.getType(), fromNode(mrn.getScope()), mrn.getMethodName());
     } else if (receiverNode instanceof LocalVariableNode) {
       LocalVariableNode lv = (LocalVariableNode) receiverNode;
       result = new LocalVariable(lv);
@@ -551,6 +556,10 @@ public abstract class JavaExpression {
         }
         break;
 
+      case MEMBER_REFERENCE:
+        result = fromMemberReference((MemberReferenceTree) tree);
+        break;
+
       case UNARY_PLUS:
         return fromTree(((UnaryTree) tree).getExpression());
       case BITWISE_COMPLEMENT:
@@ -645,6 +654,19 @@ public abstract class JavaExpression {
         throw new BugInCF(
             "Unexpected kind of VariableTree: kind: %s element: %s", ele.getKind(), ele);
     }
+  }
+
+  /**
+   * Creates a JavaExpression from the {@code memberReferenceTree}.
+   *
+   * @param memberReferenceTree tree
+   * @return a JavaExpression for {@code memberReferenceTree}
+   */
+  private static JavaExpression fromMemberReference(MemberReferenceTree memberReferenceTree) {
+    return new MethodReference(
+        TreeUtils.typeOf(memberReferenceTree),
+        fromTree(memberReferenceTree.getQualifierExpression()),
+        memberReferenceTree.getName().toString());
   }
 
   /**
