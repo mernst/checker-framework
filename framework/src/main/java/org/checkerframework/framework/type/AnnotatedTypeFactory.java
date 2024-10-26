@@ -3676,11 +3676,13 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    *     within the current compilation unit.
    */
   public final @Nullable TreePath getPath(@FindDistinct Tree tree) {
-    assert root != null
-        : "AnnotatedTypeFactory.getPath("
-            + tree.getKind()
-            + "): root needs to be set when used on trees; factory: "
-            + this.getClass().getSimpleName();
+    if (root == null) {
+      throw new BugInCF(
+          "AnnotatedTypeFactory.getPath("
+              + tree.getKind()
+              + "): root needs to be set when used on trees; factory: "
+              + this.getClass().getSimpleName());
+    }
 
     if (tree == null) {
       return null;

@@ -664,8 +664,15 @@ public class AnnotationFileParser {
       afp.process(annotationFileAnnos);
     } catch (ParseProblemException e) {
       for (Problem p : e.getProblems()) {
+        System.out.printf("problem in %s: %s%n", filename, p.getVerboseMessage());
         afp.warn(null, p.getVerboseMessage());
       }
+    } catch (Throwable e) {
+      throw new BugInCF(
+          String.format(
+              "parseStubFile(%s, ..., %s, ..., ..., %s)",
+              filename, atypeFactory.getClass().getSimpleName(), fileType),
+          e);
     }
   }
 
@@ -1208,8 +1215,18 @@ public class AnnotationFileParser {
       ClassOrInterfaceDeclaration typeDecl, AnnotatedDeclaredType type) {
     if (typeDecl.getExtendedTypes() != null) {
       for (ClassOrInterfaceType supertype : typeDecl.getExtendedTypes()) {
+        List<AnnotatedDeclaredType> directSupertypes;
+        try {
+          directSupertypes = type.directSupertypes();
+        } catch (Throwable e) {
+          throw new Error(
+              String.format(
+                  "annotateSupertypes(%s, %s) supertype=%s failed at %s.directSupertypes()",
+                  typeDecl, type, supertype, type),
+              e);
+        }
         AnnotatedDeclaredType annotatedSupertype =
-            findAnnotatedType(supertype, type.directSupertypes(), typeDecl);
+            findAnnotatedType(supertype, directSupertypes, typeDecl);
         if (annotatedSupertype == null) {
           warn(
               typeDecl,
