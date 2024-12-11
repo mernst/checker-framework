@@ -20,6 +20,48 @@ jobs:
 ## They are placeholders for the next non-LTS version (such as jdk22) when it is released.
 ## Leaving those placeholders will ease the edits to this file.
 
+# TODO: add dependsOn and move these later in the file.
+- job: wpi_njr_part1_jdk17
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk17:latest
+  timeoutInMinutes: 70
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: ./checker/bin-devel/test-njr.sh part1
+    displayName: test-njr part1
+- job: wpi_njr_part2_jdk17
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk17:latest
+  timeoutInMinutes: 70
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: ./checker/bin-devel/test-njr.sh part2
+    displayName: test-njr part2
+- job: wpi_njr_part3_jdk17
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk17:latest
+  timeoutInMinutes: 70
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: ./checker/bin-devel/test-njr.sh part3
+    displayName: test-njr part3
+- job: wpi_njr_part4_jdk17
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk17:latest
+  timeoutInMinutes: 70
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: ./checker/bin-devel/test-njr.sh part4
+    displayName: test-njr part4
+
 - job: canary_jobs
   dependsOn:
    - junit_jdk21
