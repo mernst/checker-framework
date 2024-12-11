@@ -4,7 +4,9 @@
 # Run WPI (for resource leaks) over the NJR test suite.
 # The optional argument can be "part1", "part2", "part3", or "part4".
 
-set -e
+# Don't halt on all errors.
+# set -e
+
 set -o verbose
 set -o xtrace
 export SHELLOPTS
@@ -36,18 +38,20 @@ esac
 for dir in "${dirs[@]}"; do
   dir_basename="$(basename "$dir")"
   stdout_file="${WPI_STDOUT}/${dir_basename}-wpi-stdout.txt"
-  timeout 900 "$SCRIPTDIR"/test-njr-one-wpi.sh "$dir" > "$stdout_file" 2>&1
+  timeout 900 "$SCRIPTDIR"/test-njr-one-wpi.sh resourceleak "$dir" > "$stdout_file" 2>&1
   exit_status=$?
   if [[ $exit_status -eq 124 ]]; then
     echo "error: timed out; 1 errors" >> "$stdout_file"
   elif [[ $exit_status -ne 0 ]]; then
     echo "error: status $exit_status; 1 errors" >> "$stdout_file"
   else
-    echo "Success: test-njr-one-wpi.sh $dir_basename" >> "$stdout_file"
+    echo "Success: test-njr-one-wpi.sh resourceleak $dir_basename" >> "$stdout_file"
   fi
 done
 
 if ! grep "error:" "$WPI_STDOUT" ; then
+  cat $(grep -l "error:" "$WPI_STDOUT")
+  grep "error:" "$WPI_STDOUT"
   echo "Errors found while running WPI on NJR; see above"
   exit 1
 fi
