@@ -9,14 +9,18 @@ set -o xtrace
 export SHELLOPTS
 echo "SHELLOPTS=${SHELLOPTS}"
 
-export ORG_GRADLE_PROJECT_useJdk17Compiler=true
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+export ORG_GRADLE_PROJECT_useJdk17Compiler=true
+source "$SCRIPTDIR"/clone-related.sh
+
+
+
 source "$SCRIPTDIR"/test-njr-install.sh
 
-WPI_STDOUT=$NJR/wpi-stdout
-mkdir -p $WPI_STDOUT
-cd $NJR
-readarray -d '' dirs < <(printf '%s\0' $NJR/final_dataset/* | sort -zV)
+WPI_STDOUT="$NJR"/wpi-stdout
+mkdir -p "$WPI_STDOUT"
+cd "$NJR"
+readarray -d '' dirs < <(printf '%s\0' "$NJR"/final_dataset/* | sort -zV)
 for dir in "${dirs[@]}"; do
   dir_basename="$(basename "$dir")"
   stdout_file="${WPI_STDOUT}/${dir_basename}-wpi-stdout.txt"
@@ -30,3 +34,8 @@ for dir in "${dirs[@]}"; do
     echo "Success: test-njr-one-wpi.sh $dir_basename" >> "$stdout_file"
   fi
 done
+
+if ! grep "error:" "$WPI_STDOUT" ; then
+  echo "Errors found while running WPI on NJR; see above"
+  exit 1
+fi
