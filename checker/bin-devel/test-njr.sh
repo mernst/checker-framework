@@ -13,6 +13,7 @@ export SHELLOPTS
 echo "SHELLOPTS=${SHELLOPTS}"
 
 part=$1
+checker=org.checkerframework.checker.resourceleak.ResourceLeakChecker
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 export ORG_GRADLE_PROJECT_useJdk17Compiler=true
@@ -38,14 +39,14 @@ esac
 for dir in "${dirs[@]}"; do
   dir_basename="$(basename "$dir")"
   stdout_file="${WPI_STDOUT}/${dir_basename}-wpi-stdout.txt"
-  timeout 900 "$SCRIPTDIR"/test-njr-one-wpi.sh resourceleak "$dir" 2>&1 | tee "$stdout_file"
+  timeout 900 "$SCRIPTDIR"/test-njr-one-wpi.sh "$checker" "$dir" 2>&1 | tee "$stdout_file"
   exit_status=$?
   if [[ $exit_status -eq 124 ]]; then
     echo "error: timed out; 1 errors" >> "$stdout_file"
   elif [[ $exit_status -ne 0 ]]; then
     echo "error: status $exit_status; 1 errors" >> "$stdout_file"
   else
-    echo "Success: test-njr-one-wpi.sh resourceleak $dir_basename" >> "$stdout_file"
+    echo "Success: test-njr-one-wpi.sh $checker $dir_basename" >> "$stdout_file"
   fi
 done
 
