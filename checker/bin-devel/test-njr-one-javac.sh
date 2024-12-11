@@ -2,12 +2,12 @@
 
 # This script runs javac once, on one particular NJR project.
 # It takes two arguments:
-#  * the checker to run
+#  * the checker to run; for example, org.checkerframework.checker.resourceleak.ResourceLeakChecker
 #  * the absolute path to an NJR project
 
 
 if [ "$#" -eq 0 ]; then
-    echo "$(basename "$0"): wrong number of arguments $#: $*"
+    echo "$(basename "$0"): needs 2 arguments, got $#: $*"
     exit 2
 fi
 
