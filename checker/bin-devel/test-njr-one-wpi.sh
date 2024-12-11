@@ -5,6 +5,7 @@
 #  * the checker to run
 #  * the absolute path to an NJR project
 
+echo "entering $(basename "${BASH_SOURCE[0]}") $*"
 
 set -e
 set -o verbose

@@ -38,7 +38,7 @@ esac
 for dir in "${dirs[@]}"; do
   dir_basename="$(basename "$dir")"
   stdout_file="${WPI_STDOUT}/${dir_basename}-wpi-stdout.txt"
-  timeout 900 "$SCRIPTDIR"/test-njr-one-wpi.sh resourceleak "$dir" > "$stdout_file" 2>&1
+  timeout 900 "$SCRIPTDIR"/test-njr-one-wpi.sh resourceleak "$dir" 2>&1 | tee "$stdout_file"
   exit_status=$?
   if [[ $exit_status -eq 124 ]]; then
     echo "error: timed out; 1 errors" >> "$stdout_file"
@@ -50,6 +50,7 @@ for dir in "${dirs[@]}"; do
 done
 
 if ! grep "error:" "$WPI_STDOUT" ; then
+  #shellcheck disable=SC2046
   cat $(grep -l "error:" "$WPI_STDOUT")
   grep "error:" "$WPI_STDOUT"
   echo "Errors found while running WPI on NJR; see above"

@@ -9,9 +9,9 @@
 export NJR=/tmp/njr
 mkdir -p $NJR
 cd $NJR || exit 2
-wget https://zenodo.org/records/4632231/files/benchmark_stats.csv
-wget https://zenodo.org/records/4632231/files/njr-1_dataset.zip
-wget https://zenodo.org/records/4632231/files/scripts.zip
+wget -Nq https://zenodo.org/records/4632231/files/benchmark_stats.csv
+wget -Nq https://zenodo.org/records/4632231/files/njr-1_dataset.zip
+wget -Nq https://zenodo.org/records/4632231/files/scripts.zip
 unzip -q scripts.zip
 unzip -q njr-1_dataset.zip
 ln -s njr-1_dataset final_dataset
