@@ -15,7 +15,7 @@ checker=$1
 PROJECT_PATH=$2
 SOURCES_FILE="$PROJECT_PATH/cf_sources.txt"
 
-if [ ! -d $PROJECT_PATH ] ; then
+if [ ! -d "$PROJECT_PATH" ] ; then
   echo "Directory does not exist: $PROJECT_PATH"
   exit 2
 fi
