@@ -6,7 +6,7 @@
 #  * the absolute path to an NJR project
 
 
-if [ "$#" -eq 0 ]; then
+if [ "$#" -ne 2 ]; then
     echo "$(basename "$0"): needs 2 arguments, got $#: $*"
     exit 2
 fi
@@ -14,6 +14,11 @@ fi
 checker=$1
 PROJECT_PATH=$2
 SOURCES_FILE="$PROJECT_PATH/cf_sources.txt"
+
+if [ ! -d $PROJECT_PATH ] ; then
+  echo "Directory does not exist: $PROJECT_PATH"
+  exit 2
+fi
 
 # A list of the absolute paths of the source files.
 if [ ! -f "$SOURCES_FILE" ] ; then
