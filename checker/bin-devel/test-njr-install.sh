@@ -31,8 +31,10 @@ rm -rf \
   url0d38a10ee7_diegopliebana_GEBT_tgz-pJ8-ch_idsia_scenarios_test_EvolveWithChangingSeedsJ8 \
   url1cbaffb197_foxking0416_AlgorithmTraining_tgz-pJ8-algorithm_leetcode_MainLeetJ8 \
   url27a7ae3508_serkan_ozal_ocean_of_memories_tgz-pJ8-com_zeroturnaround_rebellabs_oceanofmemories_article1_objectlayout_ObjectMemoryLayoutDemoJ8 \
+  url29ae058134_yuriy_chumak_jatha_tgz-pJ8-org_jatha_LispJ8 \
   url2a908001cd_malictus_klang_tgz-pJ8-malictus_klang_test_PrimitiveTestJ8 \
   url2f44efcfa6_wangyudong_sohutw_java_sdk_2_0_tgz-pJ8-com_sohu_t_api_sdk_json_TestJ8 \
+  url3ed4973106_kosmasK_RecordPlayer_tgz-pJ8-es_uc3m_recordplayer_test_TestJ8 \
   url47af6b1535_rolandotr_db_comparison_tgz-pJ8-methodology_HistoryJ8 \
   url47ebb27197_asirbu_CorrectiveEvolution_tgz-pJ8-eu_fbk_soa_evolution_engine_impl_test_ProblemToSMVFuncTestJ8 \
   url49584c1d41_Arrem_GGS_tgz-pJ8-com_gamezgalaxy_test_console_MainJ8/src/com/gamezgalaxy \
@@ -47,6 +49,13 @@ rm -rf \
   url8af84d296f_mrcosta_gantt_generator_tgz-pJ8-org_gantt_generator_mrcpsp_RunJ8 \
   url97f33aa931_wnr_Othello_tgz-pJ8-kth_game_othello_tournament_MainJ8 \
   url9e7e48285f_nalbachk_MidiToPhaseShift_tgz-pJ8-com_my_main_MainJ8 \
+  urlc5fdb179cc_lagodiuk_evo_neural_network_agents_tgz-pJ8-com_lagodiuk_agent_evolution_MainJ8 \
+  urld58fd5e7a9_longrm_weibo_robot_tgz-pJ8-weibo4j_org_json_TestJ8 \
+  urld829b80034_wjch111_PTSP2013Wang_tgz-pJ8-controllers_momcts_momctsCore_TestPlannerJ8 \
+  z_file_that_does_not_exist
+# Remove projects that use method `yield` which JavaParser can't handle.
+rm -rf \
+  url29ff2e53f3_nicolas3470_Settlers_of_Catan_AI_tgz-pJ8-robotGameJ8 \
   z_file_that_does_not_exist
 # Temporary: Remove projects for which Resource Leak inference runs for hours.
 cd $NJR/final_dataset || exit 2
