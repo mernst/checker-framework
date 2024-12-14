@@ -61,6 +61,46 @@ jobs:
     fetchDepth: 25
   - bash: ./checker/bin-devel/test-njr.sh part4
     displayName: test-njr part4
+- job: wpi_njr_part5_jdk17
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk17:latest
+  timeoutInMinutes: 70
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: ./checker/bin-devel/test-njr.sh part5
+    displayName: test-njr part5
+- job: wpi_njr_part6_jdk17
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk17:latest
+  timeoutInMinutes: 70
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: ./checker/bin-devel/test-njr.sh part6
+    displayName: test-njr part6
+- job: wpi_njr_part7_jdk17
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk17:latest
+  timeoutInMinutes: 70
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: ./checker/bin-devel/test-njr.sh part7
+    displayName: test-njr part7
+- job: wpi_njr_part8_jdk17
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk17:latest
+  timeoutInMinutes: 70
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: ./checker/bin-devel/test-njr.sh part8
+    displayName: test-njr part8
 
 - job: canary_jobs
   dependsOn:

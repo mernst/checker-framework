@@ -2,7 +2,7 @@
 # bash because of readarray
 
 # Run WPI (for resource leaks) over the NJR test suite.
-# The optional argument can be "part1", "part2", "part3", or "part4".
+# The optional argument can be "part1", "part2", ..., "part8".
 
 # Don't halt on all errors.
 # set -e
@@ -29,10 +29,14 @@ cd "$NJR"
 readarray -d '' dirs < <(printf '%s\0' "$NJR"/final_dataset/* | sort -z)
 
 case $part in
-  "part1") readarray -d '' dirs < <(printf '%s\0' "$NJR"/final_dataset/url[0-3]* | sort -z) ;;
-  "part2") readarray -d '' dirs < <(printf '%s\0' "$NJR"/final_dataset/url[4-7]* | sort -z) ;;
-  "part3") readarray -d '' dirs < <(printf '%s\0' "$NJR"/final_dataset/url[8-b]* | sort -z) ;;
-  "part4") readarray -d '' dirs < <(printf '%s\0' "$NJR"/final_dataset/url[c-f]* | sort -z) ;;
+  "part1") readarray -d '' dirs < <(printf '%s\0' "$NJR"/final_dataset/url[0-1]* | sort -z) ;;
+  "part2") readarray -d '' dirs < <(printf '%s\0' "$NJR"/final_dataset/url[2-3]* | sort -z) ;;
+  "part3") readarray -d '' dirs < <(printf '%s\0' "$NJR"/final_dataset/url[4-5]* | sort -z) ;;
+  "part4") readarray -d '' dirs < <(printf '%s\0' "$NJR"/final_dataset/url[6-7]* | sort -z) ;;
+  "part5") readarray -d '' dirs < <(printf '%s\0' "$NJR"/final_dataset/url[8-9]* | sort -z) ;;
+  "part6") readarray -d '' dirs < <(printf '%s\0' "$NJR"/final_dataset/url[a-b]* | sort -z) ;;
+  "part7") readarray -d '' dirs < <(printf '%s\0' "$NJR"/final_dataset/url[c-d]* | sort -z) ;;
+  "part8") readarray -d '' dirs < <(printf '%s\0' "$NJR"/final_dataset/url[e-f]* | sort -z) ;;
   *)       readarray -d '' dirs < <(printf '%s\0' "$NJR"/final_dataset/*         | sort -z) ;;
 esac
 
