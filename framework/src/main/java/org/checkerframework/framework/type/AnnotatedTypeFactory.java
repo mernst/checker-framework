@@ -5658,7 +5658,25 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
               isPrecondition
                   ? otherDeclAnnos.getPreconditionsForExpression(expr, declaredType, this)
                   : otherDeclAnnos.getPostconditionsForExpression(expr, declaredType, this);
-          this.getWholeProgramInference().updateAtmWithLub(inferredType, otherInferredType);
+          try {
+            this.getWholeProgramInference().updateAtmWithLub(inferredType, otherInferredType);
+          } catch (Throwable e) {
+            String msg =
+                String.format(
+                    "in makeConditionConsistentWithOtherMethod(Map<String, IPair<ATM, ATM>> conditionMap=%s,%nCallableDeclarationAnnos otherDeclAnnos=%s,%nisPre=%s,%notherIsSuper=%s):%ninferred=%s,%ndeclared=%s,%notherInferredType=%s=otherDeclAnnos.get%sconditionsForExpression(%s, %s, this=%s)",
+                    conditionMap,
+                    otherDeclAnnos,
+                    isPrecondition,
+                    otherIsSupertype,
+                    inferredType,
+                    declaredType,
+                    otherInferredType,
+                    (isPrecondition ? "Pre" : "Post"),
+                    expr,
+                    declaredType,
+                    this);
+            throw new BugInCF(msg, e);
+          }
         }
       }
     }

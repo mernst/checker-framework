@@ -97,6 +97,7 @@ import org.plumelib.util.ArraySet;
 import org.plumelib.util.CollectionsPlume;
 import org.plumelib.util.DeepCopyable;
 import org.plumelib.util.IPair;
+import org.plumelib.util.StringsPlume;
 import org.plumelib.util.UtilPlume;
 
 /**
@@ -439,6 +440,13 @@ public class WholeProgramInferenceJavaParserStorage
       AnnotatedTypeMirror declaredType,
       AnnotatedTypeFactory atypeFactory) {
     CallableDeclarationAnnos methodAnnos = getMethodAnnos(methodElement);
+    System.out.printf(
+        "WholeProgramInferenceJavaParserStorage.getPostconditionsForExpression(%s, %s, %s, %s):%n  methodAnnos = %s%n",
+        methodElement,
+        expression,
+        declaredType,
+        atypeFactory,
+        StringsPlume.indentLinesExceptFirst(2, methodAnnos));
     if (methodAnnos == null) {
       // See the comment on the similar exception in #getParameterAnnotations, above.
       return declaredType;
@@ -956,6 +964,15 @@ public class WholeProgramInferenceJavaParserStorage
       List<CallableDeclarationAnnos> inSubtypes =
           findOverrides(jvmSignature, subtypesMap.get(classAnnos.className));
 
+      if (classAnnos.className.contains("step")) {
+        System.out.printf(
+            "WPIJPS.wpiPrepareClassForWriting(%s) calling for method %s: wpiPrepareMethodForWriting(%s, inSupertypes, inSubtypes)%n%s  inSupertypes = %s%n  inSubtypes = %s%n",
+            classAnnos.className,
+            methodEntry.getKey(),
+            methodEntry.getValue(),
+            StringsPlume.indentLinesExceptFirst(2, inSupertypes),
+            StringsPlume.indentLinesExceptFirst(2, inSubtypes));
+      }
       wpiPrepareMethodForWriting(methodEntry.getValue(), inSupertypes, inSubtypes);
     }
   }
@@ -1764,8 +1781,14 @@ public class WholeProgramInferenceJavaParserStorage
      */
     public AnnotatedTypeMirror getPostconditionsForExpression(
         String expression, AnnotatedTypeMirror declaredType, AnnotatedTypeFactory atf) {
+      if (expression.equals("this.v")) {
+        System.out.printf(
+            "entering CallableDeclarationAnnos.getPostconditionsForExpression(%s, %s, ...)%n  postconditions=%s%n  this=%s%n",
+            expression, declaredType, postconditions, StringsPlume.indentLinesExceptFirst(2, this));
+      }
+
       if (postconditions == null) {
-        postconditions = new HashMap<>(1);
+        postconditions = new HashMap<>(2);
       }
 
       if (!postconditions.containsKey(expression)) {
@@ -1774,7 +1797,19 @@ public class WholeProgramInferenceJavaParserStorage
         postconditions.put(expression, IPair.of(postconditionsType, declaredType));
       }
 
-      return postconditions.get(expression).first;
+      IPair<AnnotatedTypeMirror, AnnotatedTypeMirror> postAndDecl = postconditions.get(expression);
+      AnnotatedTypeMirror result = postAndDecl.first;
+      if (expression.equals("this.v")) {
+        System.out.printf(
+            "exiting CallableDeclarationAnnos.getPostconditionsForExpression(%s, %s, ...) => %s = postconditions.get(expression)%n  postconditions=%s%n  postAndDecl = %s%n  this=%s%n",
+            expression,
+            declaredType,
+            result,
+            postconditions,
+            postAndDecl,
+            StringsPlume.indentLinesExceptFirst(2, this));
+      }
+      return result;
     }
 
     /**
@@ -1857,15 +1892,19 @@ public class WholeProgramInferenceJavaParserStorage
 
     @Override
     public String toString() {
-      return "CallableDeclarationAnnos [declaration="
-          + declaration
-          + ", parameterTypes="
-          + parameterTypes
-          + ", receiverType="
-          + receiverType
-          + ", returnType="
-          + returnType
-          + "]";
+      StringJoiner sj =
+          new StringJoiner(
+              "," + System.lineSeparator() + "  ",
+              "CallableDeclarationAnnos{",
+              System.lineSeparator() + "}");
+      sj.add(declaration.getName().toString());
+      sj.add("returnType = " + returnType);
+      sj.add("receiverType = " + receiverType);
+      sj.add("parameterTypes = " + parameterTypes);
+      sj.add("paramsDeclAnnos = " + paramsDeclAnnos);
+      sj.add("declarationAnnotations = " + declarationAnnotations);
+      sj.add("preconditions = " + preconditions);
+      return sj.toString();
     }
   }
 

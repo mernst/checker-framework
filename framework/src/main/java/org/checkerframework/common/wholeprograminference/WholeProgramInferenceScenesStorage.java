@@ -346,9 +346,14 @@ public class WholeProgramInferenceScenesStorage
       ExecutableElement methodElement, String expression, AnnotatedTypeMirror declaredType) {
     AMethod methodAnnos = getMethodAnnos(methodElement);
     postconditionsToDeclaredTypes.put(methodAnnos.methodSignature + expression, declaredType);
-    return methodAnnos.vivifyAndAddTypeMirrorToPostcondition(
-            expression, declaredType.getUnderlyingType())
-        .type;
+    ATypeElement result =
+        methodAnnos.vivifyAndAddTypeMirrorToPostcondition(
+                expression, declaredType.getUnderlyingType())
+            .type;
+    System.out.printf(
+        "WholeProgramInferenceScenesStorage.getPostconditionsForExpression(%s, %s, %s):%n  methodAnnos=%s%n  result=%s%n  end.%n",
+        methodElement, expression, declaredType, methodAnnos, result);
+    return result;
   }
 
   /**
