@@ -60,9 +60,15 @@ rm -rf \
 # Temporary: Remove projects for which Resource Leak inference runs for hours.
 cd $NJR/final_dataset || exit 2
 rm -rf \
+  url1a41b8e9f2_mr1azl_INF345_tgz \
   url1a41b8e9f2_mr1azl_INF345_tgz-pJ8-TestParserJ8 \
+  url3f8d6440dd_huiwq1990_CognativeModel_tgz \
   url3f8d6440dd_huiwq1990_CognativeModel_tgz-pJ8-clarion_samples_HelloWorldJ8 \
+  url56b1dc76d3_wufunxiang_Libs_tgz \
   url647b55da7c_Nikhilkumar13_emuSr_tgz-pJ8-MainJ8 \
+  url8012c8d031_dmbb966_BBMS_tgz \
+  url86119f019a_solzy_hive_parse_tgz \
+  url8db16c7d62_Arsaell_EdT_tgz \
   url8db16c7d62_Arsaell_EdT_tgz-pJ8-DATA_MainJ8 \
   url8e6440c8aa_robdimsdale_project_euler_tgz-pJ8-com_rmd_personal_projecteuler_MainJ8 \
   z_file_that_does_not_exist
