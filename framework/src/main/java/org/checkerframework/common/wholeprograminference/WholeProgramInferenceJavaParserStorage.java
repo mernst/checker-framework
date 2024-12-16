@@ -1760,9 +1760,8 @@ public class WholeProgramInferenceJavaParserStorage
     public Map<String, InferredDeclared> getPostconditions() {
       if (postconditions == null) {
         return Collections.emptyMap();
-      } else {
-        return Collections.unmodifiableMap(postconditions);
       }
+      return Collections.unmodifiableMap(postconditions);
     }
 
     /**
