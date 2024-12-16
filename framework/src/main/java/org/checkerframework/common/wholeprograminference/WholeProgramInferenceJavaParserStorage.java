@@ -1339,7 +1339,7 @@ public class WholeProgramInferenceJavaParserStorage
     public Map<String, CallableDeclarationAnnos> callableDeclarations = new HashMap<>();
 
     /** Mapping from field names to wrappers for those fields. */
-    public Map<String, FieldAnnos> fields = new HashMap<>(2);
+    public Map<String, FieldAnnos> fields = new HashMap<>(4);
 
     /** Collection of declared enum constants (empty if not an enum). */
     public Set<String> enumConstants = new HashSet<>(2);
@@ -1736,7 +1736,7 @@ public class WholeProgramInferenceJavaParserStorage
     public AnnotatedTypeMirror getPreconditionsForExpression(
         String expression, AnnotatedTypeMirror declaredType, AnnotatedTypeFactory atf) {
       if (preconditions == null) {
-        preconditions = new HashMap<>(1);
+        preconditions = new HashMap<>(4);
       }
 
       if (!preconditions.containsKey(expression)) {
@@ -1763,7 +1763,7 @@ public class WholeProgramInferenceJavaParserStorage
     public AnnotatedTypeMirror getPostconditionsForExpression(
         String expression, AnnotatedTypeMirror declaredType, AnnotatedTypeFactory atf) {
       if (postconditions == null) {
-        postconditions = new HashMap<>(1);
+        postconditions = new HashMap<>(4);
       }
 
       if (!postconditions.containsKey(expression)) {
