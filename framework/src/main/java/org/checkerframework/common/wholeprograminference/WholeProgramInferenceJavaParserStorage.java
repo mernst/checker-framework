@@ -1488,26 +1488,12 @@ public class WholeProgramInferenceJavaParserStorage
     }
   }
 
-  public static class InferredDeclared {
-    public final AnnotatedTypeMirror inferred;
-    public final AnnotatedTypeMirror declared;
-
-    public InferredDeclared(AnnotatedTypeMirror inferred, AnnotatedTypeMirror declared) {
-      this.inferred = inferred;
-      this.declared = declared;
-    }
-
-    @Override
-    public String toString() {
-      return "InferredDeclared(" + inferred + ", " + declared + ")";
-    }
-  }
-
   /**
    * Stores the JavaParser node for a method or constructor and the annotations that have been
    * inferred about its parameters and return type.
    */
   public class CallableDeclarationAnnos implements DeepCopyable<CallableDeclarationAnnos> {
+    /** The class that contains the method. */
     public final String className;
 
     /** Wrapped method or constructor declaration. */
@@ -2107,6 +2093,31 @@ public class WholeProgramInferenceJavaParserStorage
     @Override
     public String toString() {
       return "FieldAnnos [declaration=" + declaration + ", type=" + type + "]";
+    }
+  }
+
+  /** A pair of two annotated types: an inferred type and a declared type. */
+  public static class InferredDeclared {
+    /** The inferred type. */
+    public final AnnotatedTypeMirror inferred;
+
+    /** The declared type. */
+    public final AnnotatedTypeMirror declared;
+
+    /**
+     * Creates an InferredDeclared.
+     *
+     * @param inferred the inferred type
+     * @param declared the declared type
+     */
+    public InferredDeclared(AnnotatedTypeMirror inferred, AnnotatedTypeMirror declared) {
+      this.inferred = inferred;
+      this.declared = declared;
+    }
+
+    @Override
+    public String toString() {
+      return "InferredDeclared(" + inferred + ", " + declared + ")";
     }
   }
 }
