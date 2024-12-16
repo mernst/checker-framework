@@ -408,6 +408,7 @@ public class WholeProgramInferenceJavaParserStorage
   /**
    * Returns the precondition annotations for the given expression.
    *
+   * @param className the class that contains the method, for diagnostics only
    * @param methodElement the method
    * @param expression the expression
    * @param declaredType the declared type of the expression
@@ -436,6 +437,7 @@ public class WholeProgramInferenceJavaParserStorage
   /**
    * Returns the postcondition annotations for an expression.
    *
+   * @param className the class that contains the method, for diagnostics only
    * @param methodElement the method
    * @param expression the expression
    * @param declaredType the declared type of the expression
@@ -1543,6 +1545,7 @@ public class WholeProgramInferenceJavaParserStorage
     /**
      * Creates a wrapper for the given method or constructor declaration.
      *
+     * @param className the class that contains the method, for diagnostics only
      * @param declaration method or constructor declaration to wrap
      */
     public CallableDeclarationAnnos(String className, CallableDeclaration<?> declaration) {
@@ -1766,6 +1769,8 @@ public class WholeProgramInferenceJavaParserStorage
      * Returns an AnnotatedTypeMirror containing the preconditions for the given expression. Changes
      * to the returned AnnotatedTypeMirror are reflected in this CallableDeclarationAnnos.
      *
+     * @param className the class that contains the method, for diagnostics only
+     * @param methodName the method name, for diagnostics only
      * @param expression a string representing a Java expression, in the same format as the argument
      *     to a {@link org.checkerframework.framework.qual.RequiresQualifier} annotation
      * @param declaredType the declared type of {@code expression}
@@ -1797,6 +1802,8 @@ public class WholeProgramInferenceJavaParserStorage
      * Returns an AnnotatedTypeMirror containing the postconditions for the given expression.
      * Changes to the returned AnnotatedTypeMirror are reflected in this CallableDeclarationAnnos.
      *
+     * @param className the class that contains the method, for diagnostics only
+     * @param methodName the method name, for diagnostics only
      * @param expression a string representing a Java expression, in the same format as the argument
      *     to a {@link org.checkerframework.framework.qual.EnsuresQualifier} annotation
      * @param declaredType the declared type of {@code expression}
