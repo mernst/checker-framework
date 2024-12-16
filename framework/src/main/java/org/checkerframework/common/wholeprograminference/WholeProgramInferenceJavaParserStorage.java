@@ -1697,9 +1697,8 @@ public class WholeProgramInferenceJavaParserStorage
     public Map<String, IPair<AnnotatedTypeMirror, AnnotatedTypeMirror>> getPreconditions() {
       if (preconditions == null) {
         return Collections.emptyMap();
-      } else {
-        return Collections.unmodifiableMap(preconditions);
       }
+      return Collections.unmodifiableMap(preconditions);
     }
 
     /**
@@ -1719,7 +1718,6 @@ public class WholeProgramInferenceJavaParserStorage
       if (postconditions == null) {
         return Collections.emptyMap();
       }
-
       return Collections.unmodifiableMap(postconditions);
     }
 
