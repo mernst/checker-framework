@@ -45,7 +45,10 @@ njr_job(6)
 njr_job(7)
 njr_job(8)
 
+junit_job(11)
+junit_job(17)
 junit_job(21)
+junit_job(23)
 
 nonjunit_job(21)
 
