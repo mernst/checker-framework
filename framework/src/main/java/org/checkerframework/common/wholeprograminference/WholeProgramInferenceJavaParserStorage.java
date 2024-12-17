@@ -1895,6 +1895,7 @@ public class WholeProgramInferenceJavaParserStorage
               "," + System.lineSeparator() + "  ",
               "CallableDeclarationAnnos{",
               System.lineSeparator() + "}");
+      sj.add(className + "." + declaration.getName().toString());
       sj.add("returnType = " + returnType);
       sj.add("receiverType = " + receiverType);
       sj.add("parameterTypes = " + parameterTypes);
