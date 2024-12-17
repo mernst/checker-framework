@@ -87,7 +87,6 @@ njr_job(5)
 njr_job(6)
 njr_job(7)
 njr_job(8)
-dnl
 
 ## The downstream jobs are not currently needed because test-downstream.sh is empty.
 # - job: downstream_jdk11

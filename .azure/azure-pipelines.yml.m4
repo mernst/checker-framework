@@ -35,6 +35,16 @@ jobs:
   - bash: true
     displayName: canary_jobs
 
+# TODO: when these are passing, add dependsOn and move them into the daily CI job.
+njr_job(1)
+njr_job(2)
+njr_job(3)
+njr_job(4)
+njr_job(5)
+njr_job(6)
+njr_job(7)
+njr_job(8)
+
 junit_job(21)
 
 nonjunit_job(21)
