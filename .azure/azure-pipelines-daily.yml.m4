@@ -78,6 +78,17 @@ plume_lib_job(17)
 plume_lib_job(21)
 plume_lib_job(23)
 
+# TODO: add dependsOn, once these are passing.  (Before they pass, I want them to run without delay.)
+njr_job(1)
+njr_job(2)
+njr_job(3)
+njr_job(4)
+njr_job(5)
+njr_job(6)
+njr_job(7)
+njr_job(8)
+dnl
+
 ## The downstream jobs are not currently needed because test-downstream.sh is empty.
 # - job: downstream_jdk11
 #   dependsOn:

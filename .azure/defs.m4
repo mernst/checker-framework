@@ -200,6 +200,19 @@ ifelse($1,lts_version,,[dnl
     fetchDepth: 25
   - bash: ./checker/bin-devel/test-plume-lib.sh
     displayName: test-plume-lib.sh])dnl
+dnl
+define([njr_job], [dnl
+- job: wpi_njr_part$1_jdk17
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: mdernst/cf-ubuntu-jdk17:latest
+  timeoutInMinutes: 150
+  steps:
+  - checkout: self
+    fetchDepth: 25
+  - bash: ./checker/bin-devel/test-njr.sh part$1
+    displayName: test-njr part$1])dnl
+dnl
 ifelse([
 Local Variables:
 eval: (make-local-variable 'after-save-hook)
