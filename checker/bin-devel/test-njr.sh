@@ -7,7 +7,7 @@
 # Don't halt on all errors.
 # set -e
 
-set -o verbose
+# set -o verbose
 set -o xtrace
 export SHELLOPTS
 echo "SHELLOPTS=${SHELLOPTS}"

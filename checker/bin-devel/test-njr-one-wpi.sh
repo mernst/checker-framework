@@ -8,7 +8,7 @@
 echo "entering $(basename "${BASH_SOURCE[0]}") $*"
 
 set -e
-set -o verbose
+# set -o verbose
 set -o xtrace
 export SHELLOPTS
 echo "SHELLOPTS=${SHELLOPTS}"
