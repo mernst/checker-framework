@@ -91,6 +91,7 @@ import org.checkerframework.common.reflection.qual.MethodVal;
 import org.checkerframework.common.wholeprograminference.WholeProgramInference;
 import org.checkerframework.common.wholeprograminference.WholeProgramInferenceImplementation;
 import org.checkerframework.common.wholeprograminference.WholeProgramInferenceJavaParserStorage;
+import org.checkerframework.common.wholeprograminference.WholeProgramInferenceJavaParserStorage.InferredDeclared;
 import org.checkerframework.common.wholeprograminference.WholeProgramInferenceScenesStorage;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -554,7 +555,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * every type-checked class. This information can be visualized by an editor/IDE that supports
    * LSP.
    */
-  private final TypeInformationPresenter typeInformationPresenter;
+  protected final TypeInformationPresenter typeInformationPresenter;
 
   /**
    * Constructs a factory from the given checker.
@@ -611,12 +612,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
     this.typeFormatter = createAnnotatedTypeFormatter();
     this.annotationFormatter = createAnnotationFormatter();
-
-    if (checker.hasOption("lspTypeInfo")) {
-      this.typeInformationPresenter = new TypeInformationPresenter(this);
-    } else {
-      this.typeInformationPresenter = null;
-    }
+    this.typeInformationPresenter = createTypeInformationPresenter();
 
     if (checker.hasOption("infer")) {
       checkInvalidOptionsInferSignatures();
@@ -904,11 +900,11 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   /**
    * Set the CompilationUnitTree that should be used.
    *
-   * @param root the new compilation unit to use
+   * @param newRoot the new compilation unit to use
    */
-  public void setRoot(@Nullable CompilationUnitTree root) {
-    if (root != null && wholeProgramInference != null) {
-      for (Tree typeDecl : root.getTypeDecls()) {
+  public void setRoot(@Nullable CompilationUnitTree newRoot) {
+    if (newRoot != null && wholeProgramInference != null) {
+      for (Tree typeDecl : newRoot.getTypeDecls()) {
         if (typeDecl.getKind() == Tree.Kind.CLASS) {
           ClassTree classTree = (ClassTree) typeDecl;
           wholeProgramInference.preprocessClassTree(classTree);
@@ -916,7 +912,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       }
     }
 
-    this.root = root;
+    this.root = newRoot;
     // Do not clear here. Only the primary checker should clear this cache.
     // treePathCache.clear();
 
@@ -1226,11 +1222,12 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
-   * Creates the AnnotatedTypeFormatter used by this type factory and all AnnotatedTypeMirrors it
-   * creates. The AnnotatedTypeFormatter is used in AnnotatedTypeMirror.toString and will affect the
-   * error messages printed for checkers that use this type factory.
+   * Creates the {@link AnnotatedTypeFormatter} used by this type factory and all {@link
+   * AnnotatedTypeMirror}s it creates. The {@link AnnotatedTypeFormatter} is used in {@link
+   * AnnotatedTypeMirror#toString()} and will affect the error messages printed for checkers that
+   * use this type factory.
    *
-   * @return the AnnotatedTypeFormatter to pass to all instantiated AnnotatedTypeMirrors
+   * @return the {@link AnnotatedTypeFormatter} to pass to all {@link AnnotatedTypeMirror}s
    */
   protected AnnotatedTypeFormatter createAnnotatedTypeFormatter() {
     boolean printVerboseGenerics = checker.hasOption("printVerboseGenerics");
@@ -1240,16 +1237,46 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         printVerboseGenerics || checker.hasOption("printAllQualifiers"));
   }
 
+  /**
+   * Return the current {@link AnnotatedTypeFormatter}.
+   *
+   * @return the current {@link AnnotatedTypeFormatter}
+   */
   public AnnotatedTypeFormatter getAnnotatedTypeFormatter() {
     return typeFormatter;
   }
 
+  /**
+   * Creates the {@link AnnotationFormatter} used by this type factory.
+   *
+   * @return the {@link AnnotationFormatter} used by this type factory
+   */
   protected AnnotationFormatter createAnnotationFormatter() {
     return new DefaultAnnotationFormatter();
   }
 
+  /**
+   * Return the current {@link AnnotationFormatter}.
+   *
+   * @return the current {@link AnnotationFormatter}
+   */
   public AnnotationFormatter getAnnotationFormatter() {
     return annotationFormatter;
+  }
+
+  /**
+   * Creates the {@link TypeInformationPresenter} used in {@link #postProcessClassTree(ClassTree)}
+   * to output type information about the current class.
+   *
+   * @return the {@link TypeInformationPresenter} used by this type factory, or null
+   */
+  protected @Nullable TypeInformationPresenter createTypeInformationPresenter() {
+    // TODO: look into a similar mechanism as for CFG visualization.
+    if (checker.hasOption("lspTypeInfo")) {
+      return new TypeInformationPresenter(this);
+    } else {
+      return null;
+    }
   }
 
   /**
@@ -1492,6 +1519,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     AnnotatedTypeMirror fromTypeTree = fromTypeTree(clause);
     AnnotationMirrorSet bound = getTypeDeclarationBounds(fromTypeTree.getUnderlyingType());
     fromTypeTree.addMissingAnnotations(bound);
+    // Annotate any type variables in the type.
+    addComputedTypeAnnotations(clause, fromTypeTree);
     return fromTypeTree;
   }
 
@@ -2464,10 +2493,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     }
 
     if (typeArguments.inferenceCrash && tree instanceof MethodInvocationTree) {
-      // If inference crashed, then the return type will not be the correct Java type.  This can
-      // cause crashes elsewhere in the framework.  To avoid those crashes, create an ATM with the
-      // correct Java type and default annotations.  (If inference crashes an error will be issued
-      // in the BaseTypeVisitor.)
+      // If inference crashed, then the return type will not be the correct Java type.  This
+      // can cause crashes elsewhere in the framework.  To avoid those crashes, create an ATM
+      // with the correct Java type and default annotations.  (If inference crashes an error
+      // will be issued in the BaseTypeVisitor.)
       TypeMirror type = TreeUtils.typeOf(tree);
       AnnotatedTypeMirror returnType = AnnotatedTypeMirror.createType(type, this, false);
       addDefaultAnnotations(returnType);
@@ -2855,10 +2884,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     stubTypes.injectRecordComponentType(types, ctor, con);
 
     if (typeArguments.inferenceCrash) {
-      // If inference crashed, then the return type will not be the correct Java type.  This can
-      // cause crashes elsewhere in the framework.  To avoid those crashes, create an ATM with the
-      // correct Java type and default annotations.  (If inference crashes an error will be issued
-      // in the BaseTypeVisitor.)
+      // If inference crashed, then the return type will not be the correct Java type.  This
+      // can cause crashes elsewhere in the framework.  To avoid those crashes, create an ATM
+      // with the correct Java type and default annotations.  (If inference crashes an error
+      // will be issued in the BaseTypeVisitor.)
       TypeMirror typeTM = TreeUtils.typeOf(tree);
       AnnotatedTypeMirror returnType = AnnotatedTypeMirror.createType(typeTM, this, false);
       addDefaultAnnotations(returnType);
@@ -5546,9 +5575,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * Side-effects the method or constructor annotations to make any desired changes before writing
    * to an annotation file.
    *
+   * @param className the class that contains the method, for diagnostics only
    * @param methodAnnos the method or constructor annotations to modify
    */
-  public void wpiPrepareMethodForWriting(AMethod methodAnnos) {
+  public void wpiPrepareMethodForWriting(String className, AMethod methodAnnos) {
     // This implementation does nothing.
   }
 
@@ -5568,18 +5598,54 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       WholeProgramInferenceJavaParserStorage.CallableDeclarationAnnos methodAnnos,
       Collection<WholeProgramInferenceJavaParserStorage.CallableDeclarationAnnos> inSupertypes,
       Collection<WholeProgramInferenceJavaParserStorage.CallableDeclarationAnnos> inSubtypes) {
-    Map<String, IPair<AnnotatedTypeMirror, AnnotatedTypeMirror>> precondMap =
-        methodAnnos.getPreconditions();
-    Map<String, IPair<AnnotatedTypeMirror, AnnotatedTypeMirror>> postcondMap =
-        methodAnnos.getPostconditions();
+    Map<String, InferredDeclared> precondMap = methodAnnos.getPreconditions();
+    Map<String, InferredDeclared> postcondMap = methodAnnos.getPostconditions();
+    String className = methodAnnos.className;
+    String methodName = methodAnnos.declaration.getName().toString();
     for (WholeProgramInferenceJavaParserStorage.CallableDeclarationAnnos inSupertype :
         inSupertypes) {
-      makeConditionConsistentWithOtherMethod(precondMap, inSupertype, true, true);
-      makeConditionConsistentWithOtherMethod(postcondMap, inSupertype, false, true);
+      // methodName and otherMethodName are usually the same, but not for constructors.
+      String otherMethodName = inSupertype.declaration.getName().toString();
+      makeConditionConsistentWithOtherMethod(
+          methodName,
+          otherMethodName,
+          className,
+          inSupertype.className,
+          precondMap,
+          inSupertype,
+          true,
+          true);
+      makeConditionConsistentWithOtherMethod(
+          methodName,
+          otherMethodName,
+          className,
+          inSupertype.className,
+          postcondMap,
+          inSupertype,
+          false,
+          true);
     }
     for (WholeProgramInferenceJavaParserStorage.CallableDeclarationAnnos inSubtype : inSubtypes) {
-      makeConditionConsistentWithOtherMethod(precondMap, inSubtype, true, false);
-      makeConditionConsistentWithOtherMethod(postcondMap, inSubtype, false, false);
+      // methodName and otherMethodName are usually the same, but not for constructors.
+      String otherMethodName = inSubtype.declaration.getName().toString();
+      makeConditionConsistentWithOtherMethod(
+          methodName,
+          otherMethodName,
+          className,
+          inSubtype.className,
+          precondMap,
+          inSubtype,
+          true,
+          false);
+      makeConditionConsistentWithOtherMethod(
+          methodName,
+          otherMethodName,
+          className,
+          inSubtype.className,
+          postcondMap,
+          inSubtype,
+          false,
+          false);
     }
   }
 
@@ -5592,6 +5658,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * <p>Overriding implementations should call {@code
    * super.makeConditionConsistentWithOtherMethod()}.
    *
+   * @param methodName the method name, for diagnostics only
+   * @param otherMethodName the other method name, for diagnostics only
+   * @param className the class containing the method
+   * @param otherClassName the class containing the other method, for diagnostics only
    * @param conditionMap pre- or post-condition annotations on a method M; may be side-effected
    * @param otherDeclAnnos annotations on a method that M overrides or that overrides M; that is, on
    *     a method in the same "method family" as M; may be side-effected
@@ -5601,20 +5671,23 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    *     a subtype
    */
   protected void makeConditionConsistentWithOtherMethod(
-      Map<String, IPair<AnnotatedTypeMirror, AnnotatedTypeMirror>> conditionMap,
+      String methodName,
+      String otherMethodName,
+      String className,
+      String otherClassName,
+      Map<String, InferredDeclared> conditionMap,
       WholeProgramInferenceJavaParserStorage.CallableDeclarationAnnos otherDeclAnnos,
       boolean isPrecondition,
       boolean otherIsSupertype) {
-    for (Map.Entry<String, IPair<AnnotatedTypeMirror, AnnotatedTypeMirror>> entry :
-        conditionMap.entrySet()) {
+    for (Map.Entry<String, InferredDeclared> entry : conditionMap.entrySet()) {
       String expr = entry.getKey();
-      IPair<AnnotatedTypeMirror, AnnotatedTypeMirror> pair = entry.getValue();
-      AnnotatedTypeMirror inferredType = pair.first;
-      AnnotatedTypeMirror declaredType = pair.second;
+      InferredDeclared pair = entry.getValue();
+      AnnotatedTypeMirror inferredType = pair.inferred;
+      AnnotatedTypeMirror declaredType = pair.declared;
       if (otherIsSupertype ? isPrecondition : !isPrecondition) {
         // other is a supertype & compare preconditions, or
         // other is a subtype & compare postconditions.
-        Map<String, IPair<AnnotatedTypeMirror, AnnotatedTypeMirror>> otherConditionMap =
+        Map<String, InferredDeclared> otherConditionMap =
             isPrecondition ? otherDeclAnnos.getPreconditions() : otherDeclAnnos.getPostconditions();
         // TODO: Complete support for "every expression" conditions, then remove the
         // `!otherConditionMap.containsKey(expr)` test.
@@ -5630,8 +5703,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         } else {
           AnnotatedTypeMirror otherInferredType =
               isPrecondition
-                  ? otherDeclAnnos.getPreconditionsForExpression(expr, declaredType, this)
-                  : otherDeclAnnos.getPostconditionsForExpression(expr, declaredType, this);
+                  ? otherDeclAnnos.getPreconditionsForExpression(
+                      className, methodName, expr, declaredType, this)
+                  : otherDeclAnnos.getPostconditionsForExpression(
+                      className, methodName, expr, declaredType, this);
           this.getWholeProgramInference().updateAtmWithLub(inferredType, otherInferredType);
         }
       }

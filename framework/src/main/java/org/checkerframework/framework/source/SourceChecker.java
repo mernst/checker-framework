@@ -405,7 +405,7 @@ import org.plumelib.util.UtilPlume;
   // Sets AnnotatedTypeFactory shouldCache to false
   "atfDoNotCache",
 
-  // Language Server Protocol(LSP) Support
+  // Language Server Protocol (LSP) Support
 
   // TODO: document `-AlspTypeInfo` in manual, as a debugging option.
   // Output detailed type information for nodes in AST
@@ -740,7 +740,7 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
    */
   @SuppressWarnings("interning:assignment") // used in == tests
   public void setRoot(CompilationUnitTree newRoot) {
-    this.currentRoot = newRoot;
+    currentRoot = newRoot;
     visitor.setRoot(currentRoot);
     if (parentChecker == null) {
       // Only clear the path cache if this is the main checker.
@@ -1126,13 +1126,13 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
   private int errsOnLastExit = 0;
 
   /**
-   * Returns the requested subchecker. A checker of a given class can only be run once, so this
-   * returns the only such checker, or null if none was found. The caller must know the exact
-   * checker class to request.
+   * Returns the requested (immediate) subchecker. A checker of a given class can only be run once,
+   * so this returns the only such checker, or null if none was found. The caller must know the
+   * exact checker class to request.
    *
    * @param <T> the class of the subchecker to return
    * @param checkerClass the class of the subchecker to return
-   * @return the requested subchecker or null if not found
+   * @return the requested (immediate) subchecker or null if not found
    */
   @SuppressWarnings("unchecked")
   public <T extends SourceChecker> @Nullable T getSubchecker(Class<T> checkerClass) {
@@ -1253,8 +1253,8 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
     // All other messages are printed immediately.  This includes errors issued because the
     // checker threw an exception.
 
-    // Update errsOnLastExit for all checkers, so that no matter which one is run next, its test of
-    // whether a Java error occurred is correct.
+    // Update errsOnLastExit for all checkers, so that no matter which one is run next, its test
+    // of whether a Java error occurred is correct.
 
     Context context = ((JavacProcessingEnvironment) processingEnv).getContext();
     Log log = Log.instance(context);
@@ -1441,27 +1441,25 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
     }
 
     String defaultFormat = "(" + messageKey + ")";
+    String prefix;
     String fmtString;
     if (this.processingEnv.getOptions() != null /*nnbug*/
         && this.processingEnv.getOptions().containsKey("nomsgtext")) {
-      fmtString = defaultFormat;
+      prefix = defaultFormat;
+      fmtString = null;
     } else if (this.processingEnv.getOptions() != null /*nnbug*/
         && this.processingEnv.getOptions().containsKey("detailedmsgtext")) {
       // The -Adetailedmsgtext command-line option was given, so output
       // a stylized error message for easy parsing by a tool.
-      fmtString =
-          detailedMsgTextPrefix(source, defaultFormat, args)
-              + fullMessageOf(messageKey, defaultFormat);
+      prefix = detailedMsgTextPrefix(source, defaultFormat, args);
+      fmtString = fullMessageOf(messageKey, defaultFormat);
     } else {
-      fmtString =
-          "["
-              + suppressWarningsString(messageKey)
-              + "] "
-              + fullMessageOf(messageKey, defaultFormat);
+      prefix = "[" + suppressWarningsString(messageKey) + "] ";
+      fmtString = fullMessageOf(messageKey, defaultFormat);
     }
     String messageText;
     try {
-      messageText = String.format(fmtString, args);
+      messageText = prefix + (fmtString == null ? "" : String.format(fmtString, args));
     } catch (Exception e) {
       throw new BugInCF(
           "Invalid format string: \"" + fmtString + "\" args: " + Arrays.toString(args), e);

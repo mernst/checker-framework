@@ -383,9 +383,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
   // **********************************************************************
 
   @Override
-  public void setRoot(CompilationUnitTree root) {
-    atypeFactory.setRoot(root);
-    super.setRoot(root);
+  public void setRoot(CompilationUnitTree newRoot) {
+    atypeFactory.setRoot(newRoot);
+    super.setRoot(newRoot);
     testJointJavacJavaParserVisitor();
     testAnnotationInsertion();
   }
@@ -582,24 +582,15 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
     Tree ext = classTree.getExtendsClause();
     if (ext != null) {
-      for (AnnotatedDeclaredType superType : classType.directSupertypes()) {
-        if (superType.getUnderlyingType().asElement().getKind().isClass()) {
-          validateType(ext, superType);
-          break;
-        }
-      }
+      AnnotatedTypeMirror superClass = atypeFactory.getTypeOfExtendsImplements(ext);
+      validateType(ext, superClass);
     }
 
     List<? extends Tree> impls = classTree.getImplementsClause();
     if (impls != null) {
       for (Tree im : impls) {
-        for (AnnotatedDeclaredType superType : classType.directSupertypes()) {
-          if (superType.getUnderlyingType().asElement().getKind().isInterface()
-              && types.isSameType(superType.getUnderlyingType(), TreeUtils.typeOf(im))) {
-            validateType(im, superType);
-            break;
-          }
-        }
+        AnnotatedTypeMirror superInterface = atypeFactory.getTypeOfExtendsImplements(im);
+        validateType(im, superInterface);
       }
     }
 
@@ -960,7 +951,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     if (checker.shouldSkipDefs(enclosingClass, tree)) {
       return null;
     }
-    processMethodTree(tree);
+    processMethodTree("<unknown from visitMethod>", tree);
     return null;
   }
 
@@ -968,9 +959,10 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    * Type-check {@literal methodTree}. Subclasses should override this method instead of {@link
    * #visitMethod(MethodTree, Void)}.
    *
+   * @param className the class that contains the method, for diagnostics only
    * @param tree the method to type-check
    */
-  public void processMethodTree(MethodTree tree) {
+  public void processMethodTree(String className, MethodTree tree) {
 
     // We copy the result from getAnnotatedType to ensure that circular types (e.g. K extends
     // Comparable<K>) are represented by circular AnnotatedTypeMirrors, which avoids problems
@@ -1058,7 +1050,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         if (store != null) {
           atypeFactory
               .getWholeProgramInference()
-              .updateContracts(Analysis.BeforeOrAfter.AFTER, methodElement, store);
+              .updateContracts(className, Analysis.BeforeOrAfter.AFTER, methodElement, store);
         }
       }
 
@@ -2269,22 +2261,21 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
     Tree enclosing = TreePathUtil.enclosingOfKind(getCurrentPath(), methodAndLambdaExpression);
 
-    AnnotatedTypeMirror ret = null;
+    AnnotatedTypeMirror declaredReturnType = null;
     if (enclosing.getKind() == Tree.Kind.METHOD) {
-
-      MethodTree enclosingMethod = TreePathUtil.enclosingMethod(getCurrentPath());
-      boolean valid = validateTypeOf(enclosing);
+      MethodTree enclosingMethod = (MethodTree) enclosing;
+      boolean valid = validateTypeOf(enclosingMethod);
       if (valid) {
-        ret = atypeFactory.getMethodReturnType(enclosingMethod, tree);
+        declaredReturnType = atypeFactory.getMethodReturnType(enclosingMethod, tree);
       }
     } else {
       AnnotatedExecutableType result =
           atypeFactory.getFunctionTypeFromTree((LambdaExpressionTree) enclosing);
-      ret = result.getReturnType();
+      declaredReturnType = result.getReturnType();
     }
 
-    if (ret != null) {
-      commonAssignmentCheck(ret, tree.getExpression(), "return");
+    if (declaredReturnType != null) {
+      commonAssignmentCheck(declaredReturnType, tree.getExpression(), "return");
     }
     return super.visitReturn(tree, p);
   }
