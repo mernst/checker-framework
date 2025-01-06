@@ -664,7 +664,7 @@ public class AnnotationFileParser {
       afp.process(annotationFileAnnos);
     } catch (ParseProblemException e) {
       for (Problem p : e.getProblems()) {
-        System.out.printf("problem in %s: %s%n", filename, p.getVerboseMessage());
+        // System.out.printf("problem in %s: %s%n", filename, p.getVerboseMessage());
         afp.warn(null, p.getVerboseMessage());
       }
     } catch (Throwable e) {
