@@ -1,5 +1,8 @@
 changequote(`[',`]')dnl
 include([defs.m4])dnl
+trigger: none
+pr: none
+
 schedules:
 # 8am UTC is midnight PST.
 - cron: '0 8 * * *'
@@ -25,8 +28,6 @@ jobs:
    - inference_part2_jdk21
    - typecheck_part1_jdk21
    - typecheck_part2_jdk21
-   - misc_jdk21
-   - misc_jdk23
   pool:
     vmImage: 'ubuntu-latest'
   steps:
