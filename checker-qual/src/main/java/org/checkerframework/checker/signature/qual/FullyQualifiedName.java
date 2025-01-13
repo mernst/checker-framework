@@ -33,9 +33,9 @@ import org.checkerframework.framework.qual.SubtypeOf;
  *  }
  * </pre>
  *
- * the fully-qualified names for the two types are
- * org.checkerframework.checker.signature.SignatureChecker and
- * org.checkerframework.checker.signature.SignatureChecker.Inner.
+ * the fully-qualified names for the two types are {@code
+ * org.checkerframework.checker.signature.SignatureChecker} and {@code
+ * org.checkerframework.checker.signature.SignatureChecker.Inner}.
  *
  * <p>Fully-qualified names and {@linkplain BinaryName binary names} are the same for top-level
  * classes and only differ by a '.' vs. '$' for inner classes.
@@ -45,5 +45,5 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf(FqBinaryName.class)
+@SubtypeOf(SignatureUnknown.class)
 public @interface FullyQualifiedName {}

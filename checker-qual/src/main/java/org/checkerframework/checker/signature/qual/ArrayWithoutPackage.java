@@ -17,5 +17,5 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf({FullyQualifiedName.class, ClassGetSimpleName.class})
+@SubtypeOf({FullyQualifiedName.class, FqBinaryName.class, ClassGetSimpleName.class})
 public @interface ArrayWithoutPackage {}

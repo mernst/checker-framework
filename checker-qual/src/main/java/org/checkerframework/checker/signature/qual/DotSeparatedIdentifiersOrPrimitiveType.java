@@ -21,5 +21,5 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf({FullyQualifiedName.class, BinaryNameOrPrimitiveType.class})
+@SubtypeOf({FullyQualifiedNameOrFqBinaryName.class, BinaryNameOrPrimitiveType.class})
 public @interface DotSeparatedIdentifiersOrPrimitiveType {}

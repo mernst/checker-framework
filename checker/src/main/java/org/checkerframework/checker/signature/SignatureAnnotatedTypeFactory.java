@@ -21,7 +21,6 @@ import org.checkerframework.checker.signature.qual.ArrayWithoutPackage;
 import org.checkerframework.checker.signature.qual.BinaryName;
 import org.checkerframework.checker.signature.qual.BinaryNameOrPrimitiveType;
 import org.checkerframework.checker.signature.qual.CanonicalName;
-import org.checkerframework.checker.signature.qual.CanonicalNameAndBinaryName;
 import org.checkerframework.checker.signature.qual.ClassGetName;
 import org.checkerframework.checker.signature.qual.ClassGetSimpleName;
 import org.checkerframework.checker.signature.qual.DotSeparatedIdentifiers;
@@ -73,10 +72,6 @@ public class SignatureAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The {@literal @}{@link CanonicalName} annotation. */
   protected final AnnotationMirror CANONICAL_NAME =
       AnnotationBuilder.fromClass(elements, CanonicalName.class);
-
-  /** The {@literal @}{@link CanonicalNameAndBinaryName} annotation. */
-  protected final AnnotationMirror CANONICAL_NAME_AND_BINARY_NAME =
-      AnnotationBuilder.fromClass(elements, CanonicalNameAndBinaryName.class);
 
   /** The {@literal @}{@link PrimitiveType} annotation. */
   protected final AnnotationMirror PRIMITIVE_TYPE =
@@ -318,8 +313,8 @@ public class SignatureAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 TypeElement typeElt = TypesUtils.getTypeElement(literalType);
                 Element enclosing = typeElt.getEnclosingElement();
                 if (enclosing == null || enclosing.getKind() == ElementKind.PACKAGE) {
-                  type.replaceAnnotation(
-                      isClassGetName ? DOT_SEPARATED_IDENTIFIERS : CANONICAL_NAME_AND_BINARY_NAME);
+                  // if isClassGetName, then it's also a canonical name (?)
+                  type.replaceAnnotation(DOT_SEPARATED_IDENTIFIERS);
                 }
               }
             }

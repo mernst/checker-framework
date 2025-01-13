@@ -9,8 +9,10 @@ two new annotations:
   * `@NonEmpty`
   * `@UnknownNonEmpty`
 
-The Signature Checker no longer supports `@BinaryNameWithoutPackage` because
-it is equivalent to `@Identifier`; use `@Identifier` instead.
+The Signature Checker no longer supports some redundant qualifiers
+ * removed `@BinaryNameWithoutPackage`; use `@Identifier`
+ * removed `@CanonicalNameOrPrimitiveType`; use `@CanonicalName`
+ * removed `@CanonicalNameAndBinaryName`; use `@DotSeparatedIdentifiers`
 
 **Implementation details:**
 
