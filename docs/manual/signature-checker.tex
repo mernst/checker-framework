@@ -29,9 +29,12 @@ examples appear in a table below.
 \caption{Partial type hierarchy for the Signature type system, showing
   string representations of a Java type.
   The type qualifiers are applicable to \<CharSequence> and its subtypes.
-  Programmers usually only need to write
-  the boldfaced qualifiers.  The other qualifiers (and some not shown) are
-  included to improve the internal handling of String literals.}
+  Programmers primarily write
+  the boldfaced qualifiers.  The other qualifiers (and some
+  \href{https://checkerframework.org/api/org/checkerframework/checker/signature/qual/package-summary.html}{not
+  shown}) are
+  included to handle other strings and to improve the internal handling of
+  String literals.}
 \label{fig-signature-hierarchy}
 \end{figure}
 
@@ -107,6 +110,13 @@ examples appear in a table below.
     \S 6.7}).
 
 \end{description}
+
+The Signature Checker also supports other qualifiers such as
+\refqualclass{checker/signature/qual}{PackageName} and
+\refqualclass{checker/signature/qual}{ModuleName}, which you may wish to
+use.  See the
+\href{https://checkerframework.org/api/org/checkerframework/checker/signature/qual/package-summary.html}{list
+of Signature Checker qualifiers}.
 
 Other type qualifiers are the intersection of two or more qualifiers listed
 above; for example, a

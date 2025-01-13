@@ -15,7 +15,7 @@ import org.checkerframework.framework.qual.SubtypeOf;
  * its class file is slightly different.
  *
  * <p>Internal form is the same as the binary name, but with periods ({@code .}) replaced by forward
- * slashes ({@code /}).
+ * slashes ({@code /}). Internal form is equivalent to slash-separated identifiers.
  *
  * <p>Programmers more often use the binary name, leaving the internal form as a JVM implementation
  * detail.

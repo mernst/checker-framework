@@ -21,14 +21,17 @@ import org.checkerframework.framework.qual.SubtypeOf;
  *  }
  * </pre>
  *
- * the binary names for the two types are org.checkerframework.checker.signature.SignatureChecker
- * and org.checkerframework.checker.signature.SignatureChecker$Inner.
+ * the binary names for the two types are {@code
+ * org.checkerframework.checker.signature.SignatureChecker} and {@code
+ * org.checkerframework.checker.signature.SignatureChecker$Inner}.
  *
- * <p>Binary names and {@linkplain InternalForm internal form} only differ by the use of '.' vs. '/'
- * as package separator.
+ * <p>Binary name is syntactically equivalent to dot-separated identifiers (since {@code
+ * SignatureChecker$Inner} is a legal identifier).
  *
  * <p>The binary name should not be confused with the {@linkplain InternalForm internal form}, which
- * is a variant of the binary name that actually appears in the class file.
+ * is a variant of the binary name that actually appears in the class file. Binary names and
+ * {@linkplain InternalForm internal form} only differ by the use of '.' vs. '/' as package
+ * separator.
  *
  * @checker_framework.manual #signature-checker Signature Checker
  */

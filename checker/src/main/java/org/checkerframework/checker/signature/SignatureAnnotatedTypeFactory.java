@@ -29,8 +29,7 @@ import org.checkerframework.checker.signature.qual.DotSeparatedIdentifiersOrPrim
 import org.checkerframework.checker.signature.qual.FieldDescriptor;
 import org.checkerframework.checker.signature.qual.FieldDescriptorForPrimitive;
 import org.checkerframework.checker.signature.qual.FieldDescriptorWithoutPackage;
-import org.checkerframework.checker.signature.qual.FqBinaryName;
-import org.checkerframework.checker.signature.qual.FullyQualifiedName;
+import org.checkerframework.checker.signature.qual.FullyQualifiedNameOrFqBinaryName;
 import org.checkerframework.checker.signature.qual.Identifier;
 import org.checkerframework.checker.signature.qual.IdentifierOrPrimitiveType;
 import org.checkerframework.checker.signature.qual.InternalForm;
@@ -180,12 +179,10 @@ public class SignatureAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     result.addStringPattern(
         SignatureRegexes.FieldDescriptorWithoutPackagePattern,
         AnnotationBuilder.fromClass(elements, FieldDescriptorWithoutPackage.class));
+
     result.addStringPattern(
-        SignatureRegexes.FqBinaryNamePattern,
-        AnnotationBuilder.fromClass(elements, FqBinaryName.class));
-    result.addStringPattern(
-        SignatureRegexes.FullyQualifiedNamePattern,
-        AnnotationBuilder.fromClass(elements, FullyQualifiedName.class));
+        SignatureRegexes.DotSeparatedIdentifiersPattern,
+        AnnotationBuilder.fromClass(elements, DotSeparatedIdentifiers.class));
     result.addStringPattern(
         SignatureRegexes.IdentifierPattern,
         AnnotationBuilder.fromClass(elements, Identifier.class));
@@ -198,6 +195,17 @@ public class SignatureAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     result.addStringPattern(
         SignatureRegexes.PrimitiveTypePattern,
         AnnotationBuilder.fromClass(elements, PrimitiveType.class));
+
+    // Nothing for FullyQualifiedName or FqBinaryName, which use the same regex.
+    result.addStringPattern(
+        SignatureRegexes.FullyQualifiedNamePattern,
+        AnnotationBuilder.fromClass(elements, FullyQualifiedNameOrFqBinaryName.class));
+
+    // Nothing for  BinaryName, PackageName, or ModuleName, which use the same regex.
+    result.addStringPattern(
+        SignatureRegexes.DotSeparatedIdentifiersPattern,
+        AnnotationBuilder.fromClass(elements, FullyQualifiedNameOrFqBinaryName.class));
+
     return result;
   }
 

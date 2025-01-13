@@ -8,10 +8,18 @@ import java.lang.annotation.Target;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * This is a string that is a valid {@linkplain
- * org.checkerframework.checker.signature.qual.FullyQualifiedName fully qualified name} and a valid
- * {@linkplain org.checkerframework.checker.signature.qual.BinaryName binary name}. It represents a
- * non-array, non-inner, non-primitive class: dot-separated identifiers.
+ * A sequence of identifiers, joined by periods.
+ *
+ * <p>As a type, this represents a non-array, non-inner, non-primitive class. It is a string that is
+ * a valid {@linkplain org.checkerframework.checker.signature.qual.FullyQualifiedName fully
+ * qualified name} and a valid {@linkplain org.checkerframework.checker.signature.qual.BinaryName
+ * binary name}.
+ *
+ * <p>This may also represent a package name or a module name.
+ *
+ * <p>All of the above have the same syntactic form, but they have different syntactic meanings, and
+ * therefore there are different qualifiers to prevent accidental misuse (say, passing a package
+ * name where a module name is needed).
  *
  * <p>Examples: int, MyClass, java.lang, java.lang.Integer
  *
@@ -20,5 +28,10 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf({DotSeparatedIdentifiersOrPrimitiveType.class, BinaryName.class})
+@SubtypeOf({
+  DotSeparatedIdentifiersOrPrimitiveType.class,
+  BinaryName.class,
+  PackageName.class,
+  ModuleName.class
+})
 public @interface DotSeparatedIdentifiers {}

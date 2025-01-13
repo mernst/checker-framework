@@ -9,7 +9,9 @@ import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
  * An extension of binary name format to represent primitives and arrays. It is just like
- * fully-qualified name format, but uses "$" rather than "." to indicate a nested class.
+ * fully-qualified name format, but uses "$" rather than "." to indicate a nested class. The two
+ * formats are syntactically identical, but they are interpreted diferently, so they should not be
+ * mixed up.
  *
  * <p>Examples include
  *
