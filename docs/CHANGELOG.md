@@ -14,6 +14,8 @@ The Signature Checker no longer supports some redundant qualifiers
  * removed `@CanonicalNameOrPrimitiveType`; use `@CanonicalName`
  * removed `@CanonicalNameAndBinaryName`; use `@DotSeparatedIdentifiers`
 
+The JavaStubifier implementation now appears in package `org.checkerframework.framework.stubifier.JavaStubifier`.
+
 **Implementation details:**
 
 **Closed issues:**
