@@ -4,12 +4,12 @@
 # Per comments in ../../build.gradle, allTests = test + nonJunitTests + inferenceTests + typecheck .
 
 set -e
-set -o verbose
+# set -o verbose
 set -o xtrace
 export SHELLOPTS
 echo "SHELLOPTS=${SHELLOPTS}"
 
-export ORG_GRADLE_PROJECT_useJdk17Compiler=true
+export ORG_GRADLE_PROJECT_useJdk21Compiler=true
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source "$SCRIPTDIR"/clone-related.sh
 

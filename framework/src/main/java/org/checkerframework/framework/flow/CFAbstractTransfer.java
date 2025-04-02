@@ -38,6 +38,7 @@ import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.UnderlyingAST.CFGLambda;
 import org.checkerframework.dataflow.cfg.UnderlyingAST.CFGMethod;
 import org.checkerframework.dataflow.cfg.node.AbstractNodeVisitor;
+import org.checkerframework.dataflow.cfg.node.AnyPatternNode;
 import org.checkerframework.dataflow.cfg.node.ArrayAccessNode;
 import org.checkerframework.dataflow.cfg.node.AssignmentNode;
 import org.checkerframework.dataflow.cfg.node.CaseNode;
@@ -226,7 +227,10 @@ public abstract class CFAbstractTransfer<
     return analysis.createAbstractValue(at);
   }
 
-  /** The fixed initial store. */
+  /**
+   * The fixed initial store which includes values from field initialization and, if analyzing a
+   * lambda, final local variables.
+   */
   private @Nullable S fixedInitialStore = null;
 
   /**
@@ -266,6 +270,12 @@ public abstract class CFAbstractTransfer<
       for (LocalVariableNode p : parameters) {
         AnnotatedTypeMirror anno = atypeFactory.getAnnotatedType(p.getElement());
         store.initializeMethodParameter(p, analysis.createAbstractValue(anno));
+      }
+
+      AnnotatedTypeMirror implicitThis = atypeFactory.getSelfType(underlyingAST.getCode());
+      if (implicitThis != null) {
+        V thisSelf = analysis.createAbstractValue(implicitThis);
+        store.thisValue = thisSelf.mostSpecific(store.thisValue, null);
       }
 
       // add properties known through precondition
@@ -1065,7 +1075,8 @@ public abstract class CFAbstractTransfer<
         analysis
             .atypeFactory
             .getWholeProgramInference()
-            .updateFromObjectCreation(n, constructorElt, p.getRegularStore());
+            .updateFromObjectCreation(
+                "<unknown from visitObjectCreation>", n, constructorElt, p.getRegularStore());
       }
     }
     ExecutableElement constructorElt = TreeUtils.getSuperConstructor(newClassTree);
@@ -1117,6 +1128,13 @@ public abstract class CFAbstractTransfer<
   public TransferResult<V, S> visitDeconstructorPattern(
       DeconstructorPatternNode n, TransferInput<V, S> in) {
     // TODO: Implement getting the type of a DeconstructorPatternTree.
+    V value = null;
+    return createTransferResult(value, in);
+  }
+
+  @Override
+  public TransferResult<V, S> visitAnyPattern(AnyPatternNode n, TransferInput<V, S> in) {
+    // This is an unnamed variable, so ignored it.
     V value = null;
     return createTransferResult(value, in);
   }
@@ -1350,11 +1368,12 @@ public abstract class CFAbstractTransfer<
     return lubResult;
   }
 
-  /**
-   * In a cast {@code (@A C) e} of some expression {@code e} to a new type {@code @A C}, we usually
-   * take the annotation of the type {@code C} (here {@code @A}). However, if the inferred
-   * annotation of {@code e} is more precise, we keep that one.
-   */
+  // /**
+  //  * In a cast {@code (@A C) e} of some expression {@code e} to a new type {@code @A C}, we
+  // usually
+  //  * take the annotation of the type {@code C} (here {@code @A}). However, if the inferred
+  //  * annotation of {@code e} is more precise, we keep that one.
+  //  */
   // @Override
   // public TransferResult<V, S> visitTypeCast(TypeCastNode n,
   // TransferInput<V, S> p) {
@@ -1493,6 +1512,26 @@ public abstract class CFAbstractTransfer<
       result.getElseStore().insertValue(target, newAnno);
     } else {
       result.getRegularStore().insertValue(target, newAnno);
+    }
+  }
+
+  /**
+   * Inserts {@code newAnno} into all stores (conditional or not) in the result for {@code target},
+   * while permitting non-deterministic values to be stored. This is a utility method for
+   * subclasses.
+   *
+   * @param result the {@link TransferResult} holding the stores to modify
+   * @param target the {@link JavaExpression} for which the stores should be modified to contain the
+   *     value {@code newAnno}
+   * @param newAnno the new value
+   */
+  protected static void insertIntoStoresPermitNonDeterministic(
+      TransferResult<CFValue, CFStore> result, JavaExpression target, AnnotationMirror newAnno) {
+    if (result.containsTwoStores()) {
+      result.getThenStore().insertValuePermitNondeterministic(target, newAnno);
+      result.getElseStore().insertValuePermitNondeterministic(target, newAnno);
+    } else {
+      result.getRegularStore().insertValuePermitNondeterministic(target, newAnno);
     }
   }
 }

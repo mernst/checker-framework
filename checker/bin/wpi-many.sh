@@ -80,11 +80,11 @@ else
   has_java21="yes"
 fi
 
-# shellcheck disable=SC2153 # testing for JAVA22_HOME, not a typo of JAVA_HOME
-if [ "${JAVA22_HOME}" = "" ]; then
-  has_java22="no"
+# shellcheck disable=SC2153 # testing for JAVA23_HOME, not a typo of JAVA_HOME
+if [ "${JAVA23_HOME}" = "" ]; then
+  has_java23="no"
 else
-  has_java22="yes"
+  has_java23="yes"
 fi
 
 if [ "${has_java_home}" = "yes" ] && [ ! -d "${JAVA_HOME}" ]; then
@@ -110,9 +110,9 @@ if [ "${has_java_home}" = "yes" ]; then
       export JAVA21_HOME="${JAVA_HOME}"
       has_java21="yes"
     fi
-    if [ "${has_java22}" = "no" ] && [ "${java_version}" = 22 ]; then
-      export JAVA22_HOME="${JAVA_HOME}"
-      has_java22="yes"
+    if [ "${has_java23}" = "no" ] && [ "${java_version}" = 23 ]; then
+      export JAVA23_HOME="${JAVA_HOME}"
+      has_java23="yes"
     fi
 fi
 
@@ -136,23 +136,23 @@ if [ "${has_java21}" = "yes" ] && [ ! -d "${JAVA21_HOME}" ]; then
     exit 1
 fi
 
-if [ "${has_java22}" = "yes" ] && [ ! -d "${JAVA22_HOME}" ]; then
-    echo "JAVA22_HOME is set to a non-existent directory ${JAVA22_HOME}"
+if [ "${has_java23}" = "yes" ] && [ ! -d "${JAVA23_HOME}" ]; then
+    echo "JAVA23_HOME is set to a non-existent directory ${JAVA23_HOME}"
     exit 1
 fi
 
-if [ "${has_java8}" = "no" ] && [ "${has_java11}" = "no" ] && [ "${has_java17}" = "no" ] && [ "${has_java21}" = "no" ] && [ "${has_java22}" = "no" ]; then
+if [ "${has_java8}" = "no" ] && [ "${has_java11}" = "no" ] && [ "${has_java17}" = "no" ] && [ "${has_java21}" = "no" ] && [ "${has_java23}" = "no" ]; then
     if [ "${has_java_home}" = "yes" ]; then
       echo "Cannot determine Java version from JAVA_HOME"
     else
-      echo "No Java 8, 11, 17, 21, or 22 JDKs found. At least one of JAVA_HOME, JAVA8_HOME, JAVA11_HOME, JAVA17_HOME, JAVA21_HOME, or JAVA22_HOME must be set."
+      echo "No Java 8, 11, 17, 21, or 23 JDKs found. At least one of JAVA_HOME, JAVA8_HOME, JAVA11_HOME, JAVA17_HOME, JAVA21_HOME, or JAVA23_HOME must be set."
     fi
     echo "JAVA_HOME = ${JAVA_HOME}"
     echo "JAVA8_HOME = ${JAVA8_HOME}"
     echo "JAVA11_HOME = ${JAVA11_HOME}"
     echo "JAVA17_HOME = ${JAVA17_HOME}"
     echo "JAVA21_HOME = ${JAVA21_HOME}"
-    echo "JAVA22_HOME = ${JAVA22_HOME}"
+    echo "JAVA23_HOME = ${JAVA23_HOME}"
     command -v java
     java -version
     exit 1
@@ -228,15 +228,15 @@ do
     # repos that are different but have the same name to be treated
     # as different repos, but forks with the same content to be skipped.
     # TODO: consider just using hash, to skip hard forks?
-    mkdir -p "./${REPO_NAME_HASH}" || (echo "command failed in $(pwd): mkdir -p ./${REPO_NAME_HASH}" && exit 5)
+    mkdir -p "./${REPO_NAME_HASH}" || { echo "command failed in $(pwd): mkdir -p ./${REPO_NAME_HASH}"; exit 5; }
 
-    cd "./${REPO_NAME_HASH}" || (echo "command failed in $(pwd): cd ./${REPO_NAME_HASH}" && exit 5)
+    cd "./${REPO_NAME_HASH}" || { echo "command failed in $(pwd): cd ./${REPO_NAME_HASH}"; exit 5; }
 
     if [ ! -d "${REPO_NAME}" ]; then
         # see https://stackoverflow.com/questions/3489173/how-to-clone-git-repository-with-specific-revision-changeset
         # for the inspiration for this code
-        mkdir "./${REPO_NAME}" || (echo "command failed in $(pwd): mkdir ./${REPO_NAME}" && exit 5)
-        cd "./${REPO_NAME}" || (echo "command failed in $(pwd): cd ./${REPO_NAME}" && exit 5)
+        mkdir "./${REPO_NAME}" || { echo "command failed in $(pwd): mkdir ./${REPO_NAME}"; exit 5; }
+        cd "./${REPO_NAME}" || { echo "command failed in $(pwd): cd ./${REPO_NAME}"; exit 5; }
         git init
         git remote add origin "${REPO}"
 
@@ -263,9 +263,9 @@ do
         exit 5
     fi
 
-    cd "./${REPO_NAME}" || (echo "command failed in $(pwd): cd ./${REPO_NAME}" && exit 5)
+    cd "./${REPO_NAME}" || { echo "command failed in $(pwd): cd ./${REPO_NAME}"; exit 5; }
 
-    git checkout "${HASH}" || (echo "command failed in $(pwd): git checkout ${HASH}" && exit 5)
+    git checkout "${HASH}" || { echo "command failed in $(pwd): git checkout ${HASH}"; exit 5; }
 
     REPO_FULLPATH=$(pwd)
 
@@ -454,7 +454,7 @@ else
       echo "  generated from ${OUTDIR}-results/results_available.txt"
       echo "---------------- start of listpath = ${listpath} ----------------"
       cat "${listpath}"
-      echo "---------------- end of ${listpath} ----------------"
+      echo "---------------- end of listpath = ${listpath} ----------------"
       echo "---------------- start of ${OUTDIR}-results/results_available.txt ----------------"
       cat "${OUTDIR}-results/results_available.txt"
       echo "---------------- end of ${OUTDIR}-results/results_available.txt ----------------"

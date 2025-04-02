@@ -75,11 +75,11 @@ else
   has_java21="yes"
 fi
 
-# shellcheck disable=SC2153 # testing for JAVA22_HOME, not a typo of JAVA_HOME
-if [ "${JAVA22_HOME}" = "" ]; then
-  has_java22="no"
+# shellcheck disable=SC2153 # testing for JAVA23_HOME, not a typo of JAVA_HOME
+if [ "${JAVA23_HOME}" = "" ]; then
+  has_java23="no"
 else
-  has_java22="yes"
+  has_java23="yes"
 fi
 
 if [ "${has_java_home}" = "yes" ] && [ ! -d "${JAVA_HOME}" ]; then
@@ -105,9 +105,9 @@ if [ "${has_java_home}" = "yes" ]; then
       export JAVA21_HOME="${JAVA_HOME}"
       has_java21="yes"
     fi
-    if [ "${has_java22}" = "no" ] && [ "${java_version}" = 22 ]; then
-      export JAVA22_HOME="${JAVA_HOME}"
-      has_java22="yes"
+    if [ "${has_java23}" = "no" ] && [ "${java_version}" = 23 ]; then
+      export JAVA23_HOME="${JAVA_HOME}"
+      has_java23="yes"
     fi
 fi
 
@@ -131,23 +131,23 @@ if [ "${has_java21}" = "yes" ] && [ ! -d "${JAVA21_HOME}" ]; then
     exit 9
 fi
 
-if [ "${has_java22}" = "yes" ] && [ ! -d "${JAVA22_HOME}" ]; then
-    echo "JAVA22_HOME is set to a non-existent directory ${JAVA22_HOME}"
+if [ "${has_java23}" = "yes" ] && [ ! -d "${JAVA23_HOME}" ]; then
+    echo "JAVA23_HOME is set to a non-existent directory ${JAVA23_HOME}"
     exit 10
 fi
 
-if [ "${has_java8}" = "no" ] && [ "${has_java11}" = "no" ] && [ "${has_java17}" = "no" ] && [ "${has_java21}" = "no" ] && [ "${has_java22}" = "no" ]; then
+if [ "${has_java8}" = "no" ] && [ "${has_java11}" = "no" ] && [ "${has_java17}" = "no" ] && [ "${has_java21}" = "no" ] && [ "${has_java23}" = "no" ]; then
     if [ "${has_java_home}" = "yes" ]; then
       echo "Cannot determine Java version from JAVA_HOME"
     else
-      echo "No Java 8, 11, 17, 21, or 22 JDKs found. At least one of JAVA_HOME, JAVA8_HOME, JAVA11_HOME, JAVA17_HOME, JAVA21_HOME, or JAVA22_HOME must be set."
+      echo "No Java 8, 11, 17, 21, or 23 JDKs found. At least one of JAVA_HOME, JAVA8_HOME, JAVA11_HOME, JAVA17_HOME, JAVA21_HOME, or JAVA23_HOME must be set."
     fi
     echo "JAVA_HOME = ${JAVA_HOME}"
     echo "JAVA8_HOME = ${JAVA8_HOME}"
     echo "JAVA11_HOME = ${JAVA11_HOME}"
     echo "JAVA17_HOME = ${JAVA17_HOME}"
     echo "JAVA21_HOME = ${JAVA21_HOME}"
-    echo "JAVA22_HOME = ${JAVA22_HOME}"
+    echo "JAVA23_HOME = ${JAVA23_HOME}"
     command -v java
     java -version
     exit 11
@@ -289,9 +289,9 @@ function configure_and_exec_dljc {
 
   export PATH="${PATH_BACKUP}"
 
-  echo "=== DLJC standard out/err (${dljc_stdout}) follows: ==="
+  echo "=== Start of DLJC standard out/err (${dljc_stdout}) ==="
   cat "${dljc_stdout}"
-  echo "=== End of DLJC standard out/err.  ==="
+  echo "=== End of DLJC standard out/err (${dljc_stdout}) ==="
 
   # The wpi.py script in do-like-javac outputs the following text if no build/whole-program-inference directory
   # exists, which means that WPI produced no output. When that happens, the reason is usually that the Checker
@@ -331,12 +331,18 @@ stdout is in      $dljc_stdout"
 if [ "${DLJC}" = "" ]; then
   # The user did not set the DLJC environment variable.
   DLJC="${SCRIPTDIR}/.do-like-javac/dljc"
+  if [ ! -f "${DLJC}" ]; then
+    (cd "$SCRIPTDIR"/../.. && ./gradlew getDoLikeJavac)
+  fi
 else
   # The user did set the DLJC environment variable.
   if [ ! -f "${DLJC}" ]; then
     echo "Failure: DLJC is set to ${DLJC} which is not a file or does not exist."
     exit 1
   fi
+fi
+if [ ! -f "$SCRIPTDIR/../dist/checker.jar" ] ; then
+  (cd "$SCRIPTDIR"/../.. && ./gradlew assembleForJavac)
 fi
 
 #### Main script
