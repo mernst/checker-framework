@@ -37,7 +37,7 @@ public abstract class MethodReferenceNode extends Node {
   /**
    * Returns the scope: what precedes "::".
    *
-   * @returns the scope
+   * @return the scope
    */
   public Node getScope() {
     return scope;
@@ -46,7 +46,7 @@ public abstract class MethodReferenceNode extends Node {
   /**
    * Returns the method name: what follows "::", and may be "new".
    *
-   * @returns the method name
+   * @return the method name
    */
   public String getMethodName() {
     return methodName;
