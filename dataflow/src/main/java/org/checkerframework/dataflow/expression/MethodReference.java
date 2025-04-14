@@ -24,7 +24,9 @@ import org.checkerframework.javacutil.AnnotationProvider;
  */
 public class MethodReference extends JavaExpression {
 
-  // The "scope" is what comes before "::".  It is an expression, a type, or "super".
+  /** What comes before "::", which is an expression, a type, or "super". */
+  JavaExpression scope;
+
   // Exactly one of declaringExpr, declaringType, and declaringSuper is non-null.
   // /** The expression before "::", or null. */
   // JavaExpression declaringExpr;
@@ -32,7 +34,6 @@ public class MethodReference extends JavaExpression {
   // TypeMirror declaringType;
   // /** The "super" bfore "::", or null. */
   // SuperReference declaringSuper;
-  JavaExpression scope;
 
   // TODO: handle type arguments, which come after "::" but before the method name.
 
@@ -43,6 +44,8 @@ public class MethodReference extends JavaExpression {
    * Creates a new {@link MethodReference}.
    *
    * @param type the type of the method reference
+   * @param scope what comes before "::", which is an expression, a type, or "super"
+   * @param methodName the name of the method
    */
   public MethodReference(TypeMirror type, JavaExpression scope, String methodName) {
     super(type);
