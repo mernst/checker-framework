@@ -15,7 +15,7 @@ plugins {
   // Code formatting; defines targets "spotlessApply" and "spotlessCheck".
   // https://github.com/diffplug/spotless/tags ; see tags starting "gradle/"
   // Only works on JDK 11+ (even including the plugin crashes Gradle on JDK 8).
-  id 'com.diffplug.spotless' version '7.0.2'
+  id 'com.diffplug.spotless' version '7.0.3'
 }
 
 // There is another `repositories { ... }` block below; if you change this one, change that one as well.
@@ -56,13 +56,8 @@ ext {
     googleJavaFormat : '1.25.2',
     lombok          : '1.18.38',
     hashmapUtil : '0.0.1',
-
-    // DO NOT UPGRADE TO 1.1.4 which requires Java 11
-    // Also, the version in AFU should match this one.
-    reflectionUtil : '1.1.3',
-    // DO NOT UPGRADE TO 1.10.0 which depends on reflectionUtil 1.1.4 which requires Java 11
-    // Also, the version in AFU should match this one.
-    plumeUtil : '1.9.3',
+    reflectionUtil : '1.1.5',
+    plumeUtil : '1.10.1',
 
     // https://mvnrepository.com/artifact/com.google.errorprone/error_prone_core
     // If you update this:
@@ -789,7 +784,8 @@ subprojects {
   if (!project.name.startsWith('checker-qual-android')) {
     task tags(type: Exec) {
       description = 'Create Emacs TAGS table'
-      commandLine 'bash', '-c', "find . \\( -name build -o -name jtreg -o -name tests \\) -prune -o -name '*.java' -print | sort-directory-order | xargs ctags -e -f TAGS"
+      // `ctags -e -f TAGS` used to work in place of `etags`, but apparently no longer.
+      commandLine 'bash', '-c', "find . \\( -name build -o -name jtreg -o -name tests \\) -prune -o -name '*.java' -print | sort-directory-order | xargs etags"
     }
   }
 
