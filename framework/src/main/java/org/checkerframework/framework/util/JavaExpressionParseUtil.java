@@ -441,6 +441,7 @@ public class JavaExpressionParseUtil {
     public JavaExpression visit(MethodReferenceExpr n, Void aVoid) {
       if (false) {
         JavaExpression scope = n.getScope().accept(this, null);
+        @SuppressWarnings("optional:optional.collection") // JavaParser bad API design
         Optional<NodeList<Type>> typeArgs = n.getTypeArguments();
         String methodName = n.getIdentifier();
 
