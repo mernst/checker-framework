@@ -27,6 +27,7 @@ public abstract class MethodReferenceNode extends Node {
    * Creates a new MethodReferenceNode.
    *
    * @param tree the tree from which the new MethodReferenceNode is created
+   * @param scope the scope: what precedes "::"
    */
   protected MethodReferenceNode(MemberReferenceTree tree, Node scope) {
     super(TreeUtils.typeOf(tree));
