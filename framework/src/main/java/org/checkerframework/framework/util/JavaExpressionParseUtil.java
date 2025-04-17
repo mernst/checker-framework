@@ -27,7 +27,6 @@ import com.github.javaparser.ast.expr.SuperExpr;
 import com.github.javaparser.ast.expr.ThisExpr;
 import com.github.javaparser.ast.expr.UnaryExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
-import com.github.javaparser.ast.type.PrimitiveType;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.visitor.GenericVisitorWithDefaults;
 import com.sun.source.tree.Tree;
@@ -53,7 +52,6 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
@@ -1117,10 +1115,14 @@ public class JavaExpressionParseUtil {
           } else {
             // If either type is numeric, box it.
             if (TypesUtils.isPrimitive(thenType)) {
-              thenType = types.getDeclaredType(types.boxedClass((PrimitiveType) thenType));
+              thenType =
+                  types.getDeclaredType(
+                      types.boxedClass((javax.lang.model.type.PrimitiveType) thenType));
             }
             if (TypesUtils.isPrimitive(elseType)) {
-              elseType = types.getDeclaredType(types.boxedClass((PrimitiveType) elseType));
+              elseType =
+                  types.getDeclaredType(
+                      types.boxedClass((javax.lang.model.type.PrimitiveType) elseType));
             }
             // Now, "the type ... is the result of applying capture conversion to lub(T1, T2)."
             type = types.capture(InferenceFactory.lub(env, thenType, elseType));
@@ -1166,8 +1168,8 @@ public class JavaExpressionParseUtil {
       TypeMirror innerTM = innerJe.getType();
 
       TypeMirror type = null;
-      if (jpType instanceof PrimitiveType) {
-        type = jpPrimitiveTypeToTypeMirror((PrimitiveType) jpType);
+      if (jpType instanceof com.github.javaparser.ast.type.PrimitiveType) {
+        type = jpPrimitiveTypeToTypeMirror((com.github.javaparser.ast.type.PrimitiveType) jpType);
       } else if (jpType instanceof ClassOrInterfaceType) {
         @Interned String fullTypeName = ((ClassOrInterfaceType) jpType).getNameWithScope().intern();
         if (fullTypeName == "String" || fullTypeName == "java.lang.String") { // interned
@@ -1207,7 +1209,8 @@ public class JavaExpressionParseUtil {
      * @param jpType a JavaParser primitive type
      * @return the corresponding TypeMirror
      */
-    private TypeMirror jpPrimitiveTypeToTypeMirror(PrimitiveType jpType) {
+    private TypeMirror jpPrimitiveTypeToTypeMirror(
+        com.github.javaparser.ast.type.PrimitiveType jpType) {
       switch (jpType.getType()) {
         case BOOLEAN:
           return primitiveBooleanTypeMirror;
