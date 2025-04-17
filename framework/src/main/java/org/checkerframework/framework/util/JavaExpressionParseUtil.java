@@ -72,7 +72,6 @@ import org.checkerframework.dataflow.expression.FormalParameter;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.dataflow.expression.MethodCall;
-import org.checkerframework.dataflow.expression.MethodReference;
 import org.checkerframework.dataflow.expression.SuperReference;
 import org.checkerframework.dataflow.expression.ThisReference;
 import org.checkerframework.dataflow.expression.UnaryOperation;
@@ -89,6 +88,7 @@ import org.checkerframework.javacutil.TypesUtils;
 import org.checkerframework.javacutil.trees.TreeBuilder;
 import org.plumelib.util.CollectionsPlume;
 import org.plumelib.util.StringsPlume;
+import org.plumelib.util.SystemPlume;
 
 /**
  * Helper methods to parse a string that represents a restricted Java expression.
@@ -445,22 +445,29 @@ public class JavaExpressionParseUtil {
 
     @Override
     public JavaExpression visit(MethodReferenceExpr n, Void aVoid) {
-      if (false) {
-        JavaExpression scope = n.getScope().accept(this, null);
-        @SuppressWarnings("optional:optional.collection") // JavaParser bad API design
-        Optional<NodeList<Type>> typeArgs = n.getTypeArguments();
-        String methodName = n.getIdentifier();
+      System.out.flush();
+      System.out.printf(
+          "expr=%s, scope=%s [%s], identifier=%s%n",
+          n, n.getScope(), n.getScope().getClass(), n.getIdentifier());
+      System.out.flush();
+      SystemPlume.sleep(1);
 
-        if (!typeArgs.isPresent()) {
-          // TODO: Handle type arguments later.
-          // return new Unknown(n);
-        }
+      JavaExpression scope = n.getScope().accept(this, null);
+      System.out.printf("scope=%s [%s]%n", scope, scope.getClass());
+      @SuppressWarnings("optional:optional.collection") // JavaParser bad API design
+      Optional<NodeList<Type>> typeArgs = n.getTypeArguments();
+      // String methodName = n.getIdentifier();
 
-        // PROBLEM: JavaParser does not store the type of a MethodReferenceExpr.
-        // How can I determine it here?
-        // Maybe calculateResolvedType?
-        return new MethodReference(/* n.getType()*/ null, scope, methodName);
+      if (!typeArgs.isPresent()) {
+        // TODO: Handle type arguments later.
+        // return new Unknown(n);
       }
+
+      // PROBLEM: JavaParser does not store the type of a MethodReferenceExpr.
+      // I think I don't want to use JavaParser's resolution methods, but javac must have the
+      // information available as well.
+      // return new MethodReference(/* n.getType()*/ null, scope, methodName);
+
       throw new Error("Cannot obtain type from parsed method reference: " + n);
     }
 
@@ -525,6 +532,7 @@ public class JavaExpressionParseUtil {
         return fieldAccess;
       }
 
+      // Class name
       if (localVarPath != null) {
         Element classElem = resolver.findClass(s, localVarPath);
         TypeMirror classType = ElementUtils.getType(classElem);
@@ -532,7 +540,6 @@ public class JavaExpressionParseUtil {
           return new ClassName(classType);
         }
       }
-
       ClassName classType = getIdentifierAsUnqualifiedClassName(s);
       if (classType != null) {
         return classType;
