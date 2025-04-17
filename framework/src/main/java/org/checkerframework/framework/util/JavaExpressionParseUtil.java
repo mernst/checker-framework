@@ -1238,6 +1238,18 @@ public class JavaExpressionParseUtil {
     public boolean isFlowParseError() {
       return errorKey.endsWith("flowexpr.parse.error");
     }
+
+    @Override
+    public String toString() {
+      Throwable cause = getCause();
+      if (cause == null) {
+        return String.format("JavaExpressionParseException([null cause]: %s)", getMessage());
+      } else {
+        return String.format(
+            "JavaExpressionParseException(%s [%s]: %s)",
+            cause.toString(), cause.getClass(), getMessage());
+      }
+    }
   }
 
   /**
@@ -1274,6 +1286,11 @@ public class JavaExpressionParseUtil {
 
     private JavaExpressionParseException getCheckedException() {
       return exception;
+    }
+
+    @Override
+    public String getMessage() {
+      return "JavaExpressionParseException(" + exception + ")";
     }
   }
 }
