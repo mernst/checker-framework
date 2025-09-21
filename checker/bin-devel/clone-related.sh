@@ -19,6 +19,12 @@ echo "initial CHECKERFRAMEWORK=$CHECKERFRAMEWORK"
 export CHECKERFRAMEWORK="${CHECKERFRAMEWORK:-$(pwd -P)}"
 echo "CHECKERFRAMEWORK=$CHECKERFRAMEWORK"
 
+IS_CI="$("$SCRIPT_DIR"/is-ci.sh)"
+export IS_CI
+if [ -n "$IS_CI" ]; then
+  export GRADLE_OPTS="${GRADLE_OPTS} -Dorg.gradle.daemon=false -Dorg.gradle.console=plain -Xmx4g"
+fi
+
 export SHELLOPTS
 echo "SHELLOPTS=${SHELLOPTS}"
 
@@ -66,16 +72,17 @@ fi
 
 ## Compile
 
-# Download dependencies, trying a second time if there is a failure.
+# Download Gradle and dependencies, retrying in case of network problems.
 # Under CircleCI, the `timeout` command seems to hang forever.
 if [ -z "$CIRCLECI" ]; then
   # echo "NO_WRITE_VERIFICATION_METADATA=$NO_WRITE_VERIFICATION_METADATA"
   if [ -z "${NO_WRITE_VERIFICATION_METADATA+x}" ]; then
-    (TERM=dumb timeout 300 ./gradlew --write-verification-metadata sha256 help --dry-run --quiet \
-      || (echo "./gradlew --write-verification-metadata sha256 help --dry-run --quiet failed; sleeping before trying again." \
+    # Note that "timeout" is not compatible with shell functions.
+    TERM=dumb timeout 300 ./gradlew --write-verification-metadata sha256 help --dry-run --quiet \
+      || { echo "./gradlew --write-verification-metadata sha256 help --dry-run --quiet failed; sleeping before trying again." \
         && sleep 1m \
-        && echo "Trying again: ./gradlew --write-verification-metadata sha256 help --dry-run --quiet" \
-        && TERM=dumb timeout 300 ./gradlew --write-verification-metadata sha256 help --dry-run --quiet))
+        && echo "Trying again: ./gradlew --write-verification-metadata sha256 help --dry-run" \
+        && TERM=dumb timeout 300 ./gradlew --write-verification-metadata sha256 help --dry-run; }
   fi
 fi
 
