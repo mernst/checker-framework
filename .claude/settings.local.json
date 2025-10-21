@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:checkerframework.org)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(./gradlew:*)"
     ],
     "deny": [],
     "ask": []

@@ -37,5 +37,5 @@ import org.checkerframework.framework.qual.PolymorphicQualifier;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@PolymorphicQualifier(Modifiable.class)
+@PolymorphicQualifier(Unmodifiable.class)
 public @interface PolyModifiable {}

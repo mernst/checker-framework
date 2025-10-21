@@ -22,8 +22,8 @@ A "modifiable collection" is one on which methods like `add()` and `remove()` ca
 
 The type qualifiers of the Modifiable Checker are:
 
-* `@Modifiable`, top qualifier, and the default
-* `@Unmodifiable`: bottom qualifier
+* `@Unmodifiable`, top qualifier
+* `@Modifiable`: bottom qualifier, and the default
 
 The qualifiers apply to collections.
 

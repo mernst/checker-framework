@@ -12,8 +12,8 @@ import org.checkerframework.framework.qual.SubtypeOf;
  * {@link Modifiable} indicates that the annotated collection supports mutating operations such as
  * {@code add()} and {@code remove()} without throwing {@code UnsupportedOperationException}.
  *
- * <p>This is the top qualifier in the Modifiable type hierarchy and is the default qualifier. Most
- * collection instances (such as {@code ArrayList}, {@code HashSet}, etc.) are modifiable by
+ * <p>This is the bottom qualifier in the Modifiable type hierarchy and is the default qualifier.
+ * Most collection instances (such as {@code ArrayList}, {@code HashSet}, etc.) are modifiable by
  * default.
  *
  * <p>The Modifiable Checker guarantees that if a collection is annotated with {@code @Modifiable},
@@ -25,6 +25,6 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf({})
+@SubtypeOf(Unmodifiable.class)
 @DefaultQualifierInHierarchy
 public @interface Modifiable {}
