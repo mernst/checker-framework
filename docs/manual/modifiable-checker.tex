@@ -1,0 +1,205 @@
+\chapter{Modifiable Checker\label{modifiable-checker}}
+
+The Modifiable Checker warns, at compile time, if a program might throw
+\<UnsupportedOperationException> at run time due to calling a mutating method
+on an unmodifiable collection.
+
+\section{Modifiable annotations\label{modifiable-annotations}}
+
+The Modifiable Checker uses these qualifiers:
+
+\begin{description}
+\item[\refqualclass{checker/modifiable/qual}{Modifiable}]
+  indicates that the annotated collection supports mutating operations such as
+  \<add()> and \<remove()> without throwing \<UnsupportedOperationException>.
+  This is the top qualifier and the default.
+
+\item[\refqualclass{checker/modifiable/qual}{Unmodifiable}]
+  indicates that the annotated collection does not support mutating operations.
+  Calling methods like \<add()> or \<remove()> on such collections will throw
+  \<UnsupportedOperationException> at runtime. This is the bottom qualifier.
+\end{description}
+
+\section{What the Modifiable Checker guarantees\label{modifiable-guarantees}}
+
+If the Modifiable Checker issues no warnings for a given program, then the
+program will never throw \<UnsupportedOperationException> due to calling
+mutating methods on unmodifiable collections.
+
+More specifically, the checker guarantees that:
+\begin{itemize}
+\item Mutating methods (such as \<add()>, \<remove()>, \<clear()>, etc.) are
+      only called on collections that are known to be modifiable.
+\item Collections returned by methods that create unmodifiable collections
+      are properly tracked as \<@Unmodifiable>.
+\item The modifiability property is preserved through method calls and
+      assignments.
+\end{itemize}
+
+\section{Modifiable inference\label{modifiable-inference}}
+
+The Modifiable Checker automatically infers \<@Unmodifiable> for collections
+returned by these methods:
+
+\subsection{List methods}
+\begin{itemize}
+\item \<List.of()> and its overloaded variants
+\item \<List.copyOf(Collection)>
+\item \<Collections.emptyList()>
+\item \<Collections.unmodifiableList(List)>
+\end{itemize}
+
+\subsection{Set methods}
+\begin{itemize}
+\item \<Set.of()> and its overloaded variants
+\item \<Set.copyOf(Collection)>
+\item \<Collections.emptySet()>
+\item \<Collections.unmodifiableSet(Set)>
+\end{itemize}
+
+\subsection{Map methods}
+\begin{itemize}
+\item \<Map.of()> and its overloaded variants
+\item \<Map.copyOf(Map)>
+\item \<Collections.emptyMap()>
+\item \<Collections.unmodifiableMap(Map)>
+\end{itemize}
+
+All other collections are inferred to be \<@Modifiable> by default.
+
+\section{Modifiable annotations in practice\label{modifiable-examples}}
+
+\subsection{Basic usage}
+
+The Modifiable Checker will issue warnings when mutating methods are called
+on unmodifiable collections:
+
+\begin{Verbatim}
+List<String> immutableList = List.of("a", "b", "c");
+immutableList.add("d");  // Warning: calling add() on @Unmodifiable collection
+
+List<String> mutableList = new ArrayList<>();
+mutableList.add("d");    // OK: ArrayList is @Modifiable by default
+\end{Verbatim}
+
+\subsection{Method parameters and return types}
+
+You can explicitly annotate method parameters and return types to document
+and enforce modifiability requirements:
+
+\begin{Verbatim}
+public void processItems(@Modifiable List<String> items) {
+    items.add("processed");  // OK: parameter is explicitly @Modifiable
+}
+
+public @Unmodifiable List<String> getImmutableData() {
+    return List.of("data1", "data2");  // OK: matches return type
+}
+
+public @Unmodifiable List<String> getBadData() {
+    return new ArrayList<>();  // Warning: @Modifiable assigned to @Unmodifiable
+}
+\end{Verbatim}
+
+\subsection{Collections utility methods}
+
+The checker understands the semantics of \<Collections> utility methods:
+
+\begin{Verbatim}
+List<String> original = new ArrayList<>();
+List<String> wrapper = Collections.unmodifiableList(original);
+wrapper.add("item");     // Warning: calling add() on @Unmodifiable collection
+
+Set<Integer> emptySet = Collections.emptySet();
+emptySet.add(42);        // Warning: calling add() on @Unmodifiable collection
+\end{Verbatim}
+
+\subsection{Avoiding false positives}
+
+In some cases, you may know that a collection is modifiable even though the
+checker cannot prove it. You can use explicit annotations or suppression:
+
+\begin{Verbatim}
+// If you know the collection is modifiable
+@SuppressWarnings("modifiable")
+someUnknownCollection.add("item");
+
+// Or cast to @Modifiable if you're certain
+((@Modifiable List<String>) someCollection).add("item");
+\end{Verbatim}
+
+\section{Suppressing warnings\label{modifiable-suppressing}}
+
+You can suppress Modifiable Checker warnings using the standard
+\<@SuppressWarnings> annotation with the argument \<"modifiable">:
+
+\begin{Verbatim}
+@SuppressWarnings("modifiable")
+public void methodThatModifiesUnknownCollection(List<String> list) {
+    list.add("item");  // Warning suppressed
+}
+\end{Verbatim}
+
+\section{Running the Modifiable Checker\label{modifiable-running}}
+
+To run the Modifiable Checker, use the \<-processor> command-line option:
+
+\begin{Verbatim}
+javac -processor checker.modifiable.ModifiableChecker MyFile.java
+\end{Verbatim}
+
+Or add it to your build configuration. For Maven:
+
+\begin{Verbatim}
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-compiler-plugin</artifactId>
+  <configuration>
+    <annotationProcessors>
+      <annotationProcessor>checker.modifiable.ModifiableChecker</annotationProcessor>
+    </annotationProcessors>
+  </configuration>
+</plugin>
+\end{Verbatim}
+
+\section{Common patterns and idioms\label{modifiable-patterns}}
+
+\subsection{Defensive copying}
+
+When you need a modifiable copy of an unmodifiable collection:
+
+\begin{Verbatim}
+@Unmodifiable List<String> immutable = List.of("a", "b");
+@Modifiable List<String> mutable = new ArrayList<>(immutable);
+mutable.add("c");  // OK: mutable is explicitly @Modifiable
+\end{Verbatim}
+
+\subsection{Builder patterns}
+
+Builders typically work with modifiable collections internally:
+
+\begin{Verbatim}
+public class DataBuilder {
+    private final @Modifiable List<String> items = new ArrayList<>();
+
+    public DataBuilder add(String item) {
+        items.add(item);  // OK: items is @Modifiable
+        return this;
+    }
+
+    public @Unmodifiable List<String> build() {
+        return List.copyOf(items);  // Returns @Unmodifiable copy
+    }
+}
+\end{Verbatim}
+
+\section{Limitations\label{modifiable-limitations}}
+
+The Modifiable Checker has these limitations:
+
+\begin{itemize}
+\item Collection views (such as
+      \<List.subList()> or \<Map.keySet()>) are conservatively
+      treated as having the same modifiability as their parent.
+\item Reflection-based collection modifications are not checked.
+\end{itemize}
