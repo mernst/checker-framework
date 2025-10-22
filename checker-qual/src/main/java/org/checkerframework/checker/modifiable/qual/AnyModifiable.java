@@ -19,19 +19,6 @@ import org.checkerframework.framework.qual.SubtypeOf;
  * understanding, Unmodifiable is intended to be written on return types and AnyModifiable is
  * intended to be written on formal parameter types.
  *
- * <p>This qualifier is typically used when a collection's modifiability cannot be determined
- * statically, or when a method accepts collections of any modifiability.
- *
- * <p>The Modifiable Checker type hierarchy is:
- *
- * <pre>
- *          AnyModifiable (top)
- *         /              \
- *   Modifiable      Unmodifiable
- *         \              /
- *       BottomModifiable (bottom)
- * </pre>
- *
  * @see Modifiable
  * @see Unmodifiable
  * @see BottomModifiable

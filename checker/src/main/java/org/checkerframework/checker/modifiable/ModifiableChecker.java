@@ -19,4 +19,7 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
  */
 @RelevantJavaTypes({Collection.class, Iterator.class})
 @SuppressWarningsPrefix({"modifiable", "unmodifiable"})
-public class ModifiableChecker extends BaseTypeChecker {}
+public class ModifiableChecker extends BaseTypeChecker {
+  /** Creates a ModifiableChecker. */
+  public ModifiableChecker() {}
+}
