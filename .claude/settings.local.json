@@ -3,7 +3,8 @@
     "allow": [
       "WebFetch(domain:checkerframework.org)",
       "Bash(mkdir:*)",
-      "Bash(./gradlew:*)"
+      "Bash(./gradlew:*)",
+      "Read(//scratch/mernst/clones/types/**)"
     ],
     "deny": [],
     "ask": []

@@ -340,9 +340,20 @@ public class Resolution {
       QualifierHierarchy qh = context.typeFactory.getQualifierHierarchy();
       Set<AnnotationMirror> lubAnnos = AbstractQualifier.lub(qualifierLowerBounds, context);
       if (lubProperType.getAnnotatedType().getKind() != TypeKind.TYPEVAR) {
+        Set<AnnotationMirror> lubProperAnnos =
+            lubProperType.getAnnotatedType().getPrimaryAnnotations();
+        if (lubAnnos.size() != lubProperAnnos.size()) {
+          System.out.println();
+          System.out.printf("Different lengths!%n");
+          System.out.printf("lubAnnos %s%n", lubAnnos);
+          System.out.printf("lubProperAnnos %s%n", lubProperAnnos);
+          System.out.printf(
+              "in resolveWithLowerBounds(variable %s, lowerbounds %s%n", ai, lowerBounds);
+          System.out.printf("qualifierLowerBounds %s%n", qualifierLowerBounds);
+          System.out.printf("lubProperType %s%n", lubProperType);
+        }
         Set<? extends AnnotationMirror> newLubAnnos =
-            qh.leastUpperBoundsQualifiersOnly(
-                lubAnnos, lubProperType.getAnnotatedType().getPrimaryAnnotations());
+            qh.leastUpperBoundsQualifiersOnly(lubAnnos, lubProperAnnos);
         lubProperType.getAnnotatedType().replaceAnnotations(newLubAnnos);
       } else {
 

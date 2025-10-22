@@ -23,7 +23,8 @@ import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TypeSystemError;
 
 /**
- * A {@link QualifierHierarchy} where qualifiers may be represented by annotations with elements.
+ * A {@link QualifierHierarchy} where qualifiers may be represented by annotations with
+ * elements/fields.
  *
  * <p>ElementQualifierHierarchy uses a {@link QualifierKindHierarchy} to model the relationships
  * between qualifiers. (By contrast, {@link MostlyNoElementQualifierHierarchy} uses the {@link

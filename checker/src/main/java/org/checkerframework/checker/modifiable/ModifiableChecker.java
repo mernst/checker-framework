@@ -1,6 +1,9 @@
 package org.checkerframework.checker.modifiable;
 
+import java.util.Collection;
+import java.util.Iterator;
 import org.checkerframework.common.basetype.BaseTypeChecker;
+import org.checkerframework.framework.qual.RelevantJavaTypes;
 import org.checkerframework.framework.source.SuppressWarningsPrefix;
 
 /**
@@ -14,5 +17,6 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
  *
  * @checker_framework.manual #modifiable-checker Modifiable Checker
  */
+@RelevantJavaTypes({Collection.class, Iterator.class})
 @SuppressWarningsPrefix({"modifiable", "unmodifiable"})
 public class ModifiableChecker extends BaseTypeChecker {}

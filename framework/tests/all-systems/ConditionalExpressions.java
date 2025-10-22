@@ -36,6 +36,7 @@ public class ConditionalExpressions {
     }
 
     void foo2(Integer[] integers, String[] strings) {
+      @SuppressWarnings("modifiable:assignment")
       Object[] o = (flag ? integers : strings);
     }
 

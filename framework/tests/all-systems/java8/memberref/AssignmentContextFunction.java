@@ -7,6 +7,7 @@ public class AssignmentContextFunction {
   FunctionAC f1 = String::toString;
 
   // Test casts
+  @SuppressWarnings("modifiable:assignment") // not the point of this test, so ignore
   Object o1 = (Object) (FunctionAC) String::toString;
 
   void take(FunctionAC f) {

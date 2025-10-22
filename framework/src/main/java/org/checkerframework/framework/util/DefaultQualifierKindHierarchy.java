@@ -687,9 +687,12 @@ public class DefaultQualifierKindHierarchy implements QualifierKindHierarchy {
       qual1Map.put(qual2, value);
     } else {
       if (existingValue != value) {
-        throw new TypeSystemError(
-            "Multiple %ss for qualifiers %s and %s. Found map %s and %s",
-            operationName, qual1, qual2, value, existingValue);
+        TypeSystemError err =
+            new TypeSystemError(
+                "Multiple %ss for qualifiers %s and %s. Found %s and %s",
+                operationName, qual1, qual2, value, existingValue);
+        err.printStackTrace();
+        throw err;
       }
     }
   }

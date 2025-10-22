@@ -24,7 +24,7 @@ import org.checkerframework.javacutil.TypeSystemError;
 
 /**
  * A {@link QualifierHierarchy} where no qualifier has arguments; that is, no qualifier is
- * represented by an annotation with elements. The meta-annotation {@link
+ * represented by an annotation with elements/fields. The meta-annotation {@link
  * org.checkerframework.framework.qual.SubtypeOf} specifies the subtyping relationships.
  *
  * <p>It uses a {@link QualifierKindHierarchy} to model the relationships between qualifiers.
