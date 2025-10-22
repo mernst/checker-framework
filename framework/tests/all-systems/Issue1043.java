@@ -10,7 +10,7 @@ public class Issue1043 {
 
   @SuppressWarnings({
     "keyfor:type.argument",
-    "modifiable:argument" // modifiable has trouble with ternary expressions
+    "modifiable:argument" // Modifiable Checker has trouble with ternary expressions. Why?
   })
   void baz() {
     bar(foo(this.getClass()) ? "a" : "b");
