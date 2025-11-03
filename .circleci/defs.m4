@@ -122,6 +122,12 @@ circleci_boilerplate($1,)
           name: test-daikon-part2.sh
           command: export ORG_GRADLE_PROJECT_jdkTestVersion=$1 && ./checker/bin-devel/test-daikon-part2.sh
           no_output_timeout: "30m"
+  daikon_part3_jdk$1:
+circleci_boilerplate($1,)
+      - run:
+          name: test-daikon-part3.sh
+          command: export ORG_GRADLE_PROJECT_jdkTestVersion=$1 && ./checker/bin-devel/test-daikon-part3.sh
+          no_output_timeout: "30m"
 ], [dnl
   daikon_jdk$1:
 circleci_boilerplate($1,)

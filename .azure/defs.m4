@@ -179,7 +179,19 @@ ifelse($1,canary_version,[dnl
       - checkout: self
         fetchDepth: 25
       - bash: export ORG_GRADLE_PROJECT_jdkTestVersion=$1 && ./checker/bin-devel/test-daikon-part2.sh
-        displayName: test-daikon-part2.sh], [dnl
+        displayName: test-daikon-part2.sh
+  - job: daikon_part3_jdk$1
+    dependsOn:
+      - canary_jobs
+    pool:
+      vmImage: 'ubuntu-latest'
+    container: mdernst/cf-ubuntu-jdk$1[]docker_testing:latest
+    timeoutInMinutes: 80
+    steps:
+      - checkout: self
+        fetchDepth: 25
+      - bash: export ORG_GRADLE_PROJECT_jdkTestVersion=$1 && ./checker/bin-devel/test-daikon-part3.sh
+        displayName: test-daikon-part3.sh], [dnl
   - job: daikon_jdk$1
     dependsOn:
       - canary_jobs
