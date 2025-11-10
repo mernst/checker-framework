@@ -155,10 +155,12 @@ ifelse($1,canary_version,[dnl
         displayName: test-typecheck.sh])])dnl
 dnl
 define([daikon_job], [dnl
-ifelse($1,canary_version,[dnl
   - job: daikon_part1_jdk$1
     dependsOn:
       - canary_jobs
+ifelse($1,canary_version,,[dnl
+      - daikon_part1_jdk[]canary_version
+])dnl
     pool:
       vmImage: 'ubuntu-latest'
     container: mdernst/cf-ubuntu-jdk$1[]docker_testing:latest
@@ -191,22 +193,7 @@ ifelse($1,canary_version,[dnl
       - checkout: self
         fetchDepth: 25
       - bash: export ORG_GRADLE_PROJECT_jdkTestVersion=$1 && ./checker/bin-devel/test-daikon-part3.sh
-        displayName: test-daikon-part3.sh], [dnl
-  - job: daikon_jdk$1
-    dependsOn:
-      - canary_jobs
-      - daikon_part1_jdk[]canary_version
-      - daikon_part2_jdk[]canary_version
-    pool:
-      vmImage: 'ubuntu-latest'
-    container: mdernst/cf-ubuntu-jdk$1[]docker_testing:latest
-    timeoutInMinutes: 80
-    steps:
-      - checkout: self
-        fetchDepth: 25
-      - bash: export ORG_GRADLE_PROJECT_jdkTestVersion=$1 && ./checker/bin-devel/test-daikon.sh
-        displayName: test-daikon.sh
-])])dnl
+        displayName: test-daikon-part3.sh])dnl
 dnl
 define([guava_job], [dnl
   - job: guava_jdk$1

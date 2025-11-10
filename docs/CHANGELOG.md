@@ -1,9 +1,16 @@
 <!-- markdownlint-disable no-missing-space-atx -->
 
-Version 3.52.0 (2025-11-01)
+Version 3.52.1 (2025-12-01)
 ---------------------------
 
 **User-visible changes:**
+
+**Implementation details:**
+
+**Closed issues:**
+
+Version 3.52.0 (2025-11-04)
+---------------------------
 
 **Implementation details:**
 
@@ -14,6 +21,8 @@ In `GenericAnnotatedTypeFactory`:
 * renamed `checkAndPerformFlowAnalysis` to `performFlowAnalysisForClassOnce`
 
 **Closed issues:**
+
+#6629, #7341, #7346.
 
 
 Version 3.51.1 (2025-10-01)
