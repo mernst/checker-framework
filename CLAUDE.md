@@ -1,3 +1,5 @@
+# Instructions for Claude Code to create a pluggable type-checker
+
 Chapter 36 of the Checker Framework Manual (https://checkerframework.org/manual/#creating-a-checker) explains how to create a new pluggable type-checker.
 
 Create a new checker named the "Modifiable Checker".  Its aim is to warn, at compile time, if a program might throw `UnsupportedOperationException` at run time due to calling a mutating method on an unmodifable list.
