@@ -98,7 +98,10 @@ favicon-checkerframework.png: ../logo/Checkmark/CFCheckmark_favicon.png
 # Don't use \section; use \sectionAndLabel instead
 .PHONY: check-labels
 check-labels:
-	if ( grep -n '^\\\(chapter\|\(sub\)*section\|paragraph\){' *.tex ) ; then false ; else true ; fi
+	if grep -n '^\\\(chapter\|\(sub\)*section\|paragraph\){' *.tex ; then \
+          echo "ERROR: Use \\sectionAndLabel{...}, not \\section{...}; etc."; \
+          false ; \
+        fi
 
 export BIBINPUTS = $BIBINPUTS:.:plume-bib
 plume-bib:

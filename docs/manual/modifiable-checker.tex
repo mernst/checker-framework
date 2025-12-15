@@ -1,10 +1,10 @@
-\chapter{Modifiable Checker\label{modifiable-checker}}
+\chapterAndLabel{Modifiable Checker}{modifiable-checker}
 
 The Modifiable Checker warns, at compile time, if a program might throw
 \<UnsupportedOperationException> at run time due to calling a mutating method
 on an unmodifiable collection.
 
-\section{Modifiable annotations\label{modifiable-annotations}}
+\sectionAndLabel{Modifiable annotations}{modifiable-annotations}
 
 The Modifiable Checker uses these qualifiers:
 
@@ -20,7 +20,7 @@ The Modifiable Checker uses these qualifiers:
   \<UnsupportedOperationException> at runtime. This is the bottom qualifier.
 \end{description}
 
-\section{What the Modifiable Checker guarantees\label{modifiable-guarantees}}
+\sectionAndLabel{What the Modifiable Checker guarantees}{modifiable-guarantees}
 
 If the Modifiable Checker issues no warnings for a given program, then the
 program will never throw \<UnsupportedOperationException> due to calling
@@ -36,12 +36,12 @@ More specifically, the checker guarantees that:
       assignments.
 \end{itemize}
 
-\section{Modifiable inference\label{modifiable-inference}}
+\sectionAndLabel{Modifiable inference}{modifiable-inference}}
 
 The Modifiable Checker automatically infers \<@Unmodifiable> for collections
 returned by these methods:
 
-\subsection{List methods}
+\subsectionAndLabel{List methods}{modifiable-list-methods}
 \begin{itemize}
 \item \<List.of()> and its overloaded variants
 \item \<List.copyOf(Collection)>
@@ -49,7 +49,7 @@ returned by these methods:
 \item \<Collections.unmodifiableList(List)>
 \end{itemize}
 
-\subsection{Set methods}
+\subsectionAndLabel{Set methods}{modifiable-set-methods}
 \begin{itemize}
 \item \<Set.of()> and its overloaded variants
 \item \<Set.copyOf(Collection)>
@@ -57,7 +57,7 @@ returned by these methods:
 \item \<Collections.unmodifiableSet(Set)>
 \end{itemize}
 
-\subsection{Map methods}
+\subsectionAndLabel{Map methods}{modifiable-map-methods}
 \begin{itemize}
 \item \<Map.of()> and its overloaded variants
 \item \<Map.copyOf(Map)>
@@ -67,9 +67,9 @@ returned by these methods:
 
 All other collections are inferred to be \<@Modifiable> by default.
 
-\section{Modifiable annotations in practice\label{modifiable-examples}}
+\sectionAndLabel{Modifiable annotations in practice}{modifiable-examples}
 
-\subsection{Basic usage}
+\subsectionAndLabel{Basic usage}{modifiable-basic-usage}
 
 The Modifiable Checker will issue warnings when mutating methods are called
 on unmodifiable collections:
@@ -82,7 +82,7 @@ List<String> mutableList = new ArrayList<>();
 mutableList.add("d");    // OK: ArrayList is @Modifiable by default
 \end{Verbatim}
 
-\subsection{Method parameters and return types}
+\subsectionAndLabel{Method parameters and return types}{modifiable-signatures}
 
 You can explicitly annotate method parameters and return types to document
 and enforce modifiability requirements:
@@ -101,7 +101,7 @@ public @Unmodifiable List<String> getBadData() {
 }
 \end{Verbatim}
 
-\subsection{Collections utility methods}
+\subsectionAndLabel{Collections utility methods}{modifiable-collections-methods}
 
 The checker understands the semantics of \<Collections> utility methods:
 
@@ -114,7 +114,7 @@ Set<Integer> emptySet = Collections.emptySet();
 emptySet.add(42);        // Warning: calling add() on @Unmodifiable collection
 \end{Verbatim}
 
-\subsection{Avoiding false positives}
+\subsectionAndLabel{Avoiding false positives}{modifiable-avoid-false-positives}
 
 In some cases, you may know that a collection is modifiable even though the
 checker cannot prove it. You can use explicit annotations or suppression:
@@ -128,7 +128,7 @@ someUnknownCollection.add("item");
 ((@Modifiable List<String>) someCollection).add("item");
 \end{Verbatim}
 
-\section{Suppressing warnings\label{modifiable-suppressing}}
+\sectionAndLabel{Suppressing warnings}{modifiable-suppressing}
 
 You can suppress Modifiable Checker warnings using the standard
 \<@SuppressWarnings> annotation with the argument \<"modifiable">:
@@ -140,7 +140,7 @@ public void methodThatModifiesUnknownCollection(List<String> list) {
 }
 \end{Verbatim}
 
-\section{Running the Modifiable Checker\label{modifiable-running}}
+\sectionAndLabel{Running the Modifiable Checker}{modifiable-running}}
 
 To run the Modifiable Checker, use the \<-processor> command-line option:
 
@@ -162,9 +162,9 @@ Or add it to your build configuration. For Maven:
 </plugin>
 \end{Verbatim}
 
-\section{Common patterns and idioms\label{modifiable-patterns}}
+\sectionAndLabel{Common patterns and idioms}{modifiable-patterns}
 
-\subsection{Defensive copying}
+\subsectionAndLabel{Defensive copying}{modifiable-defensive-copying}
 
 When you need a modifiable copy of an unmodifiable collection:
 
@@ -174,7 +174,7 @@ When you need a modifiable copy of an unmodifiable collection:
 mutable.add("c");  // OK: mutable is explicitly @Modifiable
 \end{Verbatim}
 
-\subsection{Builder patterns}
+\subsectionAndLabel{Builder patterns}{modifiable-builder-pattern}
 
 Builders typically work with modifiable collections internally:
 
@@ -193,7 +193,7 @@ public class DataBuilder {
 }
 \end{Verbatim}
 
-\section{Limitations\label{modifiable-limitations}}
+\sectionAndLabel{Limitations}{modifiable-limitations}
 
 The Modifiable Checker has these limitations:
 
