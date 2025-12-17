@@ -2169,7 +2169,6 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
             if (TypesUtils.isIntegralPrimitive(exprType)) {
               r = new IntegerDivisionNode(tree, left, right);
               extendWithNodeWithException(r, arithmeticExceptionType);
-              return r;
             } else {
               r = new FloatingDivisionNode(tree, left, right);
             }
@@ -2178,7 +2177,6 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
             if (TypesUtils.isIntegralPrimitive(exprType)) {
               r = new IntegerRemainderNode(tree, left, right);
               extendWithNodeWithException(r, arithmeticExceptionType);
-              return r;
             } else {
               r = new FloatingRemainderNode(tree, left, right);
             }
