@@ -8,6 +8,9 @@ import java.lang.annotation.Target;
 import org.checkerframework.framework.qual.DefaultQualifierInHierarchy;
 import org.checkerframework.framework.qual.SubtypeOf;
 
+// For annotating collection implementations, a default of @AnyModifiable is most convenient.
+// For annotating client code, a default of @Modifiable is most convenient.
+
 /**
  * {@link Modifiable} indicates that the annotated collection supports mutating operations such as
  * {@code add()} and {@code remove()} without throwing {@code UnsupportedOperationException}.
