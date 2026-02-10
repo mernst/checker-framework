@@ -1,0 +1,255 @@
+\chapterAndLabel{Modifiability Checker}{modifiability-checker}
+
+The Modifiability Checker issues a warning, at compile time, if a program might
+throw \code{UnsupportedOperationException} at run time due to invoking a
+mutating method (such as \code{add} or \code{remove}) on an unmodifiable
+collection.
+
+An \emph{unmodifiable collection} is one that throws
+\code{UnsupportedOperationException} if a mutating method is called.
+The JDK provides many such collections, for example, the results of:
+\begin{itemize}
+  \item \code{List.of()}, \code{List.copyOf()}
+  \item \code{Set.of()}, \code{Set.copyOf()}
+  \item \code{Map.of()}, \code{Map.copyOf()}
+  \item \code{Collections.emptyList()}, \code{Collections.emptySet()}, \code{Collections.emptyMap()}
+  \item \code{Collections.unmodifiableList()}, \code{Collections.unmodifiableSet()}, \code{Collections.unmodifiableMap()}
+\end{itemize}
+
+A \emph{modifiable collection} is one on which mutating methods can be called
+without throwing \code{UnsupportedOperationException}.  Many other methods, such
+as \code{get}, \code{contains}, \code{isEmpty}, and \code{toArray}, may be
+called on any collection, whether modifiable or unmodifiable.
+
+The Modifiability Checker classifies each collection (and iterator) value by its
+\emph{modifiability capability}.  It guarantees that mutating methods are only
+called on collections that are known to be modifiable.  Thus, it prevents a
+common class of runtime bugs where code compiles but fails at execution with
+\code{UnsupportedOperationException}.
+
+The modifiability of an colletion is categorized into three orthogonal capabilities: \textbf{Grow}, \textbf{Shrink}, and \textbf{Replace}.
+\begin{itemize}
+    \item \textbf{Grow (G)}: The collection can grow by adding new elements (add, addAll..).
+    \item \textbf{Shrink (S)}: The collection can shrink by removing existing elements (remove, removeAll, clear, retainAll..).
+    \item \textbf{Replace (R)}: The collection can replace existing elements with new values at specific locations/keys (set, replaceAll, setValue..).
+\end{itemize}
+
+To run the Modifiability Checker:
+
+\begin{Verbatim}
+javac -processor org.checkerframework.checker.modifiability.ModifiabilityChecker MyFile.java
+\end{Verbatim}
+
+You can also run it together with other checkers by listing multiple processors
+to \code{-processor}.
+
+\sectionAndLabel{Modifiability annotations}{modifiability-annotations}
+
+The Modifiability Checker provides a lattice of type qualifiers that
+describe the modifiability capability of a collection.  The qualifiers
+describe which mutating operations are permitted on the collection.
+
+The main user-visible qualifiers are:
+\begin{itemize}
+  \item \code{@UnknownModifiability},
+  \item \code{@Modifiable},
+  \item \code{@Unmodifiable},
+  \item \code{@Growable},
+  \item \code{@Shrinkable},
+  \item \code{@Replaceable},
+  \item \code{@GrowShrink},
+  \item \code{@GrowReplace}, and
+  \item \code{@ShrinkReplace}.
+\end{itemize}
+
+The qualifier hierarchy is shown in
+Figure~\ref{fig-modifiability-lattice}.
+
+
+% TODO: add a figure that follows the sturucture of other checker manuals.
+\begin{figure}
+  \centering
+  \begin{minipage}{0.8\linewidth}
+\begin{verbatim}
+                    @UnknownModifiability
+                      (@Unmodifiable)
+                    /        |         \
+                   /         |           \
+           @Growable    @Shrinkable     @Replaceable
+               |     \   /         \   /      |
+               |       x             x        |
+               |     /   \         /   \      |
+           @GrowShrink  @GrowReplace   @ShrinkReplace
+                  \          |            /
+                   \         |           /
+                    \        |          /
+                        @Modifiable
+\end{verbatim}
+  \end{minipage}
+  \caption{Modifiability qualifier hierarchy.}
+  \label{fig-modifiability-lattice}
+\end{figure}
+
+\begin{description}
+
+\item[\code{@UnknownModifiability}]
+The top qualifier in the hierarchy.  The checker does not know whether the
+collection is modifiable or unmodifiable; it may be either.  This is the default
+qualifier that is applied to unannotated collection types.
+
+\item[\code{@Unmodifiable}]
+An alias for \code{@UnknownModifiability}. Programmers can write \code{@Unmodifiable}
+to indicate that a collection should not be modified, but the checker treats it
+identically to \code{@UnknownModifiability}.
+
+\item[\code{@Modifiable}]
+Calling all mutating operations such as \code{add}, \code{remove}, \code{clear}, etc. on this collection will not result in throwing \code{UnsupportedOperationException}.
+
+\item[\code{@Growable}]
+Calling grow operations such as \code{add}, \code{addAll}, etc. on this collection will not result in throwing \code{UnsupportedOperationException}.
+
+\item[\code{@Shrinkable}]
+Calling shrink operations such as \code{remove}, \code{clear}, etc. on this collection will not result in throwing \code{UnsupportedOperationException}.
+
+\item[\code{@Replaceable}]
+Calling replace operations such as \code{set}, \code{replaceAll}, etc. on this collection will not result in throwing \code{UnsupportedOperationException}.
+
+\item[\code{@GrowShrink}]
+Calling grow and shrink operations on this collection will not result in throwing \code{UnsupportedOperationException}.
+
+\item[\code{@GrowReplace}]
+Calling grow and replace operations on this collection will not result in throwing \code{UnsupportedOperationException}.
+
+\item[\code{@ShrinkReplace}]
+Calling shrink and replace operations on this collection will not result in throwing \code{UnsupportedOperationException}.
+
+\end{description}
+
+\subsectionAndLabel{Types that don't have full grow, shrink, and replace}{types-that-dont-have-full-gsr}
+
+There are types that do not support some mutations.
+
+One example is \code{Set}. A \code{Set} can grow or shrink, but replacing an element in a set is not meaningful, so the \code{Set} interface does not have replace methods. This causes ambiguity when we annotate \code{Set} as \code{@Modifiable} vs \code{@GrowShrink}, since they mean the same thing for a \code{Set}. To solve this issue, the Modifiability Checker treats all \code{Set}s as not replaceable by default.
+\begin{itemize}
+    \item If a \code{Set} is annotated as \code{@UnknownModifiability}, the checker respects it.
+    \item If a \code{Set} is annotated as \code{@GrowReplace}, the modifiability checker defaults it to \code{@Growable}.
+    \item If a \code{Set} is annotated as \code{@ShrinkReplace}, the modifiability checker defaults it to \code{@Shrinkable}.
+    \item If a \code{Set} is annotated as \code{@Modifiable}, the modifiability checker defaults it to \code{@GrowShrink}.
+\end{itemize}
+
+Another example is \code{Map.Entry}. \code{Map.Entry} only has \code{setValue} as an optional method. To maintain consistency, the Modifiability Checker treats all \code{Map.Entry} objects as not growable and not shrinkable.
+
+Another example is \code{Iterator}. \code{Iterator} only has \code{remove} as an optional method, and growable and replaceable operations do not exist. To maintain consistency, the Modifiability Checker treats all iterators as not replaceable and not growable. Note that \code{ListIterator} is treated normally because it has \code{add} and \code{replace} operations.
+
+\subsectionAndLabel{Polymorphic Types}{modifiability-polymorphic}
+
+Polymorphic annotations serve as method contracts ensuring that the output type retains specific capability bits from the input type (or receiver).
+
+\begin{description}
+\item[\code{@PolyModifiable}]
+    Full Preservation. Output capabilities (G, S, R) exactly match the Input. Used by strict wrappers like \code{Collections.synchronizedList}.
+\item[\code{@PolyShrink}]
+    Shrink Preservation. Output retains the \textbf{S} bit of the Input. G and R are fixed or determined separately.
+\end{description}
+
+\subsectionAndLabel{Modifiability method annotations}{modifiability-method-annotations}
+
+The Modifiability Checker supports annotation that specify method
+behavior.  These are declaration annotations, not type annotations:  they
+apply to the method itself rather than to some particular type.
+
+\begin{description}
+
+\item[\code{@WillThrowUOE}]
+This is a declaration annotation (not a type qualifier) that is applied to
+method and constructor declarations.  It indicates that the method always throws
+\code{UnsupportedOperationException}.  The Modifiability Checker issues an
+error for any call to a method annotated with \code{@WillThrowUOE}.
+
+\end{description}
+
+% TODO:
+% Each annotation’s Javadoc should include a precise description and an example
+% use, and should link back to this chapter using
+% \code{@checker\_framework.manual \#modifiability-checker Modifiability Checker}.
+
+\sectionAndLabel{What the Modifiability Checker checks}{modifiability-rules}
+
+The Modifiability Checker enforces that mutating methods are only called on
+collections that have the required modifiability capability.
+
+A \emph{mutating method} is any method that may change the size or contents of a
+collection.
+When annotating a method signature, the \textbf{receiver} (\code{this}) must be annotated with the minimum capabilities (G, S, R bits) required to perform the operation.
+
+\begin{itemize}
+    \item \textbf{Grow (G)}: If the method increases the size of the collection, the receiver requires \code{@Growable} (G=1).
+    Examples: \code{add}, \code{addAll}, \code{offer}, \code{addFirst}, \code{addLast}, \code{ListIterator.add}.
+
+    \item \textbf{Shrink (S)}: If the method decreases the size (or removes elements), the receiver requires \code{@Shrinkable} (S=1).
+    Examples: \code{remove}, \code{removeAll}, \code{retainAll}, \code{clear}, \code{poll}, \code{pop}, \code{Iterator.remove}.
+
+    \item \textbf{Replace (R)}: If the method updates an existing element \emph{at a specific location/key}, the receiver requires \code{@Replaceable} (R=1).
+    Examples: \code{List.set}, \code{ListIterator.set}, \code{Map.replace}, \code{Map.replaceAll}, \code{Collections.sort}, \code{Map.Entry.setValue}.
+
+    \item \textbf{Combined Requirements}:
+    \begin{itemize}
+        \item \code{Map.put(K, V)}: Can grow OR replace. Requirement: \code{@GrowReplace} (G=1, R=1).
+        \item \code{Map.compute(...)} / \code{merge(...)}: Can grow, shrink, or replace. Requirement: \code{@Modifiable} (G=1, S=1, R=1).
+    \end{itemize}
+
+    \item \textbf{Read-Only Operations}: If the method does not modify the structure or elements of the collection, no specific capabilities are required. The receiver can be \code{@UnknownModifiability}.
+    Examples: \code{get}, \code{contains}, \code{size}, \code{isEmpty}.
+\end{itemize}
+
+\sectionAndLabel{Examples}{modifiability-examples}
+
+\begin{Verbatim}
+import java.util.*;
+import org.checkerframework.checker.modifiability.qual.*;
+
+class Demo {
+
+    void basicUsage() {
+        @Modifiable List<String> mod = new ArrayList<>();
+        mod.add("a");     // OK: @Modifiable implies G=1, S=1, R=1
+        mod.remove("a");  // OK
+        mod.set(0, "b");  // OK
+
+        @Unmodifiable List<String> unmod = List.of("a", "b");
+        unmod.add("c");   // Error: receiver requires @Growable, found @Unmodifiable
+        unmod.get(0);     // OK: read-only access matches any capability
+    }
+
+    void fineGrainedPermissions(@Growable List<String> g,
+                                @Shrinkable List<String> s,
+                                @Replaceable List<String> r) {
+        // Growable list allows adding elements (G=1)
+        g.add("a");       // OK
+        g.remove("a");    // Error: remove requires @Shrinkable
+        g.set(0, "b");    // Error: set requires @Replaceable
+
+        // Shrinkable list allows removing elements (S=1)
+        s.remove("a");    // OK
+        s.add("a");       // Error: add requires @Growable
+
+        // Replaceable list allows updating elements (R=1)
+        r.set(0, "b");    // OK
+        r.add("b");       // Error: add requires @Growable
+    }
+
+    void combinedPermissions(@GrowReplace Map<String, String> map) {
+        // Map.put requires both Grow and Replace capabilities (G=1, R=1)
+        map.put("key", "value");  // OK: receiver is @GrowReplace
+
+        // Map.remove requires Shrink capability (S=1)
+        map.remove("key");        // Error: receiver is @GrowReplace,
+                                  //        but remove requires @Shrinkable
+    }
+
+    // Polymorphism preserves capabilities
+    @PolyModifiable List<String> process(@PolyModifiable List<String> list) {
+        return list.subList(0, 1);
+    }
+}
+\end{Verbatim}

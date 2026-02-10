@@ -1,8 +1,10 @@
 import java.util.ArrayList;
 import java.util.Calendar;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
 
 class Component {}
 
+@Modifiable
 class Components extends ArrayList {}
 
 // If we include a type parameter in the superclass, then there is no error below.

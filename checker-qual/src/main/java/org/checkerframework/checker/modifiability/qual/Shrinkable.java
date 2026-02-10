@@ -1,4 +1,4 @@
-package org.checkerframework.checker.index.qual;
+package org.checkerframework.checker.modifiability.qual;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -8,13 +8,15 @@ import java.lang.annotation.Target;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * An expression of type {@code @Shrinkable} may be used to remove elements, e.g., by calling {@code
- * remove()} or {@code clear()} on it.
+ * Calling shrink operations such as {@code remove}, {@code clear}, etc. on this collection will not
+ * result in throwing {@link UnsupportedOperationException}.
+ *
+ * <p>No guarantees are made about grow or replace operations.
+ *
+ * @checker_framework.manual #modifiability-checker Modifiability Checker
  */
-// Reinstate when lists are supported:
-//  * @checker_framework.manual #growonly-checker Grow-only Checker
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf({UnshrinkableRef.class})
+@SubtypeOf(UnknownModifiability.class)
 public @interface Shrinkable {}

@@ -97,6 +97,10 @@ The Checker Framework comes with checkers for specific types of errors:
   ensure unsigned and signed values are not mixed
   (see \chapterpageref{signedness-checker})
 \item
+  \ahrefloc{modifiability-checker}{Modifiability Checker} to
+  warn about possible \<UnsupportedOperationException> at run time on mutatable collections.
+  (see \chapterpageref{modifiability-checker})
+\item
   \ahrefloc{purity-checker}{Purity Checker} to identify whether
   methods have side effects (see \chapterpageref{purity-checker})
 \item
@@ -192,7 +196,7 @@ such as Gradle or Maven, \textbf{no installation is necessary}; just see
 \chapterpageref{external-tools}.
 \item
 If you wish to try the Checker Framework without installing it, use the
-\href{http://eisop.uwaterloo.ca/live/}{Checker Framework Live Demo} webpage.
+\href{https://eisop.uwaterloo.ca/live/}{Checker Framework Live Demo} webpage.
 \item
 This section describes how to install the Checker Framework from its
 distribution.  The Checker Framework release contains everything that you
@@ -214,7 +218,7 @@ optional step.
   %BEGIN LATEX
   \\
   %END LATEX
-  \url{https://checkerframework.org/checker-framework-3.53.0.zip}
+  \url{https://checkerframework.org/checker-framework-3.53.1.zip}
 
   For example, on Unix you can run: \<wget https://checkerframework.org/checker-framework-\ReleaseVersion{}.zip>
 
@@ -770,7 +774,7 @@ Debugging
  \<-AprintAllQualifiers>,
  \<-AprintVerboseGenerics>,
  \<-Anomsgtext>,
- \<-AdumpOnErrors>
+ \<-AdumpOnErrors>,
  \<-AexceptionLineSeparator>
 Amount of detail in messages; see Section~\ref{creating-debugging-options-detail}.
 
