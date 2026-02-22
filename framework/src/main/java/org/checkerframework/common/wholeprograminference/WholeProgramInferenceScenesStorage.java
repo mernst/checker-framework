@@ -7,6 +7,7 @@ import com.sun.tools.javac.code.Symbol.VarSymbol;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Target;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
@@ -143,7 +144,11 @@ public class WholeProgramInferenceScenesStorage
     boolean isNullness =
         atypeFactory.getClass().getSimpleName().equals("NullnessAnnotatedTypeFactory");
     this.ignoreNullAssignments = !isNullness;
-    this.inferOutputDirectory = Path.of(inferOutputDirectory);
+    try {
+      this.inferOutputDirectory = Path.of(inferOutputDirectory);
+    } catch (InvalidPathException e) {
+      throw new UserError("Invalid -AinferOutputDirectory path: " + inferOutputDirectory, e);
+    }
   }
 
   @Override
