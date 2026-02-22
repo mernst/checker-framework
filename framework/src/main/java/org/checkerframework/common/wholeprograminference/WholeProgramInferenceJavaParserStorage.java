@@ -140,7 +140,7 @@ public class WholeProgramInferenceJavaParserStorage
   /** Maps from binary class name to the source file that contains it. */
   private Map<String, String> classToSource = new HashMap<>();
 
-  /** The directory for reading and writing .ajava files. */
+  /** The directory for writing inference output ({@code .ajava} files). */
   private final Path inferOutputDirectory;
 
   /** True if the {@code -AinferOutputOriginal} option was supplied to the checker. */
@@ -178,7 +178,8 @@ public class WholeProgramInferenceJavaParserStorage
    *
    * @param atypeFactory the associated type factory
    * @param inferOutputDirectory the directory into which to write whole program inference files
-   * @param inferOutputOriginal true if the -AinferOutputOriginal option was supplied to the checker
+   * @param inferOutputOriginal true if the {@code -AinferOutputOriginal} option was supplied to the
+   *     checker
    */
   public WholeProgramInferenceJavaParserStorage(
       AnnotatedTypeFactory atypeFactory, String inferOutputDirectory, boolean inferOutputOriginal) {
