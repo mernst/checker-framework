@@ -7,6 +7,7 @@ import com.sun.tools.javac.code.Symbol.VarSymbol;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Target;
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -484,8 +485,8 @@ public class WholeProgramInferenceScenesStorage
   public void writeScenes(OutputFormat outputFormat, BaseTypeChecker checker) {
     // Create WPI directory if it doesn't exist already.
     try {
-      java.nio.file.Files.createDirectories(inferOutputDirectory);
-    } catch (java.io.IOException e) {
+      Files.createDirectories(inferOutputDirectory);
+    } catch (IOException e) {
       throw new UserError("Cannot create " + inferOutputDirectory.toAbsolutePath(), e);
     }
     // Write scenes into files.
