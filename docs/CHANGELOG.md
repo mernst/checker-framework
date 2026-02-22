@@ -9,7 +9,10 @@
 
 New `wpi2.sh` script does whole-program inference, but requires buildfile edits.
 
-Removed long-deprecated `-Alint=forbidnonnullarraycomponents`.
+Command-line arguments:
+
+* Added `-AinferOutputDirectory`.
+* Removed long-deprecated `-Alint=forbidnonnullarraycomponents`.
 
 ### Implementation details
 
