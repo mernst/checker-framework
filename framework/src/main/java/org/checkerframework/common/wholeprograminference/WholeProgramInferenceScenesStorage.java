@@ -483,9 +483,10 @@ public class WholeProgramInferenceScenesStorage
    */
   public void writeScenes(OutputFormat outputFormat, BaseTypeChecker checker) {
     // Create WPI directory if it doesn't exist already.
-    File jaifDir = inferOutputDirectory.toFile();
-    if (!jaifDir.exists()) {
-      jaifDir.mkdirs();
+    try {
+      java.nio.file.Files.createDirectories(inferOutputDirectory);
+    } catch (java.io.IOException e) {
+      throw new UserError("Cannot create " + inferOutputDirectory.toAbsolutePath(), e);
     }
     // Write scenes into files.
     for (String jaifPath : modifiedScenes) {
