@@ -45,6 +45,7 @@ import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -185,7 +186,11 @@ public class WholeProgramInferenceJavaParserStorage
       AnnotatedTypeFactory atypeFactory, String inferOutputDirectory, boolean inferOutputOriginal) {
     this.atypeFactory = atypeFactory;
     this.elements = atypeFactory.getElementUtils();
-    this.inferOutputDirectory = Path.of(inferOutputDirectory);
+    try {
+      this.inferOutputDirectory = Path.of(inferOutputDirectory);
+    } catch (InvalidPathException e) {
+      throw new UserError("Invalid -AinferOutputDirectory path: " + inferOutputDirectory, e);
+    }
     this.inferOutputOriginal = inferOutputOriginal;
   }
 
