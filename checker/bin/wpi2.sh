@@ -9,7 +9,6 @@
 # section of the Checker Framework manual:
 # https://checkerframework.org/manual/#whole-program-inference
 
-
 # Exit the script if any statement fails.
 set -e
 
@@ -20,11 +19,11 @@ mkdir -p whole-program-inference-output
 touch whole-program-inference-output/first-iteration.txt
 
 # The `wpi.diff` file is not used; it is produced for diagnostic purposes.
-while ! diff -ur whole-program-inference-output build/whole-program-inference > wpi.diff ; do
+while ! diff -ur whole-program-inference-output build/whole-program-inference > wpi.diff; do
   rm -rf whole-program-inference-output
   mv build/whole-program-inference/ whole-program-inference-output
   mv -f wpi.diff wpi-prev.diff
   "$@"
 done
 
-rm -rf wpi.diff wpi-prev.diff 
+rm -rf wpi.diff wpi-prev.diff
