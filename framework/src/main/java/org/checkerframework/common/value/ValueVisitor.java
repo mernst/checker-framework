@@ -69,6 +69,7 @@ public class ValueVisitor extends BaseTypeVisitor<ValueAnnotatedTypeFactory> {
    * @param varType an annotated type mirror that may contain IntRangeFromX annotations, which will
    *     be used on the lhs of an assignment or pseudo-assignment
    */
+  @SuppressWarnings("UnusedMethod")
   private void replaceSpecialIntRangeAnnotations(AnnotatedTypeMirror varType) {
     AnnotatedTypeScanner<Void, Void> replaceSpecialIntRangeAnnotations =
         new AnnotatedTypeScanner<Void, Void>() {

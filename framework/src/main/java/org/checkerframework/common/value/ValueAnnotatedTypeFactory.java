@@ -305,7 +305,7 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   @Override
-  public AnnotationMirror canonicalAnnotation(AnnotationMirror anno) {
+  public AnnotationMirror canonicalAnnotation(AnnotationMirror anno, TypeMirror typeMirror) {
 
     anno = super.canonicalAnnotation(anno);
 
@@ -323,11 +323,11 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     } else if (TypesUtils.isBoxedPrimitive(typeMirror)) {
       primitiveKind = types.unboxedType(typeMirror).getKind();
     } else {
-      return convertSpecialIntRangeToStandardIntRange(anm, Long.MAX_VALUE);
+      return convertSpecialIntRangeToStandardIntRange(anno, Long.MAX_VALUE);
     }
 
     Range maxRange = Range.create(primitiveKind);
-    return convertSpecialIntRangeToStandardIntRange(anm, maxRange.to);
+    return convertSpecialIntRangeToStandardIntRange(anno, maxRange.to);
   }
 
   @Override
