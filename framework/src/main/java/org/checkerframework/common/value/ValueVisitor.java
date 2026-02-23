@@ -20,17 +20,12 @@ import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.checker.formatter.qual.FormatMethod;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
-import org.checkerframework.common.value.qual.IntRangeFromGTENegativeOne;
-import org.checkerframework.common.value.qual.IntRangeFromNonNegative;
-import org.checkerframework.common.value.qual.IntRangeFromPositive;
 import org.checkerframework.common.value.qual.IntVal;
 import org.checkerframework.common.value.qual.StaticallyExecutable;
 import org.checkerframework.common.value.util.NumberUtils;
 import org.checkerframework.common.value.util.Range;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
-import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
-import org.checkerframework.framework.type.visitor.AnnotatedTypeScanner;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
@@ -60,40 +55,6 @@ public class ValueVisitor extends BaseTypeVisitor<ValueAnnotatedTypeFactory> {
     }
 
     return super.commonAssignmentCheck(varType, valueType, valueTree, errorKey, extraArgs);
-  }
-
-  /**
-   * Replaces any {@code IntRangeFromX} annotations with {@code @UnknownVal}. This is used to
-   * prevent these annotations from being required on the left-hand side of assignments.
-   *
-   * @param varType an annotated type mirror that may contain IntRangeFromX annotations, which will
-   *     be used on the lhs of an assignment or pseudo-assignment
-   */
-  @SuppressWarnings("UnusedMethod")
-  private void replaceSpecialIntRangeAnnotations(AnnotatedTypeMirror varType) {
-    AnnotatedTypeScanner<Void, Void> replaceSpecialIntRangeAnnotations =
-        new AnnotatedTypeScanner<Void, Void>() {
-          @Override
-          protected Void scan(AnnotatedTypeMirror type, Void p) {
-            if (type.hasPrimaryAnnotation(IntRangeFromPositive.class)
-                || type.hasPrimaryAnnotation(IntRangeFromNonNegative.class)
-                || type.hasPrimaryAnnotation(IntRangeFromGTENegativeOne.class)) {
-              type.replaceAnnotation(atypeFactory.UNKNOWNVAL);
-            }
-            return super.scan(type, p);
-          }
-
-          @Override
-          public Void visitDeclared(AnnotatedDeclaredType type, Void p) {
-            // Don't call super so that the type arguments are not visited.
-            if (type.getEnclosingType() != null) {
-              scan(type.getEnclosingType(), p);
-            }
-
-            return null;
-          }
-        };
-    replaceSpecialIntRangeAnnotations.visit(varType);
   }
 
   @Override

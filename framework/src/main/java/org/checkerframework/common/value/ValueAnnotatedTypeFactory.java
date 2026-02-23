@@ -317,17 +317,20 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
     // Convert `IntRangeFromPositive`, `IntRangeFromNonNegative`, and `IntRangeFromGTENegativeOne`
     // to `IntRange`.
-    TypeKind primitiveKind;
-    if (TypesUtils.isPrimitive(typeMirror)) {
-      primitiveKind = typeMirror.getKind();
-    } else if (TypesUtils.isBoxedPrimitive(typeMirror)) {
-      primitiveKind = types.unboxedType(typeMirror).getKind();
-    } else {
-      return convertSpecialIntRangeToStandardIntRange(anno, Long.MAX_VALUE);
+    // This code does not compute the typeKind or range unless the annotation name matches.
+    switch (AnnotationUtils.annotationName(anno)) {
+      case INTRANGE_FROMPOS_NAME:
+        return createIntRangeAnnotation(
+            1, Range.create(TypeKindUtils.primitiveOrBoxedToTypeKind(typeMirror)).to);
+      case INTRANGE_FROMNONNEG_NAME:
+        return createIntRangeAnnotation(
+            0, Range.create(TypeKindUtils.primitiveOrBoxedToTypeKind(typeMirror)).to);
+      case INTRANGE_FROMGTENEGONE_NAME:
+        return createIntRangeAnnotation(
+            -1, Range.create(TypeKindUtils.primitiveOrBoxedToTypeKind(typeMirror)).to);
     }
 
-    Range maxRange = Range.create(primitiveKind);
-    return convertSpecialIntRangeToStandardIntRange(anno, maxRange.to);
+    return anno;
   }
 
   @Override
@@ -595,63 +598,6 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         new ValueTreeAnnotator(this),
         new LiteralTreeAnnotator(this).addStandardLiteralQualifiers(),
         arrayCreation);
-  }
-
-  /**
-   * Converts {@link IntRangeFromPositive}, {@link IntRangeFromNonNegative}, or {@link
-   * IntRangeFromGTENegativeOne} to {@link IntRange}. Any other annotation is just returned.
-   *
-   * @param anm any annotation mirror
-   * @return the int range annotation is that equivalent to {@code anm}, or {@code anm} if one
-   *     doesn't exist
-   */
-  /*package-private*/ AnnotationMirror convertSpecialIntRangeToStandardIntRange(
-      AnnotationMirror anm) {
-    return convertSpecialIntRangeToStandardIntRange(anm, Long.MAX_VALUE);
-  }
-
-  /**
-   * Converts {@link IntRangeFromPositive}, {@link IntRangeFromNonNegative}, or {@link
-   * IntRangeFromGTENegativeOne} to {@link IntRange}. Any other annotation is just returned.
-   *
-   * @param anm any annotation mirror
-   * @param primitiveKind a primitive TypeKind
-   * @return the int range annotation is that equivalent to {@code anm}, or {@code anm} if one
-   *     doesn't exist
-   */
-  /*package-private*/ AnnotationMirror convertSpecialIntRangeToStandardIntRange(
-      AnnotationMirror anm, TypeKind primitiveKind) {
-    long max = Long.MAX_VALUE;
-    if (TypeKindUtils.isIntegral(primitiveKind)) {
-      Range maxRange = Range.create(primitiveKind);
-      max = maxRange.to;
-    }
-    return convertSpecialIntRangeToStandardIntRange(anm, max);
-  }
-
-  /**
-   * Converts {@link IntRangeFromPositive}, {@link IntRangeFromNonNegative}, or {@link
-   * IntRangeFromGTENegativeOne} to {@link IntRange}. Any other annotation is just returned.
-   *
-   * @param anm any annotation mirror
-   * @param max the max value to use
-   * @return the int range annotation is that equivalent to {@code anm}, or {@code anm} if one
-   *     doesn't exist
-   */
-  private AnnotationMirror convertSpecialIntRangeToStandardIntRange(
-      AnnotationMirror anm, long max) {
-    if (AnnotationUtils.areSameByName(anm, INTRANGE_FROMPOS_NAME)) {
-      return createIntRangeAnnotation(1, max);
-    }
-
-    if (AnnotationUtils.areSameByName(anm, INTRANGE_FROMNONNEG_NAME)) {
-      return createIntRangeAnnotation(0, max);
-    }
-
-    if (AnnotationUtils.areSameByName(anm, INTRANGE_FROMGTENEGONE_NAME)) {
-      return createIntRangeAnnotation(-1, max);
-    }
-    return anm;
   }
 
   /**
