@@ -3522,7 +3522,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * @return the canonical annotation, or null if the given annotation is canonical
    * @see #canonicalAnnotation(AnnotationMirror)
    */
-  public @Nullable AnnotationMirror canonicalAnnotation(AnnotationMirror a, TypeMirror tm) {
+  public AnnotationMirror canonicalAnnotation(AnnotationMirror a, TypeMirror tm) {
     return canonicalAnnotation(a);
   }
 
