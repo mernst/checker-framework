@@ -3519,7 +3519,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * annotation in the framework. Subclasses can do additional work.
    *
    * @param a the qualifier to canonicalize
-   * @return the canonical annotation, or null if the given annotation is canonical
+   * @return the canonical annotation, or the given annotation
    * @see #canonicalAnnotation(AnnotationMirror)
    */
   public AnnotationMirror canonicalAnnotation(AnnotationMirror a, TypeMirror tm) {
