@@ -56,10 +56,7 @@ import org.checkerframework.framework.flow.CFTransfer;
 import org.checkerframework.framework.flow.CFValue;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.DefaultInferredTypesApplier;
-import org.checkerframework.framework.type.DefaultTypeHierarchy;
 import org.checkerframework.framework.type.QualifierHierarchy;
-import org.checkerframework.framework.type.StructuralEqualityComparer;
-import org.checkerframework.framework.type.TypeHierarchy;
 import org.checkerframework.framework.type.treeannotator.ListTreeAnnotator;
 import org.checkerframework.framework.type.treeannotator.LiteralTreeAnnotator;
 import org.checkerframework.framework.type.treeannotator.PropagationTreeAnnotator;
@@ -309,13 +306,28 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   @Override
   public AnnotationMirror canonicalAnnotation(AnnotationMirror anno) {
+
+    anno = super.canonicalAnnotation(anno);
+
     // TODO: This old code is probably buggy.  It will be fixed in the future.
     if (AnnotationUtils.areSameByName(anno, MINLEN_NAME)) {
       int from = getMinLenValue(anno);
       return createArrayLenRangeAnnotation(from, Integer.MAX_VALUE);
     }
 
-    return super.canonicalAnnotation(anno);
+    // Convert `IntRangeFromPositive`, `IntRangeFromNonNegative`, and `IntRangeFromGTENegativeOne`
+    // to `IntRange`.
+    TypeKind primitiveKind;
+    if (TypesUtils.isPrimitive(typeMirror)) {
+      primitiveKind = typeMirror.getKind();
+    } else if (TypesUtils.isBoxedPrimitive(typeMirror)) {
+      primitiveKind = types.unboxedType(typeMirror).getKind();
+    } else {
+      return convertSpecialIntRangeToStandardIntRange(anm, Long.MAX_VALUE);
+    }
+
+    Range maxRange = Range.create(primitiveKind);
+    return convertSpecialIntRangeToStandardIntRange(anm, maxRange.to);
   }
 
   @Override
@@ -350,37 +362,6 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   @Override
   protected QualifierHierarchy createQualifierHierarchy() {
     return new ValueQualifierHierarchy(this.getSupportedTypeQualifiers(), this);
-  }
-
-  @Override
-  protected TypeHierarchy createTypeHierarchy() {
-    // This is a lot of code to replace annotations so that annotations that are equivalent
-    // qualifiers are the same annotation.
-    return new DefaultTypeHierarchy(
-        checker,
-        getQualifierHierarchy(),
-        ignoreRawTypeArguments,
-        checker.hasOption("invariantArrays")) {
-      @Override
-      public StructuralEqualityComparer createEqualityComparer() {
-        return new StructuralEqualityComparer(areEqualVisitHistory) {
-          @Override
-          protected boolean arePrimaryAnnosEqual(
-              AnnotatedTypeMirror type1, AnnotatedTypeMirror type2) {
-            type1.replaceAnnotation(
-                convertToUnknown(
-                    convertSpecialIntRangeToStandardIntRange(
-                        type1.getPrimaryAnnotationInHierarchy(UNKNOWNVAL))));
-            type2.replaceAnnotation(
-                convertToUnknown(
-                    convertSpecialIntRangeToStandardIntRange(
-                        type2.getPrimaryAnnotationInHierarchy(UNKNOWNVAL))));
-
-            return super.arePrimaryAnnosEqual(type1, type2);
-          }
-        };
-      }
-    };
   }
 
   @Override
@@ -455,13 +436,6 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       superPair.executableType.getReturnType().replaceAnnotation(am);
     }
     return superPair;
-  }
-
-  @Override
-  public AnnotationMirrorSet getWidenedAnnotations(
-      AnnotationMirrorSet annos, TypeKind typeKind, TypeKind widenedTypeKind) {
-    return AnnotationMirrorSet.singleton(
-        convertSpecialIntRangeToStandardIntRange(annos.first(), typeKind));
   }
 
   /**
@@ -653,35 +627,6 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       max = maxRange.to;
     }
     return convertSpecialIntRangeToStandardIntRange(anm, max);
-  }
-
-  /**
-   * Converts {@link IntRangeFromPositive}, {@link IntRangeFromNonNegative}, or {@link
-   * IntRangeFromGTENegativeOne} to {@link IntRange}. Any other annotation is just returned.
-   *
-   * @param anm any annotation mirror
-   * @param typeMirror the Java type on which {@code anm} is written
-   * @return the int range annotation is that equivalent to {@code anm}, or {@code anm} if one
-   *     doesn't exist
-   */
-  /*package-private*/ AnnotationMirror convertSpecialIntRangeToStandardIntRange(
-      AnnotationMirror anm, TypeMirror typeMirror) {
-    TypeKind primitiveKind;
-    if (TypesUtils.isPrimitive(typeMirror)) {
-      primitiveKind = typeMirror.getKind();
-    } else if (TypesUtils.isBoxedPrimitive(typeMirror)) {
-      primitiveKind = types.unboxedType(typeMirror).getKind();
-    } else {
-      primitiveKind = TypeKind.LONG;
-    }
-
-    if (TypesUtils.isIntegralPrimitiveOrBoxed(typeMirror)) {
-      Range maxRange = Range.create(primitiveKind);
-      return convertSpecialIntRangeToStandardIntRange(anm, maxRange.to);
-
-    } else {
-      return convertSpecialIntRangeToStandardIntRange(anm, Long.MAX_VALUE);
-    }
   }
 
   /**

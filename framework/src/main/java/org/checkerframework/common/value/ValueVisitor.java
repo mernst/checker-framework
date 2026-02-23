@@ -45,34 +45,6 @@ public class ValueVisitor extends BaseTypeVisitor<ValueAnnotatedTypeFactory> {
     super(checker);
   }
 
-  /**
-   * ValueVisitor overrides this method so that it does not have to check variables annotated with
-   * the {@link IntRangeFromPositive} annotation, the {@link IntRangeFromNonNegative} annotation, or
-   * the {@link IntRangeFromGTENegativeOne} annotation. This annotation is only introduced by the
-   * Index Checker's lower bound annotations. It is safe to defer checking of these values to the
-   * Index Checker because this is only introduced for explicitly-written {@code
-   * org.checkerframework.checker.index.qual.Positive}, explicitly-written {@code
-   * org.checkerframework.checker.index.qual.NonNegative}, and explicitly-written {@code
-   * org.checkerframework.checker.index.qual.GTENegativeOne} annotations, which must be checked by
-   * the Lower Bound Checker.
-   *
-   * @param varType the annotated type of the lvalue (usually a variable)
-   * @param valueExp the AST node for the rvalue (the new value)
-   * @param errorKey the error message key to use if the check fails
-   * @param extraArgs arguments to the error message key, before "found" and "expected" types
-   * @return true if the check succeeds, false if an error message was issued
-   */
-  @Override
-  protected boolean commonAssignmentCheck(
-      AnnotatedTypeMirror varType,
-      ExpressionTree valueExp,
-      @CompilerMessageKey String errorKey,
-      Object... extraArgs) {
-
-    replaceSpecialIntRangeAnnotations(varType);
-    return super.commonAssignmentCheck(varType, valueExp, errorKey, extraArgs);
-  }
-
   @Override
   @FormatMethod
   protected boolean commonAssignmentCheck(
@@ -82,38 +54,12 @@ public class ValueVisitor extends BaseTypeVisitor<ValueAnnotatedTypeFactory> {
       @CompilerMessageKey String errorKey,
       Object... extraArgs) {
 
-    replaceSpecialIntRangeAnnotations(varType);
-
     if (valueType.getKind() == TypeKind.CHAR
         && valueType.hasPrimaryAnnotation(getTypeFactory().UNKNOWNVAL)) {
       valueType.addAnnotation(getTypeFactory().createIntRangeAnnotation(Range.CHAR_EVERYTHING));
     }
 
     return super.commonAssignmentCheck(varType, valueType, valueTree, errorKey, extraArgs);
-  }
-
-  /**
-   * Returns types for methods that are annotated with {@code @IntRangeFromX} annotations need to be
-   * replaced with {@code @UnknownVal}. See the documentation on {@link
-   * #commonAssignmentCheck(AnnotatedTypeMirror, ExpressionTree, String, Object[])
-   * commonAssignmentCheck}.
-   *
-   * <p>A separate override is necessary because checkOverride doesn't actually use the
-   * commonAssignmentCheck.
-   */
-  @Override
-  protected boolean checkOverride(
-      MethodTree overriderTree,
-      AnnotatedTypeMirror.AnnotatedExecutableType overrider,
-      AnnotatedTypeMirror.AnnotatedDeclaredType overridingType,
-      AnnotatedTypeMirror.AnnotatedExecutableType overridden,
-      AnnotatedTypeMirror.AnnotatedDeclaredType overriddenType) {
-
-    replaceSpecialIntRangeAnnotations(overrider);
-    replaceSpecialIntRangeAnnotations(overridden);
-
-    return super.checkOverride(
-        overriderTree, overrider, overridingType, overridden, overriddenType);
   }
 
   /**
@@ -456,7 +402,6 @@ public class ValueVisitor extends BaseTypeVisitor<ValueAnnotatedTypeFactory> {
    */
   @Override
   public boolean validateType(Tree tree, AnnotatedTypeMirror type) {
-    replaceSpecialIntRangeAnnotations(type);
     if (!super.validateType(tree, type)) {
       return false;
     }

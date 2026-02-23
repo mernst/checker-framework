@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.regex.qual.Regex;
 import org.checkerframework.common.value.util.Range;
@@ -217,9 +216,6 @@ final class ValueQualifierHierarchy extends ElementQualifierHierarchy {
       return null;
     }
 
-    a1 = atypeFactory.convertSpecialIntRangeToStandardIntRange(a1);
-    a2 = atypeFactory.convertSpecialIntRangeToStandardIntRange(a2);
-
     if (isSubtypeQualifiers(a1, a2)) {
       return a2;
     } else if (isSubtypeQualifiers(a2, a1)) {
@@ -406,26 +402,6 @@ final class ValueQualifierHierarchy extends ElementQualifierHierarchy {
     return atypeFactory.UNKNOWNVAL;
   }
 
-  @Override
-  public boolean isSubtypeShallow(
-      AnnotationMirror subQualifier,
-      TypeMirror subType,
-      AnnotationMirror superQualifier,
-      TypeMirror superType) {
-    subQualifier = atypeFactory.convertSpecialIntRangeToStandardIntRange(subQualifier, subType);
-    superQualifier =
-        atypeFactory.convertSpecialIntRangeToStandardIntRange(superQualifier, superType);
-    return super.isSubtypeShallow(subQualifier, subType, superQualifier, superType);
-  }
-
-  @Override
-  public @Nullable AnnotationMirror leastUpperBoundShallow(
-      AnnotationMirror qualifier1, TypeMirror tm1, AnnotationMirror qualifier2, TypeMirror tm2) {
-    qualifier1 = atypeFactory.convertSpecialIntRangeToStandardIntRange(qualifier1, tm1);
-    qualifier2 = atypeFactory.convertSpecialIntRangeToStandardIntRange(qualifier2, tm2);
-    return super.leastUpperBoundShallow(qualifier1, tm1, qualifier2, tm2);
-  }
-
   /**
    * Computes subtyping as per the subtyping in the qualifier hierarchy structure unless both
    * annotations are Value. In this case, subAnno is a subtype of superAnno iff superAnno contains
@@ -435,8 +411,6 @@ final class ValueQualifierHierarchy extends ElementQualifierHierarchy {
    */
   @Override
   public boolean isSubtypeQualifiers(AnnotationMirror subAnno, AnnotationMirror superAnno) {
-    subAnno = atypeFactory.convertSpecialIntRangeToStandardIntRange(subAnno);
-    superAnno = atypeFactory.convertSpecialIntRangeToStandardIntRange(superAnno);
     String subQualName = AnnotationUtils.annotationName(subAnno);
     if (subQualName.equals(ValueAnnotatedTypeFactory.UNKNOWN_NAME)) {
       superAnno = atypeFactory.convertToUnknown(superAnno);
