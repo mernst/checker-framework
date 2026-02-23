@@ -559,8 +559,8 @@ public abstract class GenericAnnotatedTypeFactory<
    * Returns a {@link DefaultForTypeAnnotator} that adds annotations to a type based on the content
    * of the type itself.
    *
-   * <p>Subclass may override this method. The default type annotator is a {@link ListTypeAnnotator}
-   * of the following:
+   * <p>Subclasses may override this method. The default type annotator is a {@link
+   * ListTypeAnnotator} of the following:
    *
    * <ol>
    *   <li>{@link IrrelevantTypeAnnotator}: Adds top to types not listed in the {@code @}{@link
