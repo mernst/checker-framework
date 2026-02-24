@@ -11,7 +11,8 @@ Removed long-deprecated `-Alint=forbidnonnullarraycomponents`.
 
 ### Implementation details
 
-In `AnnotatedTypeFactory`, `canonicalAnnotation()` returns a non-null value.
+In `AnnotatedTypeFactory`, `canonicalAnnotation()` returns a non-null value, and
+it has a new overload that also takes a `TypeMirror`.
 
 Removed classes and methods that have been deprecated for more than two years.
 

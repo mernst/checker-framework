@@ -8,15 +8,12 @@ import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
  * An expression with this type is exactly the same as an {@link IntRange} annotation whose {@code
- * from} field is {@code 1} and whose {@code to} field is {@code Integer.MAX_VALUE}. However, this
- * annotation is derived from an {@code org.checkerframework.checker.index.qual.Positive}
+ * from} field is {@code 1} and whose {@code to} field is the maximum value for its type. However,
+ * this annotation is derived from an {@code org.checkerframework.checker.index.qual.Positive}
  * annotation.
  *
- * <p>IntRangeFromPositive annotations derived from Positive annotations are used to create IntRange
- * annotations, but IntRangeFromPositive annotations are not checked when they appear on the
- * left-hand side of expressions. Therefore, the Index Checker MUST be run on any code
- * with @Positive annotations on the left-hand side of expressions, since the Value Checker will
- * derive information from them but not check them.
+ * <p>The Value Checker trusts this annotation. For soundness, the Index Checker must be run on any
+ * code with @Positive annotations on the left-hand side of assignments.
  *
  * <p>It is an error to write this annotation directly. {@code @Positive} or {@code IntRange(from =
  * 1, to = Integer.MAX_VALUE)} should always be written instead. This annotation is not retained in

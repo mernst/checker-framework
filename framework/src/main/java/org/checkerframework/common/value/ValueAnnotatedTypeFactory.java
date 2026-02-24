@@ -307,27 +307,32 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   @Override
   public AnnotationMirror canonicalAnnotation(AnnotationMirror anno, TypeMirror typeMirror) {
 
-    anno = super.canonicalAnnotation(anno);
-
-    // TODO: This old code is probably buggy.  It will be fixed in the future.
-    if (AnnotationUtils.areSameByName(anno, MINLEN_NAME)) {
-      int from = getMinLenValue(anno);
-      return createArrayLenRangeAnnotation(from, Integer.MAX_VALUE);
-    }
+    AnnotationMirror orig = anno;
+    anno = super.canonicalAnnotation(anno, typeMirror);
 
     // Convert `IntRangeFromPositive`, `IntRangeFromNonNegative`, and `IntRangeFromGTENegativeOne`
     // to `IntRange`.
     // This code does not compute the typeKind or range unless the annotation name matches.
     switch (AnnotationUtils.annotationName(anno)) {
+      case MINLEN_NAME:
+        // TODO: This old code is probably buggy.  It will be fixed in the future.
+        anno = createArrayLenRangeAnnotation(getMinLenValue(anno), Integer.MAX_VALUE);
+        break;
       case INTRANGE_FROMPOS_NAME:
-        return createIntRangeAnnotation(
-            1, Range.create(TypeKindUtils.primitiveOrBoxedToTypeKind(typeMirror)).to);
+        anno =
+            createIntRangeAnnotation(
+                1, Range.create(TypeKindUtils.primitiveOrBoxedToTypeKind(typeMirror)).to);
+        break;
       case INTRANGE_FROMNONNEG_NAME:
-        return createIntRangeAnnotation(
-            0, Range.create(TypeKindUtils.primitiveOrBoxedToTypeKind(typeMirror)).to);
+        anno =
+            createIntRangeAnnotation(
+                0, Range.create(TypeKindUtils.primitiveOrBoxedToTypeKind(typeMirror)).to);
+        break;
       case INTRANGE_FROMGTENEGONE_NAME:
-        return createIntRangeAnnotation(
-            -1, Range.create(TypeKindUtils.primitiveOrBoxedToTypeKind(typeMirror)).to);
+        anno =
+            createIntRangeAnnotation(
+                -1, Range.create(TypeKindUtils.primitiveOrBoxedToTypeKind(typeMirror)).to);
+        break;
     }
 
     return anno;
@@ -1582,11 +1587,12 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       // This is only expected to support array creations in varargs methods
       return arrayCreation.getInitializers().size();
     } else if (expressionObj instanceof ArrayAccess) {
-      List<? extends AnnotationMirror> annoList = expressionObj.getType().getAnnotationMirrors();
+      TypeMirror expressionType = expressionObj.getType();
+      List<? extends AnnotationMirror> annoList = expressionType.getAnnotationMirrors();
       for (AnnotationMirror anno : annoList) {
         String ANNO_NAME = AnnotationUtils.annotationName(anno);
         if (ANNO_NAME.equals(MINLEN_NAME)) {
-          return getMinLenValue(canonicalAnnotation(anno));
+          return getMinLenValue(canonicalAnnotation(anno, expressionType));
         } else if (ANNO_NAME.equals(ARRAYLEN_NAME) || ANNO_NAME.equals(ARRAYLENRANGE_NAME)) {
           return getMinLenValue(anno);
         }
