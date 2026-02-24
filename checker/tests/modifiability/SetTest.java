@@ -36,17 +36,13 @@ class SetTest {
     // @Replaceable Set → Grow=Unknown, Shrink=Unknown, Replace=Unknown (R removed)
     // @Growable @Replaceable Set → Grow=Growable, Shrink=Unknown, Replace=Unknown (R removed)
     @Growable Set<String> g1 = growReplace; // OK: Grow still intact
-    @Replaceable
-    Set<String> r1 =
+    @Replaceable Set<String> r1 =
         growReplace; // OK: @replaceable set becomes @UnknownMod, GrowReplace set becomes @Growable.
 
     // @Growable @Shrinkable @Replaceable Set → Grow=G, Shrink=S, Replace=Unknown (R removed)
     // effectively the same as @Growable @Shrinkable Set
-    @Growable
-    @Shrinkable
-    Set<String> gs1 = modifiable; // OK
-    @Replaceable
-    Set<String> r2 =
+    @Growable @Shrinkable Set<String> gs1 = modifiable; // OK
+    @Replaceable Set<String> r2 =
         modifiable; // OK: replaceale becomes unknown, modifiable becomes @Growable @Shrinkable
   }
 
@@ -57,18 +53,9 @@ class SetTest {
       @Growable @Shrinkable Set<String> gs) {
 
     // Top in all hierarchies: accepts everything
-    @UnknownGrow
-    @UnknownShrink
-    @UnknownReplace
-    Set<String> u1 = growable;
-    @UnknownGrow
-    @UnknownShrink
-    @UnknownReplace
-    Set<String> u2 = shrinkable;
-    @UnknownGrow
-    @UnknownShrink
-    @UnknownReplace
-    Set<String> u3 = gs;
+    @UnknownGrow @UnknownShrink @UnknownReplace Set<String> u1 = growable;
+    @UnknownGrow @UnknownShrink @UnknownReplace Set<String> u2 = shrinkable;
+    @UnknownGrow @UnknownShrink @UnknownReplace Set<String> u3 = gs;
 
     // @Growable Set: Grow=G, Shrink=Unknown, Replace=Unknown
     @Growable Set<String> g1 = gs; // OK: G+S <: G
@@ -84,13 +71,8 @@ class SetTest {
   void testQueueLikeSet(
       @Modifiable Queue<String> modifiable, @Growable @Shrinkable Queue<String> gs) {
     // Queue also has Replace removed (same rule as Set).
-    @Growable
-    @Shrinkable
-    Queue<String> q1 = modifiable; // OK: modifiable <: gs (R removed from both)
-    @Growable
-    @Shrinkable
-    @Replaceable
-    Queue<String> q2 = gs; // OK: same after TypeAnnotator
+    @Growable @Shrinkable Queue<String> q1 = modifiable; // OK: modifiable <: gs (R removed from both)
+    @Growable @Shrinkable @Replaceable Queue<String> q2 = gs; // OK: same after TypeAnnotator
   }
 
   // ==========================================================
@@ -157,56 +139,25 @@ class SetTest {
       @Growable @Shrinkable @Replaceable Iterator<String> modifiable) {
 
     // Group 1: No Shrink bit → effective @UnknownGrow @UnknownShrink @UnknownReplace
-    @UnknownGrow
-    @UnknownShrink
-    @UnknownReplace
-    Iterator<String> u1 = growable;
-    @UnknownGrow
-    @UnknownShrink
-    @UnknownReplace
-    Iterator<String> u2 = replaceable;
-    @UnknownGrow
-    @UnknownShrink
-    @UnknownReplace
-    Iterator<String> u3 = growReplace;
+    @UnknownGrow @UnknownShrink @UnknownReplace Iterator<String> u1 = growable;
+    @UnknownGrow @UnknownShrink @UnknownReplace Iterator<String> u2 = replaceable;
+    @UnknownGrow @UnknownShrink @UnknownReplace Iterator<String> u3 = growReplace;
     // They are all effectively the same type after TypeAnnotator:
     @Growable Iterator<String> g1 = unknown;
     @Replaceable Iterator<String> r1 = growReplace;
-    @Growable
-    @Replaceable
-    Iterator<String> gr1 = replaceable;
+    @Growable @Replaceable Iterator<String> gr1 = replaceable;
 
     // Group 2: Has Shrink bit → effective @UnknownGrow @Shrinkable @UnknownReplace
-    @UnknownGrow
-    @Shrinkable
-    @UnknownReplace
-    Iterator<String> s1 = shrinkable;
-    @UnknownGrow
-    @Shrinkable
-    @UnknownReplace
-    Iterator<String> s2 = growShrink;
-    @UnknownGrow
-    @Shrinkable
-    @UnknownReplace
-    Iterator<String> s3 = shrinkReplace;
-    @UnknownGrow
-    @Shrinkable
-    @UnknownReplace
-    Iterator<String> s4 = modifiable;
+    @UnknownGrow @Shrinkable @UnknownReplace Iterator<String> s1 = shrinkable;
+    @UnknownGrow @Shrinkable @UnknownReplace Iterator<String> s2 = growShrink;
+    @UnknownGrow @Shrinkable @UnknownReplace Iterator<String> s3 = shrinkReplace;
+    @UnknownGrow @Shrinkable @UnknownReplace Iterator<String> s4 = modifiable;
     // Cross-assignments within group 2:
     @Shrinkable Iterator<String> sh1 = modifiable;
-    @Growable
-    @Shrinkable
-    Iterator<String> gs1 = modifiable;
-    @Shrinkable
-    @Replaceable
-    Iterator<String> sr1 = modifiable;
-    @Growable
-    @Shrinkable
-    Iterator<String> gs2 = shrinkable;
-    @Shrinkable
-    @Replaceable
-    Iterator<String> sr2 = growShrink;
+    @Growable @Shrinkable Iterator<String> gs1 = modifiable;
+    @Shrinkable @Replaceable Iterator<String> sr1 = modifiable;
+    @Growable @Shrinkable Iterator<String> gs2 = shrinkable;
+    @Shrinkable @Replaceable Iterator<String> sr2 = growShrink;
 
     // :: error: (assignment)
     @Shrinkable Iterator<String> bad1 = growable; // Error: Shrink=Unknown !<: Shrinkable

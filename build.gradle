@@ -354,6 +354,19 @@ allprojects { currentProj ->
         googleJavaFormat(libs.google.java.format.get().version) // the formatter to apply to Java files
       }
       formatAnnotations()
+          .addTypeAnnotation("Growable")
+          .addTypeAnnotation("Modifiable")
+          .addTypeAnnotation("PolyGrow")
+          .addTypeAnnotation("PolyModifiable")
+          .addTypeAnnotation("PolyReplace")
+          .addTypeAnnotation("PolyShrink")
+          .addTypeAnnotation("Replaceable")
+          .addTypeAnnotation("Shrinkable")
+          .addTypeAnnotation("UnknownGrow")
+          .addTypeAnnotation("UnknownModifiability")
+          .addTypeAnnotation("UnknownReplace")
+          .addTypeAnnotation("UnknownShrink")
+          .addTypeAnnotation("Unmodifiable")
     }
 
     // Only define a groovyGradle task on the root project, for simplicity in setting the target pattern

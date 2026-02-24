@@ -14,8 +14,7 @@ import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 public class PolyModifiableTest {
 
   /** A simple polymorphic identity method that preserves all three capabilities. */
-  @PolyModifiable
-  List<String> identity(@PolyModifiable List<String> x) {
+  @PolyModifiable List<String> identity(@PolyModifiable List<String> x) {
     return x;
   }
 
@@ -39,9 +38,7 @@ public class PolyModifiableTest {
     // ============================================================
     // Identity on @Growable @Shrinkable (G+S, R=UnknownReplace)
     // ============================================================
-    @Growable
-    @Shrinkable
-    List<String> gs1 = identity(gs); // OK
+    @Growable @Shrinkable List<String> gs1 = identity(gs); // OK
     // :: error: (assignment)
     @Modifiable List<String> gs2 = identity(gs); // Error: R=Unknown !<: Replaceable
     @Growable List<String> gs3 = identity(gs); // OK: G+S+UnknownR <: G
@@ -52,9 +49,7 @@ public class PolyModifiableTest {
     // ============================================================
     // Identity on @Growable @Replaceable (G+R, S=UnknownShrink)
     // ============================================================
-    @Growable
-    @Replaceable
-    List<String> gr1 = identity(gr); // OK
+    @Growable @Replaceable List<String> gr1 = identity(gr); // OK
     // :: error: (assignment)
     @Modifiable List<String> gr2 = identity(gr); // Error: S=Unknown !<: Shrinkable
     @Growable List<String> gr3 = identity(gr); // OK
@@ -65,9 +60,7 @@ public class PolyModifiableTest {
     // ============================================================
     // Identity on @Shrinkable @Replaceable (S+R, G=UnknownGrow)
     // ============================================================
-    @Shrinkable
-    @Replaceable
-    List<String> sr1 = identity(sr); // OK
+    @Shrinkable @Replaceable List<String> sr1 = identity(sr); // OK
     // :: error: (assignment)
     @Modifiable List<String> sr2 = identity(sr); // Error: G=Unknown !<: Growable
     // :: error: (assignment)
@@ -80,9 +73,7 @@ public class PolyModifiableTest {
     // ============================================================
     @Growable List<String> g1 = identity(g); // OK
     // :: error: (assignment)
-    @Growable
-    @Shrinkable
-    List<String> g2 = identity(g); // Error: S=Unknown
+    @Growable @Shrinkable List<String> g2 = identity(g); // Error: S=Unknown
     // :: error: (assignment)
     @Modifiable List<String> g3 = identity(g); // Error: S=Unknown, R=Unknown
 
@@ -91,9 +82,7 @@ public class PolyModifiableTest {
     // ============================================================
     @Shrinkable List<String> s1 = identity(s); // OK
     // :: error: (assignment)
-    @Growable
-    @Shrinkable
-    List<String> s2 = identity(s); // Error: G=Unknown
+    @Growable @Shrinkable List<String> s2 = identity(s); // Error: G=Unknown
     // :: error: (assignment)
     @Modifiable List<String> s3 = identity(s); // Error
 
@@ -102,9 +91,7 @@ public class PolyModifiableTest {
     // ============================================================
     @Replaceable List<String> r1 = identity(r); // OK
     // :: error: (assignment)
-    @Growable
-    @Replaceable
-    List<String> r2 = identity(r); // Error: G=Unknown
+    @Growable @Replaceable List<String> r2 = identity(r); // Error: G=Unknown
     // :: error: (assignment)
     @Modifiable List<String> r3 = identity(r); // Error
 

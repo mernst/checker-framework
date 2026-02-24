@@ -104,38 +104,14 @@ class HierarchyTest {
     @Replaceable Object rv8 = none;
 
     // ── Assignments to full @UnknownGrow @UnknownShrink @UnknownReplace (top in all) ──
-    @UnknownGrow
-    @UnknownShrink
-    @UnknownReplace
-    Object tv1 = gsr;
-    @UnknownGrow
-    @UnknownShrink
-    @UnknownReplace
-    Object tv2 = gs;
-    @UnknownGrow
-    @UnknownShrink
-    @UnknownReplace
-    Object tv3 = gr;
-    @UnknownGrow
-    @UnknownShrink
-    @UnknownReplace
-    Object tv4 = sr;
-    @UnknownGrow
-    @UnknownShrink
-    @UnknownReplace
-    Object tv5 = g;
-    @UnknownGrow
-    @UnknownShrink
-    @UnknownReplace
-    Object tv6 = s;
-    @UnknownGrow
-    @UnknownShrink
-    @UnknownReplace
-    Object tv7 = r;
-    @UnknownGrow
-    @UnknownShrink
-    @UnknownReplace
-    Object tv8 = none;
+    @UnknownGrow @UnknownShrink @UnknownReplace Object tv1 = gsr;
+    @UnknownGrow @UnknownShrink @UnknownReplace Object tv2 = gs;
+    @UnknownGrow @UnknownShrink @UnknownReplace Object tv3 = gr;
+    @UnknownGrow @UnknownShrink @UnknownReplace Object tv4 = sr;
+    @UnknownGrow @UnknownShrink @UnknownReplace Object tv5 = g;
+    @UnknownGrow @UnknownShrink @UnknownReplace Object tv6 = s;
+    @UnknownGrow @UnknownShrink @UnknownReplace Object tv7 = r;
+    @UnknownGrow @UnknownShrink @UnknownReplace Object tv8 = none;
   }
 
   // ============================================================

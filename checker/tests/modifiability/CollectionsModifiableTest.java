@@ -58,8 +58,7 @@ public class CollectionsModifiableTest {
     checkedL.add("a");
 
     @Modifiable Map<String, String> m = new HashMap<>();
-    @Modifiable
-    Map<String, String> checkedM = Collections.checkedMap(m, String.class, String.class);
+    @Modifiable Map<String, String> checkedM = Collections.checkedMap(m, String.class, String.class);
     checkedM.put("a", "b");
 
     @Modifiable Set<String> s = new HashSet<>();
