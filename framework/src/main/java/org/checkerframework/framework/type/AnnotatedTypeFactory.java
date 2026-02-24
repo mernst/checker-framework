@@ -3519,7 +3519,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * annotation in the framework. Subclasses can do additional work.
    *
    * @param a the qualifier to canonicalize
-   * @return the canonical annotation, or the given annotation
+   * @param tm the type on which the qualifier is written
+   * @return the canonical annotation, which may be the given annotation
    * @see #canonicalAnnotation(AnnotationMirror)
    */
   public AnnotationMirror canonicalAnnotation(AnnotationMirror a, TypeMirror tm) {
@@ -3527,8 +3528,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
-   * Returns the canonical annotation for the passed annotation, or null if the given annotation is
-   * canonical.
+   * Returns the canonical annotation for the passed annotation. May return its argument.
    *
    * <p>This overload is for annotations that will not be added to an {@link AnnotatedTypeMirror}.
    *
@@ -3536,7 +3536,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * annotation in the framework. Subclasses can do additional work.
    *
    * @param a the qualifier to canonicalize
-   * @return the canonical annotation, or null if the given annotation is canonical
+   * @return the canonical annotation, which may be the given annotation
    * @see #canonicalAnnotation(AnnotationMirror,TypeMirror)
    */
   public AnnotationMirror canonicalAnnotation(AnnotationMirror a) {
