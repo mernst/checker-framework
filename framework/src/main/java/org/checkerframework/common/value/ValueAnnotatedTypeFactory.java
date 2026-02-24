@@ -307,7 +307,6 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   @Override
   public AnnotationMirror canonicalAnnotation(AnnotationMirror anno, TypeMirror typeMirror) {
 
-    AnnotationMirror orig = anno;
     anno = super.canonicalAnnotation(anno, typeMirror);
 
     // Convert `IntRangeFromPositive`, `IntRangeFromNonNegative`, and `IntRangeFromGTENegativeOne`
