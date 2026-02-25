@@ -54,10 +54,8 @@ public class PolyShrinkTest {
     @Unmodifiable Map<String, String> unmodMap = Map.of("a", "b");
     @Unmodifiable Set<Map.@Unmodifiable Entry<String, String>> unmodEntries = unmodMap.entrySet();
     // :: error: (assignment)
-    @Shrinkable Set<Map.@Unmodifiable Entry<String, String>> unmodEntriesS =
-        unmodMap.entrySet(); // Set cannot shrink
+    @Shrinkable Set<Map.@Unmodifiable Entry<String, String>> unmodEntriesS = unmodMap.entrySet();
     // :: error: (assignment)
-    @Growable Set<Map.@Unmodifiable Entry<String, String>> unmodEntriesG =
-        unmodMap.entrySet(); // Set cannot add
+    @Growable Set<Map.@Unmodifiable Entry<String, String>> unmodEntriesG = unmodMap.entrySet();
   }
 }

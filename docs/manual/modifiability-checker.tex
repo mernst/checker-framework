@@ -197,7 +197,7 @@ Some Java types lack methods for certain kinds of mutation.  The
 Modifiability Checker automatically removes capabilities that the type
 cannot support.
 
-\paragraph{Set and Queue (except LinkedList).}
+\paragraphAndLabel{Set and Queue (except LinkedList).}{modifiability-set-queue}
 The \code{Set} interface has no replace methods (\code{set} is a
 \code{List}-only operation).  Similarly, \code{Queue} has no replace
 methods in general.  The Modifiability Checker therefore sets the
@@ -214,7 +214,7 @@ type.  For example:
       (\<@UnknownReplace> is already the default)
 \end{itemize}
 
-\paragraph{Map.Entry.}
+\paragraphAndLabel{Map.Entry.}{modifiability-map-entry}
 \code{Map.Entry} has only the optional \code{setValue} method (a
 replace operation) and no grow or shrink operations.  The Modifiability
 Checker therefore sets the Grow and Shrink hierarchy qualifiers to
@@ -227,7 +227,7 @@ Checker therefore sets the Grow and Shrink hierarchy qualifiers to
       treated as \code{Map.@UnknownGrow @UnknownShrink @UnknownReplace Entry}
 \end{itemize}
 
-\paragraph{Iterator.}
+\paragraphAndLabel{Iterator.}{modifiability-iterator}
 \code{Iterator} has only the optional \code{remove} method (a shrink
 operation) and no grow or replace operations.  (Note that
 \code{ListIterator} is treated normally because it also has optional
