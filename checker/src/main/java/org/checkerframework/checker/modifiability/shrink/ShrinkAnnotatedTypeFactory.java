@@ -17,9 +17,12 @@ import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
+import org.checkerframework.framework.type.QualifierUpperBounds;
 import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
 import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.javacutil.AnnotationBuilder;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
+import org.checkerframework.javacutil.TypesUtils;
 
 /** The type factory for the Modifiability Checker. */
 public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
@@ -92,15 +95,31 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       }
 
       TypeMirror underlyingType = type.getUnderlyingType();
-      Types types = getProcessingEnv().getTypeUtils();
-      TypeMirror erasure = types.erasure(underlyingType);
 
-      if (types.isSubtype(erasure, mapEntryErasure)) {
+      if (TypesUtils.isErasedSubtype(underlyingType, mapEntryErasure, types)) {
         // Map.Entry: Drop G and S bits
         type.replaceAnnotation(UNKNOWN_SHRINK);
       }
 
       return null;
     }
+  }
+
+  @Override
+  protected QualifierUpperBounds createQualifierUpperBounds() {
+    return new QualifierUpperBounds(this) {
+      private final AnnotationMirrorSet unknownShrink =
+          AnnotationMirrorSet.singleton(UNKNOWN_SHRINK);
+
+      @Override
+      public AnnotationMirrorSet getBoundQualifiers(TypeMirror type) {
+        if (TypesUtils.isErasedSubtype(type, mapEntryErasure, types)) {
+          // Elements of a map entry can never be shrunk, so treat them as @UnknownShrink. Even if
+          // they are annotation @Growable in a stubfile.
+          return unknownShrink;
+        }
+        return super.getBoundQualifiers(type);
+      }
+    };
   }
 }

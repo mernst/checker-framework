@@ -17,9 +17,12 @@ import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
+import org.checkerframework.framework.type.QualifierUpperBounds;
 import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
 import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.javacutil.AnnotationBuilder;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
+import org.checkerframework.javacutil.TypesUtils;
 
 /** The type factory for the Modifiability Checker. */
 public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
@@ -29,6 +32,9 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   /** The erased {@code java.util.Iterator} type. */
   private final TypeMirror iteratorErasure;
+
+  /** The erased {@code java.util.ListIterator} type. */
+  private final TypeMirror listIteratorErasure;
 
   // ── Hierarchy qualifiers ──────────
 
@@ -50,7 +56,8 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         types.erasure(getElementUtils().getTypeElement("java.util.Map.Entry").asType());
     this.iteratorErasure =
         types.erasure(getElementUtils().getTypeElement("java.util.Iterator").asType());
-
+    this.listIteratorErasure =
+        types.erasure(getElementUtils().getTypeElement("java.util.ListIterator").asType());
     // Initialize annotation mirrors after the hierarchy is established.
     this.UNKNOWN_GROW = AnnotationBuilder.fromClass(getElementUtils(), UnknownGrow.class);
     this.GROWABLE = AnnotationBuilder.fromClass(getElementUtils(), Growable.class);
@@ -98,18 +105,38 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       }
 
       TypeMirror underlyingType = type.getUnderlyingType();
-      Types types = getProcessingEnv().getTypeUtils();
-      TypeMirror erasure = types.erasure(underlyingType);
 
-      if (types.isSubtype(erasure, mapEntryErasure)) {
+      if (TypesUtils.isErasedSubtype(underlyingType, mapEntryErasure, types)) {
         // Map.Entry: no grow.
         type.replaceAnnotation(UNKNOWN_GROW);
-      } else if (types.isSubtype(erasure, iteratorErasure)) {
+      } else if (TypesUtils.isErasedSubtype(underlyingType, iteratorErasure, types)
+          && !TypesUtils.isErasedSubtype(underlyingType, listIteratorErasure, types)) {
         // Iterator: no grow.
         type.replaceAnnotation(UNKNOWN_GROW);
       }
 
       return null;
     }
+  }
+
+  @Override
+  protected QualifierUpperBounds createQualifierUpperBounds() {
+    return new QualifierUpperBounds(this) {
+      private final AnnotationMirrorSet unknownGrow = AnnotationMirrorSet.singleton(UNKNOWN_GROW);
+
+      @Override
+      public AnnotationMirrorSet getBoundQualifiers(TypeMirror type) {
+        if (TypesUtils.isErasedSubtype(type, mapEntryErasure, types)) {
+          // Elements of a map entry can never be grown, so treat them as @UnknownGrow. Even if
+          // they are annotation @Growable in a stubfile.
+          return unknownGrow;
+        } else if (TypesUtils.isErasedSubtype(type, iteratorErasure, types)
+            && !TypesUtils.isErasedSubtype(type, listIteratorErasure, types)) {
+          // It's a standard Iterator, but NOT a ListIterator: Drop G bit
+          return unknownGrow;
+        }
+        return super.getBoundQualifiers(type);
+      }
+    };
   }
 }

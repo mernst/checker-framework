@@ -39,6 +39,9 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The erased {@code java.util.Iterator} type. */
   private final TypeMirror iteratorErasure;
 
+  /** The erased {@code java.util.ListIterator} type. */
+  private final TypeMirror listIteratorErasure;
+
   // ── Hierarchy qualifiers ──────────
 
   /** The {@code @}{@link UnknownReplace} qualifier (top of Replace hierarchy). */
@@ -61,6 +64,8 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         types.erasure(getElementUtils().getTypeElement("java.util.LinkedList").asType());
     this.iteratorErasure =
         types.erasure(getElementUtils().getTypeElement("java.util.Iterator").asType());
+    this.listIteratorErasure =
+        types.erasure(getElementUtils().getTypeElement("java.util.ListIterator").asType());
 
     // Initialize annotation mirrors after the hierarchy is established.
     this.UNKNOWN_REPLACE = AnnotationBuilder.fromClass(getElementUtils(), UnknownReplace.class);
@@ -109,19 +114,19 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       }
 
       TypeMirror underlyingType = type.getUnderlyingType();
-      Types types = getProcessingEnv().getTypeUtils();
-      TypeMirror erasure = types.erasure(underlyingType);
 
-      if (types.isSubtype(erasure, setErasure)
-          || (types.isSubtype(erasure, queueErasure)
-              && !types.isSubtype(erasure, linkedListErasure))) {
-        // Set or Queue (but not LinkedList): Drop R bit
+      if (TypesUtils.isErasedSubtype(underlyingType, setErasure, types)) {
+        // Set: Drop R bit
         type.replaceAnnotation(UNKNOWN_REPLACE);
-      } else if (types.isSubtype(erasure, iteratorErasure)) {
+      } else if (TypesUtils.isErasedSubtype(underlyingType, queueErasure, types)
+          && !TypesUtils.isErasedSubtype(underlyingType, linkedListErasure, types)) {
+        // Queue (but not LinkedList): Drop R bit
+        type.replaceAnnotation(UNKNOWN_REPLACE);
+      } else if (TypesUtils.isErasedSubtype(underlyingType, iteratorErasure, types)
+          && !TypesUtils.isErasedSubtype(underlyingType, listIteratorErasure, types)) {
         // Iterator: Drop G and R bits
         type.replaceAnnotation(UNKNOWN_REPLACE);
       }
-
       return null;
     }
   }
@@ -129,7 +134,7 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   @Override
   protected QualifierUpperBounds createQualifierUpperBounds() {
     return new QualifierUpperBounds(this) {
-      private final AnnotationMirrorSet unknownReplaceSet =
+      private final AnnotationMirrorSet unknownReplace =
           AnnotationMirrorSet.singleton(UNKNOWN_REPLACE);
 
       @Override
@@ -137,7 +142,16 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         if (TypesUtils.isErasedSubtype(type, setErasure, types)) {
           // Elements of a set can never be replaced, so treat them as @UnknownReplace. Even if
           // they are annotation @Modifiable in a stubfile.
-          return unknownReplaceSet;
+          return unknownReplace;
+        } else if (TypesUtils.isErasedSubtype(type, queueErasure, types)
+            && !TypesUtils.isErasedSubtype(type, linkedListErasure, types)) {
+          // Elements of a queue (but not LinkedList) can never be replaced, so treat them as
+          // @UnknownReplace.
+          return unknownReplace;
+        } else if (TypesUtils.isErasedSubtype(type, iteratorErasure, types)
+            && !TypesUtils.isErasedSubtype(type, listIteratorErasure, types)) {
+          // Iterators cannot replace elements.
+          return unknownReplace;
         }
         return super.getBoundQualifiers(type);
       }
