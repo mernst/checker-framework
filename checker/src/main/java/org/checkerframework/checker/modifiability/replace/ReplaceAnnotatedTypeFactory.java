@@ -17,9 +17,12 @@ import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
+import org.checkerframework.framework.type.QualifierUpperBounds;
 import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
 import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.javacutil.AnnotationBuilder;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
+import org.checkerframework.javacutil.TypesUtils;
 
 /** The type factory for the Modifiability Checker. */
 public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
@@ -121,5 +124,23 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
       return null;
     }
+  }
+
+  @Override
+  protected QualifierUpperBounds createQualifierUpperBounds() {
+    return new QualifierUpperBounds(this) {
+      private final AnnotationMirrorSet unknownReplaceSet =
+          AnnotationMirrorSet.singleton(UNKNOWN_REPLACE);
+
+      @Override
+      public AnnotationMirrorSet getBoundQualifiers(TypeMirror type) {
+        if (TypesUtils.isErasedSubtype(type, setErasure, types)) {
+          // Elements of a set can never be replaced, so treat them as @UnknownReplace. Even if
+          // they are annotation @Modifiable in a stubfile.
+          return unknownReplaceSet;
+        }
+        return super.getBoundQualifiers(type);
+      }
+    };
   }
 }
