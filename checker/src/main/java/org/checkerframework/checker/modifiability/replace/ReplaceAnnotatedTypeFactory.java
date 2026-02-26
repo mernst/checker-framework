@@ -135,7 +135,7 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       @Override
       public AnnotationMirrorSet getBoundQualifiers(TypeMirror type) {
         if (TypesUtils.isErasedSubtype(type, setErasure, types)) {
-          // Sets elements of a set can never be replaced, so treat them as @UnknownReplace. Even if
+          // Elements of a set can never be replaced, so treat them as @UnknownReplace. Even if
           // they are annotation @Modifiable in a stubfile.
           return unknownReplaceSet;
         }
