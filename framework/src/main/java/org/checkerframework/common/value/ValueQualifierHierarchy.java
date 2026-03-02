@@ -450,6 +450,7 @@ final class ValueQualifierHierarchy extends ElementQualifierHierarchy {
    */
   @Override
   public boolean isSubtypeQualifiers(AnnotationMirror subAnno, AnnotationMirror superAnno) {
+    // System.out.printf("isSubtypeQualifiers(%s, %s)%n", subAnno, superAnno);
     subAnno = atypeFactory.convertSpecialIntRangeToStandardIntRange(subAnno);
     superAnno = atypeFactory.convertSpecialIntRangeToStandardIntRange(superAnno);
     String subQualName = AnnotationUtils.annotationName(subAnno);
@@ -457,6 +458,9 @@ final class ValueQualifierHierarchy extends ElementQualifierHierarchy {
       superAnno = atypeFactory.convertToUnknown(superAnno);
     }
     String superQualName = AnnotationUtils.annotationName(superAnno);
+
+    // System.out.printf("isSubtypeQualifiers(%s, %s)%n", subAnno, superAnno);
+
     if (superQualName.equals(ValueAnnotatedTypeFactory.UNKNOWN_NAME)
         || subQualName.equals(ValueAnnotatedTypeFactory.BOTTOMVAL_NAME)) {
       return true;

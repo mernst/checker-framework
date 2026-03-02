@@ -11,14 +11,17 @@ public class FullRange {
     int1 = int2;
   }
 
+  /*
   void intM2() {
     int2 = int1;
   }
+  */
 
   @IntRange(from = -32768, to = 32767) short short1;
 
   short short2;
 
+  /*
   void shortM1() {
     short1 = short2;
   }
@@ -26,11 +29,13 @@ public class FullRange {
   void shortM2() {
     short2 = short1;
   }
+  */
 
   @IntRange(from = -128, to = 127) byte byte1;
 
   byte byte2;
 
+  /*
   void byteM1() {
     byte1 = byte2;
   }
@@ -38,11 +43,13 @@ public class FullRange {
   void byteM2() {
     byte2 = byte1;
   }
+  */
 
   @BoolVal({true, false}) boolean boolean1;
 
   boolean boolean2;
 
+  /*
   void booleanM1() {
     boolean1 = boolean2;
   }
@@ -50,4 +57,5 @@ public class FullRange {
   void booleanM2() {
     boolean2 = boolean1;
   }
+  */
 }

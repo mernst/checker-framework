@@ -309,12 +309,30 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   @Override
   public AnnotationMirror canonicalAnnotation(AnnotationMirror anno) {
+    System.out.printf("canonicalAnnotation(%s)%n", anno);
+
     if (AnnotationUtils.areSameByName(anno, MINLEN_NAME)) {
       int from = getMinLenValue(anno);
-      return createArrayLenRangeAnnotation(from, Integer.MAX_VALUE);
+      anno = createArrayLenRangeAnnotation(from, Integer.MAX_VALUE);
     }
 
-    return super.canonicalAnnotation(anno);
+    /*
+    if (AnnotationUtils.areSameByName(anno, BOOLVAL_NAME)) {
+
+
+    if (AnnotationUtils.areSameByName(anno, INTRANGE_NAME)) {
+      Range range = getRange(anno);
+      int from= range.from;
+      int from= range.to;
+      if
+    }
+    */
+
+    AnnotationMirror result = super.canonicalAnnotation(anno);
+
+    System.out.printf("canonicalAnnotation(%s) => %s%n", anno, result);
+
+    return result;
   }
 
   @Override
