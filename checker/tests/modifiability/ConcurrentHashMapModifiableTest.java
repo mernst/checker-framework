@@ -36,7 +36,7 @@ public class ConcurrentHashMapModifiableTest {
     map.forEachEntry(
         1,
         entry -> {
-          // :: error: (method.invocation)
+          // :: error: [method.invocation]
           entry.setValue("3");
         });
 
@@ -44,7 +44,7 @@ public class ConcurrentHashMapModifiableTest {
     map.searchEntries(
         1,
         entry -> {
-          // :: error: (method.invocation)
+          // :: error: [method.invocation]
           entry.setValue("3");
           return "result";
         });
@@ -53,7 +53,7 @@ public class ConcurrentHashMapModifiableTest {
     map.reduceEntries(
         1,
         entry -> {
-          // :: error: (method.invocation)
+          // :: error: [method.invocation]
           entry.setValue("3");
           return "result";
         },
@@ -63,7 +63,7 @@ public class ConcurrentHashMapModifiableTest {
     map.reduceEntriesToDouble(
         1,
         entry -> {
-          // :: error: (method.invocation)
+          // :: error: [method.invocation]
           entry.setValue("3");
           return 0.0;
         },
@@ -74,7 +74,7 @@ public class ConcurrentHashMapModifiableTest {
     map.reduceEntriesToInt(
         1,
         entry -> {
-          // :: error: (method.invocation)
+          // :: error: [method.invocation]
           entry.setValue("3");
           return 0;
         },
@@ -85,7 +85,7 @@ public class ConcurrentHashMapModifiableTest {
     map.reduceEntriesToLong(
         1,
         entry -> {
-          // :: error: (method.invocation)
+          // :: error: [method.invocation]
           entry.setValue("3");
           return 0L;
         },

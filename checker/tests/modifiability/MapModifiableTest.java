@@ -27,31 +27,31 @@ public class MapModifiableTest {
     mod.clear();
 
     @Unmodifiable Map<String, Integer> unmod = Map.of("x", 1);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.put("y", 2);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.putIfAbsent("z", 3);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.putAll(Map.of("a", 1));
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.remove("x");
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.remove("x", 1);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.replace("x", 2);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.replace("x", 2, 3);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.replaceAll((k, v) -> v + 1);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.compute("g", (k, v) -> 1);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.computeIfAbsent("h", k -> 2);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.computeIfPresent("h", (k, v) -> v + 1);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.merge("i", 1, (oldV, newV) -> oldV + newV);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.clear();
   }
 
@@ -76,13 +76,13 @@ public class MapModifiableTest {
     Map<String, Integer> inferred = Map.of("k", 1);
     @Unmodifiable Map<String, Integer> explicitUnmod = Map.of("k", 1);
 
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Map<String, Integer> cannotBeMod1 = Map.of("m1", 1);
 
     Map<String, Integer> src = new HashMap<>();
     src.put("s", 1);
     Map<String, Integer> copy = Map.copyOf(src);
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Map<String, Integer> cannotBeMod2 = Map.copyOf(src);
   }
 
@@ -90,7 +90,7 @@ public class MapModifiableTest {
     modEntry.setValue(2);
 
     @Unmodifiable Entry<String, Integer> immEntry = Map.entry("k", 1);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     immEntry.setValue(5);
   }
 
@@ -100,10 +100,10 @@ public class MapModifiableTest {
       @Unmodifiable Map<String, Integer> unmodSrc) {
 
     modSrc.put("p", 1);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmodSrc.put("p", 1);
     // depending on defaults, this may be an error:
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     any.put("q", 2);
   }
 }

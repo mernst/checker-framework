@@ -19,13 +19,13 @@ public class IdentityHashMapModifiableTest {
   //     @Modifiable IdentityHashMap<String, String> identityMap = new IdentityHashMap<>();
 
   //     // Views (keySet, values, entrySet) usually throw UOE on add operations
-  //     // :: error: (method.invocation)
+  //     // :: error: [method.invocation]
   //     identityMap.keySet().add("newKey");
 
-  //     // :: error: (method.invocation)
+  //     // :: error: [method.invocation]
   //     identityMap.values().add("newValue");
 
-  //     // :: error: (method.invocation)
+  //     // :: error: [method.invocation]
   //     identityMap.entrySet().add(new AbstractMap.SimpleEntry<>("newKey", "newValue"));
 
   //     // However, removal is supported, so these should be allowed:
@@ -45,7 +45,7 @@ public class IdentityHashMapModifiableTest {
       // the following method is allowed and works at runtime, but the current type system throws
       // an error because we could only make entrySet.iterator() and entrySet.stream() return the
       // same mutability.
-      // :: error: (method.invocation)
+      // :: error: [method.invocation]
       entry.setValue("modified"); // OK
     }
 
@@ -53,7 +53,7 @@ public class IdentityHashMapModifiableTest {
     if (!identityMap.isEmpty()) {
       Map.Entry<String, String> entry = identityMap.entrySet().stream().findFirst().get();
       // This throws UOE at runtime.
-      // :: error: (method.invocation)
+      // :: error: [method.invocation]
       entry.setValue("modified");
     }
   }

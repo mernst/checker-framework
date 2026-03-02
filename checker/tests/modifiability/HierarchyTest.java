@@ -26,7 +26,7 @@ class HierarchyTest {
   void testGrow(@Growable Object g, @UnknownGrow Object u) {
     // Growable <: UnknownGrow (bottom to top is always OK)
     @UnknownGrow Object u1 = g;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Growable Object g1 = u; // UnknownGrow !<: Growable
   }
 
@@ -35,7 +35,7 @@ class HierarchyTest {
   // ============================================================
   void testShrink(@Shrinkable Object s, @UnknownShrink Object u) {
     @UnknownShrink Object u1 = s;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Shrinkable Object s1 = u;
   }
 
@@ -44,7 +44,7 @@ class HierarchyTest {
   // ============================================================
   void testReplace(@Replaceable Object r, @UnknownReplace Object u) {
     @UnknownReplace Object u1 = r;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Replaceable Object r1 = u;
   }
 
@@ -65,42 +65,42 @@ class HierarchyTest {
     @Growable Object gv1 = gsr; // G+S+R <: G
     @Growable Object gv2 = gs; // G+S <: G
     @Growable Object gv3 = gr; // G+R <: G
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Growable Object gv4 = sr; // S+R: no G bit
     @Growable Object gv5 = g;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Growable Object gv6 = s;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Growable Object gv7 = r;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Growable Object gv8 = none;
 
     // ── Assignments to @Shrinkable ────────────────────────────
     @Shrinkable Object sv1 = gsr;
     @Shrinkable Object sv2 = gs;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Shrinkable Object sv3 = gr; // G+R: no S bit
     @Shrinkable Object sv4 = sr;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Shrinkable Object sv5 = g;
     @Shrinkable Object sv6 = s;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Shrinkable Object sv7 = r;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Shrinkable Object sv8 = none;
 
     // ── Assignments to @Replaceable ───────────────────────────
     @Replaceable Object rv1 = gsr;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Replaceable Object rv2 = gs; // G+S: no R bit
     @Replaceable Object rv3 = gr;
     @Replaceable Object rv4 = sr;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Replaceable Object rv5 = g;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Replaceable Object rv6 = s;
     @Replaceable Object rv7 = r;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Replaceable Object rv8 = none;
 
     // ── Assignments to full @UnknownGrow @UnknownShrink @UnknownReplace (top in all) ──
@@ -136,11 +136,11 @@ class HierarchyTest {
     @UnknownModifiability Object unknown1 = mod;
 
     // @Unmodifiable !<: @Growable (top !<: bottom in Grow hierarchy)
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Growable Object g2 = unmod;
 
     // @Unmodifiable !<: @Modifiable
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Object mod1 = unmod;
   }
 }

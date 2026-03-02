@@ -59,12 +59,12 @@ class SetTest {
 
     // @Growable Set: Grow=G, Shrink=Unknown, Replace=Unknown
     @Growable Set<String> g1 = gs; // OK: G+S <: G
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Growable Set<String> g2 = shrinkable; // Error: S only, no G
 
     // @Shrinkable Set: Grow=Unknown, Shrink=S, Replace=Unknown
     @Shrinkable Set<String> s1 = gs; // OK: G+S <: S
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Shrinkable Set<String> s2 = growable; // Error: G only, no S
   }
 
@@ -117,7 +117,7 @@ class SetTest {
 
     // Cross-group: Replace !<: UnknownReplace (wrong direction) is NOT an error —
     // but UnknownReplace !<: Replaceable IS an error:
-    // :: error: (assignment)
+    // :: error: [assignment]
     Map.@Replaceable Entry<String, String> bad1 = growable; // Error: R=Unknown !<: Replaceable
   }
 
@@ -159,7 +159,7 @@ class SetTest {
     @Growable @Shrinkable Iterator<String> gs2 = shrinkable;
     @Shrinkable @Replaceable Iterator<String> sr2 = growShrink;
 
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Shrinkable Iterator<String> bad1 = growable; // Error: Shrink=Unknown !<: Shrinkable
   }
 }

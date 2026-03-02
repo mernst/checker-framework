@@ -117,7 +117,7 @@ public class QueueModifiableTest {
 
     // Case 1: Modifying an unmodifiable Collection view of a Queue
     Collection<String> unmodifiableQueue = Collections.unmodifiableCollection(queue);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmodifiableQueue.add("This will fail");
 
     // Case 2: Iterator remove on Unmodifiable Collection
@@ -125,7 +125,7 @@ public class QueueModifiableTest {
     Iterator<String> it = unmodifiableQueue2.iterator();
     if (it.hasNext()) {
       it.next();
-      // :: error: (method.invocation)
+      // :: error: [method.invocation]
       it.remove();
     }
   }

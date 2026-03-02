@@ -367,7 +367,7 @@ class Demo {
   void testPoly(@Modifiable List<String> mod, @Growable @Shrinkable List<String> gs) {
     @Modifiable List<String> m = wrap(mod);            // OK
     @Growable @Shrinkable List<String> gs2 = wrap(gs); // OK
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable List<String> bad = wrap(gs);  // Error: gs has @UnknownReplace
   }
 }

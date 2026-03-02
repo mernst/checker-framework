@@ -17,7 +17,7 @@ public class BasicModifiableTest3 {
   void testBasicModifiable() {
     // Unmodifiable collections should not allow mutation
     @Unmodifiable List<String> unmodifiableList = List.of("test1", "test2");
-    // :: error: (argument)
+    // :: error: [argument]
     my_add(unmodifiableList, "test3");
   }
 }
