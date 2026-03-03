@@ -3,7 +3,15 @@
 <!-- markdownlint-disable no-duplicate-heading -->
 <!-- pyml disable no-duplicate-heading -->
 
+## Version 3.54.1 (2026-04-02)
+
+### User-visible changes
+
 New `wpi2.sh` script does whole-program inference, but requires buildfile edits.
+
+### Implementation details
+
+### Closed issues
 
 ## Version 3.54.0 (2026-03-02)
 
