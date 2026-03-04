@@ -27,7 +27,7 @@ public class CollectionsModifiableTest {
     Collections.addAll(mod, "a", "b");
 
     @Unmodifiable Collection<String> unmod = Collections.unmodifiableCollection(mod);
-    // :: error: (argument)
+    // :: error: [argument]
     Collections.addAll(unmod, "c");
   }
 
@@ -84,7 +84,7 @@ public class CollectionsModifiableTest {
     Collections.copy(dest, src);
 
     @Unmodifiable List<String> unmodDest = Collections.unmodifiableList(dest);
-    // :: error: (argument)
+    // :: error: [argument]
     Collections.copy(unmodDest, src);
   }
 
@@ -96,21 +96,21 @@ public class CollectionsModifiableTest {
 
   void testEmptyCollections() {
     @Unmodifiable List<String> l = Collections.emptyList();
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     l.add("a");
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable List<String> modL = Collections.emptyList();
 
     @Unmodifiable Set<String> s = Collections.emptySet();
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     s.add("a");
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Set<String> modS = Collections.emptySet();
 
     @Unmodifiable Map<String, String> m = Collections.emptyMap();
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     m.put("a", "b");
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Map<String, String> modM = Collections.emptyMap();
 
     @Modifiable Iterator<String> it = Collections.emptyIterator();
@@ -122,7 +122,7 @@ public class CollectionsModifiableTest {
     Collections.fill(list, "b");
 
     @Unmodifiable List<String> unmod = Collections.unmodifiableList(list);
-    // :: error: (argument)
+    // :: error: [argument]
     Collections.fill(unmod, "c");
   }
 
@@ -153,9 +153,9 @@ public class CollectionsModifiableTest {
 
   void testNCopies() {
     @Unmodifiable List<String> l = Collections.nCopies(5, "a");
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     l.add("b");
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable List<String> mod = Collections.nCopies(5, "a");
   }
 
@@ -165,7 +165,7 @@ public class CollectionsModifiableTest {
     Collections.replaceAll(list, "a", "b");
 
     @Unmodifiable List<String> unmod = Collections.unmodifiableList(list);
-    // :: error: (argument)
+    // :: error: [argument]
     Collections.replaceAll(unmod, "a", "b");
   }
 
@@ -175,7 +175,7 @@ public class CollectionsModifiableTest {
     Collections.reverse(list);
 
     @Unmodifiable List<String> unmod = Collections.unmodifiableList(list);
-    // :: error: (argument)
+    // :: error: [argument]
     Collections.reverse(unmod);
   }
 
@@ -185,7 +185,7 @@ public class CollectionsModifiableTest {
     Collections.rotate(list, 1);
 
     @Unmodifiable List<String> unmod = Collections.unmodifiableList(list);
-    // :: error: (argument)
+    // :: error: [argument]
     Collections.rotate(unmod, 1);
   }
 
@@ -196,29 +196,29 @@ public class CollectionsModifiableTest {
     Collections.shuffle(list, new Random());
 
     @Unmodifiable List<String> unmod = Collections.unmodifiableList(list);
-    // :: error: (argument)
+    // :: error: [argument]
     Collections.shuffle(unmod);
-    // :: error: (argument)
+    // :: error: [argument]
     Collections.shuffle(unmod, new Random());
   }
 
   void testSingleton() {
     @Unmodifiable Set<String> s = Collections.singleton("a");
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     s.add("b");
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Set<String> modS = Collections.singleton("a");
 
     @Unmodifiable List<String> l = Collections.singletonList("a");
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     l.add("b");
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable List<String> modL = Collections.singletonList("a");
 
     @Unmodifiable Map<String, String> m = Collections.singletonMap("a", "b");
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     m.put("c", "d");
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Map<String, String> modM = Collections.singletonMap("a", "b");
   }
 
@@ -229,9 +229,9 @@ public class CollectionsModifiableTest {
     Collections.sort(list, Comparator.naturalOrder());
 
     @Unmodifiable List<String> unmod = Collections.unmodifiableList(list);
-    // :: error: (argument)
+    // :: error: [argument]
     Collections.sort(unmod);
-    // :: error: (argument)
+    // :: error: [argument]
     Collections.sort(unmod, Comparator.naturalOrder());
   }
 
@@ -242,7 +242,7 @@ public class CollectionsModifiableTest {
     Collections.swap(mod, 0, 1);
 
     @Unmodifiable List<String> unmod = Collections.unmodifiableList(mod);
-    // :: error: (argument)
+    // :: error: [argument]
     Collections.swap(unmod, 0, 1);
   }
 
@@ -260,40 +260,40 @@ public class CollectionsModifiableTest {
   void testUnmodifiableWrappers() {
     @Modifiable Collection<String> c = new ArrayList<>();
     @Unmodifiable Collection<String> unmodC = Collections.unmodifiableCollection(c);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmodC.add("a");
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Collection<String> modC = Collections.unmodifiableCollection(c);
 
     @Modifiable List<String> l = new ArrayList<>();
     @Unmodifiable List<String> unmodL = Collections.unmodifiableList(l);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmodL.add("a");
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable List<String> modL = Collections.unmodifiableList(l);
 
     @Modifiable Set<String> s = new HashSet<>();
     @Unmodifiable Set<String> unmodS = Collections.unmodifiableSet(s);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmodS.add("a");
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Set<String> modS = Collections.unmodifiableSet(s);
 
     @Modifiable Map<String, String> m = new HashMap<>();
     @Unmodifiable Map<String, String> unmodM = Collections.unmodifiableMap(m);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmodM.put("a", "b");
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Map<String, String> modM = Collections.unmodifiableMap(m);
 
     @Modifiable SortedSet<String> ss = new TreeSet<>();
     @Unmodifiable SortedSet<String> unmodSS = Collections.unmodifiableSortedSet(ss);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmodSS.add("a");
 
     @Modifiable SortedMap<String, String> sm = new TreeMap<>();
     @Unmodifiable SortedMap<String, String> unmodSM = Collections.unmodifiableSortedMap(sm);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmodSM.put("a", "b");
   }
 }

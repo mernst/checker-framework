@@ -17,17 +17,17 @@ public class SetModifiableTest {
     mod.clear();
 
     @Unmodifiable Set<String> unmod = Set.of("x", "y");
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.add("z");
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.addAll(Set.of("z"));
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.remove("x");
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.removeAll(Set.of("x"));
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.retainAll(Set.of("y"));
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.clear();
   }
 
@@ -49,13 +49,13 @@ public class SetModifiableTest {
     Set<String> inferred = Set.of("k");
     @Unmodifiable Set<String> explicitUnmod = Set.of("k");
 
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Set<String> cannotBeMod1 = Set.of("m1");
 
     Set<String> src = new HashSet<>();
     src.add("s");
     Set<String> copy = Set.copyOf(src);
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Set<String> cannotBeMod2 = Set.copyOf(src);
   }
 }

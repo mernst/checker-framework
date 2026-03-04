@@ -11,18 +11,18 @@ public class BasicModifiableTest {
 
     // Unmodifiable collections should not allow mutation
     @Unmodifiable List<String> unmodifiableList = List.of("test1", "test2");
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmodifiableList.add("test3");
   }
 
   void testUnmodifiableFactoryMethods() {
     // These should be inferred as @Unmodifiable
     List<String> list1 = List.of("a", "b");
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     list1.add("c");
 
     List<String> list2 = List.copyOf(new ArrayList<>());
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     list2.remove(0);
   }
 

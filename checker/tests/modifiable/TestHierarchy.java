@@ -17,27 +17,27 @@ class TestHierarchy {
     a = botmod;
 
     @Unmodifiable List<String> b;
-    // :: error: (assignment)
+    // :: error: [assignment]
     b = anymod;
     b = unmod;
-    // :: error: (assignment)
+    // :: error: [assignment]
     b = mod;
     b = botmod;
 
     @Modifiable List<String> c;
-    // :: error: (assignment)
+    // :: error: [assignment]
     c = anymod;
-    // :: error: (assignment)
+    // :: error: [assignment]
     c = unmod;
     c = mod;
     c = botmod;
 
     @BottomModifiable List<String> d;
-    // :: error: (assignment)
+    // :: error: [assignment]
     d = anymod;
-    // :: error: (assignment)
+    // :: error: [assignment]
     d = unmod;
-    // :: error: (assignment)
+    // :: error: [assignment]
     d = mod;
     d = botmod;
   }

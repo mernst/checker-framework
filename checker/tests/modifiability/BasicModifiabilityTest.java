@@ -16,37 +16,37 @@ public class BasicModifiabilityTest {
 
     // Unmodifiable collections should not allow mutation
     @Unmodifiable List<String> unmodifiableList = List.of("test1", "test2");
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmodifiableList.add("test3");
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmodifiableList.remove(0);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmodifiableList.remove("test1");
   }
 
   void testUnmodifiableFactoryMethods() {
     // These should be inferred as @Unmodifiable
     List<String> list1 = List.of("a", "b");
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     list1.add("c");
 
     // Explicit unmodifiable type + unmodifiable factory
     @Unmodifiable List<String> list1u = List.of("x", "y");
 
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable List<String> cannotBeMod1 = List.of("m1", "m2");
 
     List<String> list2 = List.copyOf(new ArrayList<>());
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     list2.add("c");
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     list2.remove(0);
 
     List<String> src = new ArrayList<>();
     src.add("s");
 
     @Unmodifiable List<String> list2u = List.copyOf(src);
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable List<String> cannotBeMod2 = List.copyOf(src);
   }
 
@@ -80,7 +80,7 @@ public class BasicModifiabilityTest {
     @Unmodifiable Iterator<String> itUnmod = unmodList.iterator();
 
     // Trying to treat the unmodifiable iterator as modifiable should be rejected.
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Iterator<String> badIt = unmodList.iterator();
   }
 
@@ -92,18 +92,18 @@ public class BasicModifiabilityTest {
     mod.removeAll(other);
     mod.retainAll(other);
 
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.addAll(other);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.removeAll(other);
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.retainAll(other);
   }
 
   void testReplaceAll(@Modifiable List<String> mod, @Unmodifiable List<String> unmod) {
     mod.replaceAll(s -> s + "!");
 
-    // :: error: (method.invocation)
+    // :: error: [method.invocation]
     unmod.replaceAll(s -> s + "!");
   }
 
@@ -111,7 +111,7 @@ public class BasicModifiabilityTest {
     List<String> sub = mod.subList(0, mod.size());
     sub.clear(); //  OK because sub is modifiable
 
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable List<String> sub2 = unmod.subList(0, unmod.size());
   }
 }

@@ -51,16 +51,16 @@ class HierarchyTest {
     @Growable Object g1 = mod;
     @Growable Object g2 = gs;
     @Growable Object g3 = gr;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Growable Object g4 = sr;
     @Growable Object g5 = g;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Growable Object g6 = s;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Growable Object g7 = r;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Growable Object g8 = unknown;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Growable Object g9 = unmod;
 
     // ============================================================
@@ -68,35 +68,35 @@ class HierarchyTest {
     // ============================================================
     @Shrinkable Object s1 = mod;
     @Shrinkable Object s2 = gs;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Shrinkable Object s3 = gr;
     @Shrinkable Object s4 = sr;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Shrinkable Object s5 = g;
     @Shrinkable Object s6 = s;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Shrinkable Object s7 = r;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Shrinkable Object s8 = unknown;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Shrinkable Object s9 = unmod;
 
     // ============================================================
     // Assignments to @Replaceable (R)
     // ============================================================
     @Replaceable Object r1 = mod;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Replaceable Object r2 = gs;
     @Replaceable Object r3 = gr;
     @Replaceable Object r4 = sr;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Replaceable Object r5 = g;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Replaceable Object r6 = s;
     @Replaceable Object r7 = r;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Replaceable Object r8 = unknown;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Replaceable Object r9 = unmod;
 
     // ============================================================
@@ -104,74 +104,74 @@ class HierarchyTest {
     // ============================================================
     @GrowShrink Object gs1 = mod;
     @GrowShrink Object gs2 = gs;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @GrowShrink Object gs3 = gr;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @GrowShrink Object gs4 = sr;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @GrowShrink Object gs5 = g;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @GrowShrink Object gs6 = s;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @GrowShrink Object gs7 = r;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @GrowShrink Object gs8 = unknown;
 
     // ============================================================
     // Assignments to @GrowReplace (G, R)
     // ============================================================
     @GrowReplace Object gr1 = mod;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @GrowReplace Object gr2 = gs;
     @GrowReplace Object gr3 = gr;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @GrowReplace Object gr4 = sr;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @GrowReplace Object gr5 = g;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @GrowReplace Object gr6 = s;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @GrowReplace Object gr7 = r;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @GrowReplace Object gr8 = unknown;
 
     // ============================================================
     // Assignments to @ShrinkReplace (S, R)
     // ============================================================
     @ShrinkReplace Object sr1 = mod;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @ShrinkReplace Object sr2 = gs;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @ShrinkReplace Object sr3 = gr;
     @ShrinkReplace Object sr4 = sr;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @ShrinkReplace Object sr5 = g;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @ShrinkReplace Object sr6 = s;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @ShrinkReplace Object sr7 = r;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @ShrinkReplace Object sr8 = unknown;
 
     // ============================================================
     // Assignments to @Modifiable (Bottom)
     // ============================================================
     @Modifiable Object m1 = mod;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Object m2 = gs;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Object m3 = gr;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Object m4 = sr;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Object m5 = g;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Object m6 = s;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Object m7 = r;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Object m8 = unknown;
-    // :: error: (assignment)
+    // :: error: [assignment]
     @Modifiable Object m9 = unmod;
   }
 }
