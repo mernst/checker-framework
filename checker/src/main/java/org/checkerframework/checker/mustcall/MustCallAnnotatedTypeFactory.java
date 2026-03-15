@@ -246,12 +246,11 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
     protected void replace(
         AnnotatedTypeMirror type, AnnotationMirrorMap<AnnotationMirror> replacements) {
       AnnotationMirrorMap<AnnotationMirror> realReplacements = replacements;
-      AnnotationMirror extantPolyAnnoReplacement = null;
       TypeElement typeElement = TypesUtils.getTypeElement(type.getUnderlyingType());
       // only customize replacement for type elements
       if (typeElement != null) {
         assert replacements.size() == 1 && replacements.containsKey(POLY);
-        extantPolyAnnoReplacement = replacements.get(POLY);
+        AnnotationMirror extantPolyAnnoReplacement = replacements.get(POLY);
         if (AnnotationUtils.areSameByName(
             extantPolyAnnoReplacement, MustCall.class.getCanonicalName())) {
           List<String> extentReplacementVals =
@@ -458,8 +457,8 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
    * afterFirstStore} is true, then the store after {@code firstBlock} is returned; if {@code
    * afterFirstStore} is false, the store before {@code succBlock} is returned.
    *
-   * @param afterFirstStore if true, use the store after the firstBlock block; if false, use the
-   *     store before its successor, succBlock
+   * @param afterFirstStore if true, use the store after {@code firstBlock}; if false, use the store
+   *     before its successor, {@code succBlock}
    * @param firstBlock a CFG block
    * @param succBlock {@code firstBlock}'s successor
    * @return the appropriate CFStore, populated with MustCall annotations, from the results of

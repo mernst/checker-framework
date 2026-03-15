@@ -162,7 +162,7 @@ public class IsSigMethodCriterion implements Criterion {
     while (simpleType.contains("<")) {
       int bracketIndex = simpleType.lastIndexOf('<');
       String beforeBracket = simpleType.substring(0, bracketIndex);
-      String afterBracket = simpleType.substring(simpleType.indexOf(">", bracketIndex) + 1);
+      String afterBracket = simpleType.substring(simpleType.indexOf('>', bracketIndex) + 1);
       simpleType = beforeBracket + afterBracket;
     }
 
@@ -334,7 +334,7 @@ public class IsSigMethodCriterion implements Criterion {
       String paramName = param.getName().toString();
       String paramClass = "Object";
       List<? extends Tree> paramBounds = param.getBounds();
-      if (paramBounds != null && paramBounds.size() >= 1) {
+      if (paramBounds != null && !paramBounds.isEmpty()) {
         Tree boundZero = paramBounds.get(0);
         if (boundZero instanceof AnnotatedTypeTree) {
           boundZero = ((AnnotatedTypeTree) boundZero).getUnderlyingType();
@@ -356,7 +356,7 @@ public class IsSigMethodCriterion implements Criterion {
           String paramName = param.getName().toString();
           String paramClass = "Object";
           List<? extends Tree> paramBounds = param.getBounds();
-          if (paramBounds != null && paramBounds.size() >= 1) {
+          if (paramBounds != null && !paramBounds.isEmpty()) {
             Tree pb = paramBounds.get(0);
             if (pb instanceof AnnotatedTypeTree) {
               pb = ((AnnotatedTypeTree) pb).getUnderlyingType();

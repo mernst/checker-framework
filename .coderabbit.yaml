@@ -10,6 +10,7 @@ reviews:
   changed_files_summary: false
   sequence_diagrams: false
   estimate_code_review_effort: false
+  in_progress_fortune: false
   poem: false
   path_filters:
     - "!**/build/**"
@@ -18,6 +19,7 @@ reviews:
     - "!**/.idea/**"
     - "!**/node_modules/**"
   auto_review:
+    auto_pause_after_reviewed_commits: 0
     ignore_title_keywords:
       - "wip"
       - "draft"
@@ -25,7 +27,8 @@ reviews:
       - "dependabot"
       - "dependabot[bot]"
       - "mend"
-      - "app/renovate"
+      - "renovate"
+      - "renovate[bot]"
   pre_merge_checks:
     title:
       mode: "off"

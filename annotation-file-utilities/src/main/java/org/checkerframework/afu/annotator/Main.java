@@ -64,7 +64,6 @@ import org.checkerframework.afu.scenelib.io.ASTRecord;
 import org.checkerframework.afu.scenelib.io.DebugWriter;
 import org.checkerframework.afu.scenelib.io.IndexFileParser;
 import org.checkerframework.afu.scenelib.io.IndexFileWriter;
-import org.checkerframework.afu.scenelib.io.classfile.ClassFileReader;
 import org.checkerframework.afu.scenelib.type.DeclaredType;
 import org.checkerframework.afu.scenelib.type.Type;
 import org.checkerframework.afu.scenelib.util.CommandLineUtils;
@@ -137,6 +136,11 @@ import org.plumelib.util.IPair;
  * <!-- end options doc -->
  */
 public class Main {
+
+  /** Do not instantiate. */
+  private Main() {
+    throw new Error("Do not instantiate");
+  }
 
   // Options
 
@@ -427,7 +431,7 @@ public class Main {
                 int i = LocalVariableScanner.indexOfVarTree(path, varTree, rec.varName);
                 int m = methTree.getStartPosition();
                 int a = varTree.getStartPosition();
-                int b = varTree.getEndPosition(tree.endPositions);
+                int b = TreePathUtil.getEndPosition(varTree, tree);
                 LocalLocation loc = new LocalLocation(i, a - m, b - a);
                 decl = meth.body.locals.getVivify(loc);
                 break;
@@ -498,7 +502,7 @@ public class Main {
   public static void main(String[] args) throws IOException {
 
     if (verbose) {
-      System.out.printf("insert-annotations-to-source (%s)%n", ClassFileReader.INDEX_UTILS_VERSION);
+      System.out.printf("insert-annotations-to-source%n");
     }
 
     Options options =
@@ -638,7 +642,7 @@ public class Main {
         insertions.addAll(parsedSpec);
         annotationImports.putAll(spec.annotationImports());
       } catch (RuntimeException e) {
-        if (e.getCause() != null && e.getCause() instanceof FileNotFoundException) {
+        if (e.getCause() instanceof FileNotFoundException) {
           System.err.println("File not found: " + jaifFile);
           System.exit(1);
         } else {

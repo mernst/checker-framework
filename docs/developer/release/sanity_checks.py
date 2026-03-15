@@ -13,7 +13,7 @@ import pathlib
 import zipfile
 from pathlib import Path
 
-from release_utils import (
+from release_utils import (  # ty: ignore # TODO: limitation in ty
     are_in_file,
     delete,
     delete_directory,
@@ -23,7 +23,7 @@ from release_utils import (
     insert_before_line,
     wget_file,
 )
-from release_vars import (
+from release_vars import (  # ty: ignore # TODO: limitation in ty
     CHECKER_FRAMEWORK,
     SANITY_DIR,
     execute,
@@ -85,8 +85,8 @@ def javac_sanity_check(checker_framework_website: str, release_version: str) -> 
         "Javac sanity check",
         nullness_output,
         [
-            "NullnessExampleWithWarnings.java:23: error: (assignment)",
-            "NullnessExampleWithWarnings.java:33: error: (argument)",
+            "NullnessExampleWithWarnings.java:23: error: [assignment]",
+            "NullnessExampleWithWarnings.java:33: error: [argument]",
         ],
     )
 
@@ -99,8 +99,8 @@ def javac_sanity_check(checker_framework_website: str, release_version: str) -> 
         "Javac Shorthand Sanity Check",
         nullness_shorthand_output,
         [
-            "NullnessExampleWithWarnings.java:23: error: (assignment)",
-            "NullnessExampleWithWarnings.java:33: error: (argument)",
+            "NullnessExampleWithWarnings.java:23: error: [assignment]",
+            "NullnessExampleWithWarnings.java:33: error: [argument]",
         ],
     )
 

@@ -17,6 +17,11 @@ import org.checkerframework.framework.qual.AnnotatedFor;
 @AnnotatedFor("nullness")
 public class FormatUtil {
 
+  /** Do not instantiate. */
+  private FormatUtil() {
+    throw new Error("Do not instantiate");
+  }
+
   /**
    * A representation of a format specifier, which is represented by "%..." in the format string.
    * Indicates how to convert a value into a string.
@@ -156,7 +161,7 @@ public class FormatUtil {
 
   /**
    * A regex that matches a format specifier. Its syntax is specified in the See <a
-   * href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Formatter.html#syntax">{@code
+   * href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Formatter.html#syntax">{@code
    * Formatter} documentation</a>.
    *
    * <pre>
@@ -230,7 +235,7 @@ public class FormatUtil {
    * Returns the conversion character that is in the given format specifier.
    *
    * @param formatSpecifier a <a
-   *     href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Formatter.html#syntax">format
+   *     href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Formatter.html#syntax">format
    *     specifier</a>
    * @return the conversion character that is in the given format specifier
    * @deprecated This method is public only for testing. Use private method {@code
