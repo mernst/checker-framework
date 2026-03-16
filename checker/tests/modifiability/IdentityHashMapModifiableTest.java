@@ -39,21 +39,19 @@ public class IdentityHashMapModifiableTest {
     identityMap.put("k", "v");
 
     // Iterator returns mutable entries
-    Iterator<Map.Entry<String, String>> it = identityMap.entrySet().iterator();
+    Iterator<Map.@Modifiable Entry<String, String>> it = identityMap.entrySet().iterator();
     if (it.hasNext()) {
       Map.Entry<String, String> entry = it.next();
-      // the following method is allowed and works at runtime, but the current type system throws
-      // an error because we could only make entrySet.iterator() and entrySet.stream() return the
-      // same mutability.
-      // :: error: [method.invocation]
+      // the following method is allowed and works at runtime
       entry.setValue("modified"); // OK
     }
 
     // Stream/Spliterator returns immutable entries
     if (!identityMap.isEmpty()) {
       Map.Entry<String, String> entry = identityMap.entrySet().stream().findFirst().get();
-      // This throws UOE at runtime.
-      // :: error: [method.invocation]
+      // This throws UOE at runtime, but we could only make entrySet.iterator() and
+      // entrySet.stream() return the
+      // same mutability. So this is potentially unsound.
       entry.setValue("modified");
     }
   }
