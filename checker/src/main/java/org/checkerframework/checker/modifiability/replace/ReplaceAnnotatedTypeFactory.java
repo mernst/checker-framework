@@ -30,6 +30,9 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The erased {@code java.util.Set} type. */
   private final TypeMirror setErasure;
 
+  /** The erased {@code java.util.Collection} type. */
+  private final TypeMirror collectionErasure;
+
   /** The erased {@code java.util.Queue} type. */
   private final TypeMirror queueErasure;
 
@@ -59,6 +62,8 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     // Cache type erasures.
     Types types = getProcessingEnv().getTypeUtils();
     this.setErasure = types.erasure(getElementUtils().getTypeElement("java.util.Set").asType());
+    this.collectionErasure =
+        types.erasure(getElementUtils().getTypeElement("java.util.Collection").asType());
     this.queueErasure = types.erasure(getElementUtils().getTypeElement("java.util.Queue").asType());
     this.linkedListErasure =
         types.erasure(getElementUtils().getTypeElement("java.util.LinkedList").asType());
@@ -94,6 +99,8 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    * Removes capabilities that cannot be supported by structural constraints of the collection type:
    *
    * <ul>
+   *   <li>Collection itself (not subtypes): remove Replace capability → set Replace to
+   *       {@code @UnknownReplace}
    *   <li>Set or Queue (not LinkedList): remove Replace capability → set Replace to
    *       {@code @UnknownReplace}
    *   <li>Iterator: remove Replace capabilities
@@ -114,8 +121,12 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       }
 
       TypeMirror underlyingType = type.getUnderlyingType();
+      TypeMirror erasedUnderlyingType = types.erasure(underlyingType);
 
-      if (TypesUtils.isErasedSubtype(underlyingType, setErasure, types)) {
+      if (types.isSameType(erasedUnderlyingType, collectionErasure)) {
+        // Collection itself: Drop R bit
+        type.replaceAnnotation(UNKNOWN_REPLACE);
+      } else if (TypesUtils.isErasedSubtype(underlyingType, setErasure, types)) {
         // Set: Drop R bit
         type.replaceAnnotation(UNKNOWN_REPLACE);
       } else if (TypesUtils.isErasedSubtype(underlyingType, queueErasure, types)
@@ -124,7 +135,7 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         type.replaceAnnotation(UNKNOWN_REPLACE);
       } else if (TypesUtils.isErasedSubtype(underlyingType, iteratorErasure, types)
           && !TypesUtils.isErasedSubtype(underlyingType, listIteratorErasure, types)) {
-        // Iterator: Drop G and R bits
+        // Iterator: Drop R bits
         type.replaceAnnotation(UNKNOWN_REPLACE);
       }
       return null;
@@ -139,7 +150,11 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
       @Override
       public AnnotationMirrorSet getBoundQualifiers(TypeMirror type) {
-        if (TypesUtils.isErasedSubtype(type, setErasure, types)) {
+        TypeMirror erasedType = types.erasure(type);
+        if (types.isSameType(erasedType, collectionErasure)) {
+          // Elements of a raw Collection are treated as @UnknownReplace.
+          return unknownReplace;
+        } else if (TypesUtils.isErasedSubtype(type, setErasure, types)) {
           // Elements of a set can never be replaced, so treat them as @UnknownReplace. Even if
           // they are annotation @Modifiable in a stubfile.
           return unknownReplace;

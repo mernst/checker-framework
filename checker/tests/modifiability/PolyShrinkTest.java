@@ -22,23 +22,19 @@ public class PolyShrinkTest {
   }
 
   void testMapValues() {
-    // Modifiable map: values() returns @Shrinkable. Cannot add or replace.
+    // Modifiable map: values() returns @Shrinkable. Cannot add.
     @Modifiable Map<String, String> modMap = new java.util.HashMap<>();
     @Shrinkable Collection<String> modVals = modMap.values();
     // :: error: [assignment]
     @Growable Collection<String> modValsG = modMap.values(); // Cannot add
-    // :: error: [assignment]
-    @Replaceable Collection<String> modValsR = modMap.values(); // Cannot replace
 
-    // Unmodifiable map: values() returns @Unmodifiable. Cannot shrink, add, or replace.
+    // Unmodifiable map: values() returns @Unmodifiable. Cannot shrink and add.
     @Unmodifiable Map<String, String> unmodMap = Map.of("a", "b");
     @Unmodifiable Collection<String> unmodVals = unmodMap.values();
     // :: error: [assignment]
     @Shrinkable Collection<String> unmodValsS = unmodMap.values(); // Cannot shrink
     // :: error: [assignment]
     @Growable Collection<String> unmodValsG = unmodMap.values(); // Cannot add
-    // :: error: [assignment]
-    @Replaceable Collection<String> unmodValsR = unmodMap.values(); // Cannot replace
   }
 
   void testMapEntrySet() {
