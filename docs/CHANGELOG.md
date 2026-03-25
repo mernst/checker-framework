@@ -9,6 +9,9 @@
 
 ### Implementation details
 
+In `AnnotatedTypeFactory`, `canonicalAnnotation()` has a new overload that also
+takes a `TypeMirror`.
+
 ### Closed issues
 
 ## Version 3.54.0 (2026-03-02)
@@ -28,8 +31,7 @@ instead of parenthesis. This matches Java error messages.
 
 ### Implementation details
 
-In `AnnotatedTypeFactory`, `canonicalAnnotation()` returns a non-null value, and
-it has a new overload that also takes a `TypeMirror`.
+In `AnnotatedTypeFactory`, `canonicalAnnotation()` returns a non-null value.
 
 In `AnnotationClassLoader`:
 
