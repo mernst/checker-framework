@@ -1381,6 +1381,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       ExecutableElement methodElement,
       List<String> formalParamNames,
       boolean abstractMethod) {
+    ContractsFromMethod cfm = atypeFactory.getContractsFromMethod();
+    System.out.printf("cfm=%s%n", cfm);
     Set<Contract> contracts = atypeFactory.getContractsFromMethod().getContracts(methodElement);
 
     String msg =

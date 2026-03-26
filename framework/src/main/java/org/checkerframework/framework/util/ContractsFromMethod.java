@@ -64,6 +64,7 @@ public class ContractsFromMethod {
    */
   public Set<Contract> getContracts(ExecutableElement executableElement) {
     Set<Contract> contracts = new LinkedHashSet<>();
+    // TODO: It is inefficient to call getContractsOfKind three times.
     contracts.addAll(getPreconditions(executableElement));
     contracts.addAll(getPostconditions(executableElement));
     contracts.addAll(getConditionalPostconditions(executableElement));
@@ -147,6 +148,7 @@ public class ContractsFromMethod {
     // PostconditionAnnotation, or ConditionalPostconditionAnnotation.
     List<IPair<AnnotationMirror, AnnotationMirror>> declAnnotations =
         factory.getDeclAnnotationWithMetaAnnotation(executableElement, kind.metaAnnotation);
+    System.out.printf("declAnnotations with %s = %s%n", kind.metaAnnotation, declAnnotations);
     for (IPair<AnnotationMirror, AnnotationMirror> r : declAnnotations) {
       AnnotationMirror anno = r.first;
       // contractAnno is the meta-annotation on anno, such as PreconditionAnnotation,
@@ -170,6 +172,8 @@ public class ContractsFromMethod {
         result.add(contract);
       }
     }
+    System.out.printf("getContractsOfKind(%s) => %s%n", kind, result);
+
     return result;
   }
 
@@ -276,9 +280,13 @@ public class ContractsFromMethod {
       anno = builder.build();
     }
 
-    // Do NOT canonicalize, because the underlying type is not available.
+    System.out.printf(
+        "anno = %s, isSupportedQualifier = %s%n", anno, factory.isSupportedQualifier(anno));
+
+    // Do NOT canonicalize, because canonicalization depends on the underlying type, which not
+    // available here.
     // anno = factory.canonicalAnnotation(anno);
-    if (factory.isSupportedQualifier(anno)) {
+    if (factory.isSupportedQualifier(anno) || factory.isAliasedTypeAnnotation(anno.getClass())) {
       return anno;
     } else {
       return null;
