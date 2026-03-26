@@ -148,7 +148,7 @@ public class ContractsFromMethod {
     // PostconditionAnnotation, or ConditionalPostconditionAnnotation.
     List<IPair<AnnotationMirror, AnnotationMirror>> declAnnotations =
         factory.getDeclAnnotationWithMetaAnnotation(executableElement, kind.metaAnnotation);
-    System.out.printf("declAnnotations with %s = %s%n", kind.metaAnnotation, declAnnotations);
+    // System.out.printf("declAnnotations with %s = %s%n", kind.metaAnnotation, declAnnotations);
     for (IPair<AnnotationMirror, AnnotationMirror> r : declAnnotations) {
       AnnotationMirror anno = r.first;
       // contractAnno is the meta-annotation on anno, such as PreconditionAnnotation,
@@ -156,8 +156,8 @@ public class ContractsFromMethod {
       AnnotationMirror contractAnno = r.second;
       AnnotationMirror enforcedQualifier =
           getQualifierEnforcedByContractAnnotation(contractAnno, anno);
-      System.out.printf(
-          "qualifier %s is enforced by %s (anno=%s)%n", enforcedQualifier, contractAnno, anno);
+      // System.out.printf(
+      //     "qualifier %s is enforced by %s (anno=%s)%n", enforcedQualifier, contractAnno, anno);
       if (enforcedQualifier == null) {
         continue;
       }
@@ -172,7 +172,7 @@ public class ContractsFromMethod {
         result.add(contract);
       }
     }
-    System.out.printf("getContractsOfKind(%s) => %s%n", kind, result);
+    // System.out.printf("getContractsOfKind(%s) => %s%n", kind, result);
 
     return result;
   }
