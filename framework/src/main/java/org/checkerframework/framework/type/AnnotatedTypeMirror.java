@@ -62,6 +62,11 @@ import org.plumelib.util.DeepCopyable;
  */
 public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeMirror> {
 
+  /**
+   * If true, track creation of {@code AnnotatedTypeMirror}s via {@code System.identityHashCode()}.
+   */
+  public static final boolean debugAtmIdentity = false;
+
   /** An EqualityAtmComparer. */
   protected static final EqualityAtmComparer EQUALITY_COMPARER = new EqualityAtmComparer();
 
@@ -103,6 +108,9 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
     this.underlyingType = underlyingType;
     assert atypeFactory != null;
     this.atypeFactory = atypeFactory;
+    if (debugAtmIdentity) {
+      System.err.printf("AnnotatedTypeMirror() => %s %s%n", System.identityHashCode(this), this);
+    }
   }
 
   // // This class doesn't customize the clone() method; use deepCopy() instead.
@@ -110,7 +118,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
   // public AnnotatedTypeMirror clone() { ... }
 
   /**
-   * Creates an AnnotatedTypeMirror for the provided type. The result contains no annotations.
+   * Creates an empty AnnotatedTypeMirror for the provided type. The result contains no annotations.
    *
    * @param type the underlying type for the resulting AnnotatedTypeMirror
    * @param atypeFactory the type factory that will build the result
@@ -174,6 +182,10 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
     /*if (jctype.isAnnotated()) {
         result.addAnnotations(jctype.getAnnotationMirrors());
     }*/
+    if (debugAtmIdentity) {
+      System.err.printf("ATM.createType() => %s %s%n", System.identityHashCode(result), result);
+    }
+
     return result;
   }
 
@@ -634,9 +646,14 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
     if (annotation == null) {
       throw new BugInCF("AnnotatedTypeMirror.addAnnotation: null argument.");
     }
-    annotation = atypeFactory.canonicalAnnotation(annotation, underlyingType);
-    if (atypeFactory.isSupportedQualifier(annotation)) {
-      this.primaryAnnotations.add(annotation);
+    AnnotationMirror canonicalAnno = atypeFactory.canonicalAnnotation(annotation, underlyingType);
+    if (atypeFactory.isSupportedQualifier(canonicalAnno)) {
+      this.primaryAnnotations.add(canonicalAnno);
+    }
+    if (debugAtmIdentity) {
+      System.err.printf(
+          "ATM.addAnnotation(%s = %s) exited: %s %s%n",
+          annotation, canonicalAnno, System.identityHashCode(this), this);
     }
   }
 
@@ -700,7 +717,13 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
    */
   public void addMissingAnnotation(AnnotationMirror annotation) {
     if (!this.hasPrimaryAnnotationInHierarchy(annotation)) {
-      this.addAnnotation(annotation);
+      AnnotationMirror canonicalAnno = atypeFactory.canonicalAnnotation(annotation, underlyingType);
+      this.addAnnotation(canonicalAnno);
+      if (debugAtmIdentity) {
+        System.err.printf(
+            "ATM.addMissingAnnotation(%s = %s) exited: %s %s%n",
+            annotation, canonicalAnno, System.identityHashCode(this), this);
+      }
     }
   }
 

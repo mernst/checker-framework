@@ -160,6 +160,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
      * @param typeMirror a type mirror
      */
     private ShallowType(AnnotationMirrorSet annos, TypeMirror typeMirror) {
+      // TODO: Is this a place to do canonicalization?
       this.annos = annos;
       this.typeMirror = typeMirror;
     }
