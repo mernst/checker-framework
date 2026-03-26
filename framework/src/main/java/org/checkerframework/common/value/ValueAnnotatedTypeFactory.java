@@ -67,6 +67,7 @@ import org.checkerframework.framework.util.FieldInvariants;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypeKindUtils;
@@ -306,35 +307,39 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   @Override
   public AnnotationMirror canonicalAnnotation(AnnotationMirror anno, TypeMirror typeMirror) {
-
-    anno = super.canonicalAnnotation(anno, typeMirror);
-
-    // Convert `IntRangeFromPositive`, `IntRangeFromNonNegative`, and `IntRangeFromGTENegativeOne`
-    // to `IntRange`.
-    // This code does not compute the typeKind or range unless the annotation name matches.
-    switch (AnnotationUtils.annotationName(anno)) {
-      case MINLEN_NAME:
-        // TODO: This old code is probably buggy.  It will be fixed in the future.
-        anno = createArrayLenRangeAnnotation(getMinLenValue(anno), Integer.MAX_VALUE);
-        break;
-      case INTRANGE_FROMPOS_NAME:
-        anno =
-            createIntRangeAnnotation(
-                1, Range.create(TypeKindUtils.primitiveOrBoxedToTypeKind(typeMirror)).to);
-        break;
-      case INTRANGE_FROMNONNEG_NAME:
-        anno =
-            createIntRangeAnnotation(
-                0, Range.create(TypeKindUtils.primitiveOrBoxedToTypeKind(typeMirror)).to);
-        break;
-      case INTRANGE_FROMGTENEGONE_NAME:
-        anno =
-            createIntRangeAnnotation(
-                -1, Range.create(TypeKindUtils.primitiveOrBoxedToTypeKind(typeMirror)).to);
-        break;
+    if (!TypesUtils.isIntegralPrimitiveOrBoxed(typeMirror)) {
+      return super.canonicalAnnotation(anno);
     }
 
-    return anno;
+    TypeKind primitiveKind;
+    if (TypesUtils.isPrimitive(typeMirror)) {
+      primitiveKind = typeMirror.getKind();
+    } else if (TypesUtils.isBoxedPrimitive(typeMirror)) {
+      primitiveKind = types.unboxedType(typeMirror).getKind();
+    } else {
+      throw new BugInCF("What type? " + typeMirror + " " + typeMirror.getKind());
+    }
+
+    long max = Range.create(primitiveKind).to;
+
+    if (AnnotationUtils.areSameByName(anno, MINLEN_NAME)) {
+      int from = getMinLenValue(anno);
+      return createArrayLenRangeAnnotation(from, (int) max);
+    }
+
+    if (AnnotationUtils.areSameByName(anno, INTRANGE_FROMPOS_NAME)) {
+      return createIntRangeAnnotation(1, max);
+    }
+
+    if (AnnotationUtils.areSameByName(anno, INTRANGE_FROMNONNEG_NAME)) {
+      return createIntRangeAnnotation(0, max);
+    }
+
+    if (AnnotationUtils.areSameByName(anno, INTRANGE_FROMGTENEGONE_NAME)) {
+      return createIntRangeAnnotation(-1, max);
+    }
+
+    return super.canonicalAnnotation(anno);
   }
 
   @Override
