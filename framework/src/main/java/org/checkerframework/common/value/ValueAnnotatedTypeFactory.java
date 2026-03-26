@@ -308,13 +308,14 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   public AnnotationMirror canonicalAnnotation(AnnotationMirror anno, TypeMirror typeMirror) {
     // System.out.printf("entering VATF.canonicalAnnotation(%s, %s)%n", anno, typeMirror);
 
+    TypeKind typeMirrorKind = typeMirror.getKind();
     TypeKind primitiveKind;
-    if (TypesUtils.isPrimitive(typeMirror)) {
-      primitiveKind = typeMirror.getKind();
+    if (typeMirrorKind.isPrimitive()) {
+      primitiveKind = typeMirrorKind;
     } else if (TypesUtils.isBoxedPrimitive(typeMirror)) {
       primitiveKind = types.unboxedType(typeMirror).getKind();
-    } else if (typeMirror.getKind() == TypeKind.ARRAY) {
-      // For array lengths.
+    } else if (typeMirror.getKind() == TypeKind.ARRAY || TypesUtils.isString(typeMirror)) {
+      // For array and string lengths.
       primitiveKind = TypeKind.INT;
     } else {
       // System.out.printf(

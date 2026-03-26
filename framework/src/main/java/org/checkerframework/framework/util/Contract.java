@@ -35,7 +35,11 @@ public abstract class Contract {
    */
   public final String expressionString;
 
-  /** The annotation on the type of expression, according to this contract. */
+  /**
+   * The annotation on the type of expression, according to this contract. This annotation is not
+   * canonicalized, because the type of the expression has not yet been computed (only its string is
+   * available to the {@code Contract} class).
+   */
   public final AnnotationMirror annotation;
 
   /**

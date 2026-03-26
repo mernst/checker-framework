@@ -249,12 +249,14 @@ public abstract class QualifierHierarchy {
       TypeMirror superType) {
     assertSameSize(subQualifiers, superQualifiers);
     for (AnnotationMirror subQual : subQualifiers) {
+      subQual = atypeFactory.canonicalAnnotation(subQual, subType);
       AnnotationMirror superQual = findAnnotationInSameHierarchy(superQualifiers, subQual);
       if (superQual == null) {
         throw new BugInCF(
             "QualifierHierarchy: missing annotation in hierarchy %s. found: %s",
             subQual, StringsPlume.join(",", superQualifiers));
       }
+      superQual = atypeFactory.canonicalAnnotation(superQual, superType);
       if (!isSubtypeShallow(subQual, subType, superQual, superType)) {
         return false;
       }
@@ -439,6 +441,10 @@ public abstract class QualifierHierarchy {
       AnnotationMirror qualifier1, TypeMirror tm1, AnnotationMirror qualifier2, TypeMirror tm2) {
     boolean tm1IsRelevant = atypeFactory.isRelevant(tm1);
     boolean tm2IsRelevant = atypeFactory.isRelevant(tm2);
+    // TODO: It should not be necessary to call canonicalAnnotation here; the qualifiers should
+    // already have been canonicalized.
+    qualifier1 = atypeFactory.canonicalAnnotation(qualifier1, tm1);
+    qualifier2 = atypeFactory.canonicalAnnotation(qualifier2, tm2);
     if (tm1IsRelevant == tm2IsRelevant) {
       return leastUpperBoundQualifiers(qualifier1, qualifier2);
     } else if (tm1IsRelevant) {

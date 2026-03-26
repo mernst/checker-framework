@@ -154,6 +154,8 @@ public class ContractsFromMethod {
       AnnotationMirror contractAnno = r.second;
       AnnotationMirror enforcedQualifier =
           getQualifierEnforcedByContractAnnotation(contractAnno, anno);
+      System.out.printf(
+          "qualifier %s is enforced by %s (anno=%s)%n", enforcedQualifier, contractAnno, anno);
       if (enforcedQualifier == null) {
         continue;
       }
@@ -274,7 +276,8 @@ public class ContractsFromMethod {
       anno = builder.build();
     }
 
-    anno = factory.canonicalAnnotation(anno);
+    // Do NOT canonicalize, because the underlying type is not available.
+    // anno = factory.canonicalAnnotation(anno);
     if (factory.isSupportedQualifier(anno)) {
       return anno;
     } else {

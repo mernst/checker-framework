@@ -264,12 +264,26 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
     return this;
   }
 
+  /** Side-effects this to canonicalize all top-level annotations. */
+  public void canonicalizeAnnotations() {
+    // Don't change the set unless it contains a non-canonical annotation.
+    for (AnnotationMirror am : primaryAnnotations) {
+      if (am != atypeFactory.canonicalAnnotation(am, underlyingType)) {
+        List<AnnotationMirror> newPrimaryAnnotations =
+            CollectionsPlume.mapList(
+                a -> atypeFactory.canonicalAnnotation(a, underlyingType), primaryAnnotations);
+        primaryAnnotations.clear();
+        primaryAnnotations.addAll(newPrimaryAnnotations);
+        return;
+      }
+    }
+  }
+
   /**
    * Returns true if this type has a primary annotation in the same hierarchy as {@code annotation}.
    *
    * @param annotation the qualifier hierarchy to check for
-   * @return true iff this type has a primary annotation in the same hierarchy as {@code
-   *     annotation}.
+   * @return true iff this type has a primary annotation in the same hierarchy as {@code annotation}
    */
   public boolean hasPrimaryAnnotationInHierarchy(AnnotationMirror annotation) {
     return getPrimaryAnnotationInHierarchy(annotation) != null;

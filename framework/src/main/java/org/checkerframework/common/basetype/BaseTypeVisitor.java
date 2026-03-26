@@ -151,6 +151,7 @@ import org.plumelib.util.ArraySet;
 import org.plumelib.util.ArraysPlume;
 import org.plumelib.util.CollectionsPlume;
 import org.plumelib.util.IPair;
+import org.plumelib.util.SystemPlume;
 
 /**
  * A {@link SourceVisitor} that performs assignment and pseudo-assignment checking, method
@@ -1382,6 +1383,13 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       boolean abstractMethod) {
     Set<Contract> contracts = atypeFactory.getContractsFromMethod().getContracts(methodElement);
 
+    String msg =
+        String.format(
+            "checkContractsAtMethodDeclaration(%s): contracts=%s", methodTree.getName(), contracts);
+    SystemPlume.sleep(1);
+    System.out.println(msg);
+    SystemPlume.sleep(1);
+
     if (contracts.isEmpty()) {
       return;
     }
@@ -1389,9 +1397,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         stringExpr -> StringToJavaExpression.atMethodBody(stringExpr, methodTree, checker);
     for (Contract contract : contracts) {
       String expressionString = contract.expressionString;
-      AnnotationMirror annotation =
-          contract.viewpointAdaptDependentTypeAnnotation(
-              atypeFactory, stringToJavaExpr, methodTree);
 
       JavaExpression exprJe;
       try {
@@ -1419,6 +1424,13 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       if (!abstractMethod && contract.kind != Contract.Kind.PRECONDITION) {
         // Check the contract, which is a postcondition.
         // Preconditions are checked at method invocations, not declarations.
+
+        AnnotationMirror annotation =
+            contract.viewpointAdaptDependentTypeAnnotation(
+                atypeFactory, stringToJavaExpr, methodTree);
+        System.out.printf("annotation = %s%n", annotation);
+        annotation = atypeFactory.canonicalAnnotation(annotation, exprJe.getType());
+        System.out.printf("canonical  = %s%n", annotation);
 
         switch (contract.kind) {
           case POSTCONDITION:
@@ -1502,25 +1514,33 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    */
   protected void checkPostcondition(
       MethodTree methodTree, AnnotationMirror annotation, JavaExpression expression) {
+    System.out.printf(
+        "checkPostcondition(%s, %s, %s)%n", methodTree.getName(), annotation, expression);
+
     CFAbstractStore<?, ?> exitStore = atypeFactory.getRegularExitStore(methodTree);
     if (exitStore == null) {
       // If there is no regular exitStore, then the method cannot reach the regular exit and
       // there is no need to check anything.
-    } else {
-      CFAbstractValue<?> value = exitStore.getValue(expression);
-      AnnotationMirror inferredAnno = null;
-      if (value != null) {
-        AnnotationMirrorSet annos = value.getAnnotations();
-        inferredAnno = qualHierarchy.findAnnotationInSameHierarchy(annos, annotation);
-      }
-      if (!checkContract(expression, annotation, inferredAnno, exitStore)) {
-        checker.reportError(
-            methodTree,
-            "contracts.postcondition",
-            methodTree.getName(),
-            contractExpressionAndType(expression.toString(), inferredAnno),
-            contractExpressionAndType(expression.toString(), annotation));
-      }
+      return;
+    }
+
+    CFAbstractValue<?> value = exitStore.getValue(expression);
+    AnnotationMirror inferredAnno = null;
+    if (value != null) {
+      AnnotationMirrorSet annos = value.getAnnotations();
+      inferredAnno = qualHierarchy.findAnnotationInSameHierarchy(annos, annotation);
+    }
+    TypeMirror exprTM = expression.getType();
+    annotation = atypeFactory.canonicalAnnotation(annotation, exprTM);
+    inferredAnno = atypeFactory.canonicalAnnotation(inferredAnno, exprTM);
+
+    if (!checkContract(expression, annotation, inferredAnno, exitStore)) {
+      checker.reportError(
+          methodTree,
+          "contracts.postcondition",
+          methodTree.getName(),
+          contractExpressionAndType(expression.toString(), inferredAnno),
+          contractExpressionAndType(expression.toString(), annotation));
     }
   }
 
@@ -1556,12 +1576,10 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       AnnotationMirror annotation,
       JavaExpression expression,
       boolean result) {
-    boolean booleanReturnType =
-        TypesUtils.isBooleanType(TreeUtils.typeOf(methodTree.getReturnType()));
-    if (!booleanReturnType) {
+    TypeMirror returnType = TreeUtils.typeOf(methodTree.getReturnType());
+    if (!TypesUtils.isBooleanType(returnType)) {
       checker.reportError(methodTree, "contracts.conditional.postcondition.returntype");
-      // No reason to go ahead with further checking. The
-      // annotation is invalid.
+      // The annotation is invalid. No reason to check further.
       return;
     }
 
@@ -2181,8 +2199,19 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     if (inferredAnnotation == null) {
       return false;
     }
+    System.out.printf("checkContract(%s, %s, %s)%n", expr, necessaryAnnotation, inferredAnnotation);
     TypeMirror exprTM = expr.getType();
-    return qualHierarchy.isSubtypeShallow(inferredAnnotation, necessaryAnnotation, exprTM);
+    AnnotationMirror canonicalInferred =
+        atypeFactory.canonicalAnnotation(inferredAnnotation, exprTM);
+    AnnotationMirror canonicalNecessary =
+        atypeFactory.canonicalAnnotation(necessaryAnnotation, exprTM);
+    System.out.printf(
+        " => checkContract(%s, %s, %s)%n", expr, canonicalNecessary, canonicalInferred);
+    boolean result = qualHierarchy.isSubtypeShallow(canonicalInferred, canonicalNecessary, exprTM);
+    System.out.printf(
+        "isSubtypeShallow(%s, %s, %s) => %s%n",
+        canonicalInferred, canonicalNecessary, exprTM, result);
+    return result;
   }
 
   /**
@@ -3245,6 +3274,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       Object... extraArgs) {
 
     commonAssignmentCheckStartDiagnostic(varType, valueType, valueExpTree);
+
+    varType.canonicalizeAnnotations();
+    valueType.canonicalizeAnnotations();
 
     AnnotatedTypeMirror widenedValueType = atypeFactory.getWidenedType(valueType, varType);
     boolean result = typeHierarchy.isSubtype(widenedValueType, varType);
