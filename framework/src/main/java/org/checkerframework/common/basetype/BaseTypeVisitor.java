@@ -2191,8 +2191,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    * Returns true if and only if {@code inferredAnnotation} is valid for a given expression to match
    * the {@code necessaryAnnotation}.
    *
-   * <p>By default, {@code inferredAnnotation} must be a subtype of {@code necessaryAnnotation}, but
-   * subclasses might override this behavior.
+   * <p>By default, {@code inferredAnnotation} must be a subtype of or equal to {@code
+   * necessaryAnnotation}, but subclasses might override this behavior.
    */
   protected boolean checkContract(
       JavaExpression expr,
@@ -3279,6 +3279,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
     commonAssignmentCheckStartDiagnostic(varType, valueType, valueExpTree);
 
+    // TODO: Comment this out?
     varType.canonicalizeAnnotations();
     valueType.canonicalizeAnnotations();
 

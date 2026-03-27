@@ -339,7 +339,7 @@ public abstract class UBQualifier {
   public abstract UBQualifier lub(UBQualifier other);
 
   public UBQualifier widenUpperBound(UBQualifier obj) {
-    return this.lub(obj);
+    return lub(obj);
   }
 
   public abstract UBQualifier glb(UBQualifier other);

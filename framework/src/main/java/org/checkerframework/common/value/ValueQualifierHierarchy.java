@@ -181,10 +181,7 @@ final class ValueQualifierHierarchy extends ElementQualifierHierarchy {
    * @return the widened range
    */
   private Range widenedRange(Range newRange, Range oldRange, Range lubRange) {
-    if (newRange == null
-        || oldRange == null
-        || lubRange.equals(oldRange)
-        || lubRange.equals(newRange)) {
+    if (newRange == null || oldRange == null || lubRange.equals(oldRange)) {
       return lubRange;
     }
 
