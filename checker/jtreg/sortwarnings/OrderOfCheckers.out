@@ -1,6 +1,6 @@
 OrderOfCheckers.java:12:95: compiler.err.proc.messager: [[value, allcheckers]:assignment] incompatible types in assignment.
-found   : @UnknownVal int @UnknownVal []
-required: @UnknownVal int @BottomVal []
+found   : int []
+required: @IntRangeFromGTENegativeOne int []
 OrderOfCheckers.java:12:95: compiler.err.proc.messager: [[index, searchindex, allcheckers]:assignment] incompatible types in assignment.
 found   : int []
 required: @SearchIndexBottom int []

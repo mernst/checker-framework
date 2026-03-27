@@ -336,6 +336,8 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
         throw new NullPointerException("combineTwoAnnotations: bTypeMirror==null");
       }
       GenericAnnotatedTypeFactory<?, ?, ?, ?> gatf = analysis.getTypeFactory();
+      a = gatf.canonicalAnnotation(a, aTypeMirror);
+      b = gatf.canonicalAnnotation(b, bTypeMirror);
       if (gatf.hasQualifierParameterInHierarchy(TypesUtils.getTypeElement(aTypeMirror), top)
           && gatf.hasQualifierParameterInHierarchy(TypesUtils.getTypeElement(bTypeMirror), top)) {
         // Both types have qualifier parameters, so they are related by invariance rather

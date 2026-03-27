@@ -1,6 +1,6 @@
 OrderOfCheckers.java:12:95: compiler.err.proc.messager: [assignment] incompatible types in assignment.
-found   : @UnknownVal int @UnknownVal []
-required: @UnknownVal int @BottomVal []
+found   : int []
+required: @IntRangeFromGTENegativeOne int []
 OrderOfCheckers.java:12:95: compiler.err.proc.messager: [assignment] incompatible types in assignment.
 found   : int []
 required: @SearchIndexBottom int []
@@ -28,22 +28,34 @@ found   : @LTLengthOf("p2") int
 required: @LTLengthOf("[error for expression: This isn't an expression; error: Invalid 'This isn't an expression' because Invalid expression (';' expected; unclosed character literal): This isn't an expression]") int
 ErrorOrders.java:29:11: compiler.err.proc.messager: [argument] incompatible argument for parameter p1 of ErrorOrders.test4.
 found   : int
+required: @IntRange(from=-1, to=2147483647) int
+ErrorOrders.java:29:11: compiler.err.proc.messager: [argument] incompatible argument for parameter p1 of ErrorOrders.test4.
+found   : int
 required: @GTENegativeOne int
 ErrorOrders.java:29:11: compiler.err.proc.messager: [argument] incompatible argument for parameter p1 of ErrorOrders.test4.
 found   : int
 required: @UpperBoundBottom int
 ErrorOrders.java:29:20: compiler.err.proc.messager: [argument] incompatible argument for parameter p2 of ErrorOrders.test4.
 found   : int
+required: @IntRange(from=-1, to=2147483647) int
+ErrorOrders.java:29:20: compiler.err.proc.messager: [argument] incompatible argument for parameter p2 of ErrorOrders.test4.
+found   : int
 required: @GTENegativeOne int
 ErrorOrders.java:29:20: compiler.err.proc.messager: [argument] incompatible argument for parameter p2 of ErrorOrders.test4.
 found   : int
 required: @UpperBoundBottom int
 ErrorOrders.java:29:21: compiler.err.proc.messager: [argument] incompatible argument for parameter p1 of ErrorOrders.test4.
 found   : int
+required: @IntRange(from=-1, to=2147483647) int
+ErrorOrders.java:29:21: compiler.err.proc.messager: [argument] incompatible argument for parameter p1 of ErrorOrders.test4.
+found   : int
 required: @GTENegativeOne int
 ErrorOrders.java:29:21: compiler.err.proc.messager: [argument] incompatible argument for parameter p1 of ErrorOrders.test4.
 found   : int
 required: @UpperBoundBottom int
+ErrorOrders.java:29:25: compiler.err.proc.messager: [argument] incompatible argument for parameter p2 of ErrorOrders.test4.
+found   : int
+required: @IntRange(from=-1, to=2147483647) int
 ErrorOrders.java:29:25: compiler.err.proc.messager: [argument] incompatible argument for parameter p2 of ErrorOrders.test4.
 found   : int
 required: @GTENegativeOne int
@@ -97,22 +109,34 @@ found   : @LTLengthOf("p2") int
 required: @LTLengthOf("[error for expression: This isn't an expression; error: Invalid 'This isn't an expression' because Invalid expression (';' expected; unclosed character literal): This isn't an expression]") int
 ErrorOrders.java:61:11: compiler.err.proc.messager: [argument] incompatible argument for parameter p1 of InSameCompilationUnit.test4.
 found   : int
+required: @IntRange(from=-1, to=2147483647) int
+ErrorOrders.java:61:11: compiler.err.proc.messager: [argument] incompatible argument for parameter p1 of InSameCompilationUnit.test4.
+found   : int
 required: @GTENegativeOne int
 ErrorOrders.java:61:11: compiler.err.proc.messager: [argument] incompatible argument for parameter p1 of InSameCompilationUnit.test4.
 found   : int
 required: @UpperBoundBottom int
 ErrorOrders.java:61:20: compiler.err.proc.messager: [argument] incompatible argument for parameter p2 of InSameCompilationUnit.test4.
 found   : int
+required: @IntRange(from=-1, to=2147483647) int
+ErrorOrders.java:61:20: compiler.err.proc.messager: [argument] incompatible argument for parameter p2 of InSameCompilationUnit.test4.
+found   : int
 required: @GTENegativeOne int
 ErrorOrders.java:61:20: compiler.err.proc.messager: [argument] incompatible argument for parameter p2 of InSameCompilationUnit.test4.
 found   : int
 required: @UpperBoundBottom int
 ErrorOrders.java:61:21: compiler.err.proc.messager: [argument] incompatible argument for parameter p1 of InSameCompilationUnit.test4.
 found   : int
+required: @IntRange(from=-1, to=2147483647) int
+ErrorOrders.java:61:21: compiler.err.proc.messager: [argument] incompatible argument for parameter p1 of InSameCompilationUnit.test4.
+found   : int
 required: @GTENegativeOne int
 ErrorOrders.java:61:21: compiler.err.proc.messager: [argument] incompatible argument for parameter p1 of InSameCompilationUnit.test4.
 found   : int
 required: @UpperBoundBottom int
+ErrorOrders.java:61:25: compiler.err.proc.messager: [argument] incompatible argument for parameter p2 of InSameCompilationUnit.test4.
+found   : int
+required: @IntRange(from=-1, to=2147483647) int
 ErrorOrders.java:61:25: compiler.err.proc.messager: [argument] incompatible argument for parameter p2 of InSameCompilationUnit.test4.
 found   : int
 required: @GTENegativeOne int
@@ -137,4 +161,4 @@ required: int @SameLenBottom []
 ErrorOrders.java:61:50: compiler.err.proc.messager: [argument] incompatible argument for parameter p5 of InSameCompilationUnit.test4.
 found   : @UnknownVal int
 required: @BottomVal int
-49 errors
+57 errors
