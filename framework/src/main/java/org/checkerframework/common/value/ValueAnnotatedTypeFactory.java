@@ -1500,6 +1500,9 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    * <p>Note that this routine handles actual {@link MinLen} annotations, because it is called by
    * {@link ValueAnnotatedTypeFactory#canonicalAnnotation(AnnotationMirror,TypeMirror)}, which
    * transforms {@link MinLen} annotations into {@link ArrayLenRange} annotations.
+   *
+   * @param annotation an annotation
+   * @return the minimum length of an array specified by the provided annotation, or null
    */
   private @Nullable Integer getSpecifiedMinLenValue(@Nullable AnnotationMirror annotation) {
     if (annotation == null) {
@@ -1527,6 +1530,9 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    * <p>Note that this routine handles actual {@link MinLen} annotations, because it is called by
    * {@link ValueAnnotatedTypeFactory#canonicalAnnotation(AnnotationMirror,TypeMirror)}, which
    * transforms {@link MinLen} annotations into {@link ArrayLenRange} annotations.
+   *
+   * @param annotation an annotation
+   * @return the minimum length of an array specified by the provided annotation, or zero
    */
   public int getMinLenValue(@Nullable AnnotationMirror annotation) {
     Integer minLen = getSpecifiedMinLenValue(annotation);
