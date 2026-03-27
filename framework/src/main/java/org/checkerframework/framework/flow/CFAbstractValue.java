@@ -561,10 +561,13 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
         AnnotationMirror b,
         TypeMirror bTypeMirror,
         AnnotationMirror top) {
+      AnnotationMirror aCanonical = atypeFactory.canonicalAnnotation(a, aTypeMirror);
+      AnnotationMirror bCanonical = atypeFactory.canonicalAnnotation(b, bTypeMirror);
       if (widen) {
-        return qualHierarchy.widenedUpperBound(a, b);
+        return qualHierarchy.widenedUpperBound(aCanonical, bCanonical);
       } else {
-        return qualHierarchy.leastUpperBoundShallow(a, aTypeMirror, b, bTypeMirror);
+        return qualHierarchy.leastUpperBoundShallow(
+            aCanonical, aTypeMirror, bCanonical, bTypeMirror);
       }
     }
 
