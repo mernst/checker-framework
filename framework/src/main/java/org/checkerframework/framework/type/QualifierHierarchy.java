@@ -440,11 +440,13 @@ public abstract class QualifierHierarchy {
     boolean tm1IsRelevant = atypeFactory.isRelevant(tm1);
     boolean tm2IsRelevant = atypeFactory.isRelevant(tm2);
     if (tm1IsRelevant == tm2IsRelevant) {
-      return leastUpperBoundQualifiers(qualifier1, qualifier2);
+      return leastUpperBoundQualifiers(
+          atypeFactory.canonicalAnnotation(qualifier1, tm1),
+          atypeFactory.canonicalAnnotation(qualifier2, tm2));
     } else if (tm1IsRelevant) {
-      return qualifier1;
+      return atypeFactory.canonicalAnnotation(qualifier1, tm1);
     } else { // if (tm2IsRelevant) {
-      return qualifier2;
+      return atypeFactory.canonicalAnnotation(qualifier2, tm2);
     }
   }
 
