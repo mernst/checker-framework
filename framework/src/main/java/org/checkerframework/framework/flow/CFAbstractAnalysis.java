@@ -269,6 +269,10 @@ public abstract class CFAbstractAnalysis<
    * @return an abstract value with {@code anno} and {@code underlyingType}
    */
   public V createSingleAnnotationValue(AnnotationMirror anno, TypeMirror underlyingType) {
+    if (anno == null) {
+      throw new BugInCF("Null annotation, underlyingType = " + underlyingType);
+    }
+    anno = atypeFactory.canonicalAnnotation(anno, underlyingType);
     QualifierHierarchy hierarchy = getTypeFactory().getQualifierHierarchy();
     AnnotationMirrorSet annos = new AnnotationMirrorSet();
     annos.addAll(hierarchy.getTopAnnotations());
