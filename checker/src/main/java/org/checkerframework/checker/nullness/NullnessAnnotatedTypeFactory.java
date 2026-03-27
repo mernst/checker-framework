@@ -913,7 +913,7 @@ public class NullnessAnnotatedTypeFactory
    * @return true if the given annotation is @NonNull or an alias for it
    */
   protected boolean isNonNullOrAlias(AnnotationMirror am) {
-    am = canonicalAnnotation(am);
+    am = resolveAlias(am);
     return AnnotationUtils.areSameByName(am, NONNULL);
   }
 
@@ -924,7 +924,7 @@ public class NullnessAnnotatedTypeFactory
    * @return true if the given annotation is @Nullable or an alias for it
    */
   protected boolean isNullableOrAlias(AnnotationMirror am) {
-    am = canonicalAnnotation(am);
+    am = resolveAlias(am);
     return AnnotationUtils.areSameByName(am, NULLABLE);
   }
 

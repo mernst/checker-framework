@@ -199,8 +199,8 @@ public abstract class QualifierHierarchy {
     }
 
     return isSubtypeQualifiers(
-        atypeFactory.canonicalAnnotation(subQualifier),
-        atypeFactory.canonicalAnnotation(superQualifier));
+        atypeFactory.canonicalAnnotation(subQualifier, subType),
+        atypeFactory.canonicalAnnotation(superQualifier, superType));
   }
 
   /**
@@ -444,8 +444,6 @@ public abstract class QualifierHierarchy {
       AnnotationMirror qualifier1, TypeMirror tm1, AnnotationMirror qualifier2, TypeMirror tm2) {
     boolean tm1IsRelevant = atypeFactory.isRelevant(tm1);
     boolean tm2IsRelevant = atypeFactory.isRelevant(tm2);
-    // TODO: It should not be necessary to call canonicalAnnotation here; the qualifiers should
-    // already have been canonicalized.
     if (tm1IsRelevant == tm2IsRelevant) {
       return leastUpperBoundQualifiers(
           atypeFactory.canonicalAnnotation(qualifier1, tm1),

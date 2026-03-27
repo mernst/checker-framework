@@ -290,9 +290,6 @@ public class ContractsFromMethod {
         factory.isAliasedTypeAnnotation(anno));
     */
 
-    // Do NOT canonicalize, because canonicalization depends on the underlying type, which not
-    // available here.
-    // anno = factory.canonicalAnnotation(anno);
     if (factory.isSupportedQualifier(anno) || factory.isAliasedTypeAnnotation(anno)) {
       return anno;
     } else {

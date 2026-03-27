@@ -15,6 +15,7 @@ import java.util.TreeSet;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
@@ -118,7 +119,7 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   // Converts all metric-prefixed units' alias annotations (eg @kg) into base unit annotations
   // with prefix values (eg @g(Prefix.kilo))
   @Override
-  public AnnotationMirror canonicalAnnotation(AnnotationMirror anno) {
+  public AnnotationMirror canonicalAnnotation(AnnotationMirror anno, TypeMirror tm) {
     // Get the name of the aliased annotation
     String aname = AnnotationUtils.annotationName(anno);
 
@@ -170,7 +171,7 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       return result;
     }
 
-    return super.canonicalAnnotation(anno);
+    return super.canonicalAnnotation(anno, tm);
   }
 
   /**
@@ -278,7 +279,7 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         // then add the aliased annotation to the alias map
         // TODO: refactor so we can directly add to alias map, skipping the assert check in
         // canonicalAnnotation.
-        canonicalAnnotation(mirror);
+        canonicalAnnotation(mirror, null);
       } else {
         // error: somehow the aliased annotation has @UnitsMultiple meta annotation, but no
         // base class defined in that meta annotation

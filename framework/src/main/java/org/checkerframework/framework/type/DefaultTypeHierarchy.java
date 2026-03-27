@@ -161,6 +161,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
      */
     private ShallowType(AnnotationMirrorSet annos, TypeMirror typeMirror) {
       // TODO: Is this a place to do canonicalization?
+      // It does not have access to the factory.
       this.annos = annos;
       this.typeMirror = typeMirror;
     }

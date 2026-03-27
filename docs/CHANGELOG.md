@@ -3,14 +3,16 @@
 <!-- markdownlint-disable no-duplicate-heading -->
 <!-- pyml disable no-duplicate-heading -->
 
-## Version 3.54.1 (2026-04-02)
+## Version 3.54.1 (2026-04-01)
 
 ### User-visible changes
 
 ### Implementation details
 
-In `AnnotatedTypeFactory`, `canonicalAnnotation()` has a new overload that also
-takes a `TypeMirror`.
+In `AnnotatedTypeFactory`:
+
+* Renamed `canonicalAnnotation(AnnotationMirror)` to `resolveAlias(AnnotationMirror)`.
+* New method `canonicalAnnotation(AnnotationMirror, TypeMirror)`.
 
 ### Closed issues
 

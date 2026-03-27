@@ -236,7 +236,7 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     addAliasedTypeAnnotation("android.support.annotation.IntRange", IntRange.class, true);
 
     // The actual ArrayLenRange is created by
-    // {@link ValueAnnotatedTypeFactory#canonicalAnnotation(AnnotationMirror)};
+    // {@link ValueAnnotatedTypeFactory#canonicalAnnotation(AnnotationMirror,TypeMirror)};
     // this line just registers the alias. The BottomVal is never used.
     addAliasedTypeAnnotation(MinLen.class, BOTTOMVAL);
 
@@ -320,12 +320,12 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     } else {
       // System.out.printf(
       //     "VATF.canonicalAnnotation(%s, %s) does not match, calling super%n", anno, typeMirror);
-      return super.canonicalAnnotation(anno);
+      return super.canonicalAnnotation(anno, typeMirror);
     }
     if (!TypeKindUtils.isIntegral(primitiveKind)) {
       // System.out.printf(
       //     "VATF.canonicalAnnotation(%s, %s) does not match, calling super%n", anno, typeMirror);
-      return super.canonicalAnnotation(anno);
+      return super.canonicalAnnotation(anno, typeMirror);
     }
 
     long max = Range.create(primitiveKind).to;
@@ -351,7 +351,7 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       return createIntRangeAnnotation(-1, max);
     }
 
-    AnnotationMirror result = super.canonicalAnnotation(anno);
+    AnnotationMirror result = super.canonicalAnnotation(anno, typeMirror);
     // String msg = String.format("VATF.canonicalAnnotation(%s, %s) => %s", anno, typeMirror,
     // result);
     // System.out.println(msg);
@@ -1498,8 +1498,8 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    * is no minimum length known, or if the passed annotation is null.
    *
    * <p>Note that this routine handles actual {@link MinLen} annotations, because it is called by
-   * {@link ValueAnnotatedTypeFactory#canonicalAnnotation(AnnotationMirror)}, which transforms
-   * {@link MinLen} annotations into {@link ArrayLenRange} annotations.
+   * {@link ValueAnnotatedTypeFactory#canonicalAnnotation(AnnotationMirror,TypeMirror)}, which
+   * transforms {@link MinLen} annotations into {@link ArrayLenRange} annotations.
    */
   private @Nullable Integer getSpecifiedMinLenValue(@Nullable AnnotationMirror annotation) {
     if (annotation == null) {
@@ -1525,8 +1525,8 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    * 0 if there is no minimum length known, or if the passed annotation is null.
    *
    * <p>Note that this routine handles actual {@link MinLen} annotations, because it is called by
-   * {@link ValueAnnotatedTypeFactory#canonicalAnnotation(AnnotationMirror)}, which transforms
-   * {@link MinLen} annotations into {@link ArrayLenRange} annotations.
+   * {@link ValueAnnotatedTypeFactory#canonicalAnnotation(AnnotationMirror,TypeMirror)}, which
+   * transforms {@link MinLen} annotations into {@link ArrayLenRange} annotations.
    */
   public int getMinLenValue(@Nullable AnnotationMirror annotation) {
     Integer minLen = getSpecifiedMinLenValue(annotation);

@@ -3531,16 +3531,15 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * <p>This method {@code canonicalAnnotation} is called by {@link
    * AnnotatedTypeMirror#addAnnotation}, so it is called for every annotation added to a type.
    *
-   * <p>This implementation checks whether the passed annotation is not an alias of another
-   * annotation in the framework. Subclasses can do additional work.
+   * <p>This implementation handles when the passed annotation is an alias of another annotation.
+   * Subclasses can do additional work.
    *
    * @param a the qualifier to canonicalize
    * @param tm the type that the qualifier applies to
    * @return the canonical annotation, which may be the given annotation
-   * @see #canonicalAnnotation(AnnotationMirror)
    */
   public AnnotationMirror canonicalAnnotation(AnnotationMirror a, TypeMirror tm) {
-    return canonicalAnnotation(a);
+    return resolveAlias(a);
   }
 
   /**
@@ -3548,14 +3547,25 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    *
    * <p>This overload is for annotations that will not be added to an {@link AnnotatedTypeMirror}.
    *
-   * <p>This implementation checks whether the passed annotation is not an alias of another
-   * annotation in the framework. Subclasses can do additional work.
+   * <p>This implementation handles when the passed annotation is an alias of another annotation.
+   * Subclasses can do additional work.
    *
    * @param a the qualifier to canonicalize
    * @return the canonical annotation, which may be the given annotation
-   * @see #canonicalAnnotation(AnnotationMirror,TypeMirror)
+   * @deprecated use {@link #canonicalAnnotation(AnnotationMirror,TypeMirror)}
    */
+  @Deprecated(since = "2026-03-27")
   public AnnotationMirror canonicalAnnotation(AnnotationMirror a) {
+    return resolveAlias(a);
+  }
+
+  /**
+   * If the argument is an alias, returns what it resolves to. Otherwise, returns its argument.
+   *
+   * @param a a qualifier
+   * @return what {@code a} is aliased to, or {@code a} itself if it is not an alias
+   */
+  public AnnotationMirror resolveAlias(AnnotationMirror a) {
     TypeElement elem = (TypeElement) a.getAnnotationType().asElement();
     String qualName = elem.getQualifiedName().toString();
     Alias alias = aliases.get(qualName);

@@ -576,8 +576,6 @@ public class QualifierDefaults {
       return null;
     }
 
-    anno = atypeFactory.canonicalAnnotation(anno);
-
     if (atypeFactory.isSupportedQualifier(anno)) {
       TypeUseLocation[] locations =
           AnnotationUtils.getElementValueEnumArray(
