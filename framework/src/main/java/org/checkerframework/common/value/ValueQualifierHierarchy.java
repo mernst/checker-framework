@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.TreeSet;
 import javax.lang.model.element.AnnotationMirror;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.regex.qual.Regex;
 import org.checkerframework.common.value.util.Range;
@@ -146,11 +147,12 @@ final class ValueQualifierHierarchy extends ElementQualifierHierarchy {
   }
 
   /** Possible values for the bound of a widened range. */
-  static TreeSet<Long> wideningValues = new TreeSet<>();
+  private static final TreeSet<Long> wideningValues = new TreeSet<>();
 
   static {
     for (long i :
         List.of(
+            // Wraparound for long values is deduplicated by TreeSet.
             Long.MIN_VALUE,
             Long.MAX_VALUE,
             (long) Integer.MIN_VALUE,
@@ -189,7 +191,9 @@ final class ValueQualifierHierarchy extends ElementQualifierHierarchy {
     long min;
     // Is the lower bound decreasing?
     if (newRange.from < oldRange.from) {
-      min = wideningValues.floor(newRange.from);
+      // Non-null because wideningValues contains Long.MIN_VALUE.
+      @NonNull Long floor = wideningValues.floor(newRange.from);
+      min = floor;
     } else {
       min = oldRange.from;
     }
@@ -197,7 +201,9 @@ final class ValueQualifierHierarchy extends ElementQualifierHierarchy {
     long max;
     // Is the upper bound increasing?
     if (newRange.to > oldRange.to) {
-      max = wideningValues.ceiling(newRange.to);
+      // Non-null because wideningValues contains Long.MAX_VALUE.
+      @NonNull Long ceiling = wideningValues.ceiling(newRange.to);
+      max = ceiling;
     } else {
       max = oldRange.to;
     }
