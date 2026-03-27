@@ -441,12 +441,13 @@ public class ForwardAnalysisImpl<
    */
   protected void addStoreBefore(
       Block b, @Nullable Node node, S s, Store.Kind kind, boolean addBlockToWorklist) {
-    System.out.printf("addStoreBefore(%s, %s, %s, %s, %s)%n", b, node, s, kind, addBlockToWorklist);
+    // System.out.printf("addStoreBefore(%s, %s, %s, %s, %s)%n", b, node, s, kind,
+    // addBlockToWorklist);
 
     S thenStore = getStoreBefore(b, Store.Kind.THEN);
     S elseStore = getStoreBefore(b, Store.Kind.ELSE);
-    System.out.printf(" previous thenStore = %s%n", thenStore);
-    System.out.printf(" previous elseStore = %s%n", elseStore);
+    // System.out.printf(" previous thenStore = %s%n", thenStore);
+    // System.out.printf(" previous elseStore = %s%n", elseStore);
 
     boolean shouldWiden = false;
     if (blockCount != null) {
@@ -537,8 +538,8 @@ public class ForwardAnalysisImpl<
     } else {
       result = newStore.leastUpperBound(previousStore);
     }
-    System.out.printf(
-        "mergeStores(%s, %s, %s) => %s%n", newStore, previousStore, shouldWiden, result);
+    // System.out.printf(
+    //     "mergeStores(%s, %s, %s) => %s%n", newStore, previousStore, shouldWiden, result);
     return result;
   }
 

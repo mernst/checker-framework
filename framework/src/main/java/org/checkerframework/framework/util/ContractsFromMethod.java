@@ -280,6 +280,7 @@ public class ContractsFromMethod {
       anno = builder.build();
     }
 
+    /*
     System.out.printf(
         "anno = %s, factory=%s, isSupportedQualifier = %s, isAliasedTypeAnnotation(%s) = %s%n",
         anno,
@@ -287,6 +288,7 @@ public class ContractsFromMethod {
         factory.isSupportedQualifier(anno),
         anno,
         factory.isAliasedTypeAnnotation(anno));
+    */
 
     // Do NOT canonicalize, because canonicalization depends on the underlying type, which not
     // available here.

@@ -453,9 +453,9 @@ public class ValueTransfer extends CFTransfer {
       CFStore elseStore,
       List<Boolean> booleanValues,
       TypeMirror underlyingType) {
-    System.out.printf(
-        "createNewResultBoolean(%s, %s, %s, %s)%n",
-        thenStore, elseStore, booleanValues, underlyingType);
+    // System.out.printf(
+    //     "createNewResultBoolean(%s, %s, %s, %s)%n",
+    //     thenStore, elseStore, booleanValues, underlyingType);
     AnnotationMirror boolVal = atypeFactory.createBooleanAnnotation(booleanValues);
     CFValue newResultValue = analysis.createSingleAnnotationValue(boolVal, underlyingType);
     if (elseStore != null) {
