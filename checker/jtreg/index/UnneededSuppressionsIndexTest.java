@@ -2,15 +2,15 @@
  * @test
  * @summary Test -AwarnUnneededSuppressions
  *
- * @compile/ref=UnneededSuppressionsTest.out -XDrawDiagnostics -processor org.checkerframework.checker.index.IndexChecker -AwarnUnneededSuppressions UnneededSuppressionsTest.java
+ * @compile/ref=UnneededSuppressionsIndexTest.out -XDrawDiagnostics -processor org.checkerframework.checker.index.IndexChecker -AwarnUnneededSuppressions UnneededSuppressionsIndexTest.java
  */
 
 import org.checkerframework.checker.index.qual.NonNegative;
 
-public class UnneededSuppressionsTest {
+public class UnneededSuppressionsIndexTest {
 
   void method(@NonNegative int i) {
-    @SuppressWarnings("index")
+    @SuppressWarnings("assignment")
     @NonNegative int x = i - 1;
   }
 
@@ -26,7 +26,7 @@ public class UnneededSuppressionsTest {
   }
 
   void method4() {
-    @SuppressWarnings("lowerbound:assignment")
+    @SuppressWarnings("assignment")
     @NonNegative int x = -1;
   }
 
