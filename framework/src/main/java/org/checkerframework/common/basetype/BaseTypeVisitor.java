@@ -2193,6 +2193,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    *
    * <p>By default, {@code inferredAnnotation} must be a subtype of (or equal to) {@code
    * necessaryAnnotation}, but subclasses might override this behavior.
+   *
+   * @param expr an expression
+   * @param necessaryAnnotation the annotation that is required for the expression
+   * @param inferredAnnotation the annotation that is inferred for the expression
+   * @param store the store
+   * @return true if {@code inferredAnnotation} is a subtype of {@code necessaryAnnotation}
    */
   protected boolean checkContract(
       JavaExpression expr,
