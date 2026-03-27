@@ -281,12 +281,17 @@ public class ContractsFromMethod {
     }
 
     System.out.printf(
-        "anno = %s, isSupportedQualifier = %s%n", anno, factory.isSupportedQualifier(anno));
+        "anno = %s, factory=%s, isSupportedQualifier = %s, isAliasedTypeAnnotation(%s) = %s%n",
+        anno,
+        factory,
+        factory.isSupportedQualifier(anno),
+        anno,
+        factory.isAliasedTypeAnnotation(anno));
 
     // Do NOT canonicalize, because canonicalization depends on the underlying type, which not
     // available here.
     // anno = factory.canonicalAnnotation(anno);
-    if (factory.isSupportedQualifier(anno) || factory.isAliasedTypeAnnotation(anno.getClass())) {
+    if (factory.isSupportedQualifier(anno) || factory.isAliasedTypeAnnotation(anno)) {
       return anno;
     } else {
       return null;

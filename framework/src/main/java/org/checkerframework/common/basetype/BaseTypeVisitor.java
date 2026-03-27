@@ -1381,8 +1381,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       ExecutableElement methodElement,
       List<String> formalParamNames,
       boolean abstractMethod) {
-    ContractsFromMethod cfm = atypeFactory.getContractsFromMethod();
-    System.out.printf("cfm=%s%n", cfm);
     Set<Contract> contracts = atypeFactory.getContractsFromMethod().getContracts(methodElement);
 
     String msg =
@@ -1534,7 +1532,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     }
     TypeMirror exprTM = expression.getType();
     annotation = atypeFactory.canonicalAnnotation(annotation, exprTM);
-    inferredAnno = atypeFactory.canonicalAnnotation(inferredAnno, exprTM);
+    if (inferredAnno != null) {
+      inferredAnno = atypeFactory.canonicalAnnotation(inferredAnno, exprTM);
+    }
 
     if (!checkContract(expression, annotation, inferredAnno, exitStore)) {
       checker.reportError(

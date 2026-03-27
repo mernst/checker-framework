@@ -453,6 +453,9 @@ public class ValueTransfer extends CFTransfer {
       CFStore elseStore,
       List<Boolean> booleanValues,
       TypeMirror underlyingType) {
+    System.out.printf(
+        "createNewResultBoolean(%s, %s, %s, %s)%n",
+        thenStore, elseStore, booleanValues, underlyingType);
     AnnotationMirror boolVal = atypeFactory.createBooleanAnnotation(booleanValues);
     CFValue newResultValue = analysis.createSingleAnnotationValue(boolVal, underlyingType);
     if (elseStore != null) {
@@ -911,9 +914,14 @@ public class ValueTransfer extends CFTransfer {
   public TransferResult<CFValue, CFStore> visitNumericalAddition(
       NumericalAdditionNode n, TransferInput<CFValue, CFStore> p) {
     TransferResult<CFValue, CFStore> transferResult = super.visitNumericalAddition(n, p);
-    AnnotationMirror resultAnno =
-        calculateNumericalBinaryOp(
-            n.getLeftOperand(), n.getRightOperand(), NumericalBinaryOps.ADDITION, p);
+    AnnotationMirror resultAnno;
+    try {
+      resultAnno =
+          calculateNumericalBinaryOp(
+              n.getLeftOperand(), n.getRightOperand(), NumericalBinaryOps.ADDITION, p);
+    } catch (Exception e) {
+      resultAnno = atypeFactory.BOTTOMVAL;
+    }
     return recreateTransferResult(resultAnno, transferResult);
   }
 
@@ -1384,15 +1392,20 @@ public class ValueTransfer extends CFTransfer {
     TransferResult<CFValue, CFStore> transferResult = super.visitLessThan(n, p);
     CFStore thenStore = transferResult.getThenStore();
     CFStore elseStore = transferResult.getElseStore();
-    List<Boolean> resultValues =
-        calculateBinaryComparison(
-            n.getLeftOperand(),
-            p.getValueOfSubNode(n.getLeftOperand()),
-            n.getRightOperand(),
-            p.getValueOfSubNode(n.getRightOperand()),
-            ComparisonOperators.LESS_THAN,
-            thenStore,
-            elseStore);
+    List<Boolean> resultValues;
+    try {
+      resultValues =
+          calculateBinaryComparison(
+              n.getLeftOperand(),
+              p.getValueOfSubNode(n.getLeftOperand()),
+              n.getRightOperand(),
+              p.getValueOfSubNode(n.getRightOperand()),
+              ComparisonOperators.LESS_THAN,
+              thenStore,
+              elseStore);
+    } catch (Exception e) {
+      resultValues = Collections.emptyList();
+    }
     TypeMirror underlyingType = transferResult.getResultValue().getUnderlyingType();
     return createNewResultBoolean(thenStore, elseStore, resultValues, underlyingType);
   }

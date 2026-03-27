@@ -3582,6 +3582,16 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
+   * Returns true if the given annotation is an alias for some other annotation.
+   *
+   * @param anno an annotation
+   * @return true if the given annotation class is an alias for some other annotation
+   */
+  public boolean isAliasedTypeAnnotation(AnnotationMirror anno) {
+    return isAliasedTypeAnnotation(AnnotationUtils.annotationMirrorToClass(anno));
+  }
+
+  /**
    * Add the annotation {@code alias} as an alias for the declaration annotation {@code annotation},
    * where the annotation mirror {@code annotationToUse} will be used instead. If multiple calls are
    * made with the same {@code annotation}, then the {@code annotationToUse} must be the same.
