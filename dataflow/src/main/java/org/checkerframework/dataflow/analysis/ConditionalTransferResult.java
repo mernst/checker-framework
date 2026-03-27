@@ -113,9 +113,9 @@ public class ConditionalTransferResult<V extends AbstractValue<V>, S extends Sto
     this.thenStore = thenStore;
     this.elseStore = elseStore;
     this.storeChanged = storeChanged;
-    System.out.printf(
-        "new ConditionalTransferResult(%s, %s, %s, %s, %s)%n",
-        value, thenStore, elseStore, exceptionalStores, storeChanged);
+    // System.out.printf(
+    //     "new ConditionalTransferResult(%s, %s, %s, %s, %s)%n",
+    //     value, thenStore, elseStore, exceptionalStores, storeChanged);
   }
 
   @Override
