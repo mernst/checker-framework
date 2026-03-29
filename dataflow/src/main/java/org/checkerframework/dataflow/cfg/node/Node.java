@@ -169,7 +169,7 @@ public abstract class Node implements UniqueId {
   }
 
   /**
-   * Marks this node as representing a tree that appears in source code.
+   * Sets whether this node represents a tree in source code.
    *
    * @param inSource true if this node represents a tree that appears in the source code
    */
@@ -197,6 +197,8 @@ public abstract class Node implements UniqueId {
     if (isLoopCondition) {
       if (this instanceof BinaryOperationNode) {
         // Only the LHS of a binary operation is guaranteed to be executed.
+        // This descends only into the left of non-short-circuiting binary operations,
+        // but that likely loses little or no precision.
         ((BinaryOperationNode) this).left.setIsLoopCondition(isLoopCondition);
       }
     }
