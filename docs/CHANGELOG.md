@@ -9,7 +9,17 @@
 
 The Checker Framework runs under JDK 26 -- that is, it runs on a version 26 JVM.
 
+Removed deprecated command-line option `-AskipDirs`; use `-AskipFiles`.
+
 ### Implementation details
+
+In `AnnotatedTypeMirror`:
+
+* Renamed `getEffectiveAnnotation*()` to `getAnnotation*()`.
+* Renamed `hasEffectiveAnnotation*()` to `hasAnnotation*()`.
+
+Removed deprecated method `ObjectCreationNode.getConstructor()`; use
+`getTypeToInstantiate()`.
 
 ### Closed issues
 
