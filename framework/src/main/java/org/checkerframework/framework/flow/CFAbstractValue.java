@@ -298,7 +298,7 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
       if (backup != null) {
         this.backupAMSet = backup.getAnnotations();
         // this.backupTypeMirror = backup.getUnderlyingType();
-        // this.backupAtv = getEffectiveTypeVar(backupTypeMirror);
+        // this.backupAtv = getTypeVar(backupTypeMirror);
       } else {
         // this.backupAtv = null;
         // this.backupTypeMirror = null;
@@ -393,8 +393,8 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
       if (canCombinedSetBeMissingAnnos) {
         return null;
       } else {
-        AnnotationMirror aUB = aAtv.getEffectiveAnnotationInHierarchy(top);
-        AnnotationMirror bUB = bAtv.getEffectiveAnnotationInHierarchy(top);
+        AnnotationMirror aUB = aAtv.getAnnotationInHierarchy(top);
+        AnnotationMirror bUB = bAtv.getAnnotationInHierarchy(top);
         TypeMirror aTM = aAtv.getUnderlyingType();
         TypeMirror bTM = bAtv.getUnderlyingType();
         return combineTwoAnnotations(aUB, aTM, bUB, bTM, top);
@@ -408,7 +408,7 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
         AnnotationMirror top,
         boolean canCombinedSetBeMissingAnnos) {
 
-      AnnotationMirror upperBound = typeVar.getEffectiveAnnotationInHierarchy(top);
+      AnnotationMirror upperBound = typeVar.getAnnotationInHierarchy(top);
       TypeMirror upperBoundTM = typeVar.getUpperBound().getUnderlyingType();
 
       if (!canCombinedSetBeMissingAnnos) {
@@ -583,8 +583,8 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
         // don't add an annotation
         return null;
       } else {
-        AnnotationMirror aUB = aAtv.getEffectiveAnnotationInHierarchy(top);
-        AnnotationMirror bUB = bAtv.getEffectiveAnnotationInHierarchy(top);
+        AnnotationMirror aUB = aAtv.getAnnotationInHierarchy(top);
+        AnnotationMirror bUB = bAtv.getAnnotationInHierarchy(top);
         return combineTwoAnnotations(
             aUB, aAtv.getUnderlyingType(), bUB, bAtv.getUnderlyingType(), top);
       }
@@ -613,15 +613,11 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
           return null;
         } else {
           return combineTwoAnnotations(
-              annotation,
-              typeVarTM,
-              typeVar.getEffectiveAnnotationInHierarchy(top),
-              typeVarTM,
-              top);
+              annotation, typeVarTM, typeVar.getAnnotationInHierarchy(top), typeVarTM, top);
         }
       } else {
         return combineTwoAnnotations(
-            annotation, typeVarTM, typeVar.getEffectiveAnnotationInHierarchy(top), typeVarTM, top);
+            annotation, typeVarTM, typeVar.getAnnotationInHierarchy(top), typeVarTM, top);
       }
     }
   }
@@ -691,8 +687,8 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
         // don't add an annotation
         return null;
       } else {
-        AnnotationMirror aUB = aAtv.getEffectiveAnnotationInHierarchy(top);
-        AnnotationMirror bUB = bAtv.getEffectiveAnnotationInHierarchy(top);
+        AnnotationMirror aUB = aAtv.getAnnotationInHierarchy(top);
+        AnnotationMirror bUB = bAtv.getAnnotationInHierarchy(top);
         TypeMirror aTM = aAtv.getUnderlyingType();
         TypeMirror bTM = bAtv.getUnderlyingType();
         return combineTwoAnnotations(aUB, aTM, bUB, bTM, top);
@@ -715,7 +711,7 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
         // If anno is a subtype of the annotation on the upper bound of typeVar, then the
         // glb is typeVar with a primary annotation of glb(anno, lowerBound), where
         // lowerBound is the annotation on the lower bound of typeVar.
-        AnnotationMirror upperBound = typeVar.getEffectiveAnnotationInHierarchy(top);
+        AnnotationMirror upperBound = typeVar.getAnnotationInHierarchy(top);
         if (qualHierarchy.isSubtypeQualifiersOnly(upperBound, annotation)) {
           return null;
         } else {
@@ -726,7 +722,7 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
         }
       } else {
         return combineTwoAnnotations(
-            annotation, typeVarTM, typeVar.getEffectiveAnnotationInHierarchy(top), typeVarTM, top);
+            annotation, typeVarTM, typeVar.getAnnotationInHierarchy(top), typeVarTM, top);
       }
     }
   }
@@ -771,8 +767,8 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
         throw new NullPointerException("combineSets: bTypeMirror==null");
       }
 
-      AnnotatedTypeVariable aAtv = getEffectiveTypeVar(aTypeMirror);
-      AnnotatedTypeVariable bAtv = getEffectiveTypeVar(bTypeMirror);
+      AnnotatedTypeVariable aAtv = getTypeVar(aTypeMirror);
+      AnnotatedTypeVariable bAtv = getTypeVar(bTypeMirror);
       AnnotationMirrorSet tops = qualHierarchy.getTopAnnotations();
       AnnotationMirrorSet combinedSets = new AnnotationMirrorSet();
       for (AnnotationMirror top : tops) {
@@ -860,11 +856,11 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
    * @param typeMirror a type mirror
    * @return the AnnotatedTypeVariable associated with the given TypeMirror or null
    */
-  private @Nullable AnnotatedTypeVariable getEffectiveTypeVar(@Nullable TypeMirror typeMirror) {
+  private @Nullable AnnotatedTypeVariable getTypeVar(@Nullable TypeMirror typeMirror) {
     if (typeMirror == null) {
       return null;
     } else if (typeMirror.getKind() == TypeKind.WILDCARD) {
-      return getEffectiveTypeVar(((WildcardType) typeMirror).getExtendsBound());
+      return getTypeVar(((WildcardType) typeMirror).getExtendsBound());
 
     } else if (typeMirror.getKind() == TypeKind.TYPEVAR) {
       TypeVariable typevar = ((TypeVariable) typeMirror);

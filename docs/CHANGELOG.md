@@ -18,6 +18,11 @@ In `AnnotatedTypeFactory`:
 * Renamed `canonicalAnnotation(AnnotationMirror)` to `resolveAlias(AnnotationMirror)`.
 * New method `canonicalAnnotation(AnnotationMirror, TypeMirror)`.
 
+In `AnnotatedTypeMirror`:
+
+* Renamed `getEffectiveAnnotation*()` to `getAnnotation*()`.
+* Renamed `hasEffectiveAnnotation*()` to `hasAnnotation*()`.
+
 Removed deprecated method `ObjectCreationNode.getConstructor()`; use
 `getTypeToInstantiate()`.
 
