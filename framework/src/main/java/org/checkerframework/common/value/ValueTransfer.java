@@ -340,6 +340,7 @@ public class ValueTransfer extends CFTransfer {
   private @Nullable List<? extends Number> getNumericalValues(
       Node subNode, TransferInput<CFValue, CFStore> p) {
     CFValue value = p.getValueOfSubNode(subNode);
+    // Because of crash when using `-Acfgviz=...,verbose`. TODO: fix.
     if (value == null) {
       return null;
     }
@@ -421,6 +422,7 @@ public class ValueTransfer extends CFTransfer {
     try {
       return atypeFactory.isIntRange(value.getAnnotations());
     } catch (Exception e) {
+      // Because of crash when using `-Acfgviz=...,verbose`. TODO: fix.
       return false;
     }
   }
@@ -449,6 +451,7 @@ public class ValueTransfer extends CFTransfer {
       return true;
     }
     CFValue cfValue = p.getValueOfSubNode(node);
+    // Because of crash when using `-Acfgviz=...,verbose`. TODO: fix.
     if (cfValue == null) {
       return false;
     }
@@ -1201,6 +1204,7 @@ public class ValueTransfer extends CFTransfer {
       leftAnno = getValueAnnotation(leftValue);
       rightAnno = getValueAnnotation(rightValue);
     } catch (Exception e) {
+      // Because of crash when using `-Acfgviz=...,verbose`. TODO: fix.
       return null;
     }
 
@@ -1310,7 +1314,9 @@ public class ValueTransfer extends CFTransfer {
     // range permitted by the constant.  The fixed-point loop is likely to get to that value
     // eventually, and this is both more efficient and more precise than leaving it to the usual
     // widening operation.
-    // TODO: handle comparisons when the lhs is the integer literal.
+
+    // TODO: This does not handle comparisons when the lhs is the integer literal, as in "0 < i" or
+    // "10 > i".  I think that those are quite rare, but if they are important, support them.
     JavaExpression leftJe = JavaExpression.fromNode(leftNode);
     boolean rightIsLoopBoundLiteral =
         isLoopCondition
