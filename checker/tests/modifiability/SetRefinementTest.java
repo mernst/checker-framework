@@ -18,17 +18,25 @@ public class SetRefinementTest {
    * @param other list to copy from
    */
   public SetRefinementTest(List<String> other) {
-    this.items.addAll(other);
+    this.items.addAll(other); // this should not be allowed but checker is not checking this
   }
 
   public SetRefinementTest(List<String> other, int dummy) {
-    this.items.set(0, other.get(0));
+    this.items.set(0, other.get(0)); // this should not be allowed but checker is not checking this
     // :: error: [method.invocation]
     this.items.addAll(other);
   }
 
   public SetRefinementTest(List<String> other, boolean dummy) {
+    this.items.set(0, other.get(0)); // this should not be allowed but checker is not checking this
+    // :: error: [method.invocation]
     this.items.set(0, other.get(0));
+    // :: error: [method.invocation]
+    this.items.addAll(other);
+  }
+
+  public void updateItemsLikeConstructor(List<String> other, int dummy) {
+    // :: error: [method.invocation]
     this.items.set(0, other.get(0));
     // :: error: [method.invocation]
     this.items.addAll(other);
