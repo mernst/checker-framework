@@ -25,6 +25,7 @@ import com.sun.source.tree.NewArrayTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.ParameterizedTypeTree;
 import com.sun.source.tree.PrimitiveTypeTree;
+import com.sun.source.tree.SwitchExpressionTree;
 import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.SynchronizedTree;
 import com.sun.source.tree.ThrowTree;
@@ -61,7 +62,6 @@ import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
-import org.checkerframework.javacutil.TreeUtilsAfterJava11.SwitchExpressionUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /** The visitor for the nullness type-system. */
@@ -224,18 +224,18 @@ public class NullnessVisitor
   protected boolean commonAssignmentCheck(
       AnnotatedTypeMirror varType,
       AnnotatedTypeMirror valueType,
-      Tree valueTree,
+      Tree errorLocation,
       @CompilerMessageKey String errorKey,
       Object... extraArgs) {
     if (TypesUtils.isPrimitive(varType.getUnderlyingType())
         && !TypesUtils.isPrimitive(valueType.getUnderlyingType())) {
-      boolean succeed = checkForNullability(valueType, valueTree, UNBOXING_OF_NULLABLE);
+      boolean succeed = checkForNullability(valueType, errorLocation, UNBOXING_OF_NULLABLE);
       if (!succeed) {
         // Only issue the unboxing of nullable error.
         return false;
       }
     }
-    return super.commonAssignmentCheck(varType, valueType, valueTree, errorKey, extraArgs);
+    return super.commonAssignmentCheck(varType, valueType, errorLocation, errorKey, extraArgs);
   }
 
   /** Case 1: Check for null dereferencing. */
@@ -721,11 +721,11 @@ public class NullnessVisitor
   }
 
   @Override
-  public void visitSwitchExpression17(Tree switchExprTree) {
-    if (!TreeUtils.hasNullCaseLabel(switchExprTree)) {
-      checkForNullability(SwitchExpressionUtils.getExpression(switchExprTree), SWITCHING_NULLABLE);
+  public Void visitSwitchExpression(SwitchExpressionTree switchExpressionTree, Void unused) {
+    if (!TreeUtils.hasNullCaseLabel(switchExpressionTree)) {
+      checkForNullability(switchExpressionTree.getExpression(), SWITCHING_NULLABLE);
     }
-    super.visitSwitchExpression17(switchExprTree);
+    return super.visitSwitchExpression(switchExpressionTree, unused);
   }
 
   @Override
