@@ -45,7 +45,7 @@ public class FormatterVisitor extends BaseTypeVisitor<FormatterAnnotatedTypeFact
   public void processMethodTree(String className, MethodTree tree) {
     ExecutableElement methodElement = TreeUtils.elementFromDeclaration(tree);
     if (atypeFactory.getDeclAnnotation(methodElement, FormatMethod.class) != null) {
-      int formatStringIndex = FormatterVisitor.formatStringIndex(methodElement);
+      int formatStringIndex = formatStringIndex(methodElement);
       if (formatStringIndex == -1) {
         checker.reportError(tree, "format.method", methodElement.getSimpleName());
       }
@@ -260,11 +260,11 @@ public class FormatterVisitor extends BaseTypeVisitor<FormatterAnnotatedTypeFact
   protected boolean commonAssignmentCheck(
       AnnotatedTypeMirror varType,
       AnnotatedTypeMirror valueType,
-      Tree valueTree,
+      Tree errorLocation,
       @CompilerMessageKey String errorKey,
       Object... extraArgs) {
     boolean result =
-        super.commonAssignmentCheck(varType, valueType, valueTree, errorKey, extraArgs);
+        super.commonAssignmentCheck(varType, valueType, errorLocation, errorKey, extraArgs);
 
     AnnotationMirror rhs = valueType.getPrimaryAnnotationInHierarchy(atypeFactory.UNKNOWNFORMAT);
     AnnotationMirror lhs = varType.getPrimaryAnnotationInHierarchy(atypeFactory.UNKNOWNFORMAT);
@@ -282,7 +282,7 @@ public class FormatterVisitor extends BaseTypeVisitor<FormatterAnnotatedTypeFact
 
       if (rhsArgTypes.length < lhsArgTypes.length) {
         checker.reportWarning(
-            valueTree, "format.missing.arguments", varType.toString(), valueType.toString());
+            errorLocation, "format.missing.arguments", varType.toString(), valueType.toString());
         result = false;
       }
     }

@@ -1342,8 +1342,9 @@ public abstract class GenericAnnotatedTypeFactory<
           members.sort(sortVariablesFirst);
         }
         for (Tree m : members) {
-          switch (TreeUtils.getKindRecordAsClass(m)) {
-            case CLASS: // Including RECORD
+          switch (m.getKind()) {
+            case CLASS:
+            case RECORD: // Including RECORD
             case ANNOTATION_TYPE:
             case INTERFACE:
             case ENUM:
@@ -1371,6 +1372,7 @@ public abstract class GenericAnnotatedTypeFactory<
               methods.add(method);
               break;
             case VARIABLE:
+              // A top-level variable is a field.
               VariableTree vt = (VariableTree) m;
               ExpressionTree initializer = vt.getInitializer();
               AnnotatedTypeMirror declaredType = getAnnotatedTypeLhs(vt);
@@ -1386,8 +1388,8 @@ public abstract class GenericAnnotatedTypeFactory<
                         new CFGStatement(vt, ct),
                         fieldValues,
                         null,
-                        true,
-                        true,
+                        /* isInitializationCode= */ true,
+                        /* updateInitializationStore= */ false,
                         isStatic,
                         capturedStore);
                 postAnalyze(cfg);

@@ -1,4 +1,5 @@
 import java.util.TreeMap;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
 
 /**
  * Resolution of outer classes must take substitution of generic types into account. Thanks to EMS
@@ -6,7 +7,7 @@ import java.util.TreeMap;
  *
  * <p>Also see regex/GenericsEnclosing for a test case for the Regex Checker.
  */
-public class GenericsEnclosing extends TreeMap<String, String> {
+public @Modifiable class GenericsEnclosing extends TreeMap<String, String> {
   class Inner {
     void foo() {
       put("string", "string".toString());
