@@ -477,8 +477,7 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         // default rules.
 
         switch (kind) {
-          case MINUS:
-          case PLUS:
+          case MINUS, PLUS -> {
             if (lht.getPrimaryAnnotations().equals(rht.getPrimaryAnnotations())) {
               // The sum or difference has the same units as both operands.
               type.replaceAnnotations(lht.getPrimaryAnnotations());
@@ -486,8 +485,8 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
               // otherwise it results in mixed
               type.replaceAnnotation(mixedUnits);
             }
-            break;
-          case DIVIDE:
+          }
+          case DIVIDE -> {
             if (lht.getPrimaryAnnotations().equals(rht.getPrimaryAnnotations())) {
               // If the units of the division match, return TOP
               type.replaceAnnotation(TOP);
@@ -503,8 +502,8 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
               // return mixed
               type.replaceAnnotation(mixedUnits);
             }
-            break;
-          case MULTIPLY:
+          }
+          case MULTIPLY -> {
             if (UnitsRelationsTools.hasNoUnits(lht)) {
               // any unit multiplied by a scalar keeps the unit
               type.replaceAnnotations(rht.getPrimaryAnnotations());
@@ -517,15 +516,12 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
               // return mixed
               type.replaceAnnotation(mixedUnits);
             }
-            break;
-          case REMAINDER:
-            // in modulo operation, it always returns the left unit regardless of what
-            // it is (unknown, or some unit)
-            type.replaceAnnotations(lht.getPrimaryAnnotations());
-            break;
-          default:
-            // Placeholders for unhandled binary operations
-            // Do nothing
+          }
+          case REMAINDER ->
+              // in modulo operation, it always returns the left unit regardless of what
+              // it is (unknown, or some unit)
+              type.replaceAnnotations(lht.getPrimaryAnnotations());
+          default -> {} // Placeholders for unhandled binary operations; do nothing
         }
       }
 
@@ -546,12 +542,13 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
       if (ur != null) {
         switch (kind) {
-          case DIVIDE:
+          case DIVIDE -> {
             return ur.division(lht, rht);
-          case MULTIPLY:
+          }
+          case MULTIPLY -> {
             return ur.multiplication(lht, rht);
-          default:
-            // Do nothing
+          }
+          default -> {} // Do nothing
         }
       }
       return null;
