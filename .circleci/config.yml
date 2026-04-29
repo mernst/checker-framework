@@ -5,7 +5,7 @@ jobs:
   # Only proceed to other jobs if canary_jobs passes.
   canary_jobs:
     docker:
-      - image: 'cimg/base:2026.03'
+      - image: 'cimg/base:2026.04'
     resource_class: small
     environment:
       CIRCLE_COMPARE_URL: << pipeline.project.git_url >>/compare/<< pipeline.git.base_revision >>..<<pipeline.git.revision>>
@@ -391,12 +391,23 @@ workflows:
             - junit_part1_jdk25
             - junit_part2_jdk25
             - nonjunit_jdk25
+            - inference_part1_jdk25
+            - inference_part2_jdk25
             - typecheck_part1_jdk25
             - typecheck_part2_jdk25
             - misc_jdk25
             - misc_jdk26
 
+      - junit_part1_jdk25
+      - junit_part2_jdk25
       - nonjunit_jdk25
+      - misc_jdk25
+      - misc_jdk26
+      - inference_part1_jdk25
+      - inference_part2_jdk25
+      - typecheck_part1_jdk25
+      - typecheck_part2_jdk25
+
       - misc_jdk17:
           requires:
             - canary_jobs
@@ -407,25 +418,23 @@ workflows:
             - canary_jobs
             - misc_jdk25
 
-      - misc_jdk25
-      - misc_jdk26:
+      - junit_jdk17:
           requires:
             - canary_jobs
+            - junit_part1_jdk25
+            - junit_part2_jdk25
 
-      - typecheck_part1_jdk25
-      - typecheck_part2_jdk25
+      - junit_jdk21:
+          requires:
+            - canary_jobs
+            - junit_part1_jdk25
+            - junit_part2_jdk25
 
       - junit_jdk26:
           requires:
             - canary_jobs
-
-      - inference_part1_jdk25:
-          requires:
-            - canary_jobs
-
-      - inference_part2_jdk25:
-          requires:
-            - canary_jobs
+            - junit_part1_jdk25
+            - junit_part2_jdk25
 
       # TEMPORARILY commented until Daikon release 5.8.24.
       # job_dependences_not_in_canary(canary_version, daikon_part1)
