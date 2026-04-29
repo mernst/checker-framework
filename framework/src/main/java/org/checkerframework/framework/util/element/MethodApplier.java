@@ -223,6 +223,8 @@ public class MethodApplier extends TargetedElementAnnotationApplier {
   /**
    * If the return type is a use of a type variable, first apply the bound annotations from the type
    * variable's declaration.
+   *
+   * @throws UnexpectedAnnotationLocationException if a location is invalid
    */
   private void applyTypeVarUseOnReturnType() throws UnexpectedAnnotationLocationException {
     new TypeVarUseApplier(methodType.getReturnType(), methodSymbol, typeFactory).extractAndApply();
