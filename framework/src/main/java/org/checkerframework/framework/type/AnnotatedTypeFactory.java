@@ -3517,23 +3517,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   /**
    * Returns the canonical annotation for the passed annotation. May return its argument.
    *
-   * <p>This method {@code canonicalAnnotation} is called by {@link
-   * AnnotatedTypeMirror#addAnnotation}, so it is called for every annotation added to a type.
-   *
-   * <p>This implementation handles when the passed annotation is an alias of another annotation.
-   * Subclasses can do additional work.
-   *
-   * @param a the qualifier to canonicalize
-   * @param tm the type that the qualifier applies to
-   * @return the canonical annotation, which may be the given annotation
-   */
-  public AnnotationMirror canonicalAnnotation(AnnotationMirror a, TypeMirror tm) {
-    return resolveAlias(a);
-  }
-
-  /**
-   * Returns the canonical annotation for the passed annotation. May return its argument.
-   *
    * <p>This overload is for annotations that will not be added to an {@link AnnotatedTypeMirror}.
    *
    * <p>This implementation handles when the passed annotation is an alias of another annotation.
@@ -3584,7 +3567,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * {@link #canonicalAnnotation(AnnotationMirror)} instead.
    *
    * @param a the qualifier to canonicalize
-   * @param tm the type the qualifier is applied to, or null
+   * @param tm the type that the qualifier is applied to, or null
    * @return the canonical annotation, which may be the given annotation
    */
   public AnnotationMirror canonicalAnnotation(AnnotationMirror a, @Nullable TypeMirror tm) {
