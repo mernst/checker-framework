@@ -887,7 +887,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   @Override
   public Boolean visitPrimitive_Array(
       AnnotatedPrimitiveType subtype, AnnotatedArrayType supertype, Void p) {
-    // throw new Error("not yet implemented");
+    return isPrimarySubtype(subtype, supertype);
   }
 
   @Override
