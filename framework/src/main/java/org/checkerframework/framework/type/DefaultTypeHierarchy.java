@@ -545,9 +545,20 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   }
 
   @Override
+  public Boolean visitArray_Primitive(
+      AnnotatedArrayType subtype, AnnotatedPrimitiveType supertype, Void p) {
+    // throw new Error("not yet implemented");
+  }
+
+  @Override
   public Boolean visitArray_Typevar(
-      AnnotatedArrayType subtype, AnnotatedTypeVariable superType, Void p) {
-    return visitType_Typevar(subtype, superType);
+      AnnotatedArrayType subtype, AnnotatedTypeVariable supertype, Void p) {
+    return visitType_Typevar(subtype, supertype);
+  }
+
+  @Override
+  public Boolean visitArray_Union(AnnotatedArrayType subtype, Object supertype, Void p) {
+    // throw new Error("not yet implemented");
   }
 
   @Override
@@ -711,7 +722,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
       unboxedType = subtype.atypeFactory.getUnboxedType(subtype);
     } catch (IllegalArgumentException ex) {
       throw new BugInCF(
-          "DefaultTypeHierarchy: subtype isn't a boxed type: subtype: %s superType: %s",
+          "DefaultTypeHierarchy: subtype isn't a boxed type: subtype: %s supertype: %s",
           subtype, supertype);
     }
     return isPrimarySubtype(unboxedType, supertype);
@@ -745,6 +756,12 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
 
   // ------------------------------------------------------------------------
   // Intersection as subtype
+
+  @Override
+  public Boolean visitIntersection_Array(
+      AnnotatedIntersectionType subtype, AnnotatedArrayType supertype, Void p) {
+    // throw new Error("not yet implemented");
+  }
 
   @Override
   public Boolean visitIntersection_Declared(
@@ -796,6 +813,12 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   public Boolean visitIntersection_Typevar(
       AnnotatedIntersectionType subtype, AnnotatedTypeVariable supertype, Void p) {
     return visitIntersection_Type(subtype, supertype);
+  }
+
+  @Override
+  public Boolean visitIntersection_Union(
+      AnnotatedIntersectionType subtype, AnnotatedUnionType supertype, Void p) {
+    // throw new Error("not yet implemented");
   }
 
   @Override
@@ -862,6 +885,12 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   // Primitive as subtype
 
   @Override
+  public Boolean visitPrimitive_Array(
+      AnnotatedPrimitiveType subtype, AnnotatedArrayType supertype, Void p) {
+    // throw new Error("not yet implemented");
+  }
+
+  @Override
   public Boolean visitPrimitive_Declared(
       AnnotatedPrimitiveType subtype, AnnotatedDeclaredType supertype, Void p) {
     AnnotatedTypeFactory atypeFactory = subtype.atypeFactory;
@@ -885,6 +914,12 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   }
 
   @Override
+  public Boolean visitPrimitive_Null(
+      AnnotatedPrimitiveType subtype, AnnotatedNullType supertype, Void p) {
+    // throw new Error("not yet implemented");
+  }
+
+  @Override
   public Boolean visitPrimitive_Primitive(
       AnnotatedPrimitiveType subtype, AnnotatedPrimitiveType supertype, Void p) {
     return isPrimarySubtype(subtype, supertype);
@@ -897,6 +932,12 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   }
 
   @Override
+  public Boolean visitPrimitive_Union(
+      AnnotatedPrimitiveType subtype, AnnotatedUnionType supertype, Void p) {
+    // throw new Error("not yet implemented");
+  }
+
+  @Override
   public Boolean visitPrimitive_Wildcard(
       AnnotatedPrimitiveType subtype, AnnotatedWildcardType supertype, Void p) {
     if (shouldIgnoreRawTypeArgs(supertype)) {
@@ -906,64 +947,6 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
     // checker/tests/nullness/RawAndPrimitive.java).  This can also occur because we don't box
     // primitives when we should and don't capture convert.
     return isPrimarySubtype(subtype, supertype.getSuperBound());
-  }
-
-  // ------------------------------------------------------------------------
-  // Union as subtype
-
-  @Override
-  public Boolean visitUnion_Declared(
-      AnnotatedUnionType subtype, AnnotatedDeclaredType supertype, Void p) {
-    return visitUnion_Type(subtype, supertype);
-  }
-
-  @Override
-  public Boolean visitUnion_Intersection(
-      AnnotatedUnionType subtype, AnnotatedIntersectionType supertype, Void p) {
-    // For example:
-    // <T extends Throwable & Cloneable> void method(T param) {}
-    // ...
-    // catch (Exception1 | Exception2 union) { // Assuming Exception1 and Exception2 implement
-    // Cloneable
-    //   method(union);
-    // This case happens when checking that the inferred type argument is a subtype of the
-    // declared type argument of method.
-    // See org.checkerframework.common.basetype.BaseTypeVisitor#checkTypeArguments
-    return visitUnion_Type(subtype, supertype);
-  }
-
-  @Override
-  public Boolean visitUnion_Typevar(
-      AnnotatedUnionType subtype, AnnotatedTypeVariable supertype, Void p) {
-    // For example:
-    // } catch (RuntimeException | IOException e) {
-    //     ArrayList<? super Exception> lWildcard = new ArrayList<>();
-    //     lWildcard.add(e);
-
-    return visitType_Typevar(subtype, supertype);
-  }
-
-  @Override
-  public Boolean visitUnion_Union(
-      AnnotatedUnionType subtype, AnnotatedUnionType supertype, Void p) {
-    // For example:
-    // <T> void method(T param) {}
-    // ...
-    // catch (Exception1 | Exception2 union) {
-    //   method(union);
-    // This case happens when checking the arguments to method after type variable substitution
-    return visitUnion_Type(subtype, supertype);
-  }
-
-  @Override
-  public Boolean visitUnion_Wildcard(
-      AnnotatedUnionType subtype, AnnotatedWildcardType supertype, Void p) {
-    // For example:
-    // } catch (RuntimeException | IOException e) {
-    //     ArrayList<? super Exception> lWildcard = new ArrayList<>();
-    //     lWildcard.add(e);
-
-    return visitType_Wildcard(subtype, supertype);
   }
 
   // ------------------------------------------------------------------------
@@ -1064,13 +1047,94 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   }
 
   @Override
+  public Boolean visitTypevar_Union(
+      AnnotatedTypeVariable subtype, AnnotatedUnionType supertype, Void p) {
+    // throw new Error("not yet implemented");
+  }
+
+  @Override
   public Boolean visitTypevar_Wildcard(
       AnnotatedTypeVariable subtype, AnnotatedWildcardType supertype, Void p) {
     return visitType_Wildcard(subtype, supertype);
   }
 
   // ------------------------------------------------------------------------
-  // wildcard as subtype
+  // Union as subtype
+
+  @Override
+  public Boolean visitUnion_Array(
+      AnnotatedUnionType subtype, AnnotatedArrayType supertype, Void p) {
+    // throw new Error("not yet implemented");
+  }
+
+  @Override
+  public Boolean visitUnion_Declared(
+      AnnotatedUnionType subtype, AnnotatedDeclaredType supertype, Void p) {
+    return visitUnion_Type(subtype, supertype);
+  }
+
+  @Override
+  public Boolean visitUnion_Intersection(
+      AnnotatedUnionType subtype, AnnotatedIntersectionType supertype, Void p) {
+    // For example:
+    // <T extends Throwable & Cloneable> void method(T param) {}
+    // ...
+    // catch (Exception1 | Exception2 union) { // Assuming Exception1 and Exception2 implement
+    // Cloneable
+    //   method(union);
+    // This case happens when checking that the inferred type argument is a subtype of the
+    // declared type argument of method.
+    // See org.checkerframework.common.basetype.BaseTypeVisitor#checkTypeArguments
+    return visitUnion_Type(subtype, supertype);
+  }
+
+  @Override
+  public Boolean visitUnion_Null(AnnotatedUnionType subtype, AnnotatedNullType supertype, Void p) {
+    // throw new Error("not yet implemented");
+  }
+
+  @Override
+  public Boolean visitUnion_Primitive(
+      AnnotatedUnionType subtype, AnnotatedPrimitiveType supertype, Void p) {
+    // throw new Error("not yet implemented");
+  }
+
+  @Override
+  public Boolean visitUnion_Typevar(
+      AnnotatedUnionType subtype, AnnotatedTypeVariable supertype, Void p) {
+    // For example:
+    // } catch (RuntimeException | IOException e) {
+    //     ArrayList<? super Exception> lWildcard = new ArrayList<>();
+    //     lWildcard.add(e);
+
+    return visitType_Typevar(subtype, supertype);
+  }
+
+  @Override
+  public Boolean visitUnion_Union(
+      AnnotatedUnionType subtype, AnnotatedUnionType supertype, Void p) {
+    // For example:
+    // <T> void method(T param) {}
+    // ...
+    // catch (Exception1 | Exception2 union) {
+    //   method(union);
+    // This case happens when checking the arguments to method after type variable substitution
+    return visitUnion_Type(subtype, supertype);
+  }
+
+  @Override
+  public Boolean visitUnion_Wildcard(
+      AnnotatedUnionType subtype, AnnotatedWildcardType supertype, Void p) {
+    // For example:
+    // } catch (RuntimeException | IOException e) {
+    //     ArrayList<? super Exception> lWildcard = new ArrayList<>();
+    //     lWildcard.add(e);
+
+    return visitType_Wildcard(subtype, supertype);
+  }
+
+  // ------------------------------------------------------------------------
+  // Wildcard as subtype
 
   @Override
   public Boolean visitWildcard_Array(
@@ -1106,6 +1170,12 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   }
 
   @Override
+  public Boolean visitWildcard_Null(
+      AnnotatedWildcardType subtype, AnnotatedNullType supertype, Void p) {
+    // throw new Error("not yet implemented");
+  }
+
+  @Override
   public Boolean visitWildcard_Primitive(
       AnnotatedWildcardType subtype, AnnotatedPrimitiveType supertype, Void p) {
     if (subtype.isTypeArgOfRawType()) {
@@ -1118,6 +1188,12 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   public Boolean visitWildcard_Typevar(
       AnnotatedWildcardType subtype, AnnotatedTypeVariable supertype, Void p) {
     return visitWildcard_Type(subtype, supertype);
+  }
+
+  @Override
+  public Boolean visitWildcard_Union(
+      AnnotatedWildcardType subtype, AnnotatedUnionType supertype, Void p) {
+    // throw new Error("not yet implemented");
   }
 
   @Override
