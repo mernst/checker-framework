@@ -950,7 +950,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   }
 
   // ------------------------------------------------------------------------
-  // typevar as subtype
+  // Typevar as subtype
 
   @Override
   public Boolean visitTypevar_Array(
