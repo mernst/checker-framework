@@ -547,7 +547,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   @Override
   public Boolean visitArray_Primitive(
       AnnotatedArrayType subtype, AnnotatedPrimitiveType supertype, Void p) {
-    // throw new Error("not yet implemented");
+    return isPrimarySubtype(subtype, supertype);
   }
 
   @Override
@@ -558,7 +558,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
 
   @Override
   public Boolean visitArray_Union(AnnotatedArrayType subtype, Object supertype, Void p) {
-    // throw new Error("not yet implemented");
+    throw new Error("not yet implemented");
   }
 
   @Override
@@ -760,7 +760,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   @Override
   public Boolean visitIntersection_Array(
       AnnotatedIntersectionType subtype, AnnotatedArrayType supertype, Void p) {
-    // throw new Error("not yet implemented");
+    throw new Error("not yet implemented");
   }
 
   @Override
@@ -818,7 +818,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   @Override
   public Boolean visitIntersection_Union(
       AnnotatedIntersectionType subtype, AnnotatedUnionType supertype, Void p) {
-    // throw new Error("not yet implemented");
+    throw new Error("not yet implemented");
   }
 
   @Override
@@ -916,7 +916,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   @Override
   public Boolean visitPrimitive_Null(
       AnnotatedPrimitiveType subtype, AnnotatedNullType supertype, Void p) {
-    // throw new Error("not yet implemented");
+    throw new Error("not yet implemented");
   }
 
   @Override
@@ -934,7 +934,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   @Override
   public Boolean visitPrimitive_Union(
       AnnotatedPrimitiveType subtype, AnnotatedUnionType supertype, Void p) {
-    // throw new Error("not yet implemented");
+    throw new Error("not yet implemented");
   }
 
   @Override
@@ -1049,7 +1049,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   @Override
   public Boolean visitTypevar_Union(
       AnnotatedTypeVariable subtype, AnnotatedUnionType supertype, Void p) {
-    // throw new Error("not yet implemented");
+    throw new Error("not yet implemented");
   }
 
   @Override
@@ -1064,7 +1064,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   @Override
   public Boolean visitUnion_Array(
       AnnotatedUnionType subtype, AnnotatedArrayType supertype, Void p) {
-    // throw new Error("not yet implemented");
+    throw new Error("not yet implemented");
   }
 
   @Override
@@ -1090,13 +1090,13 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
 
   @Override
   public Boolean visitUnion_Null(AnnotatedUnionType subtype, AnnotatedNullType supertype, Void p) {
-    // throw new Error("not yet implemented");
+    throw new Error("not yet implemented");
   }
 
   @Override
   public Boolean visitUnion_Primitive(
       AnnotatedUnionType subtype, AnnotatedPrimitiveType supertype, Void p) {
-    // throw new Error("not yet implemented");
+    return visitUnion_Type(subtype, supertype);
   }
 
   @Override
@@ -1172,7 +1172,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   @Override
   public Boolean visitWildcard_Null(
       AnnotatedWildcardType subtype, AnnotatedNullType supertype, Void p) {
-    // throw new Error("not yet implemented");
+    throw new Error("not yet implemented");
   }
 
   @Override
@@ -1193,7 +1193,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   @Override
   public Boolean visitWildcard_Union(
       AnnotatedWildcardType subtype, AnnotatedUnionType supertype, Void p) {
-    // throw new Error("not yet implemented");
+    throw new Error("not yet implemented");
   }
 
   @Override
