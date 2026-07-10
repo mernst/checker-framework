@@ -557,7 +557,8 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
   }
 
   @Override
-  public Boolean visitArray_Union(AnnotatedArrayType subtype, Object supertype, Void p) {
+  public Boolean visitArray_Union(
+      AnnotatedArrayType subtype, AnnotatedUnionType supertype, Void p) {
     throw new Error("not yet implemented");
   }
 
