@@ -123,10 +123,10 @@ import org.checkerframework.javacutil.TypeSystemError;
 import org.checkerframework.javacutil.TypesUtils;
 import org.checkerframework.javacutil.UserError;
 import org.plumelib.reflection.Signatures;
-import org.plumelib.util.CollectionsPlume;
+import org.plumelib.util.CollectionsP;
 import org.plumelib.util.IPair;
 import org.plumelib.util.MapsP;
-import org.plumelib.util.SystemPlume;
+import org.plumelib.util.SystemP;
 
 /**
  * A factory that extends {@link AnnotatedTypeFactory} to optionally use flow-sensitive qualifier
@@ -511,7 +511,7 @@ public abstract class GenericAnnotatedTypeFactory<
   /**
    * Returns an immutable set of the <em>monotonic</em> type qualifiers supported by this checker.
    *
-   * @return the monotonic type qualifiers supported this processor, or an empty set if none
+   * @return the monotonic type qualifiers supported by this processor, or an empty set if none
    * @see MonotonicQualifier
    */
   public final Set<Class<? extends Annotation>> getSupportedMonotonicTypeQualifiers() {
@@ -1130,9 +1130,7 @@ public abstract class GenericAnnotatedTypeFactory<
   protected final IdentityHashMap<MethodTree, List<IPair<ReturnNode, TransferResult<Value, Store>>>>
       returnStatementStores;
 
-  /**
-   * A mapping from methods to their a list with all return statements and the corresponding store.
-   */
+  /** A mapping from a method invocation to its corresponding store. */
   protected IdentityHashMap<MethodInvocationTree, Store> methodInvocationStores;
 
   /**
@@ -1514,7 +1512,7 @@ public abstract class GenericAnnotatedTypeFactory<
         lambdaToCFG.put(lambda, cfgLambda);
 
         List<AnnotationMirrorSet> returnedExpressionAnnos =
-            CollectionsPlume.mapList(
+            CollectionsP.mapList(
                 tree -> getAnnotatedType(tree).getPrimaryAnnotations(),
                 TreeUtils.getReturnedExpressions(lambda));
         List<AnnotationMirrorSet> prevReturnedExpressionAnnos = lambdaToResultTypes.get(lambda);
@@ -2468,7 +2466,7 @@ public abstract class GenericAnnotatedTypeFactory<
   private static void log(String format, Object... args) {
     if (debug) {
       System.out.flush();
-      SystemPlume.sleep(1); // logging can interleave with typechecker output
+      SystemP.sleep(1); // logging can interleave with typechecker output
       System.out.printf(format, args);
     }
   }
@@ -2613,8 +2611,7 @@ public abstract class GenericAnnotatedTypeFactory<
         return false;
       }
 
-      default ->
-          throw new BugInCF("isRelevantHelper(%s): Unexpected TypeKind %s", tm, tm.getKind());
+      default -> throw new BugInCF("isRelevantImpl(%s): Unexpected TypeKind %s", tm, tm.getKind());
     }
   }
 
@@ -3098,8 +3095,8 @@ public abstract class GenericAnnotatedTypeFactory<
    * @param kind the kind of {@code contractAnnotation}
    * @param contractAnnotation a {@link RequiresQualifier}, {@link EnsuresQualifier}, or {@link
    *     EnsuresQualifierIf}
-   * @return the {@code result} element of {@code contractAnnotation}, or null if it doesn't have a
-   *     {@code result} element
+   * @return the {@code expression} or {@code value} element of {@code contractAnnotation}, or null
+   *     if it doesn't have one
    */
   public @Nullable List<String> getContractExpressions(
       Contract.Kind kind, AnnotationMirror contractAnnotation) {
