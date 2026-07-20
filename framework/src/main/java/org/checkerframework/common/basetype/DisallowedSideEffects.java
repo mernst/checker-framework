@@ -16,53 +16,32 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.dataflow.expression.FieldAccess;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.JavaExpressionParseException;
+import org.checkerframework.dataflow.expression.ThisReference;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
-import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.util.StringToJavaExpression;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.plumelib.util.CollectionsP;
 import org.plumelib.util.IPair;
 import org.plumelib.util.UnionFind;
 
 /**
- * The set of expressions a method side-effects, beyond those listed in its {@link SideEffectsOnly}
- * annotation.
+ * Checks that a method side-effects no expression beyond those listed in its {@link
+ * SideEffectsOnly} annotation.
  */
 public class DisallowedSideEffects {
 
-  /** Creates an empty DisallowedSideEffects. */
-  public DisallowedSideEffects() {}
-
-  /** Expressions a method side-effects that are not in its {@link SideEffectsOnly} annotation. */
-  protected final List<IPair<Tree, JavaExpression>> exprs = new ArrayList<>(1);
-
-  /**
-   * Adds {@code t} and {@code javaExpr} as a pair to this.
-   *
-   * @param t the expression that is mutated
-   * @param javaExpr the corresponding Java expression
-   */
-  public void addExpr(Tree t, JavaExpression javaExpr) {
-    exprs.add(IPair.of(t, javaExpr));
+  /** This class is not instantiated; it only contains a static method. */
+  private DisallowedSideEffects() {
+    throw new AssertionError("Class DisallowedSideEffects cannot be instantiated.");
   }
-
-  /**
-   * Returns the expressions a method side-effects that are <b>not</b> listed in its {@link
-   * SideEffectsOnly} annotation.
-   *
-   * @return side-effected expressions, beyond what is in {@code @SideEffectsOnly}
-   */
-  public List<IPair<Tree, JavaExpression>> getExprs() {
-    return exprs;
-  }
-
-  // Static methods
 
   /**
    * Issues warnings about side effects beyond the {@code @SideEffectsOnly} annotation
@@ -81,10 +60,7 @@ public class DisallowedSideEffects {
         new DisallowedSideEffectsHelper(sideEffectsOnlyExpressions, checker);
     helper.scan(statement, null);
 
-    DisallowedSideEffects disallowedSideEffects = helper.disallowedSideEffects;
-    List<IPair<Tree, JavaExpression>> seOnlyIncorrectExprs = disallowedSideEffects.getExprs();
-
-    for (IPair<Tree, JavaExpression> s : seOnlyIncorrectExprs) {
+    for (IPair<Tree, JavaExpression> s : helper.disallowedExprs) {
       checker.reportError(
           s.first, "purity.incorrect.sideeffectsonly", methodTree.getName(), s.second.toString());
     }
@@ -95,8 +71,11 @@ public class DisallowedSideEffects {
    * annotation.
    */
   protected static class DisallowedSideEffectsHelper extends TreePathScanner<Void, Void> {
-    /** Result computed by DisallowedSideEffectsHelper. */
-    DisallowedSideEffects disallowedSideEffects = new DisallowedSideEffects();
+    /**
+     * The expressions the scanned method side-effects that are not listed in its {@link
+     * SideEffectsOnly} annotation, each paired with the tree that side-effects it.
+     */
+    final List<IPair<Tree, JavaExpression>> disallowedExprs = new ArrayList<>(1);
 
     /**
      * List of expressions specified as annotation arguments in a {@link SideEffectsOnly}
@@ -157,9 +136,9 @@ public class DisallowedSideEffects {
         // The invoked method modifies exactly what its annotation says it does.
         actualSideEffectedExprs = sideEffectsOnlyExpressionsAtCallSite(seOnlyAnnotation, node);
         if (actualSideEffectedExprs == null) {
-          // An expression in the annotation could not be parsed at the call site, and the parse
-          // error was reported.  Nothing is known about what the call modifies, so do not report
-          // further errors about it.
+          // An expression in the annotation could not be parsed at the call site, so nothing is
+          // known about what the call modifies.  The parse error is reported elsewhere; see
+          // `sideEffectsOnlyExpressionsAtCallSite`.
           return super.visitMethodInvocation(node, aVoid);
         }
       } else {
@@ -178,7 +157,7 @@ public class DisallowedSideEffects {
       }
       actualSideEffectedExprs.stream()
           .filter(this::isDisallowedSideEffectedExpression)
-          .forEach(expr -> disallowedSideEffects.addExpr(node, expr));
+          .forEach(expr -> disallowedExprs.add(IPair.of(node, expr)));
       return super.visitMethodInvocation(node, aVoid);
     }
 
@@ -186,10 +165,10 @@ public class DisallowedSideEffects {
      * Returns the expressions that the invoked method side-effects, according to its {@link
      * SideEffectsOnly} annotation, view-adapted to the given call site.
      *
-     * <p>Returns null if an expression in the annotation cannot be parsed at the call site, in
-     * which case the parse error has been reported. (The expression parses at the method
-     * declaration, because {@code BaseTypeVisitor.checkPurityAnnotations} verified that, but it
-     * might not parse at the call site.)
+     * <p>Returns null if an expression in the annotation cannot be parsed at the call site. This
+     * method does not report the parse error, because {@link
+     * org.checkerframework.framework.flow.CFAbstractAnalysis#getSideEffectsOnlyExpressions} already
+     * reports it at the same call site.
      *
      * @param seOnlyAnnotation the {@link SideEffectsOnly} annotation on the invoked method
      * @param methodInvok the call site to which the expressions are view-adapted
@@ -205,7 +184,6 @@ public class DisallowedSideEffects {
         try {
           result.add(StringToJavaExpression.atMethodInvocation(st, methodInvok, checker));
         } catch (JavaExpressionParseException ex) {
-          checker.report(methodInvok, new DiagMessage(ex));
           return null;
         }
       }
@@ -265,6 +243,8 @@ public class DisallowedSideEffects {
      * <ul>
      *   <li>The expression is assignable by other code; equivalently, the assignment is visible
      *       outside the method being checked. (Assigning to a local variable is not.)
+     *   <li>The expression is not a field of the object under construction, in the sense of {@link
+     *       #isFieldOfObjectUnderConstruction}.
      *   <li>The expression is not covered by the {@link SideEffectsOnly} annotation, in the sense
      *       of {@link #isCoveredByAnnotation}.
      * </ul>
@@ -274,7 +254,28 @@ public class DisallowedSideEffects {
      *     the {@link SideEffectsOnly} annotation
      */
     private boolean isDisallowedAssignmentTarget(JavaExpression expr) {
-      return expr.isAssignableByOtherCode() && !isCoveredByAnnotation(expr);
+      return expr.isAssignableByOtherCode()
+          && !isFieldOfObjectUnderConstruction(expr)
+          && !isCoveredByAnnotation(expr);
+    }
+
+    /**
+     * Returns true if the given expression is a field of the object that the enclosing constructor
+     * is constructing; that is, the expression is a field access whose receiver is {@code this},
+     * and the code being checked is in a constructor.
+     *
+     * <p>Assigning such a field is not an externally-visible side effect, because no other code can
+     * observe the object until the constructor returns. A {@code @SideEffectFree} constructor may
+     * assign its own fields, and so may a {@code @SideEffectsOnly} one, without listing {@code
+     * this}.
+     *
+     * @param expr the expression that is assigned to
+     * @return true if the given expression is a field of the object under construction
+     */
+    private boolean isFieldOfObjectUnderConstruction(JavaExpression expr) {
+      return expr instanceof FieldAccess fieldAccess
+          && fieldAccess.getReceiver() instanceof ThisReference
+          && TreePathUtil.inConstructor(getCurrentPath());
     }
 
     /**
@@ -302,7 +303,7 @@ public class DisallowedSideEffects {
       JavaExpression lhs = JavaExpression.fromTree(node.getVariable());
       JavaExpression rhs = JavaExpression.fromTree(node.getExpression());
       if (isDisallowedAssignmentTarget(lhs)) {
-        disallowedSideEffects.addExpr(node, lhs);
+        disallowedExprs.add(IPair.of(node, lhs));
       }
       aliasedExpressions.union(lhs, rhs);
       return super.visitAssignment(node, aVoid);
@@ -328,7 +329,7 @@ public class DisallowedSideEffects {
         case POSTFIX_INCREMENT, POSTFIX_DECREMENT, PREFIX_INCREMENT, PREFIX_DECREMENT -> {
           JavaExpression operand = JavaExpression.fromTree(node.getExpression());
           if (isDisallowedAssignmentTarget(operand)) {
-            disallowedSideEffects.addExpr(node, operand);
+            disallowedExprs.add(IPair.of(node, operand));
           }
         }
         default -> {}
@@ -342,7 +343,7 @@ public class DisallowedSideEffects {
       // because the rhs expression uses the lhs.
       JavaExpression lhs = JavaExpression.fromTree(node.getVariable());
       if (isDisallowedAssignmentTarget(lhs)) {
-        disallowedSideEffects.addExpr(node, lhs);
+        disallowedExprs.add(IPair.of(node, lhs));
       }
       return super.visitCompoundAssignment(node, aVoid);
     }

@@ -1196,6 +1196,32 @@ If a method has no \refqualclass{dataflow/qual}{SideEffectsOnly}
 or \refqualclass{dataflow/qual}{SideEffectFree} annotation, then the Checker Framework
 assumes that the method may side-effect any expressions (including fields and arguments).
 
+\<@SideEffectsOnly> may also be written on a constructor.  There, the annotation does
+not describe the object being constructed:  a constructor may always assign the fields
+of the object that it is constructing, because no other code can observe that object
+until the constructor returns.  The annotation's expressions constrain the
+constructor's other side effects, such as those on its formal parameters or on static
+state.
+
+Checking of \<@SideEffectsOnly> (Section~\ref{purity-trusted}) uses an approximate
+alias analysis:  it treats two expressions as possibly aliased only when an assignment
+relating them appears in the method body, and it never concludes that two expressions
+have stopped being aliased.  For example, in
+
+\begin{Verbatim}
+  @SideEffectsOnly("#1")
+  void m(List<String> a, List<String> b) {
+    List<String> t = a;
+    t = b;
+    t.add("x");  // should be an error, but is not reported
+  }
+\end{Verbatim}
+
+\noindent
+\<t> is still considered to be a possible alias of \<a>, so mutating it is permitted
+even though \<t> is \<b> at that point.  The errors of this approximation are false
+negatives:  some side effects that the annotation does not permit are accepted.
+
 
 \subsubsectionAndLabel{Deterministic methods}{type-refinement-determinism}
 

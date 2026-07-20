@@ -1,0 +1,12 @@
+// The `@SideEffectsOnly` expression below cannot be parsed.  The error is not reported at the
+// declaration, which is in bytecode rather than under compilation, but at each call site; see
+// UnparseableAtUseSite.java.
+
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
+
+package java.util;
+
+class StringJoiner {
+  @SideEffectsOnly("noSuchExpression")
+  StringJoiner add(CharSequence newElement);
+}

@@ -12,7 +12,13 @@ public class SideEffectsOnlyTest extends CheckerFrameworkPerDirectoryTest {
    * @param testFiles the files containing test code, which will be type-checked
    */
   public SideEffectsOnlyTest(List<File> testFiles) {
-    super(testFiles, TaintingChecker.class, "sideeffectsonly", "-AcheckPurityAnnotations");
+    super(
+        testFiles,
+        TaintingChecker.class,
+        "sideeffectsonly",
+        "-AcheckPurityAnnotations",
+        // For UnparseableAtUseSite.java.
+        "-Astubs=tests/sideeffectsonly/unparseable-use-site.astub");
   }
 
   @Parameters

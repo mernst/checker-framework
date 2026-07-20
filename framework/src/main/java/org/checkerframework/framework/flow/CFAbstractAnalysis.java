@@ -169,8 +169,9 @@ public abstract class CFAbstractAnalysis<
    * <p>Also returns null if any of the annotation's expressions cannot be parsed at the call site.
    * Null means "the method might side-effect anything", which is the conservative result; returning
    * a list that omits the unparseable expression would treat the method as side-effecting
-   * <em>less</em> than it was declared to. The parse error itself is reported at the method
-   * declaration by {@code BaseTypeVisitor.checkPurityAnnotations}.
+   * <em>less</em> than it was declared to. The parse error is reported at the call site, which is
+   * the only place a user can see it when the annotation is on a method that is not being compiled
+   * (for example, one whose annotation comes from a stub file).
    *
    * <p>The result is cached, because dataflow calls this once per iteration per call site and
    * parsing an expression is not cheap. Clients should not side-effect the returned value, which is
@@ -220,9 +221,11 @@ public abstract class CFAbstractAnalysis<
             StringToJavaExpression.atMethodInvocation(st, methodInvocationNode, checker);
         seOnlyExpressions.add(exprJe);
       } catch (JavaExpressionParseException ex) {
-        // Because the result is cached, this is reported once per call site rather than once per
-        // dataflow iteration.
-        checker.report(method, new DiagMessage(ex));
+        // The error is reported at the call site rather than at the method declaration, because
+        // the declaration might not be under compilation; the annotation might come from a stub
+        // file or from bytecode.  Because the result is cached, this is reported once per call
+        // site rather than once per dataflow iteration.
+        checker.report(methodInvocationNode.getTree(), new DiagMessage(ex));
         return null;
       }
     }
