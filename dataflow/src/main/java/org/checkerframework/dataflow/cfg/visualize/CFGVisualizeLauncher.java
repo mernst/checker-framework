@@ -334,6 +334,12 @@ public final class CFGVisualizeLauncher {
         System.err.println("dot exited with status " + exitCode);
       }
     } catch (InterruptedException | IOException e) {
+      if (e.getMessage().contains("Exec failed, error: 2 (No such file or directory)")) {
+        System.out.printf("Cannot find `dot` program.");
+        System.out.printf("PATH=%s%n", System.getenv("PATH"));
+        System.out.printf(
+            "Contents of /usr/bin/: %s%n", Arrays.toString(new File("/usr/bin/").listFiles()));
+      }
       e.printStackTrace();
       System.exit(1);
     }
