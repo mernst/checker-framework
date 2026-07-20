@@ -24,38 +24,15 @@ import org.plumelib.util.IPair;
 import org.plumelib.util.UnionFind;
 
 /**
- * The set of expressions a method side-effects, beyond those listed in its {@link SideEffectsOnly}
+ * Warns about expressions a method side-effects, beyond those listed in its {@link SideEffectsOnly}
  * annotation.
  */
 public class DisallowedSideEffects {
 
-  /** Creates an empty DisallowedSideEffects. */
-  public DisallowedSideEffects() {}
-
-  /** Expressions a method side-effects that are not in its {@link SideEffectsOnly} annotation. */
-  protected final List<IPair<Tree, JavaExpression>> exprs = new ArrayList<>(1);
-
-  /**
-   * Adds {@code t} and {@code javaExpr} as a pair to this.
-   *
-   * @param t the expression that is mutated
-   * @param javaExpr the corresponding Java expression
-   */
-  public void addExpr(Tree t, JavaExpression javaExpr) {
-    exprs.add(IPair.of(t, javaExpr));
+  /** This class is not instantiated; it is a collection of static methods. */
+  private DisallowedSideEffects() {
+    throw new Error("Do not instantiate.");
   }
-
-  /**
-   * Returns the expressions a method side-effects that are <b>not</b> listed in its {@link
-   * SideEffectsOnly} annotation.
-   *
-   * @return side-effected expressions, beyond what is in {@code @SideEffectsOnly}
-   */
-  public List<IPair<Tree, JavaExpression>> getExprs() {
-    return exprs;
-  }
-
-  // Static methods
 
   /**
    * Issues warnings about side effects beyond the {@code @SideEffectsOnly} annotation
@@ -74,10 +51,7 @@ public class DisallowedSideEffects {
         new DisallowedSideEffectsHelper(sideEffectsOnlyExpressions, checker);
     helper.scan(statement, null);
 
-    DisallowedSideEffects disallowedSideEffects = helper.disallowedSideEffects;
-    List<IPair<Tree, JavaExpression>> seOnlyIncorrectExprs = disallowedSideEffects.getExprs();
-
-    for (IPair<Tree, JavaExpression> s : seOnlyIncorrectExprs) {
+    for (IPair<Tree, JavaExpression> s : helper.disallowedSideEffects) {
       checker.reportError(
           s.first, "purity.incorrect.sideeffectsonly", methodTree.getName(), s.second.toString());
     }
@@ -88,8 +62,12 @@ public class DisallowedSideEffects {
    * annotation.
    */
   protected static class DisallowedSideEffectsHelper extends TreePathScanner<Void, Void> {
-    /** Result computed by DisallowedSideEffectsHelper. */
-    DisallowedSideEffects disallowedSideEffects = new DisallowedSideEffects();
+    /**
+     * Result computed by DisallowedSideEffectsHelper: the expressions the method side-effects that
+     * are <b>not</b> listed in its {@link SideEffectsOnly} annotation, each paired with the tree
+     * that side-effects it.
+     */
+    final List<IPair<Tree, JavaExpression>> disallowedSideEffects = new ArrayList<>(1);
 
     /**
      * List of expressions specified as annotation arguments in a {@link SideEffectsOnly}
@@ -156,7 +134,7 @@ public class DisallowedSideEffects {
       }
       actualSideEffectedExprs.stream()
           .filter(this::isDisallowedSideEffectedExpression)
-          .forEach(expr -> disallowedSideEffects.addExpr(node, expr));
+          .forEach(expr -> disallowedSideEffects.add(IPair.of(node, expr)));
       return super.visitMethodInvocation(node, aVoid);
     }
 
@@ -250,7 +228,7 @@ public class DisallowedSideEffects {
       JavaExpression lhs = JavaExpression.fromTree(node.getVariable());
       JavaExpression rhs = JavaExpression.fromTree(node.getExpression());
       if (isDisallowedAssignmentTarget(lhs)) {
-        disallowedSideEffects.addExpr(node, lhs);
+        disallowedSideEffects.add(IPair.of(node, lhs));
       }
       aliasedExpressions.union(lhs, rhs);
       return super.visitAssignment(node, aVoid);
@@ -276,7 +254,7 @@ public class DisallowedSideEffects {
         case POSTFIX_INCREMENT, POSTFIX_DECREMENT, PREFIX_INCREMENT, PREFIX_DECREMENT -> {
           JavaExpression operand = JavaExpression.fromTree(node.getExpression());
           if (isDisallowedAssignmentTarget(operand)) {
-            disallowedSideEffects.addExpr(node, operand);
+            disallowedSideEffects.add(IPair.of(node, operand));
           }
         }
         default -> {}
@@ -290,7 +268,7 @@ public class DisallowedSideEffects {
       // because the rhs expression uses the lhs.
       JavaExpression lhs = JavaExpression.fromTree(node.getVariable());
       if (isDisallowedAssignmentTarget(lhs)) {
-        disallowedSideEffects.addExpr(node, lhs);
+        disallowedSideEffects.add(IPair.of(node, lhs));
       }
       return super.visitCompoundAssignment(node, aVoid);
     }
