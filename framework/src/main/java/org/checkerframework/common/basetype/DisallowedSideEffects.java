@@ -12,12 +12,19 @@ import com.sun.source.util.TreePath;
 import com.sun.source.util.TreePathScanner;
 import java.util.ArrayList;
 import java.util.List;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.expression.JavaExpression;
+import org.checkerframework.dataflow.expression.JavaExpressionParseException;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
+import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
+import org.checkerframework.framework.util.StringToJavaExpression;
+import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.plumelib.util.CollectionsP;
 import org.plumelib.util.IPair;
@@ -107,6 +114,9 @@ public class DisallowedSideEffects {
     /** The checker to use. */
     BaseTypeChecker checker;
 
+    /** The {@code SideEffectsOnly.value} argument/element. */
+    ExecutableElement sideEffectsOnlyValueElement;
+
     /**
      * Creates a new DisallowedSideEffectsHelper.
      *
@@ -118,6 +128,10 @@ public class DisallowedSideEffects {
         List<JavaExpression> sideEffectsOnlyExpressions, BaseTypeChecker checker) {
       this.sideEffectsOnlyExpressionsFromAnnotation = sideEffectsOnlyExpressions;
       this.checker = checker;
+      // TreeUtils.getMethod throws BugInCF if there is not exactly one match, so no null check.
+      this.sideEffectsOnlyValueElement =
+          TreeUtils.getMethod(
+              SideEffectsOnly.class, "value", 0, checker.getProcessingEnvironment());
     }
 
     @Override
@@ -135,18 +149,26 @@ public class DisallowedSideEffects {
         return super.visitMethodInvocation(node, aVoid);
       }
 
-      boolean isInvokedMethodMarkedWithSideEffectsOnly =
-          atypeFactory.getDeclAnnotation(invokedElem, SideEffectsOnly.class) != null;
+      AnnotationMirror seOnlyAnnotation =
+          atypeFactory.getDeclAnnotation(invokedElem, SideEffectsOnly.class);
 
-      List<JavaExpression> actualSideEffectedExprs =
-          this.getJavaExpressionsFromMethodInvocation(node);
-
-      // If the invoked method is NOT marked with @SideEffectsOnly, it may modify anything.
-      // TODO: This is unsound.  When the call has a receiver or arguments, the code below assumes
-      // that an unannotated method modifies only those.  In fact an unannotated method may also
-      // modify static state and any other state not reachable from its receiver and arguments.
-      if (!isInvokedMethodMarkedWithSideEffectsOnly) {
-        // What does it modify? Check the arguments for the method invocation.
+      List<JavaExpression> actualSideEffectedExprs;
+      if (seOnlyAnnotation != null) {
+        // The invoked method modifies exactly what its annotation says it does.
+        actualSideEffectedExprs = sideEffectsOnlyExpressionsAtCallSite(seOnlyAnnotation, node);
+        if (actualSideEffectedExprs == null) {
+          // An expression in the annotation could not be parsed at the call site, and the parse
+          // error was reported.  Nothing is known about what the call modifies, so do not report
+          // further errors about it.
+          return super.visitMethodInvocation(node, aVoid);
+        }
+      } else {
+        // The invoked method is NOT marked with @SideEffectsOnly, so it may modify anything.
+        // What does it modify?  Check the receiver and the arguments of the method invocation.
+        // TODO: This is unsound.  When the call has a receiver or arguments, this assumes that an
+        // unannotated method modifies only those.  In fact an unannotated method may also modify
+        // static state and any other state not reachable from its receiver and arguments.
+        actualSideEffectedExprs = this.getJavaExpressionsFromMethodInvocation(node);
         if (actualSideEffectedExprs.isEmpty()) {
           // The call has no receiver or arguments, so it might modify arbitrary state.
           // A different message key than `purity.incorrect.sideeffectsonly` is used because the
@@ -158,6 +180,36 @@ public class DisallowedSideEffects {
           .filter(this::isDisallowedSideEffectedExpression)
           .forEach(expr -> disallowedSideEffects.addExpr(node, expr));
       return super.visitMethodInvocation(node, aVoid);
+    }
+
+    /**
+     * Returns the expressions that the invoked method side-effects, according to its {@link
+     * SideEffectsOnly} annotation, view-adapted to the given call site.
+     *
+     * <p>Returns null if an expression in the annotation cannot be parsed at the call site, in
+     * which case the parse error has been reported. (The expression parses at the method
+     * declaration, because {@code BaseTypeVisitor.checkPurityAnnotations} verified that, but it
+     * might not parse at the call site.)
+     *
+     * @param seOnlyAnnotation the {@link SideEffectsOnly} annotation on the invoked method
+     * @param methodInvok the call site to which the expressions are view-adapted
+     * @return the expressions the invoked method side-effects, or null if one cannot be parsed
+     */
+    private @Nullable List<JavaExpression> sideEffectsOnlyExpressionsAtCallSite(
+        AnnotationMirror seOnlyAnnotation, MethodInvocationTree methodInvok) {
+      List<String> seOnlyExpressionStrings =
+          AnnotationUtils.getElementValueArray(
+              seOnlyAnnotation, sideEffectsOnlyValueElement, String.class);
+      List<JavaExpression> result = new ArrayList<>(seOnlyExpressionStrings.size());
+      for (String st : seOnlyExpressionStrings) {
+        try {
+          result.add(StringToJavaExpression.atMethodInvocation(st, methodInvok, checker));
+        } catch (JavaExpressionParseException ex) {
+          checker.report(methodInvok, new DiagMessage(ex));
+          return null;
+        }
+      }
+      return result;
     }
 
     /**
