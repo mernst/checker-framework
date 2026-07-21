@@ -22,8 +22,8 @@ import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TypesUtils;
-import org.plumelib.util.StringsP;
 
 /**
  * An implementation of an abstract value used by the Checker Framework
@@ -86,11 +86,8 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
     this.annotations = annotations;
     this.underlyingType = underlyingType;
 
-    assert validateSet(this.getAnnotations(), this.getUnderlyingType(), atypeFactory)
-        : "Encountered invalid type: "
-            + underlyingType
-            + " annotations: "
-            + StringsP.join(", ", annotations);
+    assert validateSet(annotations, underlyingType, atypeFactory)
+        : "Encountered invalid type: " + underlyingType + " annotations: " + annotations;
   }
 
   /**
@@ -116,6 +113,7 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
       AnnotationMirror anno = qualHierarchy.findAnnotationInHierarchy(annos, top);
       if (anno == null) {
         if (missingHierarchy == null) {
+          // TODO: Why not return false immediately here?
           missingHierarchy = new AnnotationMirrorSet();
         }
         missingHierarchy.add(top);
@@ -762,7 +760,13 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
       }
 
       AnnotatedTypeVariable aAtv = getTypeVar(aTypeMirror);
+      if (aAtv == null) {
+        throw new BugInCF("getTypeVar(%s) => null", aTypeMirror);
+      }
       AnnotatedTypeVariable bAtv = getTypeVar(bTypeMirror);
+      if (bAtv == null) {
+        throw new BugInCF("getTypeVar(%s) => null", bTypeMirror);
+      }
       AnnotationMirrorSet tops = qualHierarchy.getTopAnnotations();
       AnnotationMirrorSet combinedSets = new AnnotationMirrorSet();
       for (AnnotationMirror top : tops) {
