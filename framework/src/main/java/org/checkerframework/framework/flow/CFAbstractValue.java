@@ -88,11 +88,10 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
 
     assert hasAnnotationFromEveryHierarchy(annotations, underlyingType, atypeFactory)
         : "Encountered invalid type: "
-            + underlyingType
-            + " annotations: "
-            + annotations
-            + " missing hierarchies: "
-            + missingAnnotations(annotations, underlyingType, atypeFactory);
+            + (underlyingType + " [" + underlyingType.getClass().getSimpleName() + "]")
+            + (" annotations: " + annotations)
+            + (" missing hierarchies: "
+                + missingAnnotations(annotations, underlyingType, atypeFactory));
   }
 
   /**
