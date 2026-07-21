@@ -65,7 +65,11 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
   /** The underlying (Java) type in this abstract value. */
   protected final TypeMirror underlyingType;
 
-  /** The annotations in this abstract value. Its size is the same as the number of hierarchies. */
+  /**
+   * The annotations in this abstract value. Its size is the same as the number of hierarchies,
+   * except that it may be empty if, when creating this CFAbstractValue, true was passed for the
+   * {@code permitEmptyAnnotations} formal parameter.
+   */
   protected final AnnotationMirrorSet annotations;
 
   /**
@@ -107,7 +111,7 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
 
     assert permitEmptyAnnotations
             || hasAnnotationFromEveryHierarchy(annotations, underlyingType, atypeFactory)
-        : "Attempted to create incomplete type: "
+        : "Attempted to create incomplete CFAbstractValue: "
             + (underlyingType + " [" + underlyingType.getClass().getSimpleName() + "]")
             + (" annotations: " + annotations)
             + (" missing hierarchies: "
