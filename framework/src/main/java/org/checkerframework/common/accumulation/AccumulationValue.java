@@ -40,7 +40,7 @@ public class AccumulationValue extends CFAbstractValue<AccumulationValue> {
   private @Nullable Set<String> accumulatedValues = null;
 
   /**
-   * Creates a new CFAbstractValue.
+   * Creates a new AccumulationValue.
    *
    * @param analysis the analysis class this value belongs to
    * @param annotations the annotations in this abstract value
@@ -122,8 +122,7 @@ public class AccumulationValue extends CFAbstractValue<AccumulationValue> {
       return mostSpecific;
     } else if (this.getAnnotations().isEmpty()) {
       mostSpecific =
-          new AccumulationValue(
-              analysis, AnnotationMirrorSet.emptySet(), other.getUnderlyingType());
+          new AccumulationValue(analysis, AnnotationMirrorSet.emptySet(), this.getUnderlyingType());
       mostSpecific.addAccumulatedValues(this.accumulatedValues);
       mostSpecific.addAccumulatedValues(other.accumulatedValues);
       return mostSpecific;

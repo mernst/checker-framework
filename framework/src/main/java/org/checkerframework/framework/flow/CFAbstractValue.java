@@ -66,9 +66,10 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
   protected final TypeMirror underlyingType;
 
   /**
-   * The annotations in this abstract value. Its size is the same as the number of hierarchies,
-   * except that it may be empty if, when creating this CFAbstractValue, true was passed for the
-   * {@code permitEmptyAnnotations} formal parameter.
+   * The annotations in this abstract value. Its size is the same as the number of hierarchies, with
+   * two exceptions. First, some typekinds are excluded by {@link #canBeMissingAnnotations}. Second,
+   * it may be empty if, when creating this CFAbstractValue, true was passed for the {@code
+   * permitEmptyAnnotations} formal parameter.
    */
   protected final AnnotationMirrorSet annotations;
 
@@ -109,7 +110,7 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
     this.annotations = annotations;
     this.underlyingType = underlyingType;
 
-    assert permitEmptyAnnotations
+    assert (permitEmptyAnnotations && annotations.isEmpty())
             || hasAnnotationFromEveryHierarchy(annotations, underlyingType, atypeFactory)
         : "Attempted to create incomplete CFAbstractValue: "
             + (underlyingType + " [" + underlyingType.getClass().getSimpleName() + "]")
@@ -834,16 +835,20 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
         if (a != null && b != null) {
           result = combineTwoAnnotations(a, aTypeMirror, b, bTypeMirror, top);
         } else if (a != null) {
-          if (bAtv == null) {
+          if (!bAtvIsSet) {
             bAtv = getTypeVar(bTypeMirror);
-            if (bAtv == null) {
-              throw new BugInCF("getTypeVar(%s) => null", bTypeMirror);
-            }
+            bAtvIsSet = true;
+          }
+          if (bAtv == null) {
+            throw new BugInCF("getTypeVar(%s) => null", bTypeMirror);
           }
           result = combineAnnotationWithTypeVar(a, bAtv, top, canCombinedSetBeMissingAnnos);
         } else if (b != null) {
           if (aAtv == null) {
-            aAtv = getTypeVar(aTypeMirror);
+            if (!aAtvIsSet) {
+              aAtv = getTypeVar(aTypeMirror);
+              aAtvIsSet = true;
+            }
             if (aAtv == null) {
               throw new BugInCF("getTypeVar(%s) => null", aTypeMirror);
             }
