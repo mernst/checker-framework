@@ -41,7 +41,7 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.javacutil.AnnotationBuilder.CheckerFrameworkAnnotationMirror;
 import org.plumelib.util.ArrayMap;
-import org.plumelib.util.CollectionsPlume;
+import org.plumelib.util.CollectionsP;
 
 /**
  * A utility class for working with annotations.
@@ -1061,7 +1061,7 @@ public final class AnnotationUtils {
       AnnotationMirror anno, ExecutableElement element, Class<T> expectedType) {
     AnnotationValue av = anno.getElementValues().get(element);
     if (av == null) {
-      throw new BugInCF("getElementValueArray(%s, %s, ...)", anno, element);
+      throw new BugInCF("getElementValueArray(%s, %s, %s)", anno, element, expectedType);
     }
     return annotationValueToList(av, expectedType);
   }
@@ -1164,7 +1164,7 @@ public final class AnnotationUtils {
   public static List<@CanonicalName Name> getElementValueClassNames(
       AnnotationMirror anno, ExecutableElement element) {
     List<Type.ClassType> la = getElementValueArray(anno, element, Type.ClassType.class);
-    return CollectionsPlume.<Type.ClassType, @CanonicalName Name>mapList(
+    return CollectionsP.<Type.ClassType, @CanonicalName Name>mapList(
         (Type.ClassType classType) -> classType.asElement().getQualifiedName(), la);
   }
 

@@ -34,7 +34,7 @@ import org.checkerframework.javacutil.AbstractTypeProcessor;
 import org.checkerframework.javacutil.AnnotationProvider;
 import org.checkerframework.javacutil.UserError;
 import org.plumelib.reflection.Signatures;
-import org.plumelib.util.StringsPlume;
+import org.plumelib.util.StringsP;
 
 /**
  * Outputs the method signatures of a class with fully annotated types.
@@ -158,7 +158,7 @@ public class SignaturePrinter extends AbstractTypeProcessor {
       }
 
       out.print('<');
-      out.print(StringsPlume.join(", ", params));
+      out.print(StringsP.join(", ", params));
       out.print("> ");
     }
 
@@ -238,6 +238,12 @@ public class SignaturePrinter extends AbstractTypeProcessor {
       throw new IllegalArgumentException("Cannot process packages");
     }
 
+    /**
+     * Returns the Java keyword that declares the given type element.
+     *
+     * @param e a type element
+     * @return the Java keyword that declares the given type element
+     */
     private String typeIdentifier(TypeElement e) {
       return switch (e.getKind()) {
         case INTERFACE -> "interface";

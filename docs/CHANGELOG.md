@@ -9,6 +9,8 @@
 
 ### Implementation details
 
+Renamed `CFAbstractValue.validateSet()` to `hasAnnotationFromEveryHierarchy()`.
+
 ### Closed issues
 
 ## Version 4.2.1 (2026-07-01)
@@ -821,8 +823,9 @@ Renamed Gradle task `copyJarsToDist` to `assembleForJavac`.
 Dropped support for `-ApermitUnsupportedJdkVersion` command-line argument.
 You can now run the Checker Framework under any JDK version, without a warning.
 
-Pass `-Astubs=permit-nullness-assertion-exception.astub` to not be warned about null
-pointer exceptions within nullness assertion methods like `Objects.requireNonNull`.
+Pass `-Astubs=permit-nullness-assertion-exception.astub` to not be warned about
+null pointer exceptions within nullness assertion methods like
+`Objects.requireNonNull`.
 
 Pass `-Astubs=sometimes-nullable.astub` to unsoundly permit passing null to
 calls if null is sometimes but not always permitted.
@@ -870,7 +873,7 @@ introduced since JDK 11).
 Added `-AnoWarnMemoryConstraints` to change the "Memory constraints are impeding
 performance; please increase max heap size" message from a warning to a note.
 
-'unneeded.suppression' warnings can now themeselves be suppressed.
+'unneeded.suppression' warnings can now themselves be suppressed.
 
 ### Implementation details
 
@@ -1115,6 +1118,8 @@ Java records are type-checked.  Thanks to Neil Brown.
 
 Method renamings and signature changes (old methods are removed) in `GenericAnnotatedTypeFactory`:
 
+<!-- markdownlint-disable line-length -->
+
 * `getPreconditionAnnotation(VariableElement, AnnotatedTypeMirror)` => `getPreconditionAnnotations(String, AnnotatedTypeMirror, AnnotatedTypeMirror)`
 * `getPostconditionAnnotation(VariableElement, AnnotatedTypeMirror, List<AnnotationMirror>)` => `getPostconditionAnnotations(String, AnnotatedTypeMirror, AnnotatedTypeMirror, List<AnnotationMirror>)`
 * `getPreOrPostconditionAnnotation(VariableElement, AnnotatedTypeMirror, Analysis.BeforeOrAfter, List<AnnotationMirror>)` => `getPreOrPostconditionAnnotations(String, AnnotatedTypeMirror, AnnotatedTypeMirror, Analysis.BeforeOrAfter, List<AnnotationMirror>)`
@@ -1123,6 +1128,8 @@ Method renamings and signature changes (old methods are removed) in `GenericAnno
 Method renamings and signature changes (old method is removed) in `WholeProgramInferenceStorage`:
 
 * `getPreOrPostconditionsForField(Analysis.BeforeOrAfter, ExecutableElement, VariableElement, AnnotatedTypeFactory)` =>  `getPreOrPostconditions(Analysis.BeforeOrAfter, ExecutableElement, String, AnnotatedTypeMirror, AnnotatedTypeFactory)`
+
+<!-- markdownlint-enable line-length -->
 
 Method renamings:
 
@@ -1804,7 +1811,8 @@ BackwardAnalysis, BackwardTransferFunction, and BackwardAnalysisImpl.
 To adapt existing code:
 
 * `extends Analysis<V, S, T>` => `extends ForwardAnalysisImpl<V, S, T>`
-* `implements TransferFunction<V, S>` => `implements ForwardTransferFunction<V, S>`
+* `implements TransferFunction<V, S>`
+  => `implements ForwardTransferFunction<V, S>`
 
 In AbstractQualifierPolymorphism, use AnnotationMirrors instead of sets of
 annotation mirrors.
@@ -4270,7 +4278,7 @@ Manual Documentations
 
 Functionality
 
-* Added pre-liminary support for lazy initialization in nullness
+* Added preliminary support for lazy initialization in nullness
     see LazyNonNull
 
 Bug fixes
@@ -5201,7 +5209,7 @@ Code Changes
   * added handling for unary trees
 
 * checkers.nonnull
-  * added a tests for the flow-senstive analysis and varargs methods
+  * added tests for the flow-sensitive analysis and varargs methods
   * improved flow-sensitive analysis: else statements, asserts,
       return/throw statements, instanceof checks, complex conditionals with &&
   * fixed a bug in the flow-sensitive analysis that incorrectly inferred

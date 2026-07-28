@@ -50,7 +50,7 @@ public class AnnotationFileUtil {
    *
    * <p>Stub files have extension ".astub". Ajava files have extension ".ajava".
    */
-  public static enum AnnotationFileType {
+  public enum AnnotationFileType {
     /** Stub file in the annotated JDK. */
     JDK_STUB,
     /** Stub file built into a checker. */
@@ -220,6 +220,12 @@ public class AnnotationFileUtil {
     return element.getSimpleName().toString();
   }
 
+  /**
+   * Returns a string representation of the given element, or null.
+   *
+   * @param element an Element
+   * @return a string representation of the given element, or null
+   */
   /*package-private*/ static @Nullable String toString(Element element) {
     if (element instanceof ExecutableElement ee) {
       return toString(ee);
