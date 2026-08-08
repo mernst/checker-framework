@@ -2,7 +2,7 @@
  * @test
  * @summary Test -AwarnUnneededSuppressions
  *
- * @compile/ref=UnneededSuppressionsIndexTest.out -XDrawDiagnostics -processor org.checkerframework.checker.index.IndexChecker -AwarnUnneededSuppressions UnneededSuppressionsIndexTest.java
+ * @compile/ref=UnneededSuppressionsIndexTest.goal -XDrawDiagnostics -processor org.checkerframework.checker.index.IndexChecker -AwarnUnneededSuppressions UnneededSuppressionsIndexTest.java
  */
 
 import org.checkerframework.checker.index.qual.NonNegative;
