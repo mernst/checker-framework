@@ -1195,6 +1195,37 @@ There are two other ways to suppress the warning:
 \end{itemize}
 
 
+\subsubsectionAndLabel{Relationship between \<@SideEffectFree> and \<@SideEffectsOnly>}{side-effects-relationship}
+
+The annotation \<@SideEffectsOnly(\{\})> (i.e., a \<@SideEffectsOnly> annotation
+with an empty list of expressions) is illegal; write \<@SideEffectFree> instead.
+If a method has no \refqualclass{dataflow/qual}{SideEffectsOnly}
+or \refqualclass{dataflow/qual}{SideEffectFree} annotation, then the Checker Framework
+assumes that the method may side-effect any expressions (including fields and arguments).
+
+A method cannot be annotated with both \refqualclass{dataflow/qual}{SideEffectFree}
+and \refqualclass{dataflow/qual}{SideEffectsOnly}.
+Like the other purity annotations, \<@SideEffectsOnly> is inherited by overriding
+methods, so an overriding method that is not annotated is checked against the
+overridden method's \<@SideEffectsOnly> annotation.  In the annotation's arguments,
+\<this> and \<\#1>-style parameter references are interpreted in the overriding
+method.  An overriding method may list fewer expressions than the overridden method
+does, or an expression that is reached through one that the overridden method lists
+(an override of a \<@SideEffectsOnly("\#1")> method may be annotated
+\<@SideEffectsOnly("\#1.f")>).
+
+An overriding method may be annotated \<@SideEffectFree>, which is a
+stronger guarantee than any \<@SideEffectsOnly> annotation; that is not a conflict.
+A method reference is checked in the same way, against the \<@SideEffectsOnly> annotation
+of the functional interface method that it implements.  The two methods' parameters do not
+necessarily correspond positionally:  for an unbound reference such as \<Collection::clear>,
+the interface method's first parameter is the referenced method's receiver, and the
+interface method's parameter \<\#(i+1)> is the referenced method's parameter \<\#i>.  For a
+bound reference such as \<myList::clear>, no expression at the interface method's
+declaration denotes the bound receiver, so the reference does not satisfy any
+\<@SideEffectsOnly> annotation if the referenced method modifies \<this>.
+
+
 \subsubsectionAndLabel{Checking \<@SideEffectsOnly>}{side-effects-only-checking}
 
 Under \<-AcheckPurityAnnotations>, the Checker Framework verifies that the body of a
