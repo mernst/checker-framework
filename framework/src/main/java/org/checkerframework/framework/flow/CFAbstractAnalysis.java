@@ -1,10 +1,11 @@
 package org.checkerframework.framework.flow;
 
-import com.sun.source.tree.MethodInvocationTree;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
@@ -117,6 +118,19 @@ public abstract class CFAbstractAnalysis<
       sideEffectsOnlyExpressionsCache = new IdentityHashMap<>();
 
   /**
+   * The call sites at which {@link #computeSideEffectsOnlyExpressions} has reported a parse error,
+   * so that each such error is reported once rather than once per dataflow iteration.
+   *
+   * <p>Unlike {@link #sideEffectsOnlyExpressionsCache}, this is not cleared by {@link
+   * #performAnalysis}: {@link org.checkerframework.dataflow.analysis.AnalysisResult#runAnalysisFor}
+   * re-runs transfer functions over the nodes of a control flow graph that was analyzed earlier,
+   * which would otherwise report the error a second time. It stays small because it holds only call
+   * sites whose callee has a malformed {@code @SideEffectsOnly} annotation.
+   */
+  private final Set<MethodInvocationNode> sideEffectsOnlyErrorsReported =
+      Collections.newSetFromMap(new IdentityHashMap<>());
+
+  /**
    * Create a CFAbstractAnalysis.
    *
    * @param checker a checker that contains command-line arguments and other information
@@ -168,9 +182,9 @@ public abstract class CFAbstractAnalysis<
   }
 
   /**
-   * Returns the expressions that the method side-effects (specified as arguments/elements of
-   * {@code @SideEffectsOnly}), view-adapted to the given method invocation. Returns null if the
-   * method has no {@code @SideEffectsOnly} annotation.
+   * Returns the expressions that the invoked method side-effects (specified as arguments/elements
+   * of {@code @SideEffectsOnly}), viewpoint-adapted to the given method invocation. Returns null if
+   * the invoked method has no {@code @SideEffectsOnly} annotation.
    *
    * <p>Also returns null if any of the annotation's expressions cannot be parsed at the call site.
    * Null means "the method might side-effect anything", which is the conservative result; returning
@@ -182,17 +196,16 @@ public abstract class CFAbstractAnalysis<
    * parsing an expression is not cheap. Clients should not side-effect the returned value, which is
    * aliased to internal state.
    *
-   * @param method a method
    * @param methodInvocationNode the call site at which the side-effecting expressions will be used
-   * @return the expressions that the method side-effects, view-adapted to the given invocation; or
-   *     null if the method has no {@code @SideEffectsOnly} annotation or an expression in it cannot
-   *     be parsed or cannot be represented at the call site
+   * @return the expressions that the method side-effects, viewpoint-adapted to the given
+   *     invocation; or null if the method has no valid {@code @SideEffectsOnly} annotation
    */
   public @Nullable List<JavaExpression> getSideEffectsOnlyExpressions(
-      ExecutableElement method, MethodInvocationNode methodInvocationNode) {
+      MethodInvocationNode methodInvocationNode) {
     if (sideEffectsOnlyExpressionsCache.containsKey(methodInvocationNode)) {
       return sideEffectsOnlyExpressionsCache.get(methodInvocationNode);
     }
+    ExecutableElement method = methodInvocationNode.getTarget().getMethod();
     List<JavaExpression> result = computeSideEffectsOnlyExpressions(method, methodInvocationNode);
     sideEffectsOnlyExpressionsCache.put(methodInvocationNode, result);
     return result;
@@ -204,8 +217,8 @@ public abstract class CFAbstractAnalysis<
    *
    * @param method a method
    * @param methodInvocationNode the call site at which the side-effecting expressions will be used
-   * @return the expressions that the method side-effects, view-adapted to the given invocation, or
-   *     null
+   * @return the expressions that the method side-effects, viewpoint-adapted to the given
+   *     invocation, or null
    */
   private @Nullable List<JavaExpression> computeSideEffectsOnlyExpressions(
       ExecutableElement method, MethodInvocationNode methodInvocationNode) {
@@ -220,30 +233,40 @@ public abstract class CFAbstractAnalysis<
             seOnlyAnnotation, sideEffectsOnlyValueElement, String.class);
     List<JavaExpression> seOnlyExpressions = new ArrayList<>(seOnlyExpressionStrings.size());
 
-    for (String st : seOnlyExpressionStrings) {
+    for (String seOnlyExpr : seOnlyExpressionStrings) {
       try {
+        // Do not use `StringToJavaExpression.atMethodInvocation(seOnlyExpr, methodInvocationNode,
+        // checker)`, which obtains the invoked method from `methodInvocationNode.getTree()`; that
+        // tree is null for a call that corresponds to no AST tree, such as the `Iterator.next()`
+        // that an enhanced for loop is desugared to.  `method` is that same element.
         JavaExpression exprJe =
-            StringToJavaExpression.atMethodInvocation(st, methodInvocationNode, checker);
+            StringToJavaExpression.atMethodDecl(seOnlyExpr, method, checker)
+                .atMethodInvocation(methodInvocationNode);
         if (exprJe.containsUnknown()) {
-          // View adaptation yielded no expression for some part of the annotation, because the
-          // receiver or an argument at the call site is a construct that JavaExpression does not
-          // model, such as a conditional expression or a cast.  Nothing in the store can match an
-          // `Unknown`, so returning the expression would discard no refinement at all.  Instead,
-          // return null, which makes the caller discard every refinement.
+          // Nothing in the store can match an `Unknown`, so returning the expression would discard
+          // no refinement at all.  Returning null makes the caller discard every refinement.
+          if (sideEffectsOnlyErrorsReported.add(methodInvocationNode)) {
+            checker.reportError(
+                methodInvocationNode.getTreePath().getLeaf(),
+                "viewpoint.adaptation",
+                seOnlyExpr,
+                method,
+                exprJe);
+          }
           return null;
         }
-        // At a call of the form `super.m()`, view-adapting the callee's `this` yields `super`.
+        // At a call of the form `super.m()`, viewpoint-adapting the callee's `this` yields `super`.
         // The caller refers to that same object as `this`, so rewrite it that way; otherwise the
         // refinements of `this` and of its fields would not be discarded.
         seOnlyExpressions.add(JavaExpression.superToThis(exprJe));
       } catch (JavaExpressionParseException ex) {
         // Report at the call site rather than at the callee's declaration.  The callee may be
-        // declared in a different compilation unit, or (as for an annotation that comes from a
-        // stub file) in no compilation unit at all, in which case a diagnostic positioned at its
-        // declaration would be discarded.  Because the result is cached, this is reported once per
-        // call site rather than once per dataflow iteration.
-        MethodInvocationTree callTree = methodInvocationNode.getTree();
-        checker.report(callTree != null ? callTree : method, new DiagMessage(ex));
+        // declared in a different compilation unit that is not currently being compiled.
+        // Use the leaf of the call's tree path rather than `methodInvocationNode.getTree()`, which
+        // may be null and which is an artificial tree (where errors cannot be suppressed).
+        if (sideEffectsOnlyErrorsReported.add(methodInvocationNode)) {
+          checker.report(methodInvocationNode.getTreePath().getLeaf(), new DiagMessage(ex));
+        }
         return null;
       }
     }
