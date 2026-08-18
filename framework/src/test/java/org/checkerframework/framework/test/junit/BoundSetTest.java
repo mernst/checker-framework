@@ -52,6 +52,113 @@ public class BoundSetTest {
   }
 
   /**
+   * Tests that {@link BoundSet#restore} undoes, in place, the changes that were made to the bound
+   * set after {@link BoundSet#saveBounds} created the snapshot.
+   *
+   * <p>{@code Resolution} hands the same bound set to every step of inference, so restoring must
+   * side-effect that bound set. If restoring instead returned the snapshot as a new bound set, then
+   * a client that holds a reference to the original one -- such as {@code
+   * InvocationTypeInference.getB4} -- would keep observing the state of the failed attempt.
+   */
+  @Test
+  public void restoreUndoesChangesInPlace() {
+    BoundSet boundSet = new BoundSet(uninitializedContext());
+    BoundSet snapshot = boundSet.saveBounds();
+
+    boundSet.addFalse();
+    boundSet.setUncheckedConversion(true);
+    boundSet.annoInferenceFailed = true;
+    boundSet.errorMsg = "@Tainted String <: @Untainted String";
+
+    boundSet.restore(snapshot);
+
+    Assert.assertFalse(boundSet.containsFalse());
+    Assert.assertFalse(boundSet.isUncheckedConversion());
+    Assert.assertFalse(boundSet.annoInferenceFailed);
+    Assert.assertEquals("", boundSet.errorMsg);
+  }
+
+  /**
+   * Tests that {@link BoundSet#restore} discards exactly the state that was recorded after {@link
+   * BoundSet#saveBounds} created the snapshot, and keeps the state that was recorded before it.
+   *
+   * <p>This is the situation that arises in {@code Resolution.resolveSmallestSet}. Incorporation
+   * has already recorded a qualifier violation in the bound set by the time resolution starts, and
+   * then the attempt at resolution without capture records a second one before it fails. Only the
+   * second one is undone; the caller -- {@code InvocationTypeInference.getB4}, which reads {@code
+   * annoInferenceFailed} and {@code errorMsg} off the bound set it passed to {@code
+   * Resolution.resolve} -- must see the first one and must not see the second one.
+   */
+  @Test
+  public void restoreDiscardsOnlyPostSnapshotState() {
+    String beforeSnapshot = "@Tainted MyNode <: @Untainted Node<@Tainted MyNode>";
+    BoundSet boundSet = new BoundSet(uninitializedContext());
+    boundSet.annoInferenceFailed = true;
+    boundSet.errorMsg = beforeSnapshot;
+
+    BoundSet snapshot = boundSet.saveBounds();
+
+    // The failed attempt at resolution without capture.
+    boundSet.errorMsg +=
+        System.lineSeparator() + "@Tainted Object <: @Untainted Tag<@Tainted Object>";
+    boundSet.addFalse();
+    boundSet.setUncheckedConversion(true);
+
+    // The snapshot is unaffected by the failed attempt.
+    Assert.assertEquals(beforeSnapshot, snapshot.errorMsg);
+    Assert.assertFalse(snapshot.containsFalse());
+    Assert.assertFalse(snapshot.isUncheckedConversion());
+
+    boundSet.restore(snapshot);
+
+    Assert.assertTrue(boundSet.annoInferenceFailed);
+    Assert.assertEquals(beforeSnapshot, boundSet.errorMsg);
+    Assert.assertFalse(boundSet.containsFalse());
+    Assert.assertFalse(boundSet.isUncheckedConversion());
+  }
+
+  /**
+   * Tests that a snapshot keeps its own copy of the state, so that a snapshot can be restored even
+   * after {@link BoundSet#saveBounds} has taken a later snapshot of the same bound set.
+   *
+   * <p>{@code Resolution.resolveSmallestSet} takes a snapshot before each attempt at resolution
+   * without capture, and reducing the constraints of one such attempt can start inference for a
+   * nested expression, which resolves variables of its own and therefore takes a second snapshot of
+   * the very same bound set.
+   */
+  @Test
+  public void restoreOfEarlierSnapshotIsUnaffectedByLaterSaveBounds() {
+    String beforeOuterSnapshot = "@Tainted MyNode <: @Untainted Node<@Tainted MyNode>";
+    String beforeInnerSnapshot = "@Tainted Object <: @Untainted Tag<@Tainted Object>";
+    BoundSet boundSet = new BoundSet(uninitializedContext());
+    boundSet.annoInferenceFailed = true;
+    boundSet.errorMsg = beforeOuterSnapshot;
+
+    BoundSet outerSnapshot = boundSet.saveBounds();
+
+    boundSet.errorMsg = beforeInnerSnapshot;
+    boundSet.setUncheckedConversion(true);
+
+    BoundSet innerSnapshot = boundSet.saveBounds();
+
+    boundSet.addFalse();
+    boundSet.errorMsg = "@Tainted String <: @Untainted String";
+
+    // Restoring the inner snapshot undoes only what happened after it was taken.
+    boundSet.restore(innerSnapshot);
+    Assert.assertEquals(beforeInnerSnapshot, boundSet.errorMsg);
+    Assert.assertTrue(boundSet.isUncheckedConversion());
+    Assert.assertFalse(boundSet.containsFalse());
+
+    // Restoring the outer snapshot undoes everything that happened after it was taken, including
+    // the state that was current when the inner snapshot was taken.
+    boundSet.restore(outerSnapshot);
+    Assert.assertEquals(beforeOuterSnapshot, boundSet.errorMsg);
+    Assert.assertFalse(boundSet.isUncheckedConversion());
+    Assert.assertFalse(boundSet.containsFalse());
+  }
+
+  /**
    * Tests that {@link BoundSet#incorporateToFixedPoint} tolerates a variable being added to the
    * bound set while the bound set's variables are being iterated over.
    *
@@ -134,6 +241,12 @@ public class BoundSetTest {
     @Override
     public Kind getKind() {
       return Kind.TYPE_EQUALITY;
+    }
+
+    @Override
+    public ConstantConstraint copy() {
+      // A ConstantConstraint is immutable, so it is its own copy.
+      return this;
     }
 
     @Override
