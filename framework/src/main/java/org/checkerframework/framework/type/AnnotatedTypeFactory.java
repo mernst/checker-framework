@@ -49,7 +49,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -363,6 +363,23 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * will be inherited if it is in this set, or if it has the meta-annotation @InheritedAnnotation.
    */
   private final AnnotationMirrorSet inheritedAnnotations = new AnnotationMirrorSet();
+
+  /**
+   * Maps a method to the {@code @SideEffectsOnly} expressions that it inherits from the methods it
+   * overrides: a map from a method declaration to the expressions written in the
+   * {@code @SideEffectsOnly} annotation on that declaration. A method that inherits no such
+   * expression has no entry.
+   *
+   * <p>The declaring method is retained, rather than just the expression strings, because each
+   * expression must be parsed in the scope of the method that declares it; see {@link
+   * #getSideEffectsOnlyExpressionStrings}.
+   *
+   * <p>{@link #inheritOverriddenDeclAnnos} populates this map, in lockstep with {@link
+   * #cacheDeclAnnos}, so an entry is present only after {@link #getDeclAnnotations} has been called
+   * on the method.
+   */
+  private final Map<ExecutableElement, Map<ExecutableElement, List<String>>>
+      inheritedSideEffectsOnlyExpressions = new HashMap<>();
 
   /** The checker to use for option handling and resource management. */
   protected final BaseTypeChecker checker;
@@ -812,12 +829,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     addInheritedAnnotation(
         AnnotationBuilder.fromClass(
             elements, org.checkerframework.dataflow.qual.SideEffectFree.class));
-    AnnotationBuilder sideEffectsOnlyBuilder =
-        new AnnotationBuilder(
-            processingEnv, org.checkerframework.dataflow.qual.SideEffectsOnly.class);
-    // Any value will do, because only the annotation's name is used.
-    sideEffectsOnlyBuilder.setValue("an arbitrary value", new String[0]);
-    addInheritedAnnotation(sideEffectsOnlyBuilder.build());
+    // `@SideEffectsOnly` is not in `inheritedAnnotations`, even though it is inherited, because
+    // inheriting it as an annotation would lose track of which method declared each of its
+    // expressions.  `inheritOverriddenDeclAnnos` inherits it separately; see
+    // `getSideEffectsOnlyExpressionStrings`.
     addInheritedAnnotation(
         AnnotationBuilder.fromClass(
             elements, org.checkerframework.dataflow.qual.Deterministic.class));
@@ -4123,6 +4138,36 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
+   * Returns true if the given declaration annotation is written on the given element itself --
+   * either in source code or in an annotation file -- rather than being inherited from a method
+   * that the element overrides or from a supertype.
+   *
+   * @param elt an element
+   * @param anno a declaration annotation that applies to {@code elt}
+   * @return true if {@code anno} is written on {@code elt} itself
+   */
+  public boolean isDeclAnnotationWrittenOn(Element elt, AnnotationMirror anno) {
+    return AnnotationUtils.containsSameByName(elt.getAnnotationMirrors(), anno)
+        || containsSameByName(stubTypes.getDeclAnnotations(elt), anno)
+        || containsSameByName(ajavaTypes.getDeclAnnotations(elt), anno)
+        || (currentFileAjavaTypes != null
+            && containsSameByName(currentFileAjavaTypes.getDeclAnnotations(elt), anno));
+  }
+
+  /**
+   * Returns true if the given collection contains an annotation with the same name as the given
+   * one. Returns false if the collection is null.
+   *
+   * @param annos a collection of annotations, or null
+   * @param anno an annotation
+   * @return true if {@code annos} contains an annotation with the same name as {@code anno}
+   */
+  private static boolean containsSameByName(
+      @Nullable Collection<? extends AnnotationMirror> annos, AnnotationMirror anno) {
+    return annos != null && AnnotationUtils.containsSameByName(annos, anno);
+  }
+
+  /**
    * Adds into {@code results} the inherited declaration annotations found in all elements of the
    * super types of {@code typeMirror}. (Both superclasses and superinterfaces.)
    *
@@ -4176,18 +4221,32 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       return;
     }
 
-    // `@SideEffectsOnly` is not subject to the "first one wins" rule of `addOrMerge`, because its
-    // `value` element is significant, unlike that of the other inherited declaration annotations.
-    // A method that overrides methods in two supertypes inherits the union of what they permit it
-    // to side-effect; `BaseTypeVisitor.OverrideChecker` reports any override that thereby
-    // side-effects more than a supertype permits.  A `@SideEffectsOnly` written on `elt` itself is
-    // authoritative, so in that case nothing is inherited.
-    boolean mergeSideEffectsOnly = !containsSameByClass(results, SideEffectsOnly.class);
+    // `@SideEffectsOnly` is not inherited as an annotation, because its `value` element is
+    // significant, unlike that of the other inherited declaration annotations.  A method that
+    // overrides methods in two supertypes inherits the union of what they permit it to
+    // side-effect, rather than the "first one wins" rule of `addOrMerge`;
+    // `BaseTypeVisitor.OverrideChecker` reports any override that thereby side-effects more than a
+    // supertype permits.  Furthermore, each expression must be remembered along with the method
+    // that declares it, because the expression is parsed in that method's scope.  A
+    // `@SideEffectsOnly` written on `elt` itself is authoritative, so in that case nothing is
+    // inherited.
+    boolean inheritSideEffectsOnly = !containsSameByClass(results, SideEffectsOnly.class);
     // The union of the supertypes' `@SideEffectsOnly` expressions, or null if no supertype has a
-    // `@SideEffectsOnly` annotation.  A `LinkedHashSet` for determinism and to avoid duplicates.
-    Set<String> inheritedSideEffectsOnly = null;
+    // `@SideEffectsOnly` annotation.  A `LinkedHashMap` for determinism.
+    Map<ExecutableElement, List<String>> inheritedSideEffectsOnly = null;
 
     for (ExecutableElement superElt : overriddenMethods.values()) {
+      if (inheritSideEffectsOnly) {
+        Map<ExecutableElement, List<String>> superSideEffectsOnly =
+            getSideEffectsOnlyExpressionStrings(superElt);
+        if (superSideEffectsOnly != null) {
+          if (inheritedSideEffectsOnly == null) {
+            inheritedSideEffectsOnly = new LinkedHashMap<>();
+          }
+          inheritedSideEffectsOnly.putAll(superSideEffectsOnly);
+        }
+      }
+
       AnnotationMirrorSet superAnnos = getDeclAnnotations(superElt);
 
       for (AnnotationMirror annotation : superAnnos) {
@@ -4206,27 +4265,60 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         }
         if (containsSameByClass(annotationsOnAnnotation, InheritedAnnotation.class)
             || AnnotationUtils.containsSameByName(inheritedAnnotations, annotation)) {
-          if (mergeSideEffectsOnly && areSameByClass(annotation, SideEffectsOnly.class)) {
-            if (inheritedSideEffectsOnly == null) {
-              inheritedSideEffectsOnly = new LinkedHashSet<>();
-            }
-            inheritedSideEffectsOnly.addAll(
-                AnnotationUtils.getElementValueArray(
-                    annotation, sideEffectsOnlyValueElement, String.class));
-          } else {
-            addOrMerge(results, annotation);
-          }
+          addOrMerge(results, annotation);
         }
       }
     }
 
     if (inheritedSideEffectsOnly != null) {
-      AnnotationBuilder builder = new AnnotationBuilder(processingEnv, SideEffectsOnly.class);
-      builder.setValue("value", inheritedSideEffectsOnly.toArray(new String[0]));
-      results.add(builder.build());
+      inheritedSideEffectsOnlyExpressions.put(elt, inheritedSideEffectsOnly);
     }
   }
 
+  /**
+   * Returns the {@code @SideEffectsOnly} expressions that apply to {@code method}: a map from a
+   * method declaration to the expressions written in the {@code @SideEffectsOnly} annotation on
+   * that declaration. Returns null if no {@code @SideEffectsOnly} annotation applies to {@code
+   * method}.
+   *
+   * <p>The result identifies the method that declares each expression, rather than just the
+   * expression strings, because an expression is parsed in the scope of the method that declares
+   * it. That scope differs from {@code method}'s scope when {@code method} inherits the annotation:
+   * an expression that names a field of the superclass might name a different field, or none at
+   * all, in the subclass.
+   *
+   * <p>A {@code @SideEffectsOnly} annotation written on {@code method} itself is authoritative.
+   * Otherwise, {@code method} inherits the union of the annotations on the methods that it
+   * overrides.
+   *
+   * <p>Clients should not side-effect the returned value, which may be aliased to internal state.
+   *
+   * @param method a method or constructor
+   * @return a map from a method declaration to the {@code @SideEffectsOnly} expressions written on
+   *     it, or null if no {@code @SideEffectsOnly} annotation applies to {@code method}
+   */
+  public @Nullable Map<ExecutableElement, List<String>> getSideEffectsOnlyExpressionStrings(
+      ExecutableElement method) {
+    // This call also populates `inheritedSideEffectsOnlyExpressions` for `method`.  Because
+    // `@SideEffectsOnly` is not inherited as an annotation, the result is non-null only if the
+    // annotation is written on `method` itself.
+    AnnotationMirror sideEffectsOnly = getDeclAnnotation(method, SideEffectsOnly.class);
+    if (sideEffectsOnly != null) {
+      return Collections.singletonMap(
+          method,
+          AnnotationUtils.getElementValueArray(
+              sideEffectsOnly, sideEffectsOnlyValueElement, String.class));
+    }
+    return inheritedSideEffectsOnlyExpressions.get(method);
+  }
+
+  /**
+   * Add the given annotation to the set, or (future feature) merge it with an existing annotation
+   * in the set.
+   *
+   * @param results a set to side-effect
+   * @param annotation an annotation to add to the set
+   */
   private void addOrMerge(AnnotationMirrorSet results, AnnotationMirror annotation) {
     if (AnnotationUtils.containsSameByName(results, annotation)) {
       /*
