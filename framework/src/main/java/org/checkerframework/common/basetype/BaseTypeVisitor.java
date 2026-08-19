@@ -1174,12 +1174,21 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
     EnumSet<PurityKind> purityKinds = PurityUtils.getPurityKinds(atypeFactory, tree);
 
+    ExecutableElement methodDeclElem = TreeUtils.elementFromDeclaration(tree);
+    // The `@SideEffectsOnly` expressions that apply to the method, which the method may inherit
+    // rather than declare.  `purityKinds` does not account for an inherited `@SideEffectsOnly`,
+    // because `@SideEffectsOnly` is not inherited as an annotation; see
+    // `AnnotatedTypeFactory.getSideEffectsOnlyExpressionStrings`.
+    Map<ExecutableElement, List<String>> seOnlyExpressionStrings =
+        atypeFactory.getSideEffectsOnlyExpressionStrings(methodDeclElem);
+
     // If the method is already @Pure, there is nothing to suggest.
     boolean needToSuggest =
         suggestPureMethods
             && !(purityKinds.contains(PurityKind.SIDE_EFFECT_FREE)
                 && purityKinds.contains(PurityKind.DETERMINISTIC));
-    boolean needToCheck = checkPurityAnnotations && !purityKinds.isEmpty();
+    boolean needToCheck =
+        checkPurityAnnotations && (!purityKinds.isEmpty() || seOnlyExpressionStrings != null);
 
     if (!needToSuggest && !needToCheck) {
       // There is no work to do.
@@ -1272,12 +1281,11 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       return;
     }
 
-    ExecutableElement methodDeclElem = TreeUtils.elementFromDeclaration(tree);
-    AnnotationMirror seOnlyAnnotation =
-        atypeFactory.getDeclAnnotation(methodDeclElem, SideEffectsOnly.class);
-    if (seOnlyAnnotation == null) {
+    if (seOnlyExpressionStrings == null) {
       return;
     }
+    AnnotationMirror seOnlyAnnotation =
+        atypeFactory.getDeclAnnotation(methodDeclElem, SideEffectsOnly.class);
 
     AnnotationMirror pureOrSideEffectFreeAnnotation =
         getPureOrSideEffectFreeAnnotation(methodDeclElem);
@@ -1286,7 +1294,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       // @SideEffectFree annotation.  It is not an error if one of the two is inherited: an
       // overriding method may promise more than the method it overrides, so @SideEffectFree on an
       // override of a @SideEffectsOnly method is legal (and checkPurity() permits it).
-      if (atypeFactory.isDeclAnnotationWrittenOn(methodDeclElem, seOnlyAnnotation)
+      if (seOnlyAnnotation != null
+          && atypeFactory.isDeclAnnotationWrittenOn(methodDeclElem, seOnlyAnnotation)
           && atypeFactory.isDeclAnnotationWrittenOn(
               methodDeclElem, pureOrSideEffectFreeAnnotation)) {
         checker.reportError(
@@ -1300,37 +1309,53 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       return;
     }
 
-    List<String> seOnlyExpressionStrings =
-        AnnotationUtils.getElementValueArray(
-            seOnlyAnnotation, sideEffectsOnlyValueElement, String.class);
-    if (seOnlyExpressionStrings.isEmpty()) {
+    if (seOnlyAnnotation != null
+        && AnnotationUtils.getElementValueArray(
+                seOnlyAnnotation, sideEffectsOnlyValueElement, String.class)
+            .isEmpty()) {
       checker.reportError(tree, "purity.empty.sideeffectsonly");
       return;
     }
-    List<JavaExpression> seOnlyExpressions = new ArrayList<>(seOnlyExpressionStrings.size());
-    for (String st : seOnlyExpressionStrings) {
-      try {
-        JavaExpression exprJe = StringToJavaExpression.atMethodBody(st, tree, checker);
-        if (!DisallowedSideEffects.isStable(atypeFactory, exprJe)) {
-          // Two evaluations of such an expression may denote unrelated values, so nothing that
-          // the method body modifies is ever recognized as being the expression, and every
-          // modification would be reported.  Reject the annotation instead.
-          checker.reportError(tree, "purity.unstable.sideeffectsonly", st);
+    List<JavaExpression> seOnlyExpressions = new ArrayList<>();
+    for (Map.Entry<ExecutableElement, List<String>> entry : seOnlyExpressionStrings.entrySet()) {
+      // The method whose `@SideEffectsOnly` annotation contains the expressions.  It is the method
+      // being checked, unless that method inherits the annotation.
+      ExecutableElement declaringMethod = entry.getKey();
+      for (String st : entry.getValue()) {
+        try {
+          // An expression is parsed in the scope of the method that declares it, which is not
+          // necessarily the scope of `tree`:  a field that the declaring method's class declares
+          // might be shadowed or inaccessible in `tree`'s class.  Viewpoint-adapting to `tree`
+          // then replaces the declaring method's formal parameters by `tree`'s, which correspond
+          // positionally because `tree` overrides the declaring method.
+          JavaExpression exprJe =
+              StringToJavaExpression.atMethodDecl(st, declaringMethod, checker).atMethodBody(tree);
+          if (!DisallowedSideEffects.isStable(atypeFactory, exprJe)) {
+            // Two evaluations of such an expression may denote unrelated values, so nothing that
+            // the method body modifies is ever recognized as being the expression, and every
+            // modification would be reported.  Reject the annotation instead.
+            checker.reportError(tree, "purity.unstable.sideeffectsonly", st);
+            return;
+          }
+          seOnlyExpressions.add(exprJe);
+        } catch (JavaExpressionParseException ex) {
+          // This diagnostic is about parsing the expression in order to check the method body
+          // against it, so it is distinct from the one that `checkSideEffectsOnlyAnnotation`
+          // issues about the annotation itself.  Every checker of a compound checker performs
+          // this check, so report the error only once.
+          DiagMessage diagMessage = new DiagMessage(ex);
+          if (diagMessage.getMessageKey().equals("flowexpr.parse.error")) {
+            String s =
+                String.format(
+                    "'%s' in the @SideEffectsOnly annotation on the declaration of method '%s': ",
+                    st, declaringMethod.getSimpleName());
+            diagMessage =
+                new DiagMessage(
+                    Diagnostic.Kind.ERROR, "flowexpr.parse.error", s + diagMessage.getArgs()[0]);
+          }
+          checker.reportOnce(getCurrentPath(), diagMessage);
           return;
         }
-        seOnlyExpressions.add(exprJe);
-      } catch (JavaExpressionParseException ex) {
-        DiagMessage diagMessage = new DiagMessage(ex);
-        if (diagMessage.getMessageKey().equals("flowexpr.parse.error")) {
-          String s =
-              String.format(
-                  "'%s' in the @SideEffectsOnly annotation on the declaration of method '%s': ",
-                  st, tree.getName());
-          checker.reportError(tree, "flowexpr.parse.error", s + diagMessage.getArgs()[0]);
-        } else {
-          checker.report(tree, diagMessage);
-        }
-        return;
       }
     }
 
@@ -1376,6 +1401,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    * @param methodElement the element for {@code tree}
    */
   protected void checkSideEffectsOnlyAnnotation(MethodTree tree, ExecutableElement methodElement) {
+    if (!checkPurityAnnotationsOption) {
+      // Checking a @SideEffectsOnly annotation happens only when -AcheckPurityAnnotations was
+      // itself supplied, like every other purity check.  Control can reach here without it,
+      // because issuing a purity suggestion does not require it.
+      return;
+    }
     AnnotationMirror sideEffectsOnly =
         atypeFactory.getDeclAnnotation(methodElement, SideEffectsOnly.class);
     if (sideEffectsOnly == null) {
@@ -4499,12 +4530,14 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
     /** Check that an override respects purity. */
     private void checkPurity() {
-      EnumSet<PurityKind> superPurity =
-          PurityUtils.getPurityKinds(atypeFactory, overridden.getElement());
-      EnumSet<PurityKind> subPurity =
-          PurityUtils.getPurityKinds(atypeFactory, overrider.getElement());
+      EnumSet<PurityKind> superPurity = purityKinds(overridden.getElement());
+      EnumSet<PurityKind> subPurity = purityKinds(overrider.getElement());
 
       boolean ok;
+      // True if the overrider permits side effects that the overridden method does not.  When the
+      // override is illegal for some other reason, such as a missing @Deterministic, a different
+      // message is issued.
+      boolean sideEffectsOnlyIsWidened = false;
       if (superPurity.contains(PurityKind.SIDE_EFFECTS_ONLY)) {
         if (subPurity.contains(PurityKind.SIDE_EFFECT_FREE)) {
           ok = true;
@@ -4514,10 +4547,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
           ok = sideEffectsOnlyIsNarrowed();
         } else {
           // Superclass method has @SideEffectsOnly, subclass method has no side-effect annotation.
-          // This is normally unreachable, because @SideEffectsOnly is inherited: the overrider
-          // has the overridden method's annotation, and its body is checked against it.
+          // An override inherits the overridden method's annotation, so this is reachable only for
+          // a method reference, whose referenced method inherits nothing from the functional
+          // interface method.
           ok = false;
         }
+        sideEffectsOnlyIsWidened = !ok;
         // The tests above account only for side effects.  The overrider must also satisfy every
         // other purity kind, such as @Deterministic, that the overridden method promises.  (For an
         // override this is guaranteed, because purity annotations are inherited, but for a method
@@ -4531,28 +4566,47 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       }
 
       if (!ok) {
+        String messageKey;
         if (isMethodReference) {
-          checker.reportError(
-              overriderTree,
-              "purity.methodref",
-              overriderType,
-              purityKindsToString(subPurity, overrider.getElement()),
-              overrider,
-              overriddenType,
-              purityKindsToString(superPurity, overridden.getElement()),
-              overridden);
+          messageKey = "purity.methodref";
+        } else if (sideEffectsOnlyIsWidened) {
+          messageKey = "purity.sideeffectsonly.overriding";
         } else {
-          checker.reportError(
-              overriderTree,
-              "purity.overriding",
-              overriderType,
-              purityKindsToString(subPurity, overrider.getElement()),
-              overrider,
-              overriddenType,
-              purityKindsToString(superPurity, overridden.getElement()),
-              overridden);
+          messageKey = "purity.overriding";
         }
+        checker.reportError(
+            overriderTree,
+            messageKey,
+            overriderType,
+            purityKindsToString(subPurity, overrider.getElement()),
+            overrider,
+            overriddenType,
+            purityKindsToString(superPurity, overridden.getElement()),
+            overridden);
       }
+    }
+
+    /**
+     * Returns the purity kinds of {@code method}, including {@link PurityKind#SIDE_EFFECTS_ONLY} if
+     * {@code method} inherits a {@code @SideEffectsOnly} annotation.
+     *
+     * <p>{@link PurityUtils#getPurityKinds} does not report an inherited {@code @SideEffectsOnly},
+     * because {@code @SideEffectsOnly} is not inherited as an annotation; see {@link
+     * AnnotatedTypeFactory#getSideEffectsOnlyExpressionStrings}.
+     *
+     * @param method a method
+     * @return the purity kinds of {@code method}
+     */
+    private EnumSet<PurityKind> purityKinds(ExecutableElement method) {
+      EnumSet<PurityKind> result = PurityUtils.getPurityKinds(atypeFactory, method);
+      if (!result.contains(PurityKind.SIDE_EFFECT_FREE)
+          && !result.contains(PurityKind.SIDE_EFFECTS_ONLY)
+          && atypeFactory.getSideEffectsOnlyExpressionStrings(method) != null) {
+        // Do not side-effect the result of `getPurityKinds`, which may be a shared set.
+        result = result.clone();
+        result.add(PurityKind.SIDE_EFFECTS_ONLY);
+      }
+      return result;
     }
 
     /**
@@ -4574,28 +4628,23 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      * @return true if the overrider's side effects are within the overridden method's
      */
     private boolean sideEffectsOnlyIsNarrowed() {
-      ExecutableElement superElement = overridden.getElement();
-      AnnotationMirror seOnlySuper =
-          atypeFactory.getDeclAnnotation(superElement, SideEffectsOnly.class);
-      List<String> seOnlySuperStrings =
-          AnnotationUtils.getElementValueArray(
-              seOnlySuper, sideEffectsOnlyValueElement, String.class);
-      ExecutableElement subElement = overrider.getElement();
-      AnnotationMirror seOnlySub =
-          atypeFactory.getDeclAnnotation(subElement, SideEffectsOnly.class);
-      List<String> seOnlySubStrings =
-          AnnotationUtils.getElementValueArray(
-              seOnlySub, sideEffectsOnlyValueElement, String.class);
+      Map<ExecutableElement, List<String>> seOnlySuperStrings =
+          atypeFactory.getSideEffectsOnlyExpressionStrings(overridden.getElement());
+      Map<ExecutableElement, List<String>> seOnlySubStrings =
+          atypeFactory.getSideEffectsOnlyExpressionStrings(overrider.getElement());
+      if (seOnlySuperStrings == null || seOnlySubStrings == null) {
+        throw new BugInCF(
+            "sideEffectsOnlyIsNarrowed requires @SideEffectsOnly on both methods: %s %s",
+            overridden.getElement(), overrider.getElement());
+      }
 
-      List<JavaExpression> seOnlySuperExpressions =
-          sideEffectsOnlyExpressions(seOnlySuperStrings, superElement);
-      List<JavaExpression> seOnlySubExpressions =
-          sideEffectsOnlyExpressions(seOnlySubStrings, subElement);
+      List<JavaExpression> seOnlySuperExpressions = sideEffectsOnlyExpressions(seOnlySuperStrings);
+      List<JavaExpression> seOnlySubExpressions = sideEffectsOnlyExpressions(seOnlySubStrings);
       if (seOnlySuperExpressions == null || seOnlySubExpressions == null) {
         // An argument could not be parsed, so compare the annotations' strings.  The parse error
         // itself is reported at the declaration that contains it, by
         // `checkSideEffectsOnlyAnnotation`.
-        return seOnlySuperStrings.containsAll(seOnlySubStrings);
+        return flatten(seOnlySuperStrings).containsAll(flatten(seOnlySubStrings));
       }
 
       if (isMethodReference) {
@@ -4692,22 +4741,42 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     }
 
     /**
-     * Parses the arguments of a {@code @SideEffectsOnly} annotation, at the declaration of the
-     * method that the annotation is written on.
+     * Parses the arguments of a {@code @SideEffectsOnly} annotation. Each argument is parsed at the
+     * declaration of the method that writes it, which is not necessarily the method that the
+     * annotation applies to; see {@link AnnotatedTypeFactory#getSideEffectsOnlyExpressionStrings}.
      *
-     * @param expressionStrings the arguments of a {@code @SideEffectsOnly} annotation
-     * @param method the method that the annotation is written on
+     * @param expressionStrings a map from a method declaration to the {@code @SideEffectsOnly}
+     *     expressions written on it
      * @return the expressions that the strings stand for, or null if one cannot be parsed
      */
     private @Nullable List<JavaExpression> sideEffectsOnlyExpressions(
-        List<String> expressionStrings, ExecutableElement method) {
-      List<JavaExpression> result = new ArrayList<>(expressionStrings.size());
-      for (String expressionString : expressionStrings) {
-        try {
-          result.add(StringToJavaExpression.atMethodDecl(expressionString, method, checker));
-        } catch (JavaExpressionParseException e) {
-          return null;
+        Map<ExecutableElement, List<String>> expressionStrings) {
+      List<JavaExpression> result = new ArrayList<>();
+      for (Map.Entry<ExecutableElement, List<String>> entry : expressionStrings.entrySet()) {
+        ExecutableElement declaringMethod = entry.getKey();
+        for (String expressionString : entry.getValue()) {
+          try {
+            result.add(
+                StringToJavaExpression.atMethodDecl(expressionString, declaringMethod, checker));
+          } catch (JavaExpressionParseException e) {
+            return null;
+          }
         }
+      }
+      return result;
+    }
+
+    /**
+     * Returns all the expression strings in the given map, ignoring which method declares each.
+     *
+     * @param expressionStrings a map from a method declaration to the {@code @SideEffectsOnly}
+     *     expressions written on it
+     * @return every expression string in {@code expressionStrings}
+     */
+    private List<String> flatten(Map<ExecutableElement, List<String>> expressionStrings) {
+      List<String> result = new ArrayList<>();
+      for (List<String> strings : expressionStrings.values()) {
+        result.addAll(strings);
       }
       return result;
     }
@@ -4745,14 +4814,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      * @return the method's {@link SideEffectsOnly} annotation, as a user would write it
      */
     private String sideEffectsOnlyToString(ExecutableElement method) {
-      AnnotationMirror seOnlyAnnotation =
-          atypeFactory.getDeclAnnotation(method, SideEffectsOnly.class);
-      if (seOnlyAnnotation == null) {
+      Map<ExecutableElement, List<String>> seOnlyStrings =
+          atypeFactory.getSideEffectsOnlyExpressionStrings(method);
+      if (seOnlyStrings == null) {
         return "@SideEffectsOnly";
       }
-      List<String> expressionStrings =
-          AnnotationUtils.getElementValueArray(
-              seOnlyAnnotation, sideEffectsOnlyValueElement, String.class);
+      List<String> expressionStrings = flatten(seOnlyStrings);
       StringJoiner quoted = new StringJoiner(", ");
       for (String expressionString : expressionStrings) {
         quoted.add("\"" + expressionString + "\"");

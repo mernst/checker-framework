@@ -44,7 +44,7 @@ public class OverrideExpressionComparison {
 
     @Override
     @SideEffectsOnly({"#1.f", "this.coll"})
-    // :: error: (purity.overriding)
+    // :: error: (purity.sideeffectsonly.overriding)
     public void m(Holder h) {
       h.f.add(1);
       coll.add(1);
@@ -73,7 +73,7 @@ public class OverrideExpressionComparison {
 
     @Override
     @SideEffectsOnly("staticHolder.f")
-    // :: error: (purity.overriding)
+    // :: error: (purity.sideeffectsonly.overriding)
     public void m() {
       staticHolder.f.add(1);
     }

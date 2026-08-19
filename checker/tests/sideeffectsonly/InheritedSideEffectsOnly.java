@@ -95,7 +95,7 @@ public class InheritedSideEffectsOnly {
 
     @Override
     @SideEffectsOnly({"#1", "#2", "this.coll"})
-    // :: error: (purity.overriding)
+    // :: error: (purity.sideeffectsonly.overriding)
     public void mutateBoth(Collection<Integer> a, Collection<Integer> b) {
       coll.add(1);
     }

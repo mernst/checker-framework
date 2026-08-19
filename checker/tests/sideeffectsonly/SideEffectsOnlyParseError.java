@@ -9,8 +9,10 @@ import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 public class SideEffectsOnlyParseError {
 
+  // Two errors are issued at the declaration:  one from checking the annotation itself, and one
+  // from parsing the expression in order to check the method body against it.
   @SideEffectsOnly("nosuchfield")
-  // :: error: (flowexpr.parse.error.sideeffectsonly)
+  // :: error: (flowexpr.parse.error.sideeffectsonly) :: error: (flowexpr.parse.error)
   void modifies() {}
 
   void call() {
