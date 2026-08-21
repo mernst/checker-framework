@@ -269,12 +269,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
   /**
    * True if "-AcheckPurityAnnotations" itself was passed on the command line. Unlike {@link
    * #checkPurityAnnotations}, this is not implied by "-AsuggestPureMethods" or "-Ainfer".
-   *
-   * <p>Checking a {@link SideEffectsOnly} annotation against a method body requires this option.
-   * That check is a separate scan of the body, and it reports errors about expressions that a
-   * method modifies -- which is unrelated to what a purity suggestion is about. Enabling it as a
-   * side effect of asking for suggestions would issue errors that the user did not ask for; in
-   * particular, every whole-program inference run would perform it.
    */
   private final boolean checkPurityAnnotationsOption;
 
@@ -1165,8 +1159,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    * AnnotatedTypeMirror.AnnotatedDeclaredType)}.
    *
    * <p>If the method {@code tree} is annotated with {@link SideEffectsOnly}, check that the method
-   * side-effects only expressions specified as annotation arguments/elements to {@link
-   * SideEffectsOnly}.
+   * side-effects only the specified expressions.
    *
    * @param tree the method tree to check
    */
@@ -1291,9 +1284,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         getPureOrSideEffectFreeAnnotation(methodDeclElem);
     if (pureOrSideEffectFreeAnnotation != null) {
       // It is an error if a @SideEffectsOnly annotation is *written* together with a @Pure or
-      // @SideEffectFree annotation.  It is not an error if one of the two is inherited: an
-      // overriding method may promise more than the method it overrides, so @SideEffectFree on an
-      // override of a @SideEffectsOnly method is legal (and checkPurity() permits it).
+      // @SideEffectFree annotation.  It is not necessarily an error if one of the two is inherited.
       if (seOnlyAnnotation != null
           && atypeFactory.isDeclAnnotationWrittenOn(methodDeclElem, seOnlyAnnotation)
           && atypeFactory.isDeclAnnotationWrittenOn(
