@@ -214,15 +214,15 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
             ? Collections.emptyList()
             : TreePathUtil.getInstanceInitializers(statement);
 
-    List<Tree> checkedCode = new ArrayList<>(initializers.size() + 1);
+    List<Tree> checkedCodeTrees = new ArrayList<>(initializers.size() + 1);
     for (TreePath initializer : initializers) {
-      checkedCode.add(initializer.getLeaf());
+      checkedCodeTrees.add(initializer.getLeaf());
     }
-    checkedCode.add(statement.getLeaf());
+    checkedCodeTrees.add(statement.getLeaf());
     DisallowedSideEffects scanner =
         new DisallowedSideEffects(
             seOnlyExpressions,
-            freshLocals(checkedCode),
+            freshLocals(checkedCodeTrees),
             checker,
             assumeSideEffectFree,
             assumePureGetters);
