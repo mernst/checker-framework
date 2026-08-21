@@ -4657,14 +4657,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       }
 
       for (JavaExpression seOnlySubExpression : seOnlySubExpressions) {
-        boolean covered = false;
-        for (JavaExpression seOnlySuperExpression : seOnlySuperExpressions) {
-          if (seOnlySubExpression.containsAsReceiver(atypeFactory, seOnlySuperExpression)) {
-            covered = true;
-            break;
-          }
-        }
-        if (!covered) {
+        if (seOnlySuperExpressions.stream()
+            .noneMatch(sup -> seOnlySubExpression.containsAsReceiver(atypeFactory, sup))) {
           return false;
         }
       }
