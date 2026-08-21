@@ -331,13 +331,24 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
   // handles it.  A `new` expression is handled by `visitNewClass`.
   @Override
   public Void visitMethodInvocation(MethodInvocationTree node, Void aVoid) {
+    checkMethodInvocation(node);
+    return super.visitMethodInvocation(node, aVoid);
+  }
+
+  /**
+   * Records the disallowed side effects of the given method invocation, and reports an error if the
+   * callee has no side-effect annotation. Does not scan the subtrees of the invocation.
+   *
+   * @param node a method invocation
+   */
+  protected void checkMethodInvocation(MethodInvocationTree node) {
     ExecutableElement invokedElem = TreeUtils.elementFromUse(node);
     if (invokedElem == null || TreeUtils.isEnumSuperCall(node)) {
-      return super.visitMethodInvocation(node, aVoid);
+      return;
     }
     if (assumeSideEffectFree || (assumePureGetters && ElementUtils.isGetter(invokedElem))) {
       // The user asked that the callee be assumed to modify nothing.
-      return super.visitMethodInvocation(node, aVoid);
+      return;
     }
     AnnotatedTypeFactory atypeFactory = checker.getTypeFactory();
     boolean isMarkedPure = atypeFactory.getDeclAnnotation(invokedElem, Pure.class) != null;
@@ -346,7 +357,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
     if (isMarkedPure || isMarkedSideEffectFree) {
       // The callee modifies nothing.
       // TODO: Should all the checking be integrated together?
-      return super.visitMethodInvocation(node, aVoid);
+      return;
     }
 
     AnnotationMirror seOnlyAnnotation =
@@ -357,7 +368,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
       // A different message key than `purity.incorrect.sideeffectsonly` is used because the
       // subject of this message is the callee, not the method being checked.
       checker.reportError(node, "purity.unknown.sideeffectsonly", calleeName(invokedElem));
-      return super.visitMethodInvocation(node, aVoid);
+      return;
     }
 
     // The callee modifies at most the expressions listed in its own `@SideEffectsOnly` annotation.
@@ -367,7 +378,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
       }
     }
     checkCallbackArguments(node.getArguments());
-    return super.visitMethodInvocation(node, aVoid);
   }
 
   /**
