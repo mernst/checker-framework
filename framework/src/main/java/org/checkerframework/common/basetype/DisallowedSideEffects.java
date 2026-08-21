@@ -2,18 +2,15 @@ package org.checkerframework.common.basetype;
 
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.AssignmentTree;
-import com.sun.source.tree.BlockTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompoundAssignmentTree;
 import com.sun.source.tree.EnhancedForLoopTree;
-import com.sun.source.tree.ExpressionStatementTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
-import com.sun.source.tree.StatementTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.TryTree;
 import com.sun.source.tree.UnaryTree;
@@ -64,6 +61,7 @@ import org.checkerframework.framework.util.StringToJavaExpression;
 import org.checkerframework.javacutil.AnnotationProvider;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
+import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 import org.plumelib.util.IPair;
@@ -215,11 +213,11 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
     // * its body
     // javac does not put the extra code in the constructor's AST until after the Checker Framework
     // has run, so check them here.
-    MethodInvocationTree explicitCall = explicitConstructorCall(methodTree);
+    MethodInvocationTree explicitCall = TreeUtils.getExplicitConstructorCall(methodTree);
     List<TreePath> initializers =
         explicitCall != null && TreeUtils.isThisConstructorCall(explicitCall)
             ? Collections.emptyList()
-            : instanceInitializers(statement);
+            : TreePathUtil.getInstanceInitializers(statement);
 
     List<Tree> checkedCode = new ArrayList<>(initializers.size() + 1);
     for (TreePath initializer : initializers) {
@@ -246,63 +244,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
   }
 
   /**
-   * Returns the explicit {@code this(...)} or {@code super(...)} call in the given constructor's
-   * body, or null if it contains neither.
-   *
-   * @param methodTree a constructor
-   * @return the explicit constructor call in the constructor's body, or null
-   */
-  private static @Nullable MethodInvocationTree explicitConstructorCall(MethodTree methodTree) {
-    BlockTree body = methodTree.getBody();
-    if (body == null) {
-      return null;
-    }
-    // The call need not be the first statement:  since Java 25, a constructor may run other
-    // statements before it.
-    for (StatementTree statement : body.getStatements()) {
-      if (statement instanceof ExpressionStatementTree expressionStatement
-          && expressionStatement.getExpression() instanceof MethodInvocationTree invocation
-          && (TreeUtils.isThisConstructorCall(invocation)
-              || TreeUtils.isSuperConstructorCall(invocation))) {
-        return invocation;
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Returns the instance field initializers and instance initializer blocks of the class that
-   * encloses the given code. They run as part of every constructor that does not delegate to
-   * another constructor of the same class.
-   *
-   * @param statement the body of a constructor
-   * @return paths to the instance initializers of the class that encloses {@code statement}
-   */
-  private static List<TreePath> instanceInitializers(TreePath statement) {
-    TreePath classPath = statement;
-    while (classPath != null && !(classPath.getLeaf() instanceof ClassTree)) {
-      classPath = classPath.getParentPath();
-    }
-    if (classPath == null) {
-      return Collections.emptyList();
-    }
-    List<TreePath> result = new ArrayList<>(2);
-    for (Tree member : ((ClassTree) classPath.getLeaf()).getMembers()) {
-      if (member instanceof VariableTree variable) {
-        // A static field's initializer runs at class initialization rather than at construction.
-        // (This also excludes an enum constant, which is static.)
-        if (variable.getInitializer() != null
-            && !variable.getModifiers().getFlags().contains(Modifier.STATIC)) {
-          result.add(new TreePath(classPath, member));
-        }
-      } else if (member instanceof BlockTree block && !block.isStatic()) {
-        result.add(new TreePath(classPath, member));
-      }
-    }
-    return result;
-  }
-
-  /**
    * Checks the call to the superclass's no-argument constructor that the compiler inserts in a
    * constructor that contains no explicit {@code this(...)} or {@code super(...)} call, and records
    * any side effect of it that is beyond what the {@link SideEffectsOnly} annotation of the
@@ -324,33 +265,14 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
       // which modifies only the object under construction.
       return;
     }
-    ExecutableElement superConstructor = noArgumentConstructor(superclass);
+    TypeElement superclassElt = (TypeElement) ((DeclaredType) superclass).asElement();
+    ExecutableElement superConstructor = ElementUtils.getNoArgumentConstructor(superclassElt);
     if (superConstructor == null) {
       checker.reportError(
           node, "purity.unknown.sideeffectsonly", TypesUtils.simpleTypeName(superclass));
       return;
     }
     checkImplicitCall(node, superConstructor, null);
-  }
-
-  /**
-   * Returns the no-argument constructor of the given type, or null if it has none. A constructor is
-   * not inherited, so only the type's own constructors are considered.
-   *
-   * @param type a class type
-   * @return the type's no-argument constructor, or null if it has none
-   */
-  protected @Nullable ExecutableElement noArgumentConstructor(TypeMirror type) {
-    if (!(type instanceof DeclaredType declaredType)) {
-      return null;
-    }
-    for (ExecutableElement constructor :
-        ElementFilter.constructorsIn(declaredType.asElement().getEnclosedElements())) {
-      if (constructor.getParameters().isEmpty()) {
-        return constructor;
-      }
-    }
-    return null;
   }
 
   /**
@@ -508,11 +430,11 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * @return true if the given method modifies nothing
    */
   protected boolean modifiesNothing(ExecutableElement elt) {
-    AnnotatedTypeFactory atypeFactory = checker.getTypeFactory();
     if (assumeSideEffectFree || (assumePureGetters && ElementUtils.isGetter(elt))) {
       // The user asked that the method be assumed to modify nothing.
       return true;
     }
+    AnnotatedTypeFactory atypeFactory = checker.getTypeFactory();
     return atypeFactory.getDeclAnnotation(elt, Pure.class) != null
         || atypeFactory.getDeclAnnotation(elt, SideEffectFree.class) != null;
   }
