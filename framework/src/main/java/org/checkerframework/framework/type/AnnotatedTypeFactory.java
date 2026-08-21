@@ -4139,8 +4139,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
   /**
    * Returns true if the given declaration annotation is written on the given element itself --
-   * either in source code or in an annotation file -- rather than being inherited from a method
-   * that the element overrides or from a supertype.
+   * either in source code or in an annotation file -- rather than being inherited.
    *
    * @param elt an element
    * @param anno a declaration annotation that applies to {@code elt}

@@ -78,7 +78,7 @@ import org.plumelib.util.UnionFind;
 public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
 
   /** Expressions the method side-effects that are not in its {@link SideEffectsOnly} annotation. */
-  protected final List<IPair<Tree, JavaExpression>> disallowedSideEffects = new ArrayList<>(1);
+  protected final List<IPair<Tree, JavaExpression>> disallowedSideEffects = new ArrayList<>(2);
 
   /**
    * List of expressions specified as annotation arguments in the {@link SideEffectsOnly} annotation
@@ -164,7 +164,8 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
   }
 
   /**
-   * Issues warnings about side effects beyond the {@code @SideEffectsOnly} annotation.
+   * Issues warnings about side effects in {@code statement} beyond the {@code @SideEffectsOnly}
+   * annotation.
    *
    * <p>When {@code methodTree} is a constructor, {@code this} is treated as if it appeared in the
    * annotation, whether or not it does. Also, the code that runs before the constructor's body --
@@ -174,7 +175,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * @param statement the statement to check; currently, at the only call site it is a method body
    * @param sideEffectsOnlyExpressions the values in the {@link SideEffectsOnly} annotation
    * @param checker the checker to use
-   * @param methodTree the method, used for diagnostics
+   * @param methodTree the method that contains {@code statement}
    * @param sideEffectsOnlyValueElement the {@code SideEffectsOnly.value} argument/element
    * @param assumeSideEffectFree true if every method should be assumed to be side-effect-free
    * @param assumePureGetters true if every getter should be assumed to be side-effect-free
@@ -207,11 +208,13 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
     List<JavaExpression> seOnlyExpressions = new ArrayList<>(sideEffectsOnlyExpressions);
     seOnlyExpressions.add(new ThisReference(constructorElt.getEnclosingElement().asType()));
 
-    // Calling a constructor runs more than its body.  Unless the constructor delegates to another
-    // constructor of the same class, the class's instance initializers run first, and unless the
-    // constructor contains an explicit constructor call of either kind, the superclass's
-    // no-argument constructor runs before those.  javac does not put either in the constructor's
-    // AST until after the Checker Framework has run, so check them here.
+    // Calling constructor c runs:
+    // * the superclass's no-argument constructor, unless c contains a constructor call.
+    // * the class's instance initializers, unless c delegates to another constructor of the same
+    //   class
+    // * its body
+    // javac does not put the extra code in the constructor's AST until after the Checker Framework
+    // has run, so check them here.
     MethodInvocationTree explicitCall = explicitConstructorCall(methodTree);
     List<TreePath> initializers =
         explicitCall != null && TreeUtils.isThisConstructorCall(explicitCall)
