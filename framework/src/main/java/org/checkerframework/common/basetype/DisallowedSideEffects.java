@@ -155,7 +155,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
           sideEffectsOnlyExpressions,
           checker,
           methodTree,
-          sideEffectsOnlyValueElement,
           assumeSideEffectFree,
           assumePureGetters);
     } else {
@@ -181,7 +180,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * @param sideEffectsOnlyExpressions the values in the {@link SideEffectsOnly} annotation
    * @param checker the checker to use
    * @param methodTree the constructor that contains {@code statement}
-   * @param sideEffectsOnlyValueElement the {@code SideEffectsOnly.value} argument/element
    * @param assumeSideEffectFree true if every method should be assumed to be side-effect-free
    * @param assumePureGetters true if every getter should be assumed to be side-effect-free
    */
@@ -190,7 +188,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
       List<JavaExpression> sideEffectsOnlyExpressions,
       BaseTypeChecker checker,
       MethodTree methodTree,
-      ExecutableElement sideEffectsOnlyValueElement,
       boolean assumeSideEffectFree,
       boolean assumePureGetters) {
     // A constructor implicitly side-effects the object under construction, which did not exist
@@ -461,7 +458,8 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
       } catch (JavaExpressionParseException ex) {
         // The parse error itself is reported at the callee's declaration, by
         // BaseTypeVisitor.checkPurityAnnotations.
-        checker.reportError(node, "purity.unknown.sideeffectsonly", calleeName(invokedElem));
+        checker.reportError(
+            node, "purity.unparseable.sideeffectsonly", calleeName(invokedElem), exprString);
         // If an expression cannot be parsed at the call site, the checker cannot tell what the
         // callee modifies, so be conservative.
         return Collections.emptyList();
@@ -572,7 +570,8 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
       } catch (JavaExpressionParseException ex) {
         // The parse error itself is reported at the callee's declaration, by
         // BaseTypeVisitor.checkPurityAnnotations.
-        checker.reportError(node, "purity.unknown.sideeffectsonly", calleeName(invokedElem));
+        checker.reportError(
+            node, "purity.unparseable.sideeffectsonly", calleeName(invokedElem), exprString);
         return;
       }
       if (receiver == null) {
@@ -711,8 +710,8 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * be an object that existed before the call, as it does for a constructor whose body contains
    * {@code this.f = p;} where {@code p} is a formal parameter.
    *
-   * <p>If an expression cannot be parsed, this reports {@code purity.unknown.sideeffectsonly} and
-   * returns an empty list, just as {@link #calleeSideEffectedExpressions} does.
+   * <p>If an expression cannot be parsed, this reports {@code purity.unparseable.sideeffectsonly}
+   * and returns an empty list, just as {@link #calleeSideEffectedExpressions} does.
    *
    * @param node a call to a constructor that is annotated with {@link SideEffectsOnly}
    * @param constructorElt the invoked constructor
@@ -733,7 +732,10 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         // The parse error itself is reported at the constructor's declaration, by
         // BaseTypeVisitor.checkPurityAnnotations.
         checker.reportError(
-            node, "purity.unknown.sideeffectsonly", constructorName(constructorElt));
+            node,
+            "purity.unparseable.sideeffectsonly",
+            constructorName(constructorElt),
+            exprString);
         return Collections.emptyList();
       }
       if (atDeclaration instanceof ThisReference) {
