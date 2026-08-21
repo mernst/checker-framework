@@ -372,7 +372,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    *
    * <p>The declaring method is retained, rather than just the expression strings, because each
    * expression must be parsed in the scope of the method that declares it; see {@link
-   * #getSideEffectsOnlyExpressionStrings}.
+   * #getSideEffectsOnlyExpressionMap}.
    *
    * <p>{@link #inheritOverriddenDeclAnnos} populates this map, in lockstep with {@link
    * #cacheDeclAnnos}, so an entry is present only after {@link #getDeclAnnotations} has been called
@@ -832,7 +832,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     // `@SideEffectsOnly` is not in `inheritedAnnotations`, even though it is inherited, because
     // inheriting it as an annotation would lose track of which method declared each of its
     // expressions.  `inheritOverriddenDeclAnnos` inherits it separately; see
-    // `getSideEffectsOnlyExpressionStrings`.
+    // `getSideEffectsOnlyExpressionMap`.
     addInheritedAnnotation(
         AnnotationBuilder.fromClass(
             elements, org.checkerframework.dataflow.qual.Deterministic.class));
@@ -4237,7 +4237,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     for (ExecutableElement superElt : overriddenMethods.values()) {
       if (inheritSideEffectsOnly) {
         Map<ExecutableElement, List<String>> superSideEffectsOnly =
-            getSideEffectsOnlyExpressionStrings(superElt);
+            getSideEffectsOnlyExpressionMap(superElt);
         if (superSideEffectsOnly != null) {
           if (inheritedSideEffectsOnly == null) {
             inheritedSideEffectsOnly = new LinkedHashMap<>();
@@ -4296,19 +4296,27 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * @return a map from a method declaration to the {@code @SideEffectsOnly} expressions written on
    *     it, or null if no {@code @SideEffectsOnly} annotation applies to {@code method}
    */
-  public @Nullable Map<ExecutableElement, List<String>> getSideEffectsOnlyExpressionStrings(
+  public @Nullable Map<ExecutableElement, List<String>> getSideEffectsOnlyExpressionMap(
       ExecutableElement method) {
     // This call also populates `inheritedSideEffectsOnlyExpressions` for `method`.  Because
     // `@SideEffectsOnly` is not inherited as an annotation, the result is non-null only if the
     // annotation is written on `method` itself.
     AnnotationMirror sideEffectsOnly = getDeclAnnotation(method, SideEffectsOnly.class);
     if (sideEffectsOnly != null) {
-      return Collections.singletonMap(
-          method,
-          AnnotationUtils.getElementValueArray(
-              sideEffectsOnly, sideEffectsOnlyValueElement, String.class));
+      return Collections.singletonMap(method, getSideEffectsOnlyExpressions(sideEffectsOnly));
     }
     return inheritedSideEffectsOnlyExpressions.get(method);
+  }
+
+  /**
+   * Returns the expressions that are written in the given {@code @SideEffectsOnly} annotation.
+   *
+   * @param sideEffectsOnly a {@code @SideEffectsOnly} annotation
+   * @return the expressions that are written in {@code sideEffectsOnly}
+   */
+  public List<String> getSideEffectsOnlyExpressions(AnnotationMirror sideEffectsOnly) {
+    return AnnotationUtils.getElementValueArray(
+        sideEffectsOnly, sideEffectsOnlyValueElement, String.class);
   }
 
   /**
