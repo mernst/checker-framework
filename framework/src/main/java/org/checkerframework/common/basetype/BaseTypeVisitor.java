@@ -4649,7 +4649,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       if (seOnlySuperExpressions == null || seOnlySubExpressions == null) {
         // An argument could not be parsed, so compare the annotations' strings.  The parse error
         // itself is reported at the declaration that contains it.
-        return flatten(seOnlySuperStrings).containsAll(flatten(seOnlySubStrings));
+        return allExpressions(seOnlySuperStrings).containsAll(allExpressions(seOnlySubStrings));
       }
 
       if (isMethodReference) {
@@ -4784,7 +4784,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      *     expressions written on it
      * @return every expression string in {@code expressionStrings}
      */
-    private List<String> flatten(Map<ExecutableElement, List<String>> expressionStrings) {
+    private List<String> allExpressions(Map<ExecutableElement, List<String>> expressionStrings) {
       List<String> result = new ArrayList<>();
       for (List<String> strings : expressionStrings.values()) {
         result.addAll(strings);
@@ -4818,8 +4818,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
     /**
      * Formats the given method's {@link SideEffectsOnly} annotation, with its arguments, as a user
-     * would write it. The arguments are printed because two {@code @SideEffectsOnly} annotations
-     * that permit different side effects differ only in them.
+     * would write it.
      *
      * @param method a method that is annotated with {@link SideEffectsOnly}
      * @return the method's {@link SideEffectsOnly} annotation, as a user would write it
@@ -4828,9 +4827,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       Map<ExecutableElement, List<String>> seOnlyStrings =
           atypeFactory.getSideEffectsOnlyExpressionStrings(method);
       if (seOnlyStrings == null) {
-        return "@SideEffectsOnly";
+        return "@SideEffectsOnly({})";
       }
-      List<String> expressionStrings = flatten(seOnlyStrings);
+      List<String> expressionStrings = allExpressions(seOnlyStrings);
       StringJoiner quoted = new StringJoiner(", ");
       for (String expressionString : expressionStrings) {
         quoted.add("\"" + expressionString + "\"");
