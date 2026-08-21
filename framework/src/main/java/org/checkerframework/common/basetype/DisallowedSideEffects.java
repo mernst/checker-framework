@@ -855,8 +855,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * @return true if the given expression is covered by the {@link SideEffectsOnly} annotation
    */
   protected boolean isCoveredByAnnotation(JavaExpression expr) {
-    // Argument order matters below:  `containsAsReceiver` is asymmetric, and `expr` is the
-    // expression that might be reached through a listed one.
     for (JavaExpression seOnlyExpression : sideEffectsOnlyExpressionsFromAnnotation) {
       if (expr.containsAsReceiver(checker.getTypeFactory(), seOnlyExpression)) {
         return true;
@@ -866,13 +864,9 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
   }
 
   /**
-   * Returns true if every evaluation of the given expression yields the same location or value: the
-   * expression is a variable, a field access, an array access, a literal, a class name, or a call
-   * to a {@code @Pure} method, recursively. Any other expression, such as a call to a method that
-   * is not {@code @Pure} or an object creation, may yield an unrelated value each time it is
-   * evaluated.
+   * Returns true if every evaluation of the given expression yields the same location or value.
    *
-   * <p>A {@code @Pure} method returns the same value every time it is called with the same
+   * <p>A {@code @Deterministic} method returns the same value every time it is called with the same
    * arguments, so a call to one is deterministic so long as its receiver and its arguments are.
    *
    * @param expression an expression
