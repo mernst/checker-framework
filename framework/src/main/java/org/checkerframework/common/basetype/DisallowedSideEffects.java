@@ -351,7 +351,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         atypeFactory.getDeclAnnotation(invokedElem, SideEffectsOnly.class);
     if (seOnlyAnnotation == null) {
       // The callee has no side-effect annotation, so it might modify arbitrary state.
-      checker.reportError(node, "purity.unknown.sideeffectsonly", calleeName(invokedElem));
+      checker.reportError(node, "purity.unknown.sideeffectsonly", executableName(invokedElem));
       return;
     }
 
@@ -403,7 +403,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
           continue;
         }
       }
-      checker.reportError(arg, "purity.unknown.sideeffectsonly", calleeName(functionalMethod));
+      checker.reportError(arg, "purity.unknown.sideeffectsonly", executableName(functionalMethod));
     }
   }
 
@@ -424,13 +424,13 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
   }
 
   /**
-   * Returns the expressions that the invoked method side-effects: the arguments/elements of its
-   * {@link SideEffectsOnly} annotation, view-adapted to the given call site.
+   * Returns the expressions that the invoked method may side-effect: the arguments/elements of its
+   * {@link SideEffectsOnly} annotation, viewpoint-adapted to the given call site.
    *
    * @param node a call to a method that is annotated with {@link SideEffectsOnly}
    * @param invokedElem the invoked method
    * @param seOnlyAnnotation the invoked method's {@link SideEffectsOnly} annotation
-   * @return the expressions that the invoked method side-effects, view-adapted to {@code node}
+   * @return the expressions that the invoked method side-effects, viewpoint-adapted to {@code node}
    */
   protected List<JavaExpression> calleeSideEffectedExpressions(
       MethodInvocationTree node, ExecutableElement invokedElem, AnnotationMirror seOnlyAnnotation) {
@@ -440,7 +440,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
     List<JavaExpression> result = new ArrayList<>(exprStrings.size());
     for (String exprString : exprStrings) {
       try {
-        // At a call of the form `super.m()`, view-adapting the callee's `this` yields `super`,
+        // At a call of the form `super.m()`, viewpoint-adapting the callee's `this` yields `super`,
         // which denotes the same object that the caller writes as `this`.  See
         // `expressionFromTree`.
         result.add(
@@ -450,7 +450,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         // The parse error itself is reported at the callee's declaration, by
         // BaseTypeVisitor.checkPurityAnnotations.
         checker.reportError(
-            node, "purity.unparseable.sideeffectsonly", calleeName(invokedElem), exprString);
+            node, "purity.unparseable.sideeffectsonly", executableName(invokedElem), exprString);
         // If an expression cannot be parsed at the call site, the checker cannot tell what the
         // callee modifies, so be conservative.
         return Collections.emptyList();
@@ -540,7 +540,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         atypeFactory.getDeclAnnotation(invokedElem, SideEffectsOnly.class);
     if (seOnlyAnnotation == null) {
       // The callee has no side-effect annotation, so it might modify arbitrary state.
-      checker.reportError(node, "purity.unknown.sideeffectsonly", calleeName(invokedElem));
+      checker.reportError(node, "purity.unknown.sideeffectsonly", executableName(invokedElem));
       return;
     }
 
@@ -555,7 +555,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         // The parse error itself is reported at the callee's declaration, by
         // BaseTypeVisitor.checkPurityAnnotations.
         checker.reportError(
-            node, "purity.unparseable.sideeffectsonly", calleeName(invokedElem), exprString);
+            node, "purity.unparseable.sideeffectsonly", executableName(invokedElem), exprString);
         return;
       }
       if (receiver == null) {
@@ -566,9 +566,10 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         }
         if (atDeclaration.containedOfClass(ThisReference.class) != null) {
           // The expression is reached through the object that the desugaring created.  That object
-          // is not nameable here, so the expression cannot be view-adapted; and its value may be an
+          // is not nameable here, so the expression cannot be viewpoint-adapted; and its value may
+          // be an
           // object that existed before the call, so it cannot be dismissed as unobservable either.
-          checker.reportError(node, "purity.unknown.sideeffectsonly", calleeName(invokedElem));
+          checker.reportError(node, "purity.unknown.sideeffectsonly", executableName(invokedElem));
           return;
         }
       } else {
@@ -675,7 +676,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
 
   /**
    * Returns the expressions that the invoked constructor side-effects: the arguments/elements of
-   * its {@link SideEffectsOnly} annotation, view-adapted to the given call site.
+   * its {@link SideEffectsOnly} annotation, viewpoint-adapted to the given call site.
    *
    * <p>The expression {@code this} is omitted from the result. In a constructor's annotation,
    * {@code this} is the object being constructed, which did not exist before the call, so modifying
@@ -690,7 +691,8 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * @param node a call to a constructor that is annotated with {@link SideEffectsOnly}
    * @param constructorElt the invoked constructor
    * @param seOnlyAnnotation the invoked constructor's {@link SideEffectsOnly} annotation
-   * @return the expressions that the invoked constructor side-effects, view-adapted to {@code node}
+   * @return the expressions that the invoked constructor side-effects, viewpoint-adapted to {@code
+   *     node}
    */
   protected List<JavaExpression> constructorSideEffectedExpressions(
       NewClassTree node, ExecutableElement constructorElt, AnnotationMirror seOnlyAnnotation) {
@@ -719,8 +721,9 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
       }
       if (atDeclaration.containedOfClass(ThisReference.class) != null) {
         // The expression is reached through the object under construction.  That object is not
-        // nameable at the call site, so the expression cannot be view-adapted; and its value may be
-        // an object that existed before the call, so it cannot be dismissed as unobservable either.
+        // nameable at the call site, so the expression cannot be viewpoint-adapted; and its value
+        // may be an object that existed before the call, so it cannot be dismissed as unobservable
+        // either.
         checker.reportError(
             node, "purity.unknown.sideeffectsonly", constructorName(constructorElt));
         return Collections.emptyList();
@@ -736,7 +739,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * @param elt a method or constructor
    * @return the name of the method, or the name of the class that the constructor constructs
    */
-  private static CharSequence calleeName(ExecutableElement elt) {
+  private static CharSequence executableName(ExecutableElement elt) {
     return elt.getKind() == ElementKind.CONSTRUCTOR ? constructorName(elt) : elt.getSimpleName();
   }
 
