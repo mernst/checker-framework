@@ -33,7 +33,7 @@ public class UseSiteParseError {
   void lambdaForUnparseable(Library lib) {
     // `Callback.run`'s annotation cannot be parsed, so it does not say what the lambda's body may
     // modify.  Failing closed reports it here rather than leaving the body unchecked.
-    // :: error: (flowexpr.parse.error)
+    // :: error: (flowexpr.parse.error.sideeffectsonly)
     Callback c = () -> staticField = 1;
   }
 }
