@@ -1311,10 +1311,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
           && atypeFactory.isDeclAnnotationWrittenOn(
               methodDeclElem, pureOrSideEffectFreeAnnotation)) {
         checker.reportError(
-            tree,
-            "purity.incorrect.annotation.conflict",
-            tree.getName(),
-            pureOrSideEffectFreeAnnotation);
+            tree, "purity.annotation.conflict", tree.getName(), pureOrSideEffectFreeAnnotation);
       }
       // Either way, there is nothing more to do: @Pure and @SideEffectFree are stronger than
       // @SideEffectsOnly, and the purity check above has already verified them.
@@ -1328,6 +1325,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       checker.reportError(tree, "purity.empty.sideeffectsonly");
       return;
     }
+
     List<JavaExpression> seOnlyExpressions = new ArrayList<>();
     for (Map.Entry<ExecutableElement, List<String>> entry : seOnlyExpressionStrings.entrySet()) {
       // The method whose `@SideEffectsOnly` annotation contains the expressions.  It is the method
@@ -1336,10 +1334,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       for (String st : entry.getValue()) {
         try {
           // An expression is parsed in the scope of the method that declares it, which is not
-          // necessarily the scope of `tree`:  a field that the declaring method's class declares
-          // might be shadowed or inaccessible in `tree`'s class.  Viewpoint-adapting to `tree`
-          // then replaces the declaring method's formal parameters by `tree`'s, which correspond
-          // positionally because `tree` overrides the declaring method.
+          // necessarily the scope of `tree`.
           JavaExpression exprJe =
               StringToJavaExpression.atMethodDecl(st, declaringMethod, checker).atMethodBody(tree);
           if (!DisallowedSideEffects.isStable(atypeFactory, exprJe)) {

@@ -14,7 +14,7 @@ public class Library {
   // declaration -- an annotation file is as much a declaration as source code is -- so this is a
   // conflict, just as if both appeared in this file.
   @org.checkerframework.dataflow.qual.SideEffectsOnly("this")
-  // :: error: (purity.incorrect.annotation.conflict)
+  // :: error: (purity.annotation.conflict)
   public void conflictsWithStub() {}
 }
 

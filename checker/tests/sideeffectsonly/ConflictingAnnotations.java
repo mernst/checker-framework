@@ -7,7 +7,7 @@ public class ConflictingAnnotations {
 
   @SideEffectsOnly("#1")
   @SideEffectFree
-  // :: error: (purity.incorrect.annotation.conflict)
+  // :: error: (purity.annotation.conflict)
   void test1(Collection<Integer> first) {
     // :: error: (purity.not.sideeffectfree.call)
     first.add(1);
@@ -15,7 +15,7 @@ public class ConflictingAnnotations {
 
   @SideEffectsOnly("#2")
   @Pure
-  // :: error: (purity.incorrect.annotation.conflict)
+  // :: error: (purity.annotation.conflict)
   int test2(Collection<Integer> first, Collection<Integer> second) {
     return 1;
   }
