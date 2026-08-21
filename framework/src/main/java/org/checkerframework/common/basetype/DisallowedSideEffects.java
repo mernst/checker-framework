@@ -343,19 +343,10 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
     if (invokedElem == null || TreeUtils.isEnumSuperCall(node)) {
       return;
     }
-    if (assumeSideEffectFree || (assumePureGetters && ElementUtils.isGetter(invokedElem))) {
-      // The user asked that the callee be assumed to modify nothing.
+    if (modifiesNothing(invokedElem)) {
       return;
     }
     AnnotatedTypeFactory atypeFactory = checker.getTypeFactory();
-    boolean isMarkedPure = atypeFactory.getDeclAnnotation(invokedElem, Pure.class) != null;
-    boolean isMarkedSideEffectFree =
-        atypeFactory.getDeclAnnotation(invokedElem, SideEffectFree.class) != null;
-    if (isMarkedPure || isMarkedSideEffectFree) {
-      // The callee modifies nothing.
-      return;
-    }
-
     AnnotationMirror seOnlyAnnotation =
         atypeFactory.getDeclAnnotation(invokedElem, SideEffectsOnly.class);
     if (seOnlyAnnotation == null) {
@@ -541,17 +532,10 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    */
   protected void checkImplicitCall(
       Tree node, ExecutableElement invokedElem, @Nullable JavaExpression receiver) {
-    if (assumeSideEffectFree || (assumePureGetters && ElementUtils.isGetter(invokedElem))) {
-      // The user asked that the callee be assumed to modify nothing.
+    if (modifiesNothing(invokedElem)) {
       return;
     }
     AnnotatedTypeFactory atypeFactory = checker.getTypeFactory();
-    if (atypeFactory.getDeclAnnotation(invokedElem, Pure.class) != null
-        || atypeFactory.getDeclAnnotation(invokedElem, SideEffectFree.class) != null) {
-      // The callee modifies nothing.
-      return;
-    }
-
     AnnotationMirror seOnlyAnnotation =
         atypeFactory.getDeclAnnotation(invokedElem, SideEffectsOnly.class);
     if (seOnlyAnnotation == null) {
@@ -665,20 +649,10 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
     if (constructorElt == null) {
       return super.visitNewClass(node, aVoid);
     }
-    // There is no need to check assumePureGetters, because a constructor is never a getter.
-    if (assumeSideEffectFree) {
-      // The user asked that the constructor be assumed to modify nothing.
+    if (modifiesNothing(constructorElt)) {
       return super.visitNewClass(node, aVoid);
     }
     AnnotatedTypeFactory atypeFactory = checker.getTypeFactory();
-    boolean isMarkedPure = atypeFactory.getDeclAnnotation(constructorElt, Pure.class) != null;
-    boolean isMarkedSideEffectFree =
-        atypeFactory.getDeclAnnotation(constructorElt, SideEffectFree.class) != null;
-    if (isMarkedPure || isMarkedSideEffectFree) {
-      // The constructor modifies nothing that existed before it was called.
-      return super.visitNewClass(node, aVoid);
-    }
-
     AnnotationMirror seOnlyAnnotation =
         atypeFactory.getDeclAnnotation(constructorElt, SideEffectsOnly.class);
     if (seOnlyAnnotation == null) {
