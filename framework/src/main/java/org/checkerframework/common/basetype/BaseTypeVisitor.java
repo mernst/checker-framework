@@ -73,6 +73,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -2574,8 +2575,11 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     }
     List<? extends VariableTree> lambdaParameters = tree.getParameters();
     if (interfaceMethod.getParameters().size() != lambdaParameters.size()) {
-      // The parameters do not correspond one-to-one, so do not guess at a correspondence.
-      return;
+      // javac rejects a lambda whose arity differs from that of the interface method that the
+      // lambda implements, so the parameters correspond one-to-one.
+      throw new BugInCF(
+          "lambda %s has %d parameters, but %s has %d",
+          tree, lambdaParameters.size(), interfaceMethod, interfaceMethod.getParameters().size());
     }
     TreePath body = atypeFactory.getPath(tree.getBody());
     if (body == null) {
@@ -4536,6 +4540,31 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       return result.toString();
     }
 
+    /**
+     * Formats a method's name and formal parameters for a diagnostic message.
+     *
+     * @param method a method
+     * @return the method's name and formal parameters
+     */
+    private String methodSignature(ExecutableElement method) {
+      List<? extends VariableElement> parameters = method.getParameters();
+      StringJoiner result =
+          new StringJoiner(", ", ElementUtils.getSimpleDescription(method) + "(", ")");
+      for (int i = 0; i < parameters.size(); i++) {
+        VariableElement parameter = parameters.get(i);
+        TypeMirror parameterType = parameter.asType();
+        String typeString;
+        if (method.isVarArgs() && i == parameters.size() - 1) {
+          typeString =
+              TypesUtils.simpleTypeName(((ArrayType) parameterType).getComponentType()) + "...";
+        } else {
+          typeString = TypesUtils.simpleTypeName(parameterType);
+        }
+        result.add(typeString + " " + parameter.getSimpleName());
+      }
+      return result.toString();
+    }
+
     /** Check that an override respects purity. */
     private void checkPurity() {
       EnumSet<PurityKind> superPurity = purityKinds(overridden.getElement());
@@ -4709,6 +4738,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       if (superParameters.size() != overrider.getElement().getParameters().size() + shift) {
         // The parameters do not correspond one-to-one, as when a varargs method implements a
         // fixed-arity interface method.  Do not guess at a correspondence.
+        checker.reportWarning(
+            overriderTree,
+            "purity.parameters.sideeffectsonly",
+            overrider.getElement().getSimpleName(),
+            methodSignature(overrider.getElement()),
+            methodSignature(overridden.getElement()));
         return null;
       }
 

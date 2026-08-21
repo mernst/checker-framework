@@ -98,6 +98,21 @@ public class MethodRefSideEffectsOnly {
     CellMutator m = Cell::mutatesOwnField;
   }
 
+  interface TwoMutator {
+    @SideEffectsOnly({"#1", "#2"})
+    void apply(StringBuilder sb1, StringBuilder sb2);
+  }
+
+  @SideEffectsOnly("#1")
+  static void mutatesVarargs(StringBuilder... sbs) {}
+
+  void varargsArityNotOk() {
+    // The varargs method has one formal parameter and the interface method has two, so the two
+    // `@SideEffectsOnly` annotations cannot be compared.
+    // :: warning: (purity.parameters.sideeffectsonly) :: error: (purity.methodref)
+    TwoMutator m = MethodRefSideEffectsOnly::mutatesVarargs;
+  }
+
   void boundNotOk() {
     Cell cell = new Cell();
     // For a bound reference, the receiver is fixed by the reference itself, so no expression at
