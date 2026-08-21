@@ -1071,7 +1071,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       }
 
       checkPurityAnnotations(tree);
-      checkSideEffectsOnlyAnnotation(tree, methodElement);
+      checkSideEffectsOnlyExpressions(tree, methodElement);
 
       // Passing the whole method/constructor validates the return type
       validateTypeOf(tree);
@@ -1348,7 +1348,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         } catch (JavaExpressionParseException ex) {
           // This diagnostic is about parsing the expression in order to check the method body
           // against it, so it is distinct from the one that
-          // `checkSideEffectsOnlyAnnotation(MethodTree, ExecutableElement)` issues about the
+          // `checkSideEffectsOnlyExpressions(MethodTree, ExecutableElement)` issues about the
           // annotation itself.  Every checker of a compound checker performs this check, so
           // report the error only once.
           DiagMessage diagMessage = new DiagMessage(ex);
@@ -1381,13 +1381,13 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
   /**
    * Return either the {@link Pure} or {@link SideEffectFree} annotation (in that order) if either
-   * appears on a method declaration, otherwise return null.
+   * appears on the given method declaration, otherwise return null.
    *
    * <p>This intentionally does not return a {@link SideEffectsOnly} annotation.
    *
    * @param methodDeclaration the method declaration
    * @return either the {@link Pure} or {@link SideEffectFree} annotation (in that order) if either
-   *     appears on a method declaration
+   *     appears on the given method declaration
    */
   private @Nullable AnnotationMirror getPureOrSideEffectFreeAnnotation(Element methodDeclaration) {
     AnnotationMirror pureAnnotation = atypeFactory.getDeclAnnotation(methodDeclaration, Pure.class);
@@ -1431,7 +1431,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    * @param tree a method declaration
    * @param methodElement the element for {@code tree}
    */
-  protected void checkSideEffectsOnlyAnnotation(MethodTree tree, ExecutableElement methodElement) {
+  protected void checkSideEffectsOnlyExpressions(MethodTree tree, ExecutableElement methodElement) {
     if (!checkPurityAnnotationsOption) {
       // Checking a @SideEffectsOnly annotation happens only when -AcheckPurityAnnotations was
       // itself supplied, like every other purity check.  Control can reach here without it,
@@ -4650,8 +4650,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       List<JavaExpression> seOnlySubExpressions = sideEffectsOnlyExpressions(seOnlySubStrings);
       if (seOnlySuperExpressions == null || seOnlySubExpressions == null) {
         // An argument could not be parsed, so compare the annotations' strings.  The parse error
-        // itself is reported at the declaration that contains it, by
-        // `checkSideEffectsOnlyAnnotation`.
+        // itself is reported at the declaration that contains it.
         return flatten(seOnlySuperStrings).containsAll(flatten(seOnlySubStrings));
       }
 
