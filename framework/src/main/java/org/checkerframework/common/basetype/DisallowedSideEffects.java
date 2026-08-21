@@ -114,7 +114,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * @param freshLocals the local variables that always hold an object that the method being checked
    *     created
    * @param checker the checker to use
-   * @param sideEffectsOnlyValueElement the {@code SideEffectsOnly.value} argument/element
    * @param assumeSideEffectFree true if every method should be assumed to be side-effect-free
    * @param assumePureGetters true if every getter should be assumed to be side-effect-free
    */
@@ -122,13 +121,12 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
       List<JavaExpression> sideEffectsOnlyExpressions,
       Set<VariableElement> freshLocals,
       BaseTypeChecker checker,
-      ExecutableElement sideEffectsOnlyValueElement,
       boolean assumeSideEffectFree,
       boolean assumePureGetters) {
     this.sideEffectsOnlyExpressionsFromAnnotation = sideEffectsOnlyExpressions;
     this.freshLocals = freshLocals;
     this.checker = checker;
-    this.sideEffectsOnlyValueElement = sideEffectsOnlyValueElement;
+    this.sideEffectsOnlyValueElement = checker.getVisitor().sideEffectsOnlyValueElement;
     this.assumeSideEffectFree = assumeSideEffectFree;
     this.assumePureGetters = assumePureGetters;
   }
@@ -146,7 +144,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * @param sideEffectsOnlyExpressions the values in the {@link SideEffectsOnly} annotation
    * @param checker the checker to use
    * @param methodTree the method that contains {@code statement}
-   * @param sideEffectsOnlyValueElement the {@code SideEffectsOnly.value} argument/element
    * @param assumeSideEffectFree true if every method should be assumed to be side-effect-free
    * @param assumePureGetters true if every getter should be assumed to be side-effect-free
    */
@@ -155,7 +152,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
       List<JavaExpression> sideEffectsOnlyExpressions,
       BaseTypeChecker checker,
       MethodTree methodTree,
-      ExecutableElement sideEffectsOnlyValueElement,
       boolean assumeSideEffectFree,
       boolean assumePureGetters) {
     if (!TreeUtils.isConstructor(methodTree)) {
@@ -164,7 +160,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
           sideEffectsOnlyExpressions,
           checker,
           methodTree.getName(),
-          sideEffectsOnlyValueElement,
           assumeSideEffectFree,
           assumePureGetters);
       return;
@@ -201,7 +196,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
             seOnlyExpressions,
             freshLocals(checkedCode),
             checker,
-            sideEffectsOnlyValueElement,
             assumeSideEffectFree,
             assumePureGetters);
     if (explicitCall == null) {
@@ -258,7 +252,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    *     terms of the code being checked
    * @param checker the checker to use
    * @param methodName the name to use in diagnostics for the code being checked
-   * @param sideEffectsOnlyValueElement the {@code SideEffectsOnly.value} argument/element
    * @param assumeSideEffectFree true if every method should be assumed to be side-effect-free
    * @param assumePureGetters true if every getter should be assumed to be side-effect-free
    */
@@ -267,7 +260,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
       List<JavaExpression> sideEffectsOnlyExpressions,
       BaseTypeChecker checker,
       CharSequence methodName,
-      ExecutableElement sideEffectsOnlyValueElement,
       boolean assumeSideEffectFree,
       boolean assumePureGetters) {
     DisallowedSideEffects scanner =
@@ -275,7 +267,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
             sideEffectsOnlyExpressions,
             freshLocals(Collections.singletonList(statement.getLeaf())),
             checker,
-            sideEffectsOnlyValueElement,
             assumeSideEffectFree,
             assumePureGetters);
     scanner.scan(statement, null);

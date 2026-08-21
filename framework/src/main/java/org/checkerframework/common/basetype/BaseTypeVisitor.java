@@ -1358,13 +1358,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
     if (body != null) {
       DisallowedSideEffects.checkSideEffectsOnly(
-          body,
-          seOnlyExpressions,
-          checker,
-          tree,
-          sideEffectsOnlyValueElement,
-          assumeSideEffectFree,
-          assumePureGetters);
+          body, seOnlyExpressions, checker, tree, assumeSideEffectFree, assumePureGetters);
     }
   }
 
@@ -2610,7 +2604,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         seOnlyExpressions,
         checker,
         interfaceMethod.getSimpleName(),
-        sideEffectsOnlyValueElement,
         assumeSideEffectFree,
         assumePureGetters);
   }
