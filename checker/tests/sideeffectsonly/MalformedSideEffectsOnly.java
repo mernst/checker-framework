@@ -22,58 +22,58 @@ public class MalformedSideEffectsOnly {
   // body modifies would ever be recognized as the listed expression, not even the syntactically
   // identical `h.getList()`.
   @SideEffectsOnly("#1.getList()")
-  // :: error: (purity.unstable.sideeffectsonly)
-  void unstableExpression(Holder h) {
+  // :: error: (purity.nondeterministic.sideeffectsonly)
+  void nondeterministicExpression(Holder h) {
     h.getList().add("x");
   }
 
-  // An array access is stable only if its index is stable too.
+  // An array access is deterministic only if its index is deterministic too.
   @SideEffectsOnly("#1.lists[#1.size()]")
-  // :: error: (purity.unstable.sideeffectsonly)
-  void unstableIndex(Holder h) {}
+  // :: error: (purity.nondeterministic.sideeffectsonly)
+  void nondeterministicIndex(Holder h) {}
 
-  // A field access, an array access, and a formal parameter are all stable.
+  // A field access, an array access, and a formal parameter are all deterministic.
   @SideEffectsOnly("#1.lists[0]")
-  void stableExpression(Holder h) {
+  void deterministicExpression(Holder h) {
     h.lists[0].add("x");
   }
 
   // A `@Pure` method returns the same value every time it is called with the same arguments, so a
-  // call to one is stable when its receiver and its arguments are.
+  // call to one is deterministic when its receiver and its arguments are.
   @SideEffectsOnly("#1.getPureList()")
-  void stablePureCall(Holder h) {
+  void deterministicPureCall(Holder h) {
     h.getPureList().add("x");
   }
 
-  // A `@Pure` call is stable enough to serve as an array index, too.
+  // A `@Pure` call is deterministic enough to serve as an array index, too.
   @SideEffectsOnly("#1.lists[#1.pureSize()]")
-  void stablePureIndex(Holder h) {
+  void deterministicPureIndex(Holder h) {
     h.lists[h.pureSize()].add("x");
   }
 
   // A `@Pure` call is satisfiable at a call site as well as in a body:  the callee's expression,
   // view-adapted to the call site, is the caller's.
   @SideEffectsOnly("#1.getPureList()")
-  void callsStablePureCallee(Holder h) {
-    stablePureCall(h);
+  void callsDeterministicPureCallee(Holder h) {
+    deterministicPureCall(h);
   }
 
   @SideEffectsOnly("#1.lists[0]")
-  void callsStablePureCalleeNotOk(Holder h) {
+  void callsDeterministicPureCalleeNotOk(Holder h) {
     // :: error: (purity.incorrect.sideeffectsonly)
-    stablePureCall(h);
+    deterministicPureCall(h);
   }
 
   // `getPureAt` is `@Pure`, but its argument may differ between two evaluations.
   @SideEffectsOnly("#1.getPureAt(#1.size())")
-  // :: error: (purity.unstable.sideeffectsonly)
-  void unstablePureCallArgument(Holder h) {}
+  // :: error: (purity.nondeterministic.sideeffectsonly)
+  void nondeterministicPureCallArgument(Holder h) {}
 
   // `@SideEffectFree` alone is not enough:  a method that is not `@Deterministic` may return a
   // different object each time it is called.
   @SideEffectsOnly("#1.getSideEffectFreeList()")
-  // :: error: (purity.unstable.sideeffectsonly)
-  void unstableSideEffectFreeCall(Holder h) {}
+  // :: error: (purity.nondeterministic.sideeffectsonly)
+  void nondeterministicSideEffectFreeCall(Holder h) {}
 
   static class Holder {
     java.util.List<String>[] lists;
