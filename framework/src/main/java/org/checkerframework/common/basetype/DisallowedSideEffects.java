@@ -279,24 +279,24 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * @return paths to the instance initializers of the class that encloses {@code statement}
    */
   private static List<TreePath> instanceInitializers(TreePath statement) {
-    TreePath classPath = statement;
-    while (classPath != null && !(classPath.getLeaf() instanceof ClassTree)) {
-      classPath = classPath.getParentPath();
+    TreePath pathOfClass = statement;
+    while (pathOfClass != null && !(pathOfClass.getLeaf() instanceof ClassTree)) {
+      pathOfClass = pathOfClass.getParentPath();
     }
-    if (classPath == null) {
+    if (pathOfClass == null) {
       return Collections.emptyList();
     }
     List<TreePath> result = new ArrayList<>(2);
-    for (Tree member : ((ClassTree) classPath.getLeaf()).getMembers()) {
+    for (Tree member : ((ClassTree) pathOfClass.getLeaf()).getMembers()) {
       if (member instanceof VariableTree variable) {
         // A static field's initializer runs at class initialization rather than at construction.
         // (This also excludes an enum constant, which is static.)
         if (variable.getInitializer() != null
             && !variable.getModifiers().getFlags().contains(Modifier.STATIC)) {
-          result.add(new TreePath(classPath, member));
+          result.add(new TreePath(pathOfClass, member));
         }
       } else if (member instanceof BlockTree block && !block.isStatic()) {
-        result.add(new TreePath(classPath, member));
+        result.add(new TreePath(pathOfClass, member));
       }
     }
     return result;
@@ -334,8 +334,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
   }
 
   /**
-   * Returns the no-argument constructor of the given type, or null if it has none. A constructor is
-   * not inherited, so only the type's own constructors are considered.
+   * Returns the no-argument constructor of the given type, or null if it has none.
    *
    * @param type a class type
    * @return the type's no-argument constructor, or null if it has none
