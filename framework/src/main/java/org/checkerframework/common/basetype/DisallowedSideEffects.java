@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
@@ -67,7 +66,6 @@ import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 import org.plumelib.util.IPair;
-import org.plumelib.util.UnionFind;
 
 /**
  * Scanner that collects the expressions a method side-effects, beyond those listed in its {@link
@@ -85,23 +83,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * of the method being checked.
    */
   protected final List<JavaExpression> sideEffectsOnlyExpressionsFromAnnotation;
-
-  /**
-   * Alias-graph nodes for {@link #sideEffectsOnlyExpressionsFromAnnotation}. Computed once, so that
-   * each such expression is one node even if it is not {@link #isDeterministic deterministic}.
-   */
-  protected final List<AliasNode> sideEffectsOnlyNodesFromAnnotation;
-
-  /**
-   * Groups expressions into sets, where all the elements in each set might be aliased to one other.
-   */
-  protected final UnionFind<AliasNode> aliasedExpressions;
-
-  /**
-   * The number of alias-graph nodes that {@link #aliasNode} has created for expressions that are
-   * not {@link #isDeterministic deterministic}. Used to give each such node a distinct identity.
-   */
-  private int freshValueCount = 0;
 
   /**
    * The local variables that always hold an object that the method being checked created. Modifying
@@ -139,7 +120,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * @param assumeSideEffectFree true if every method should be assumed to be side-effect-free
    * @param assumePureGetters true if every getter should be assumed to be side-effect-free
    */
-  @SuppressWarnings("this-escape") // `aliasNode` reads only fields that are already initialized
   protected DisallowedSideEffects(
       List<JavaExpression> sideEffectsOnlyExpressions,
       Set<VariableElement> freshLocals,
@@ -153,14 +133,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
     this.sideEffectsOnlyValueElement = sideEffectsOnlyValueElement;
     this.assumeSideEffectFree = assumeSideEffectFree;
     this.assumePureGetters = assumePureGetters;
-    // `isReachedThrough` reads only `checker`, which is set above, and is not called until an
-    // expression is added to the union-find.
-    this.aliasedExpressions = new UnionFind<>(null, this::isReachedThrough);
-    this.sideEffectsOnlyNodesFromAnnotation = new ArrayList<>(sideEffectsOnlyExpressions.size());
-    for (JavaExpression sideEffectsOnlyExpression : sideEffectsOnlyExpressions) {
-      sideEffectsOnlyNodesFromAnnotation.add(aliasNode(sideEffectsOnlyExpression));
-    }
-    aliasedExpressions.addAll(sideEffectsOnlyNodesFromAnnotation);
   }
 
   /**
@@ -234,7 +206,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
     if (explicitCall == null) {
       scanner.checkImplicitSuperCall(methodTree, constructorElt);
     }
-    // Scan in execution order, because the alias analysis depends on the order of scanning.
     for (TreePath initializer : initializers) {
       scanner.scan(initializer, null);
     }
@@ -966,55 +937,21 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
   }
 
   /**
-   * Returns true if the given expression is listed in the {@link SideEffectsOnly} annotation, is a
-   * subexpression of one of those expressions, or may be aliased to one of them.
+   * Returns true if the given expression is listed in the {@link SideEffectsOnly} annotation or is
+   * reached through one of the listed expressions.
    *
    * @param expr the expression to look for
    * @return true if the given expression is covered by the {@link SideEffectsOnly} annotation
    */
   protected boolean isCoveredByAnnotation(JavaExpression expr) {
-    AliasNode node = aliasNode(expr);
-    // Argument order matters below: the relation `isReachedThrough` is asymmetric, and `expr` must
-    // be the potential sub-expression.
-    if (aliasedExpressions.contains(node)) {
-      for (AliasNode seOnlyNode : sideEffectsOnlyNodesFromAnnotation) {
-        // `test` lifts `isReachedThrough` over the two elements' alias sets, and caches the result.
-        if (aliasedExpressions.test(node, seOnlyNode)) {
-          return true;
-        }
-      }
-      return false;
-    }
-    // `node` is not in the alias graph: this expression was never assigned or used as an
-    // initializer, so nothing is known to be aliased to it and its alias set would be just itself.
-    // Do not add it, which would create a new set on each call to this method; the union-find's
-    // predicate cache holds an entry per ordered pair of sets, so the sets must not proliferate.
-    for (AliasNode seOnlyNode : sideEffectsOnlyNodesFromAnnotation) {
-      for (AliasNode seOnlyAlias : aliasedExpressions.elementsInSameSetAs(seOnlyNode)) {
-        if (isReachedThrough(node, seOnlyAlias)) {
-          return true;
-        }
+    // Argument order matters below:  `containsAsReceiver` is asymmetric, and `expr` is the
+    // expression that might be reached through a listed one.
+    for (JavaExpression seOnlyExpression : sideEffectsOnlyExpressionsFromAnnotation) {
+      if (expr.containsAsReceiver(checker.getTypeFactory(), seOnlyExpression)) {
+        return true;
       }
     }
     return false;
-  }
-
-  /**
-   * Returns the alias-graph node for one occurrence of the given expression.
-   *
-   * <p>All the nodes for a given {@link #isDeterministic deterministic} expression are equal,
-   * because every evaluation of such an expression yields the same location or value. Every node
-   * for any other expression is distinct, because two evaluations may yield unrelated values.
-   * Without that distinction, {@link UnionFind}, which groups elements that are {@code equals()},
-   * would put {@code x} and {@code y} in a single alias set in {@code List<String> x = mk();
-   * List<String> y = mk();}.
-   *
-   * @param expression an expression
-   * @return the alias-graph node for this occurrence of the expression
-   */
-  protected AliasNode aliasNode(JavaExpression expression) {
-    return new AliasNode(
-        expression, isDeterministic(expression, checker.getTypeFactory()) ? 0 : ++freshValueCount);
   }
 
   /**
@@ -1065,42 +1002,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
     }
   }
 
-  /**
-   * Returns true if the given expression's value is a reference through which other code might
-   * observe a modification. Only such an expression can be an alias of another one.
-   *
-   * <p>A literal is not, even a literal of reference type: {@code null} is not an object, and the
-   * value of a literal such as {@code ""} cannot be modified. Neither is a primitive value. Without
-   * this test, the two initializers in {@code List<String> x = null; List<String> y = null;} would
-   * be one alias-graph node, which would put {@code x} and {@code y} in a single alias set.
-   *
-   * @param expression an expression
-   * @return true if the expression's value is a reference that might be aliased
-   */
-  protected static boolean canBeAliased(JavaExpression expression) {
-    return !(expression instanceof ValueLiteral) && !expression.getType().getKind().isPrimitive();
-  }
-
-  /**
-   * Returns true if the first node's value is the second node's value or is reached through it.
-   * This is the relation that {@link #aliasedExpressions} lifts to alias sets.
-   *
-   * <p>It is {@link JavaExpression#containsAsReceiver}, except that a node for an expression that
-   * is not {@link #isDeterministic deterministic} is reached only through itself. {@code
-   * containsAsReceiver} matches receivers syntactically, but two evaluations of, say, {@code mk()}
-   * may yield unrelated values, so matching them would be unjustified.
-   *
-   * @param node1 a node
-   * @param node2 a node that might be {@code node1} or a receiver of it
-   * @return true if {@code node1}'s value is {@code node2}'s value or is reached through it
-   */
-  protected boolean isReachedThrough(AliasNode node1, AliasNode node2) {
-    if (node2.occurrence != 0 && !node1.equals(node2)) {
-      return false;
-    }
-    return node1.expression.containsAsReceiver(checker.getTypeFactory(), node2.expression);
-  }
-
   @Override
   public Void visitLambdaExpression(LambdaExpressionTree node, Void aVoid) {
     if (scannedLambdas.contains(node)) {
@@ -1136,38 +1037,10 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
   @Override
   public Void visitAssignment(AssignmentTree node, Void aVoid) {
     JavaExpression lhs = expressionFromTree(node.getVariable());
-    JavaExpression rhs = expressionFromTree(node.getExpression());
     if (isDisallowedAssignmentTarget(lhs)) {
       disallowedSideEffects.add(IPair.of(node, lhs));
     }
-    recordAlias(lhs, rhs);
     return super.visitAssignment(node, aVoid);
-  }
-
-  @Override
-  public Void visitVariable(VariableTree node, Void aVoid) {
-    ExpressionTree initializer = node.getInitializer();
-    if (initializer == null) {
-      // A declaration with no initializer, such as `int x;`, creates no alias.
-      return super.visitVariable(node, aVoid);
-    }
-    recordAlias(JavaExpression.fromVariableTree(node), expressionFromTree(initializer));
-    return super.visitVariable(node, aVoid);
-  }
-
-  /**
-   * Records that the two sides of an assignment may be aliases: they may refer to the same object.
-   * Does nothing if either side's value is not a reference that can be aliased, in the sense of
-   * {@link #canBeAliased}.
-   *
-   * @param lhs the left-hand side of an assignment or the name in a variable declaration
-   * @param rhs the right-hand side of an assignment or the initializer in a variable declaration
-   */
-  protected void recordAlias(JavaExpression lhs, JavaExpression rhs) {
-    if (canBeAliased(lhs) && canBeAliased(rhs)) {
-      // `union` adds both arguments, so they need not be added first.
-      aliasedExpressions.union(aliasNode(lhs), aliasNode(rhs));
-    }
   }
 
   @Override
@@ -1186,8 +1059,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
 
   @Override
   public Void visitCompoundAssignment(CompoundAssignmentTree node, Void aVoid) {
-    // Does not make the left-hand side an alias of the right-hand side,
-    // because the rhs expression uses the lhs.
     JavaExpression lhs = expressionFromTree(node.getVariable());
     if (isDisallowedAssignmentTarget(lhs)) {
       disallowedSideEffects.add(IPair.of(node, lhs));
@@ -1299,53 +1170,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         return (VariableElement) element;
       }
       return null;
-    }
-  }
-
-  /**
-   * One occurrence of an expression, for use as an element of {@link #aliasedExpressions}. See
-   * {@link #aliasNode} for when two occurrences are the same node.
-   */
-  protected static class AliasNode {
-
-    /** The expression. */
-    protected final JavaExpression expression;
-
-    /**
-     * Distinguishes occurrences of an expression that is not {@link #isDeterministic
-     * deterministic}. It is 0 for a deterministic expression, and a distinct positive number for
-     * each occurrence of any other.
-     */
-    protected final int occurrence;
-
-    /**
-     * Creates an AliasNode. Use {@link DisallowedSideEffects#aliasNode} rather than calling this
-     * directly.
-     *
-     * @param expression the expression
-     * @param occurrence 0 for a deterministic expression, otherwise a number that is distinct for
-     *     each occurrence
-     */
-    protected AliasNode(JavaExpression expression, int occurrence) {
-      this.expression = expression;
-      this.occurrence = occurrence;
-    }
-
-    @Override
-    public boolean equals(@Nullable Object other) {
-      return other instanceof AliasNode otherNode
-          && occurrence == otherNode.occurrence
-          && expression.equals(otherNode.expression);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(expression, occurrence);
-    }
-
-    @Override
-    public String toString() {
-      return expression.toString();
     }
   }
 }
