@@ -356,17 +356,13 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         atypeFactory.getDeclAnnotation(invokedElem, SideEffectFree.class) != null;
     if (isMarkedPure || isMarkedSideEffectFree) {
       // The callee modifies nothing.
-      // TODO: Should all the checking be integrated together?
       return;
     }
 
     AnnotationMirror seOnlyAnnotation =
         atypeFactory.getDeclAnnotation(invokedElem, SideEffectsOnly.class);
     if (seOnlyAnnotation == null) {
-      // The callee has no side-effect annotation, so it might modify arbitrary state, including
-      // static state and other state not reachable from its receiver and arguments.
-      // A different message key than `purity.incorrect.sideeffectsonly` is used because the
-      // subject of this message is the callee, not the method being checked.
+      // The callee has no side-effect annotation, so it might modify arbitrary state.
       checker.reportError(node, "purity.unknown.sideeffectsonly", calleeName(invokedElem));
       return;
     }
@@ -603,8 +599,8 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
 
   /**
    * Returns the given expression with every use of {@code this} replaced by the given receiver.
-   * This is view adaptation for a call that takes no arguments, so no formal parameter needs to be
-   * replaced.
+   * This is viewpoint adaptation for a call that takes no arguments, so no formal parameter needs
+   * to be replaced.
    *
    * @param expr an expression written at a method's declaration
    * @param receiver the receiver of a call to that method
