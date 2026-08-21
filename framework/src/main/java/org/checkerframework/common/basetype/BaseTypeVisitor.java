@@ -2579,7 +2579,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     }
     TreePath body = atypeFactory.getPath(tree.getBody());
     if (body == null) {
-      return;
+      // A lambda always has a body, within the compilation unit that is being processed.
+      throw new BugInCF("No path for the body of lambda: %s", tree);
     }
 
     // Rewrite each of the interface method's formal parameters as the lambda's corresponding
@@ -2601,10 +2602,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       try {
         atDeclaration = StringToJavaExpression.atMethodDecl(st, interfaceMethod, checker);
       } catch (JavaExpressionParseException ex) {
-        // Fail closed:  the annotation does not say what the body may modify, so do not treat the
-        // body as unconstrained.  This is reported here as well as at the interface method's
-        // declaration, because that declaration may be in a stub file or in another compilation
-        // unit, where no error would be issued.
         DiagMessage diagMessage = new DiagMessage(ex);
         if (diagMessage.getMessageKey().equals("flowexpr.parse.error")) {
           String s =
@@ -2622,10 +2619,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       }
       JavaExpression seOnlyExpression = converter.convert(atDeclaration);
       if (!DisallowedSideEffects.isDeterministic(seOnlyExpression, atypeFactory)) {
-        // As in `checkPurityAnnotations`, nothing that the body modifies could ever be recognized
-        // as such an expression, so every modification would be reported.  Report the annotation
-        // instead.  This is reported here as well as at the interface method's declaration,
-        // because that declaration may be in a stub file or in another compilation unit.
         checker.reportError(tree, "purity.nondeterministic.sideeffectsonly", st);
         return;
       }
