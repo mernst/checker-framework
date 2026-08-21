@@ -4493,16 +4493,20 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     }
 
     /**
-     * Formats side-effected expressions for a diagnostic message, as the annotation that a user
-     * writes.
+     * Returns the {@code @SideEffectsOnly} annotation for the given expressions.
      *
      * @param expressions the expressions of a {@code @SideEffectsOnly} annotation
-     * @return the annotation corresponding to {@code expressions}
+     * @return the {@code @SideEffectsOnly} annotation corresponding to {@code expressions}
      */
     @SuppressWarnings("UnusedMethod") // Will be used in a future PR.
     private String sideEffectsOnlyToString(List<JavaExpression> expressions) {
+      if (expressions.size() == 0) {
+        return "@SideEffectsOnly({})";
+      }
+      if (expressions.size() == 1) {
+        return "@SideEffectsOnly(\"" + expressions.get(0) + "\")";
+      }
       StringJoiner result = new StringJoiner("\", \"", "@SideEffectsOnly({\"", "\"})");
-      result.setEmptyValue("@SideEffectsOnly({})");
       for (JavaExpression expression : expressions) {
         result.add(expression.toString());
       }
@@ -4620,13 +4624,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      * side effects than the overridden method's does. That is the case when every expression in the
      * overrider's annotation is covered by some expression in the overridden method's annotation:
      * it is that expression, or it is reached through it.
-     *
-     * <p>Both annotations' arguments are parsed at their own method declaration, so {@code this}
-     * and {@code #1}-style parameter references are compared as the expressions they stand for
-     * rather than as strings. For example, {@code @SideEffectsOnly("#1")} permits everything that
-     * {@code @SideEffectsOnly("#1.f")} does. For a method reference, whose parameters do not
-     * necessarily correspond positionally to the functional interface method's, the overrider's
-     * expressions are first translated by {@link #atFunctionalInterfaceMethod}.
      *
      * <p>This method requires that both the overrider and the overridden method are annotated with
      * {@code @SideEffectsOnly}.
