@@ -249,9 +249,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
   /** The {@code when} element/field of the @Unused annotation. */
   protected final ExecutableElement unusedWhenElement;
 
-  /** The {@code value} element/field of the @{@link SideEffectsOnly} annotation. */
-  protected final ExecutableElement sideEffectsOnlyValueElement;
-
   /** True if "-Ashowchecks" was passed on the command line. */
   protected final boolean showchecks;
 
@@ -337,7 +334,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         atypeFactory.fromElement(elements.getTypeElement(Vector.class.getCanonicalName()));
     targetValueElement = TreeUtils.getMethod(Target.class, "value", 0, env);
     unusedWhenElement = TreeUtils.getMethod(Unused.class, "when", 0, env);
-    sideEffectsOnlyValueElement = TreeUtils.getMethod(SideEffectsOnly.class, "value", 0, env);
     showchecks = checker.hasOption("showchecks");
     infer = checker.hasOption("infer");
     suggestPureMethods = checker.hasOption("suggestPureMethods") || infer;
@@ -1172,9 +1168,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     // The `@SideEffectsOnly` expressions that apply to the method, which the method may inherit
     // rather than declare.  `purityKinds` does not account for an inherited `@SideEffectsOnly`,
     // because `@SideEffectsOnly` is not inherited as an annotation; see
-    // `AnnotatedTypeFactory.getSideEffectsOnlyExpressionStrings`.
+    // `AnnotatedTypeFactory.getSideEffectsOnlyExpressionMap`.
     Map<ExecutableElement, List<String>> seOnlyExpressionStrings =
-        atypeFactory.getSideEffectsOnlyExpressionStrings(methodDeclElem);
+        atypeFactory.getSideEffectsOnlyExpressionMap(methodDeclElem);
 
     // If the method is already @Pure, there is nothing to suggest.
     boolean needToSuggest =
@@ -1320,9 +1316,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     }
 
     if (seOnlyAnnotation != null
-        && AnnotationUtils.getElementValueArray(
-                seOnlyAnnotation, sideEffectsOnlyValueElement, String.class)
-            .isEmpty()) {
+        && atypeFactory.getSideEffectsOnlyExpressions(seOnlyAnnotation).isEmpty()) {
       checker.reportError(tree, "purity.empty.sideeffectsonly");
       return;
     }
@@ -1470,9 +1464,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       // An inherited annotation is checked at the declaration that writes it.
       return;
     }
-    for (String expression :
-        AnnotationUtils.getElementValueArray(
-            sideEffectsOnly, sideEffectsOnlyValueElement, String.class)) {
+    for (String expression : atypeFactory.getSideEffectsOnlyExpressions(sideEffectsOnly)) {
       try {
         StringToJavaExpression.atMethodDecl(expression, methodElement, checker);
       } catch (JavaExpressionParseException ex) {
@@ -2608,8 +2600,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         };
 
     List<String> seOnlyExpressionStrings =
-        AnnotationUtils.getElementValueArray(
-            seOnlyAnnotation, sideEffectsOnlyValueElement, String.class);
+        atypeFactory.getSideEffectsOnlyExpressions(seOnlyAnnotation);
     List<JavaExpression> seOnlyExpressions = new ArrayList<>(seOnlyExpressionStrings.size());
     for (String st : seOnlyExpressionStrings) {
       JavaExpression atDeclaration;
@@ -4496,9 +4487,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       if (sideEffectsOnly == null) {
         return null;
       }
-      List<String> expressionStrings =
-          AnnotationUtils.getElementValueArray(
-              sideEffectsOnly, sideEffectsOnlyValueElement, String.class);
+      List<String> expressionStrings = atypeFactory.getSideEffectsOnlyExpressions(sideEffectsOnly);
       List<JavaExpression> result = new ArrayList<>(expressionStrings.size());
       for (String expressionString : expressionStrings) {
         try {
@@ -4626,7 +4615,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      *
      * <p>{@link PurityUtils#getPurityKinds} does not report an inherited {@code @SideEffectsOnly},
      * because {@code @SideEffectsOnly} is not inherited as an annotation; see {@link
-     * AnnotatedTypeFactory#getSideEffectsOnlyExpressionStrings}.
+     * AnnotatedTypeFactory#getSideEffectsOnlyExpressionMap}.
      *
      * @param method a method
      * @return the purity kinds of {@code method}
@@ -4635,7 +4624,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       EnumSet<PurityKind> result = PurityUtils.getPurityKinds(atypeFactory, method);
       if (!result.contains(PurityKind.SIDE_EFFECT_FREE)
           && !result.contains(PurityKind.SIDE_EFFECTS_ONLY)
-          && atypeFactory.getSideEffectsOnlyExpressionStrings(method) != null) {
+          && atypeFactory.getSideEffectsOnlyExpressionMap(method) != null) {
         // Do not side-effect the result of `getPurityKinds`, which may be a shared set.
         result = result.clone();
         result.add(PurityKind.SIDE_EFFECTS_ONLY);
@@ -4656,9 +4645,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      */
     private boolean sideEffectsOnlyIsNarrowed() {
       Map<ExecutableElement, List<String>> seOnlySuperStrings =
-          atypeFactory.getSideEffectsOnlyExpressionStrings(overridden.getElement());
+          atypeFactory.getSideEffectsOnlyExpressionMap(overridden.getElement());
       Map<ExecutableElement, List<String>> seOnlySubStrings =
-          atypeFactory.getSideEffectsOnlyExpressionStrings(overrider.getElement());
+          atypeFactory.getSideEffectsOnlyExpressionMap(overrider.getElement());
       if (seOnlySuperStrings == null || seOnlySubStrings == null) {
         throw new BugInCF(
             "sideEffectsOnlyIsNarrowed requires @SideEffectsOnly on both methods: %s %s",
@@ -4771,7 +4760,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     /**
      * Parses the arguments of a {@code @SideEffectsOnly} annotation. Each argument is parsed at the
      * declaration of the method that writes it, which is not necessarily the method that the
-     * annotation applies to; see {@link AnnotatedTypeFactory#getSideEffectsOnlyExpressionStrings}.
+     * annotation applies to; see {@link AnnotatedTypeFactory#getSideEffectsOnlyExpressionMap}.
      *
      * @param expressionStrings a map from a method declaration to the {@code @SideEffectsOnly}
      *     expressions written on it
@@ -4842,7 +4831,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      */
     private String sideEffectsOnlyToString(ExecutableElement method) {
       Map<ExecutableElement, List<String>> seOnlyStrings =
-          atypeFactory.getSideEffectsOnlyExpressionStrings(method);
+          atypeFactory.getSideEffectsOnlyExpressionMap(method);
       if (seOnlyStrings == null) {
         return "@SideEffectsOnly({})";
       }

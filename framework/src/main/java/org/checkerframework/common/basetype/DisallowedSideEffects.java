@@ -58,7 +58,6 @@ import org.checkerframework.dataflow.util.PurityUtils;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.util.StringToJavaExpression;
 import org.checkerframework.javacutil.AnnotationProvider;
-import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
@@ -97,9 +96,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
   /** The checker to use. */
   protected final BaseTypeChecker checker;
 
-  /** The {@code SideEffectsOnly.value} argument/element. */
-  protected final ExecutableElement sideEffectsOnlyValueElement;
-
   /** True if "-AassumeSideEffectFree" or "-AassumePure" was passed on the command line. */
   protected final boolean assumeSideEffectFree;
 
@@ -126,7 +122,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
     this.sideEffectsOnlyExpressionsFromAnnotation = sideEffectsOnlyExpressions;
     this.freshLocals = freshLocals;
     this.checker = checker;
-    this.sideEffectsOnlyValueElement = checker.getVisitor().sideEffectsOnlyValueElement;
     this.assumeSideEffectFree = assumeSideEffectFree;
     this.assumePureGetters = assumePureGetters;
   }
@@ -435,8 +430,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
   protected List<JavaExpression> calleeSideEffectedExpressions(
       MethodInvocationTree node, ExecutableElement invokedElem, AnnotationMirror seOnlyAnnotation) {
     List<String> exprStrings =
-        AnnotationUtils.getElementValueArray(
-            seOnlyAnnotation, sideEffectsOnlyValueElement, String.class);
+        checker.getTypeFactory().getSideEffectsOnlyExpressions(seOnlyAnnotation);
     List<JavaExpression> result = new ArrayList<>(exprStrings.size());
     for (String exprString : exprStrings) {
       try {
@@ -542,9 +536,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
       return;
     }
 
-    List<String> exprStrings =
-        AnnotationUtils.getElementValueArray(
-            seOnlyAnnotation, sideEffectsOnlyValueElement, String.class);
+    List<String> exprStrings = atypeFactory.getSideEffectsOnlyExpressions(seOnlyAnnotation);
     for (String exprString : exprStrings) {
       JavaExpression atDeclaration;
       try {
@@ -693,8 +685,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
   protected List<JavaExpression> constructorSideEffectedExpressions(
       NewClassTree node, ExecutableElement constructorElt, AnnotationMirror seOnlyAnnotation) {
     List<String> exprStrings =
-        AnnotationUtils.getElementValueArray(
-            seOnlyAnnotation, sideEffectsOnlyValueElement, String.class);
+        checker.getTypeFactory().getSideEffectsOnlyExpressions(seOnlyAnnotation);
     List<JavaExpression> result = new ArrayList<>(exprStrings.size());
     for (String exprString : exprStrings) {
       JavaExpression atDeclaration;

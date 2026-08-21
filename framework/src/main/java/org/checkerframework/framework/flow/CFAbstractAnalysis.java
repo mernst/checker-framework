@@ -23,7 +23,6 @@ import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.expression.FieldAccess;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.JavaExpressionParseException;
-import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.framework.source.SourceChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
@@ -38,7 +37,6 @@ import org.checkerframework.framework.util.dependenttypes.DependentTypesHelper;
 import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
-import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /**
@@ -97,9 +95,6 @@ public abstract class CFAbstractAnalysis<
   /** Instance of the types utility. */
   protected final Types types;
 
-  /** The {@code SideEffectsOnly.value} argument/element. */
-  protected final ExecutableElement sideEffectsOnlyValueElement;
-
   /**
    * Cache for {@link #getSideEffectsOnlyExpressions}, which would otherwise re-parse the
    * annotation's expressions once per dataflow iteration per call site. A key that is mapped to
@@ -139,7 +134,6 @@ public abstract class CFAbstractAnalysis<
     this.checker = checker;
     this.transferFunction = createTransferFunction();
     this.fieldValues = new ArrayList<>();
-    this.sideEffectsOnlyValueElement = TreeUtils.getMethod(SideEffectsOnly.class, "value", 0, env);
   }
 
   /**
@@ -220,7 +214,7 @@ public abstract class CFAbstractAnalysis<
   private @Nullable List<JavaExpression> computeSideEffectsOnlyExpressions(
       ExecutableElement method, MethodInvocationNode methodInvocationNode) {
     Map<ExecutableElement, List<String>> seOnlyExpressionStrings =
-        atypeFactory.getSideEffectsOnlyExpressionStrings(method);
+        atypeFactory.getSideEffectsOnlyExpressionMap(method);
     if (seOnlyExpressionStrings == null) {
       return null;
     }
