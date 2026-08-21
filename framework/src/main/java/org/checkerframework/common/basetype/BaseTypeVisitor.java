@@ -4514,7 +4514,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                       expressionString, methodType.getElement(), checker)
                   .atMethodBody(methodTree));
         } catch (JavaExpressionParseException e) {
-          checker.report(methodTree, new DiagMessage(e));
+          checker.reportOnce(getCurrentPath(), new DiagMessage(e));
           return null;
         }
       }
