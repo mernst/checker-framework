@@ -397,8 +397,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    */
   protected void report(CharSequence methodName) {
     for (IPair<Tree, JavaExpression> s : disallowedSideEffects) {
-      checker.reportError(
-          s.first, "purity.incorrect.sideeffectsonly", methodName, s.second.toString());
+      checker.reportError(s.first, "purity.incorrect.sideeffectsonly", methodName, s.second);
     }
   }
 
@@ -418,7 +417,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
 
   // A `this(...)` or `super(...)` call is a MethodInvocationTree, so `visitMethodInvocation`
   // handles it.  A `new` expression is handled by `visitNewClass`.
-
   @Override
   public Void visitMethodInvocation(MethodInvocationTree node, Void aVoid) {
     ExecutableElement invokedElem = TreeUtils.elementFromUse(node);
@@ -461,16 +459,11 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
   }
 
   /**
-   * Checks each argument of a call that the callee might invoke as a callback: one whose type is a
-   * functional interface whose method has no side-effect annotation. Such an invocation might
-   * modify anything, and the callee's own {@link SideEffectsOnly} annotation does not account for
-   * it, because the annotation is written at the callee's declaration where the callback's body is
-   * not known.
+   * Checks each argument that is a functional interface, because the callee might invoke as a
+   * callback.
    *
-   * <p>When the functional interface method <em>is</em> annotated, this method does nothing: the
-   * callee's annotation accounts for the invocation just as it does for every other call the callee
-   * makes, and {@code BaseTypeVisitor.checkLambdaSideEffectsOnly} checks a lambda's body against
-   * the interface method's annotation.
+   * <p>If the functional interface method is annotated, this method does nothing: {@code
+   * BaseTypeVisitor.checkLambdaSideEffectsOnly} checks the lambda's body.
    *
    * <p>Otherwise, a lambda argument's body is scanned as part of the code being checked, because
    * the callee might run it before returning. Any other argument, such as a variable that holds a
@@ -528,11 +521,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * Returns the expressions that the invoked method side-effects: the arguments/elements of its
    * {@link SideEffectsOnly} annotation, view-adapted to the given call site.
    *
-   * <p>If an expression cannot be parsed at the call site, this reports {@code
-   * purity.unknown.sideeffectsonly} and returns an empty list. That is fail-closed: the checker
-   * cannot tell what the callee modifies, so it says so rather than silently treating the callee as
-   * modifying less than it was declared to.
-   *
    * @param node a call to a method that is annotated with {@link SideEffectsOnly}
    * @param invokedElem the invoked method
    * @param seOnlyAnnotation the invoked method's {@link SideEffectsOnly} annotation
@@ -556,6 +544,8 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         // The parse error itself is reported at the callee's declaration, by
         // BaseTypeVisitor.checkPurityAnnotations.
         checker.reportError(node, "purity.unknown.sideeffectsonly", calleeName(invokedElem));
+        // If an expression cannot be parsed at the call site, the checker cannot tell what the
+        // callee modifies, so be conservative.
         return Collections.emptyList();
       }
     }
@@ -563,7 +553,9 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
   }
 
   // An enhanced `for` loop and a try-with-resources statement contain calls that appear only after
-  // the compiler desugars them.  `visitEnhancedForLoop` and `visitTry` check those calls.
+  // the compiler desugars them.  `visitEnhancedForLoop` and `visitTry` check those calls.  The
+  // methods they call are supposed to side effect at most the receiver, so these checks should
+  // rarely report anything.
 
   @Override
   public Void visitEnhancedForLoop(EnhancedForLoopTree node, Void aVoid) {
@@ -626,9 +618,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * side effect of it that is beyond what the {@link SideEffectsOnly} annotation of the method
    * being checked permits.
    *
-   * <p>This method requires that {@code invokedElem} takes no arguments, so that its annotation's
-   * expressions can mention no formal parameter and only {@code this} needs to be view-adapted.
-   *
    * @param node the tree to report an error at
    * @param invokedElem the implicitly invoked method or constructor, which takes no arguments
    * @param receiver the receiver of the call, or null if the receiver is an object that the
@@ -682,7 +671,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
           return;
         }
       } else {
-        atDeclaration = atReceiver(atDeclaration, receiver);
+        atDeclaration = withReceiver(atDeclaration, receiver);
       }
       if (isDisallowedSideEffectedExpression(atDeclaration)) {
         disallowedSideEffects.add(IPair.of(node, atDeclaration));
@@ -699,7 +688,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * @param receiver the receiver of a call to that method
    * @return the expression, written at the call site
    */
-  protected static JavaExpression atReceiver(JavaExpression expr, JavaExpression receiver) {
+  protected static JavaExpression withReceiver(JavaExpression expr, JavaExpression receiver) {
     if (!expr.containsOfClass(ThisReference.class)) {
       return expr;
     }
@@ -716,11 +705,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
   /**
    * Returns the no-argument method with the given name that a call on an expression of the given
    * type invokes, or null if there is no such method.
-   *
-   * <p>A static method is not a candidate, because the desugared call has a receiver. Neither is a
-   * synthetic method: a covariant-return override such as {@code MyIterator iterator()} makes javac
-   * add a bridge method {@code Iterator iterator()} to the member closure, and the bridge carries
-   * none of the declaration annotations that the method it forwards to does.
    *
    * @param receiverType the type of the receiver of the call
    * @param methodName the name of the method
@@ -744,6 +728,10 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
     Elements elements = checker.getElementUtils();
     for (ExecutableElement method :
         ElementFilter.methodsIn(elements.getAllMembers((TypeElement) declaredType.asElement()))) {
+      // A static method is not a candidate, because the desugared call has a receiver. Neither is a
+      // synthetic method: a covariant-return override such as {@code MyIterator iterator()} makes
+      // javac add a bridge method {@code Iterator iterator()} to the member closure, and the bridge
+      // carries none of the declaration annotations that the method it forwards to does.
       if (method.getParameters().isEmpty()
           && method.getSimpleName().contentEquals(methodName)
           && !method.getModifiers().contains(Modifier.STATIC)
