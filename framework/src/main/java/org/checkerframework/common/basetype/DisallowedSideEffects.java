@@ -447,8 +447,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
             JavaExpression.superToThis(
                 StringToJavaExpression.atMethodInvocation(exprString, node, checker)));
       } catch (JavaExpressionParseException ex) {
-        // The parse error itself is reported at the callee's declaration, by
-        // BaseTypeVisitor.checkPurityAnnotations.
         checker.reportError(
             node, "purity.unparseable.sideeffectsonly", executableName(invokedElem), exprString);
         // If an expression cannot be parsed at the call site, the checker cannot tell what the
@@ -552,8 +550,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
       try {
         atDeclaration = StringToJavaExpression.atMethodDecl(exprString, invokedElem, checker);
       } catch (JavaExpressionParseException ex) {
-        // The parse error itself is reported at the callee's declaration, by
-        // BaseTypeVisitor.checkPurityAnnotations.
         checker.reportError(
             node, "purity.unparseable.sideeffectsonly", executableName(invokedElem), exprString);
         return;
@@ -705,8 +701,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
       try {
         atDeclaration = StringToJavaExpression.atMethodDecl(exprString, constructorElt, checker);
       } catch (JavaExpressionParseException ex) {
-        // The parse error itself is reported at the constructor's declaration, by
-        // BaseTypeVisitor.checkPurityAnnotations.
         checker.reportError(
             node,
             "purity.unparseable.sideeffectsonly",
