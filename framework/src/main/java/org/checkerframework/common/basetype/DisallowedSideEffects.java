@@ -29,7 +29,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
@@ -225,7 +224,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
       scanner.scan(initializer, null);
     }
     scanner.scan(statement, null);
-    scanner.report(constructorName(constructorElt));
+    scanner.report(ElementUtils.getSimpleDescription(constructorElt));
   }
 
   /**
@@ -346,7 +345,8 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         atypeFactory.getDeclAnnotation(invokedElem, SideEffectsOnly.class);
     if (seOnlyAnnotation == null) {
       // The callee has no side-effect annotation, so it might modify arbitrary state.
-      checker.reportError(node, "purity.unknown.sideeffectsonly", executableName(invokedElem));
+      checker.reportError(
+          node, "purity.unknown.sideeffectsonly", ElementUtils.getSimpleDescription(invokedElem));
       return;
     }
 
@@ -398,7 +398,10 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
           continue;
         }
       }
-      checker.reportError(arg, "purity.unknown.sideeffectsonly", executableName(functionalMethod));
+      checker.reportError(
+          arg,
+          "purity.unknown.sideeffectsonly",
+          ElementUtils.getSimpleDescription(functionalMethod));
     }
   }
 
@@ -442,7 +445,10 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
                 StringToJavaExpression.atMethodInvocation(exprString, node, checker)));
       } catch (JavaExpressionParseException ex) {
         checker.reportError(
-            node, "purity.unparseable.sideeffectsonly", executableName(invokedElem), exprString);
+            node,
+            "purity.unparseable.sideeffectsonly",
+            ElementUtils.getSimpleDescription(invokedElem),
+            exprString);
         // If an expression cannot be parsed at the call site, the checker cannot tell what the
         // callee modifies, so be conservative.
         return Collections.emptyList();
@@ -532,7 +538,8 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         atypeFactory.getDeclAnnotation(invokedElem, SideEffectsOnly.class);
     if (seOnlyAnnotation == null) {
       // The callee has no side-effect annotation, so it might modify arbitrary state.
-      checker.reportError(node, "purity.unknown.sideeffectsonly", executableName(invokedElem));
+      checker.reportError(
+          node, "purity.unknown.sideeffectsonly", ElementUtils.getSimpleDescription(invokedElem));
       return;
     }
 
@@ -543,7 +550,10 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         atDeclaration = StringToJavaExpression.atMethodDecl(exprString, invokedElem, checker);
       } catch (JavaExpressionParseException ex) {
         checker.reportError(
-            node, "purity.unparseable.sideeffectsonly", executableName(invokedElem), exprString);
+            node,
+            "purity.unparseable.sideeffectsonly",
+            ElementUtils.getSimpleDescription(invokedElem),
+            exprString);
         return;
       }
       if (receiver == null) {
@@ -557,7 +567,10 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
           // is not nameable here, so the expression cannot be viewpoint-adapted; and its value may
           // be an
           // object that existed before the call, so it cannot be dismissed as unobservable either.
-          checker.reportError(node, "purity.unknown.sideeffectsonly", executableName(invokedElem));
+          checker.reportError(
+              node,
+              "purity.unknown.sideeffectsonly",
+              ElementUtils.getSimpleDescription(invokedElem));
           return;
         }
       } else {
@@ -646,7 +659,10 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         atypeFactory.getDeclAnnotation(constructorElt, SideEffectsOnly.class);
     if (seOnlyAnnotation == null) {
       // The constructor has no side-effect annotation, so it might modify arbitrary state.
-      checker.reportError(node, "purity.unknown.sideeffectsonly", constructorName(constructorElt));
+      checker.reportError(
+          node,
+          "purity.unknown.sideeffectsonly",
+          ElementUtils.getSimpleDescription(constructorElt));
       return super.visitNewClass(node, aVoid);
     }
 
@@ -695,7 +711,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         checker.reportError(
             node,
             "purity.unparseable.sideeffectsonly",
-            constructorName(constructorElt),
+            ElementUtils.getSimpleDescription(constructorElt),
             exprString);
         return Collections.emptyList();
       }
@@ -710,42 +726,14 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         // may be an object that existed before the call, so it cannot be dismissed as unobservable
         // either.
         checker.reportError(
-            node, "purity.unknown.sideeffectsonly", constructorName(constructorElt));
+            node,
+            "purity.unknown.sideeffectsonly",
+            ElementUtils.getSimpleDescription(constructorElt));
         return Collections.emptyList();
       }
       result.add(atDeclaration.atConstructorInvocation(node));
     }
     return result;
-  }
-
-  /**
-   * Returns a name for the given method or constructor, for use in a diagnostic message.
-   *
-   * @param elt a method or constructor
-   * @return the name of the method, or the name of the class that the constructor constructs
-   */
-  private static CharSequence executableName(ExecutableElement elt) {
-    return elt.getKind() == ElementKind.CONSTRUCTOR ? constructorName(elt) : elt.getSimpleName();
-  }
-
-  /**
-   * Returns a name for the given constructor, for use in a diagnostic message. The constructor's
-   * own simple name is {@code <init>}, which would be unhelpful.
-   *
-   * @param constructorElt a constructor
-   * @return the simple name of the class that the constructor constructs
-   */
-  private static CharSequence constructorName(ExecutableElement constructorElt) {
-    TypeElement classElt = (TypeElement) constructorElt.getEnclosingElement();
-    Name simpleName = classElt.getSimpleName();
-    if (!simpleName.isEmpty()) {
-      return simpleName;
-    }
-    // An anonymous class has an empty simple name, so name it by its supertype: the interface it
-    // implements if there is one, and otherwise the class it extends.
-    List<? extends TypeMirror> interfaces = classElt.getInterfaces();
-    TypeMirror supertype = interfaces.isEmpty() ? classElt.getSuperclass() : interfaces.get(0);
-    return "anonymous " + TypesUtils.simpleTypeName(supertype);
   }
 
   /**
