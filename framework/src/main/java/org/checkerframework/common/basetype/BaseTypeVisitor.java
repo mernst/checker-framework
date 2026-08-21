@@ -1338,9 +1338,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
           JavaExpression exprJe =
               StringToJavaExpression.atMethodDecl(st, declaringMethod, checker).atMethodBody(tree);
           if (!DisallowedSideEffects.isDeterministic(exprJe, atypeFactory)) {
-            // Two evaluations of such an expression may denote unrelated values, so nothing that
-            // the method body modifies is ever recognized as being the expression, and every
-            // modification would be reported.  Reject the annotation instead.
+            // Two evaluations of a nondeterministic expression may denote different values.
             checker.reportError(tree, "purity.nondeterministic.sideeffectsonly", st);
             return;
           }
@@ -2556,9 +2554,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    * body can modify.
    *
    * <p>A lambda whose interface method is {@code @SideEffectFree} or {@code @Pure} is not checked.
-   *
-   * <p>An expression that is not {@link DisallowedSideEffects#isDeterministic deterministic} is
-   * rejected, as it is on a method declaration.
    *
    * @param tree a lambda expression
    */
