@@ -2594,8 +2594,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         // Fail closed:  the annotation does not say what the body may modify, so do not treat the
         // body as unconstrained.  This is reported here as well as at the interface method's
         // declaration, because that declaration may be in a stub file or in another compilation
-        // unit, where no error would be issued.
-        checker.report(tree, sideEffectsOnlyParseError(ex, interfaceMethod, st));
+        // unit, where no error would be issued.  Every checker of a compound checker performs this
+        // check, so report the error only once.
+        checker.reportOnce(getCurrentPath(), sideEffectsOnlyParseError(ex, interfaceMethod, st));
         return;
       }
       if (atDeclaration.containsOfClass(ThisReference.class)) {
