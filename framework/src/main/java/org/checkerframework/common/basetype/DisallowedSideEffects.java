@@ -167,11 +167,6 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * Issues warnings about side effects in {@code statement} beyond the {@code @SideEffectsOnly}
    * annotation.
    *
-   * <p>When {@code methodTree} is a constructor, {@code this} is treated as if it appeared in the
-   * annotation, whether or not it does. Also, the code that runs before the constructor's body --
-   * the superclass constructor and the enclosing class's instance initializers -- is checked along
-   * with the body.
-   *
    * @param statement the statement to check; currently, at the only call site it is a method body
    * @param sideEffectsOnlyExpressions the values in the {@link SideEffectsOnly} annotation
    * @param checker the checker to use
@@ -188,7 +183,16 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
       ExecutableElement sideEffectsOnlyValueElement,
       boolean assumeSideEffectFree,
       boolean assumePureGetters) {
-    if (!TreeUtils.isConstructor(methodTree)) {
+    if (TreeUtils.isConstructor(methodTree)) {
+      checkSideEffectsOnlyConstructor(
+          statement,
+          sideEffectsOnlyExpressions,
+          checker,
+          methodTree,
+          sideEffectsOnlyValueElement,
+          assumeSideEffectFree,
+          assumePureGetters);
+    } else {
       checkSideEffectsOnly(
           statement,
           sideEffectsOnlyExpressions,
@@ -197,9 +201,33 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
           sideEffectsOnlyValueElement,
           assumeSideEffectFree,
           assumePureGetters);
-      return;
     }
+  }
 
+  /**
+   * Issues warnings about side effects in the given constructor beyond the {@code @SideEffectsOnly}
+   * annotation.
+   *
+   * <p>{@code this} is treated as if it appeared in the annotation, whether or not it does. Also,
+   * the code that runs before the constructor's body -- the superclass constructor and the
+   * enclosing class's instance initializers -- is checked along with the body.
+   *
+   * @param statement the constructor body to check
+   * @param sideEffectsOnlyExpressions the values in the {@link SideEffectsOnly} annotation
+   * @param checker the checker to use
+   * @param methodTree the constructor that contains {@code statement}
+   * @param sideEffectsOnlyValueElement the {@code SideEffectsOnly.value} argument/element
+   * @param assumeSideEffectFree true if every method should be assumed to be side-effect-free
+   * @param assumePureGetters true if every getter should be assumed to be side-effect-free
+   */
+  private static void checkSideEffectsOnlyConstructor(
+      TreePath statement,
+      List<JavaExpression> sideEffectsOnlyExpressions,
+      BaseTypeChecker checker,
+      MethodTree methodTree,
+      ExecutableElement sideEffectsOnlyValueElement,
+      boolean assumeSideEffectFree,
+      boolean assumePureGetters) {
     // A constructor implicitly side-effects the object under construction, which did not exist
     // before the call, so modifying it is not a side effect that is visible to the caller.  The
     // effect is the same as if the programmer had written `this` in the annotation, which is also
