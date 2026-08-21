@@ -1350,17 +1350,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
           // `checkSideEffectsOnlyExpressions(MethodTree, ExecutableElement)` issues about the
           // annotation itself.  Every checker of a compound checker performs this check, so
           // report the error only once.
-          DiagMessage diagMessage = new DiagMessage(ex);
-          if (diagMessage.getMessageKey().equals("flowexpr.parse.error")) {
-            String s =
-                String.format(
-                    "'%s' in the @SideEffectsOnly annotation on the declaration of method '%s': ",
-                    st, declaringMethod.getSimpleName());
-            diagMessage =
-                new DiagMessage(
-                    Diagnostic.Kind.ERROR, "flowexpr.parse.error", s + diagMessage.getArgs()[0]);
-          }
-          checker.reportOnce(getCurrentPath(), diagMessage);
+          checker.reportOnce(getCurrentPath(), sideEffectsOnlyParseError(ex, declaringMethod, st));
           return;
         }
       }
@@ -2601,16 +2591,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       try {
         atDeclaration = StringToJavaExpression.atMethodDecl(st, interfaceMethod, checker);
       } catch (JavaExpressionParseException ex) {
-        DiagMessage diagMessage = new DiagMessage(ex);
-        if (diagMessage.getMessageKey().equals("flowexpr.parse.error")) {
-          String s =
-              String.format(
-                  "'%s' in the @SideEffectsOnly annotation on the declaration of method '%s': ",
-                  st, interfaceMethod.getSimpleName());
-          checker.reportError(tree, "flowexpr.parse.error", s + diagMessage.getArgs()[0]);
-        } else {
-          checker.report(tree, diagMessage);
-        }
+        checker.reportOnce(getCurrentPath(), sideEffectsOnlyParseError(ex, interfaceMethod, st));
         return;
       }
       if (atDeclaration.containsOfClass(ThisReference.class)) {

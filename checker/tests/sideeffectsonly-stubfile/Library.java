@@ -3,9 +3,10 @@ package sideeffectsonly.stubfile;
 // The `@SideEffectsOnly` annotations on these methods come from `seonly.astub`.
 public class Library {
   // The annotation is `@SideEffectsOnly("this.noSuchField")`, which names a field that does not
-  // exist.  The declaration-site check reports that twice:  once from checking the annotation
-  // itself, and once from parsing the expression in order to check the method body against it.
-  // :: error: (flowexpr.parse.error.sideeffectsonly) :: error: (flowexpr.parse.error)
+  // exist.  Two declaration-site checks detect that -- checking the annotation itself, and parsing
+  // the expression in order to check the method body against it -- but they issue the same
+  // message, so it is reported only once.
+  // :: error: (flowexpr.parse.error.sideeffectsonly)
   public void unparseable() {}
 
   public void parseable() {}
@@ -20,6 +21,6 @@ public class Library {
 
 interface Callback {
   // `seonly.astub` declares this method `@SideEffectsOnly("this.noSuchField")`.
-  // :: error: (flowexpr.parse.error.sideeffectsonly) :: error: (flowexpr.parse.error)
+  // :: error: (flowexpr.parse.error.sideeffectsonly)
   void run();
 }

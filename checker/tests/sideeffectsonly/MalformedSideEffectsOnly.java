@@ -4,11 +4,11 @@ import org.checkerframework.dataflow.qual.SideEffectsOnly;
 
 public class MalformedSideEffectsOnly {
 
-  // An unparseable @SideEffectsOnly expression is reported as an error, not a crash.  Two errors
-  // are issued:  one from checking the annotation itself, and one from parsing the expression in
-  // order to check the method body against it.
+  // An unparseable @SideEffectsOnly expression is reported as an error, not a crash.  Two checks
+  // detect it -- checking the annotation itself, and parsing the expression in order to check the
+  // method body against it -- but they issue the same message, so it is reported only once.
   @SideEffectsOnly("#1.noSuchMethod()")
-  // :: error: (flowexpr.parse.error.sideeffectsonly) :: error: (flowexpr.parse.error)
+  // :: error: (flowexpr.parse.error.sideeffectsonly)
   void method(Object o) {}
 
   // A parse error whose message key is not `flowexpr.parse.error` is also reported as an error,
