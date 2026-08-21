@@ -88,7 +88,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
 
   /**
    * Alias-graph nodes for {@link #sideEffectsOnlyExpressionsFromAnnotation}. Computed once, so that
-   * each such expression is one node even if it is not {@link #isStable stable}.
+   * each such expression is one node even if it is not {@link #isDeterministic deterministic}.
    */
   protected final List<AliasNode> sideEffectsOnlyNodesFromAnnotation;
 
@@ -99,7 +99,7 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
 
   /**
    * The number of alias-graph nodes that {@link #aliasNode} has created for expressions that are
-   * not {@link #isStable stable}. Used to give each such node a distinct identity.
+   * not {@link #isDeterministic deterministic}. Used to give each such node a distinct identity.
    */
   private int freshValueCount = 0;
 
@@ -1002,19 +1002,19 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
   /**
    * Returns the alias-graph node for one occurrence of the given expression.
    *
-   * <p>All the nodes for a given {@link #isStable stable} expression are equal, because every
-   * evaluation of such an expression yields the same location or value. Every node for any other
-   * expression is distinct, because two evaluations may yield unrelated values. Without that
-   * distinction, {@link UnionFind}, which groups elements that are {@code equals()}, would put
-   * {@code x} and {@code y} in a single alias set in {@code List<String> x = mk(); List<String> y =
-   * mk();}.
+   * <p>All the nodes for a given {@link #isDeterministic deterministic} expression are equal,
+   * because every evaluation of such an expression yields the same location or value. Every node
+   * for any other expression is distinct, because two evaluations may yield unrelated values.
+   * Without that distinction, {@link UnionFind}, which groups elements that are {@code equals()},
+   * would put {@code x} and {@code y} in a single alias set in {@code List<String> x = mk();
+   * List<String> y = mk();}.
    *
    * @param expression an expression
    * @return the alias-graph node for this occurrence of the expression
    */
   protected AliasNode aliasNode(JavaExpression expression) {
     return new AliasNode(
-        expression, isStable(checker.getTypeFactory(), expression) ? 0 : ++freshValueCount);
+        expression, isDeterministic(expression, checker.getTypeFactory()) ? 0 : ++freshValueCount);
   }
 
   /**
@@ -1025,13 +1025,13 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * evaluated.
    *
    * <p>A {@code @Pure} method returns the same value every time it is called with the same
-   * arguments, so a call to one is stable so long as its receiver and its arguments are.
+   * arguments, so a call to one is deterministic so long as its receiver and its arguments are.
    *
-   * @param provider how to get annotations
    * @param expression an expression
+   * @param provider how to get annotations
    * @return true if every evaluation of the expression yields the same location or value
    */
-  protected static boolean isStable(AnnotationProvider provider, JavaExpression expression) {
+  protected static boolean isDeterministic(JavaExpression expression, AnnotationProvider provider) {
     if (expression instanceof LocalVariable
         || expression instanceof FormalParameter
         || expression instanceof ThisReference
@@ -1040,22 +1040,22 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
         || expression instanceof ValueLiteral) {
       return true;
     } else if (expression instanceof FieldAccess fieldAccess) {
-      return isStable(provider, fieldAccess.getReceiver());
+      return isDeterministic(fieldAccess.getReceiver(), provider);
     } else if (expression instanceof ArrayAccess arrayAccess) {
-      return isStable(provider, arrayAccess.getArray())
-          && isStable(provider, arrayAccess.getIndex());
+      return isDeterministic(arrayAccess.getArray(), provider)
+          && isDeterministic(arrayAccess.getIndex(), provider);
     } else if (expression instanceof MethodCall methodCall) {
       ExecutableElement method = methodCall.getElement();
       if (!PurityUtils.isDeterministic(provider, method)
           || !PurityUtils.isSideEffectFree(provider, method)) {
         return false;
       }
-      // For a static method, the receiver is a ClassName, which is stable.
-      if (!isStable(provider, methodCall.getReceiver())) {
+      // For a static method, the receiver is a ClassName, which is deterministic.
+      if (!isDeterministic(methodCall.getReceiver(), provider)) {
         return false;
       }
       for (JavaExpression argument : methodCall.getArguments()) {
-        if (!isStable(provider, argument)) {
+        if (!isDeterministic(argument, provider)) {
           return false;
         }
       }
@@ -1086,9 +1086,9 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
    * This is the relation that {@link #aliasedExpressions} lifts to alias sets.
    *
    * <p>It is {@link JavaExpression#containsAsReceiver}, except that a node for an expression that
-   * is not {@link #isStable stable} is reached only through itself. {@code containsAsReceiver}
-   * matches receivers syntactically, but two evaluations of, say, {@code mk()} may yield unrelated
-   * values, so matching them would be unjustified.
+   * is not {@link #isDeterministic deterministic} is reached only through itself. {@code
+   * containsAsReceiver} matches receivers syntactically, but two evaluations of, say, {@code mk()}
+   * may yield unrelated values, so matching them would be unjustified.
    *
    * @param node1 a node
    * @param node2 a node that might be {@code node1} or a receiver of it
@@ -1312,8 +1312,9 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
     protected final JavaExpression expression;
 
     /**
-     * Distinguishes occurrences of an expression that is not {@link #isStable stable}. It is 0 for
-     * a stable expression, and a distinct positive number for each occurrence of any other.
+     * Distinguishes occurrences of an expression that is not {@link #isDeterministic
+     * deterministic}. It is 0 for a deterministic expression, and a distinct positive number for
+     * each occurrence of any other.
      */
     protected final int occurrence;
 
@@ -1322,8 +1323,8 @@ public class DisallowedSideEffects extends TreePathScanner<Void, Void> {
      * directly.
      *
      * @param expression the expression
-     * @param occurrence 0 for a stable expression, otherwise a number that is distinct for each
-     *     occurrence
+     * @param occurrence 0 for a deterministic expression, otherwise a number that is distinct for
+     *     each occurrence
      */
     protected AliasNode(JavaExpression expression, int occurrence) {
       this.expression = expression;

@@ -1273,8 +1273,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
   /**
    * Verifies the {@code @SideEffectsOnly} annotation that applies to {@code tree}, which {@code
    * tree} might inherit rather than declare: that it does not conflict with a {@code @Pure} or
-   * {@code @SideEffectFree} annotation, that its expressions are non-empty and stable, and that the
-   * method body side-effects only those expressions.
+   * {@code @SideEffectFree} annotation, that its expressions are non-empty and deterministic, and
+   * that the method body side-effects only those expressions.
    *
    * @param tree the method tree to check
    * @param methodDeclElem the element for {@code tree}
@@ -1337,11 +1337,11 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
           // necessarily the scope of `tree`.
           JavaExpression exprJe =
               StringToJavaExpression.atMethodDecl(st, declaringMethod, checker).atMethodBody(tree);
-          if (!DisallowedSideEffects.isStable(atypeFactory, exprJe)) {
+          if (!DisallowedSideEffects.isDeterministic(exprJe, atypeFactory)) {
             // Two evaluations of such an expression may denote unrelated values, so nothing that
             // the method body modifies is ever recognized as being the expression, and every
             // modification would be reported.  Reject the annotation instead.
-            checker.reportError(tree, "purity.unstable.sideeffectsonly", st);
+            checker.reportError(tree, "purity.nondeterministic.sideeffectsonly", st);
             return;
           }
           seOnlyExpressions.add(exprJe);
@@ -2557,8 +2557,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    *
    * <p>A lambda whose interface method is {@code @SideEffectFree} or {@code @Pure} is not checked.
    *
-   * <p>An expression that is not {@link DisallowedSideEffects#isStable stable} is rejected, as it
-   * is on a method declaration.
+   * <p>An expression that is not {@link DisallowedSideEffects#isDeterministic deterministic} is
+   * rejected, as it is on a method declaration.
    *
    * @param tree a lambda expression
    */
@@ -2621,12 +2621,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         continue;
       }
       JavaExpression seOnlyExpression = converter.convert(atDeclaration);
-      if (!DisallowedSideEffects.isStable(atypeFactory, seOnlyExpression)) {
+      if (!DisallowedSideEffects.isDeterministic(seOnlyExpression, atypeFactory)) {
         // As in `checkPurityAnnotations`, nothing that the body modifies could ever be recognized
         // as such an expression, so every modification would be reported.  Report the annotation
         // instead.  This is reported here as well as at the interface method's declaration,
         // because that declaration may be in a stub file or in another compilation unit.
-        checker.reportError(tree, "purity.unstable.sideeffectsonly", st);
+        checker.reportError(tree, "purity.nondeterministic.sideeffectsonly", st);
         return;
       }
       seOnlyExpressions.add(seOnlyExpression);
