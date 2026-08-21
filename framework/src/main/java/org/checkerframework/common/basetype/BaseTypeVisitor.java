@@ -1274,10 +1274,31 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       }
     }
 
+    checkSideEffectsOnlyAnnotation(tree, methodDeclElem, seOnlyExpressionStrings, body);
+  }
+
+  /**
+   * Verifies the {@code @SideEffectsOnly} annotation that applies to {@code tree}, which {@code
+   * tree} might inherit rather than declare: that it does not conflict with a {@code @Pure} or
+   * {@code @SideEffectFree} annotation, that its expressions are non-empty and stable, and that the
+   * method body side-effects only those expressions.
+   *
+   * @param tree the method tree to check
+   * @param methodDeclElem the element for {@code tree}
+   * @param seOnlyExpressionStrings the {@code @SideEffectsOnly} expressions that apply to {@code
+   *     tree}, indexed by the method whose declaration contains them; null if no
+   *     {@code @SideEffectsOnly} annotation applies to {@code tree}
+   * @param body the path to the body of {@code tree}, or null if {@code tree} has no body
+   */
+  protected void checkSideEffectsOnlyAnnotation(
+      MethodTree tree,
+      ExecutableElement methodDeclElem,
+      @Nullable Map<ExecutableElement, List<String>> seOnlyExpressionStrings,
+      @Nullable TreePath body) {
     if (!checkPurityAnnotationsOption) {
-      // The remainder of this method verifies a @SideEffectsOnly annotation against the method
-      // body, which happens only when -AcheckPurityAnnotations was itself supplied.  Control can
-      // reach here without it, because issuing a purity suggestion does not require it.
+      // This method verifies a @SideEffectsOnly annotation against the method body, which happens
+      // only when -AcheckPurityAnnotations was itself supplied.  Control can reach here without it,
+      // because issuing a purity suggestion does not require it.
       return;
     }
 
@@ -1340,9 +1361,10 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
           seOnlyExpressions.add(exprJe);
         } catch (JavaExpressionParseException ex) {
           // This diagnostic is about parsing the expression in order to check the method body
-          // against it, so it is distinct from the one that `checkSideEffectsOnlyAnnotation`
-          // issues about the annotation itself.  Every checker of a compound checker performs
-          // this check, so report the error only once.
+          // against it, so it is distinct from the one that
+          // `checkSideEffectsOnlyAnnotation(MethodTree, ExecutableElement)` issues about the
+          // annotation itself.  Every checker of a compound checker performs this check, so
+          // report the error only once.
           DiagMessage diagMessage = new DiagMessage(ex);
           if (diagMessage.getMessageKey().equals("flowexpr.parse.error")) {
             String s =
