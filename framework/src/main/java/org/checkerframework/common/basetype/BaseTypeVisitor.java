@@ -4648,7 +4648,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       List<JavaExpression> seOnlySubExpressions = sideEffectsOnlyExpressions(seOnlySubStrings);
       if (seOnlySuperExpressions == null || seOnlySubExpressions == null) {
         // An argument could not be parsed, so compare the annotations' strings.  The parse error
-        // itself is reported at the declaration that contains it.
+        // itself is reported at the declaration that contains it, if that declaration is being
+        // compiled; if it appears in a stub file or in another compilation unit, it is reported
+        // nowhere.  Either way, this comparison is conservative.
         return flatten(seOnlySuperStrings).containsAll(flatten(seOnlySubStrings));
       }
 
