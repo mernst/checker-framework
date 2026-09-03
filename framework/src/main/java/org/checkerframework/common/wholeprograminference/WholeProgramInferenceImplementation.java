@@ -1061,17 +1061,19 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
   public void updateAtmWithLub(AnnotatedTypeMirror sourceCodeATM, AnnotatedTypeMirror ajavaATM) {
 
     if (sourceCodeATM.getKind() != ajavaATM.getKind()) {
-      // Ignore null types: passing them to asSuper causes a crash, as they cannot be
-      // substituted for type variables. If sourceCodeATM is a null type, only the primary
-      // annotation will be considered anyway, so there is no danger of recursing into
-      // typevar bounds.
-      if (sourceCodeATM.getKind() != TypeKind.NULL) {
-        // This can happen e.g. when recursing into the bounds of a type variable:
-        // the bound on sourceCodeATM might be a declared type (such as T), while
-        // the ajavaATM might be a typevar (such as S extends T), or vice-versa. In
-        // that case, use asSuper to make the two ATMs fully-compatible.
-        sourceCodeATM = AnnotatedTypes.asSuper(this.atypeFactory, sourceCodeATM, ajavaATM);
+      if (sourceCodeATM.getKind() == TypeKind.NULL || ajavaATM.getKind() == TypeKind.NULL) {
+        // Ignore null types: passing either of them to asSuper causes a crash, as a null type
+        // cannot be substituted for a type variable. Only the primary annotation of a null type
+        // is ever considered, so least-upper-bound the primary annotations without recursing
+        // into the structure of the two types, which differs.
+        lubPrimaryAnnotations(sourceCodeATM, ajavaATM);
+        return;
       }
+      // This can happen e.g. when recursing into the bounds of a type variable:
+      // the bound on sourceCodeATM might be a declared type (such as T), while
+      // the ajavaATM might be a typevar (such as S extends T), or vice-versa. In
+      // that case, use asSuper to make the two ATMs fully-compatible.
+      sourceCodeATM = AnnotatedTypes.asSuper(this.atypeFactory, sourceCodeATM, ajavaATM);
     }
 
     switch (sourceCodeATM.getKind()) {
@@ -1122,7 +1124,19 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
       default -> {} // ATM only has primary annotations
     }
 
-    // LUB primary annotations
+    lubPrimaryAnnotations(sourceCodeATM, ajavaATM);
+  }
+
+  /**
+   * Replaces each primary annotation of {@code sourceCodeATM} by its least upper bound with the
+   * corresponding primary annotation of {@code ajavaATM}. Ignores missing AnnotationMirrors from
+   * {@code ajavaATM}: the LUB between an AnnotationMirror am and a missing AnnotationMirror is am.
+   *
+   * @param sourceCodeATM the annotated type on the source code; side effected by this method
+   * @param ajavaATM the annotated type on the ajava file
+   */
+  private void lubPrimaryAnnotations(
+      AnnotatedTypeMirror sourceCodeATM, AnnotatedTypeMirror ajavaATM) {
     AnnotationMirrorSet annosToReplace = new AnnotationMirrorSet();
     for (AnnotationMirror amSource : sourceCodeATM.getPrimaryAnnotations()) {
       AnnotationMirror amAjava = ajavaATM.getPrimaryAnnotationInHierarchy(amSource);

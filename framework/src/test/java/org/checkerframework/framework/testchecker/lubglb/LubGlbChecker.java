@@ -7,9 +7,13 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
+import org.checkerframework.common.wholeprograminference.WholeProgramInference;
+import org.checkerframework.common.wholeprograminference.WholeProgramInferenceImplementation;
+import org.checkerframework.common.wholeprograminference.WholeProgramInferenceJavaParserStorage;
 import org.checkerframework.framework.testchecker.lubglb.quals.LubglbA;
 import org.checkerframework.framework.testchecker.lubglb.quals.LubglbB;
 import org.checkerframework.framework.testchecker.lubglb.quals.LubglbC;
@@ -89,6 +93,75 @@ public class LubGlbChecker extends BaseTypeChecker {
     lubAssert(POLY, B, A);
     lubAssert(POLY, F, POLY);
     lubAssert(POLY, A, A);
+
+    runUpdateAtmWithLubTests();
+  }
+
+  /**
+   * Tests that {@link WholeProgramInference#updateAtmWithLub} least-upper-bounds the primary
+   * annotations of a null type and a type of a different kind, no matter which of its two arguments
+   * is the null type. {@code updateAtmWithLub} reconciles two types of different kinds by calling
+   * {@code asSuper}, which crashes when either of its arguments is a null type, because a null type
+   * cannot be substituted for a type variable. Throws an {@code AssertionError} if a test fails.
+   *
+   * <p>This test needs an {@link AnnotatedTypeFactory}, so it cannot be an ordinary JUnit test.
+   */
+  private void runUpdateAtmWithLubTests() {
+    AnnotatedTypeFactory factory = ((BaseTypeVisitor<?>) visitor).getTypeFactory();
+    // The storage is unused: `updateAtmWithLub` does not read or write it.
+    WholeProgramInference wpi =
+        new WholeProgramInferenceImplementation<>(
+            factory,
+            new WholeProgramInferenceJavaParserStorage(
+                factory, "build/whole-program-inference", false),
+            false);
+    TypeMirror stringType =
+        processingEnv.getElementUtils().getTypeElement("java.lang.String").asType();
+    TypeMirror nullType = processingEnv.getTypeUtils().getNullType();
+
+    // The type from the annotation file is a null type and the type from the source code is not.
+    AnnotatedTypeMirror sourceCodeType = createType(stringType, D, factory);
+    wpi.updateAtmWithLub(sourceCodeType, createType(nullType, E, factory));
+    lubResultAssert(sourceCodeType, C, "the type from the annotation file is a null type");
+
+    // The type from the source code is a null type and the type from the annotation file is not.
+    AnnotatedTypeMirror nullSourceCodeType = createType(nullType, D, factory);
+    wpi.updateAtmWithLub(nullSourceCodeType, createType(stringType, E, factory));
+    lubResultAssert(nullSourceCodeType, C, "the type from the source code is a null type");
+  }
+
+  /**
+   * Creates an {@code AnnotatedTypeMirror} for {@code underlyingType} whose primary annotation is
+   * {@code anno}.
+   *
+   * @param underlyingType the underlying type
+   * @param anno the primary annotation
+   * @param factory the type factory
+   * @return an annotated type for {@code underlyingType}, annotated as {@code anno}
+   */
+  private AnnotatedTypeMirror createType(
+      TypeMirror underlyingType, AnnotationMirror anno, AnnotatedTypeFactory factory) {
+    AnnotatedTypeMirror result = AnnotatedTypeMirror.createType(underlyingType, factory, false);
+    result.addAnnotation(anno);
+    return result;
+  }
+
+  /**
+   * Throws an exception if the primary annotation of {@code type} is not {@code expected}.
+   *
+   * @param type the type that {@code updateAtmWithLub} side-effected
+   * @param expected the expected primary annotation of {@code type}
+   * @param description a description of the call to {@code updateAtmWithLub}, for the error message
+   */
+  private void lubResultAssert(
+      AnnotatedTypeMirror type, AnnotationMirror expected, String description) {
+    AnnotationMirror actual = type.getPrimaryAnnotationInHierarchy(A);
+    if (!AnnotationUtils.areSame(expected, actual)) {
+      throw new AssertionError(
+          String.format(
+              "updateAtmWithLub, when %s, produced %s, but should have produced %s",
+              description, actual, expected));
+    }
   }
 
   @Override
