@@ -1,7 +1,6 @@
 package org.checkerframework.common.wholeprograminference.scenelib;
 
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
-import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -138,7 +137,13 @@ public class ASceneWrapper {
           }
           default -> throw new BugInCF("Unhandled outputFormat " + outputFormat);
         };
-    new File(filepath).delete();
+    // Delete the file, so that a stale file does not remain if this method writes nothing
+    // because the scene is empty.
+    try {
+      Files.deleteIfExists(Paths.get(filepath));
+    } catch (IOException e) {
+      throw new UserError("Problem while deleting %s: %s", filepath, e.getMessage());
+    }
     // Only write non-empty scenes into files.
     if (!scene.isEmpty()) {
       try {
