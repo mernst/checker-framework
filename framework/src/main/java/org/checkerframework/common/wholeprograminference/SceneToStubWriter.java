@@ -88,14 +88,88 @@ public final class SceneToStubWriter {
   private static final String INDENT = "  ";
 
   /**
-   * Writes the annotations in {@code scene} to {@code out} in stub file format.
+   * Writes the annotations in {@code scene} to the file {@code filename}, in stub file format.
+   * Prints imports, classes, method signatures, and fields, all with appropriate annotations.
    *
-   * @param scene the scene to write out
-   * @param filename the name of the file to write (must end with .astub)
+   * @param scene the scene to write
+   * @param filename the name of the file to write (must end in .astub)
    * @param checker the checker, for computing preconditions and postconditions
    */
   public static void write(ASceneWrapper scene, String filename, BaseTypeChecker checker) {
-    writeImpl(scene, filename, checker);
+    // Sort by package name first so that output is deterministic and default package
+    // comes first; within package sort by class name.
+    @SuppressWarnings("signature") // scene-lib bytecode lacks signature annotations
+    List<@BinaryName String> classes = new ArrayList<>(scene.getAScene().getClasses().keySet());
+    classes.sort(
+        (o1, o2) ->
+            ComparisonChain.start()
+                .compare(
+                    packagePart(o1),
+                    packagePart(o2),
+                    Comparator.nullsFirst(Comparator.naturalOrder()))
+                .compare(basenamePart(o1), basenamePart(o2))
+                .result());
+
+    boolean anyClassPrintable = false;
+
+    // The writer is not initialized until it is certain that at
+    // least one class can be written, to avoid empty stub files.
+    // An alternate approach would be to delete the file after it is closed, if the file is
+    // empty.
+    // It's not worth rewriting this code, since .stub files are obsolescent.
+
+    FileWriter fileWriter = null;
+    PrintWriter printWriter = null;
+    try {
+
+      // For each class
+      for (String clazz : classes) {
+        if (isPrintable(clazz, scene.getAScene().getClasses().get(clazz))) {
+          if (!anyClassPrintable) {
+            try {
+              if (fileWriter != null || printWriter != null) {
+                throw new Error("This can't happen");
+              }
+              fileWriter = new FileWriter(filename, StandardCharsets.UTF_8);
+              printWriter = new PrintWriter(fileWriter);
+            } catch (IOException e) {
+              throw new BugInCF(e, "error opening file during WPI: %s", filename);
+            }
+
+            // Write out all imports
+            ImportDefWriter importDefWriter;
+            try {
+              importDefWriter = new ImportDefWriter(scene, printWriter);
+            } catch (DefException e) {
+              throw new BugInCF(e);
+            }
+            importDefWriter.visit();
+            printWriter.println("import org.checkerframework.framework.qual.AnnotatedFor;");
+            printWriter.println();
+            anyClassPrintable = true;
+          }
+          printClass(clazz, scene.getAScene().getClasses().get(clazz), checker, printWriter);
+        }
+      }
+    } finally {
+      if (printWriter != null) {
+        printWriter.close(); // does not throw IOException
+      }
+      try {
+        if (fileWriter != null) {
+          fileWriter.close();
+        }
+      } catch (IOException e) {
+        // Nothing to do since exceptions thrown from a finally block have no effect.
+      }
+    }
+
+    // A PrintWriter never throws IOException; it records the fact that an error occurred, and
+    // checkError() returns it.  Closing the PrintWriter above flushed all output, so an error
+    // during writing or closing has been recorded by now.
+    if (printWriter != null && printWriter.checkError()) {
+      throw new BugInCF("error writing file during WPI: %s", filename);
+    }
   }
 
   /**
@@ -698,91 +772,6 @@ public final class SceneToStubWriter {
     printWriter.print(parameters.toString());
     printWriter.println(");");
     printWriter.println();
-  }
-
-  /**
-   * The implementation of {@link #write}. Prints imports, classes, method signatures, and fields in
-   * stub file format, all with appropriate annotations.
-   *
-   * @param scene the scene to write
-   * @param filename the name of the file to write (must end in .astub)
-   * @param checker the checker, for computing preconditions
-   */
-  private static void writeImpl(ASceneWrapper scene, String filename, BaseTypeChecker checker) {
-    // Sort by package name first so that output is deterministic and default package
-    // comes first; within package sort by class name.
-    @SuppressWarnings("signature") // scene-lib bytecode lacks signature annotations
-    List<@BinaryName String> classes = new ArrayList<>(scene.getAScene().getClasses().keySet());
-    classes.sort(
-        (o1, o2) ->
-            ComparisonChain.start()
-                .compare(
-                    packagePart(o1),
-                    packagePart(o2),
-                    Comparator.nullsFirst(Comparator.naturalOrder()))
-                .compare(basenamePart(o1), basenamePart(o2))
-                .result());
-
-    boolean anyClassPrintable = false;
-
-    // The writer is not initialized until it is certain that at
-    // least one class can be written, to avoid empty stub files.
-    // An alternate approach would be to delete the file after it is closed, if the file is
-    // empty.
-    // It's not worth rewriting this code, since .stub files are obsolescent.
-
-    FileWriter fileWriter = null;
-    PrintWriter printWriter = null;
-    try {
-
-      // For each class
-      for (String clazz : classes) {
-        if (isPrintable(clazz, scene.getAScene().getClasses().get(clazz))) {
-          if (!anyClassPrintable) {
-            try {
-              if (fileWriter != null || printWriter != null) {
-                throw new Error("This can't happen");
-              }
-              fileWriter = new FileWriter(filename, StandardCharsets.UTF_8);
-              printWriter = new PrintWriter(fileWriter);
-            } catch (IOException e) {
-              throw new BugInCF(e, "error opening file during WPI: %s", filename);
-            }
-
-            // Write out all imports
-            ImportDefWriter importDefWriter;
-            try {
-              importDefWriter = new ImportDefWriter(scene, printWriter);
-            } catch (DefException e) {
-              throw new BugInCF(e);
-            }
-            importDefWriter.visit();
-            printWriter.println("import org.checkerframework.framework.qual.AnnotatedFor;");
-            printWriter.println();
-            anyClassPrintable = true;
-          }
-          printClass(clazz, scene.getAScene().getClasses().get(clazz), checker, printWriter);
-        }
-      }
-    } finally {
-      if (printWriter != null) {
-        printWriter.close(); // does not throw IOException
-      }
-      try {
-        if (fileWriter != null) {
-          fileWriter.close();
-        }
-      } catch (IOException e) {
-        // Nothing to do since exceptions thrown from a finally block have no effect.
-      }
-    }
-
-    // A PrintWriter never throws IOException; it records the fact that an error occurred, and
-    // checkError() returns it.  Closing the PrintWriter above flushed all output, so an error
-    // during writing or closing has been recorded by now.
-    if (printWriter != null && printWriter.checkError()) {
-      throw new BugInCF("error writing file during WPI: %s", filename);
-    }
   }
 
   /**
