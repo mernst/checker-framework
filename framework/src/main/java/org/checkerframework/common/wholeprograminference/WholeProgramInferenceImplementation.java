@@ -134,16 +134,18 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
   private final AnnotationMirror IMPURE;
 
   /** The fully-qualified name of the @{@link Deterministic} class. */
-  private final String DETERMINISTIC_NAME = "org.checkerframework.dataflow.qual.Deterministic";
+  private static final String DETERMINISTIC_NAME =
+      "org.checkerframework.dataflow.qual.Deterministic";
 
   /** The fully-qualified name of the @{@link SideEffectFree} class. */
-  private final String SIDE_EFFECT_FREE_NAME = "org.checkerframework.dataflow.qual.SideEffectFree";
+  private static final String SIDE_EFFECT_FREE_NAME =
+      "org.checkerframework.dataflow.qual.SideEffectFree";
 
   /** The fully-qualified name of the @{@link Pure} class. */
-  private final String PURE_NAME = "org.checkerframework.dataflow.qual.Pure";
+  private static final String PURE_NAME = "org.checkerframework.dataflow.qual.Pure";
 
   /** The fully-qualified name of the @{@link Impure} class. */
-  private final String IMPURE_NAME = "org.checkerframework.dataflow.qual.Impure";
+  private static final String IMPURE_NAME = "org.checkerframework.dataflow.qual.Impure";
 
   /**
    * Constructs a new {@code WholeProgramInferenceImplementation} that has not yet inferred any
