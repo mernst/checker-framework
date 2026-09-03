@@ -7,6 +7,9 @@
 
 ### User-visible changes
 
+Whole-program inference with `-Ainfer=ajava` no longer crashes on a class that
+contains a nested annotation declaration that declares a constant field.
+
 ### Implementation details
 
 `AnnotatedTypeMirror.hashCode()` now hashes only the top-level type rather than
