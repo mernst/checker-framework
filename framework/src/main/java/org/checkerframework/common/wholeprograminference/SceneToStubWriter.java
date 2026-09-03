@@ -18,8 +18,10 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 import org.checkerframework.afu.scenelib.Annotation;
 import org.checkerframework.afu.scenelib.el.AClass;
 import org.checkerframework.afu.scenelib.el.AField;
@@ -41,6 +43,8 @@ import org.checkerframework.common.wholeprograminference.scenelib.ASceneWrapper;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
+import org.checkerframework.javacutil.TypeAnnotationUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 // In this file, "base name" means "type without its package part in binary name format".
 // For example, "Outer$Inner" is a base name.
@@ -398,13 +402,36 @@ public final class SceneToStubWriter {
       // This checks if it is in the default package.
       if (simpleName.equals(annotationName)) {
         // In that case, do not print any annotations with the type, to
-        // avoid needing to parse an annotation string to remove it.
-        // TypeMirror does not provide any methods to remove annotations.
-        // This code relies on unannotated Java types not including spaces.
-        basetypeToPrint = basetypeToPrint.substring(basetypeToPrint.lastIndexOf(' ') + 1);
+        // avoid needing to parse an annotation string to remove just the offending one.
+        basetypeToPrint = unannotatedTypeName(javacType);
+        break;
       }
     }
     formatType(sb, aType, javacType, basetypeToPrint);
+  }
+
+  /**
+   * Returns the name of the given type, without any annotations. Unlike {@code
+   * TypeMirror#toString}, the result never contains an annotation, and it never contains type
+   * arguments for a declared type. (The caller discards type arguments anyway.)
+   *
+   * @param javacType the javac representation of a type
+   * @return the name of {@code javacType}, without annotations
+   */
+  private static String unannotatedTypeName(TypeMirror javacType) {
+    if (javacType.getKind() == TypeKind.DECLARED) {
+      String qualifiedName = TypesUtils.getQualifiedName((DeclaredType) javacType);
+      // getQualifiedName returns "" for an anonymous or local class.  For an anonymous class,
+      // the caller obtains the name from the "<anonymous ...>" form that toString produces.
+      if (!qualifiedName.isEmpty()) {
+        return qualifiedName;
+      }
+    } else if (javacType.getKind() == TypeKind.TYPEVAR) {
+      return ((TypeVariable) javacType).asElement().getSimpleName().toString();
+    }
+    // For an array type, the result may still contain annotations, but the caller ignores the
+    // result for array types.
+    return TypeAnnotationUtils.unannotatedType(javacType).toString();
   }
 
   /**
