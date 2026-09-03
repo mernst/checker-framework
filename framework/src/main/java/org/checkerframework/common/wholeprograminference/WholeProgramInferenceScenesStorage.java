@@ -82,13 +82,8 @@ public class WholeProgramInferenceScenesStorage
   private final AnnotationsInContexts annosToIgnore = new AnnotationsInContexts();
 
   /**
-   * If true, assignments where the rhs is null are ignored.
-   *
-   * <p>If all assignments to a variable are null (because inference is being done with respect to a
-   * limited set of uses) then the variable is inferred to have bottom type. That inference is
-   * unlikely to be correct. To avoid that inference, set this variable to true. When the variable
-   * is true, if all assignments are null, then none are recorded, no inference is done, and the
-   * variable remains at its default type.
+   * If true, assignments where the rhs is null are ignored. Its value is that of {@link
+   * AnnotatedTypeFactory#wpiShouldIgnoreNullAssignments}, which explains the rationale.
    */
   private final boolean ignoreNullAssignments;
 
@@ -141,9 +136,7 @@ public class WholeProgramInferenceScenesStorage
   public WholeProgramInferenceScenesStorage(
       AnnotatedTypeFactory atypeFactory, String inferOutputDirectory) {
     this.atypeFactory = atypeFactory;
-    boolean isNullness =
-        atypeFactory.getClass().getSimpleName().equals("NullnessAnnotatedTypeFactory");
-    this.ignoreNullAssignments = !isNullness;
+    this.ignoreNullAssignments = atypeFactory.wpiShouldIgnoreNullAssignments();
     try {
       this.inferOutputDirectory = Path.of(inferOutputDirectory);
     } catch (InvalidPathException e) {

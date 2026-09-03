@@ -977,6 +977,13 @@ public class NullnessAnnotatedTypeFactory
   }
 
   @Override
+  public boolean wpiShouldIgnoreNullAssignments() {
+    // In the nullness type system, an assignment of null is the primary evidence that a variable
+    // should be inferred to be @Nullable, so such assignments must not be ignored.
+    return false;
+  }
+
+  @Override
   public boolean wpiShouldInferTypesForReceivers() {
     // All receivers must be non-null, or the dereference involved in
     // the method call would fail (and cause an NPE). So, WPI should not

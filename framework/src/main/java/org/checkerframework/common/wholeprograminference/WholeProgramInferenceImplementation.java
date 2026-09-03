@@ -161,9 +161,7 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
       boolean showWpiFailedInferences) {
     this.atypeFactory = atypeFactory;
     this.storage = storage;
-    boolean isNullness =
-        atypeFactory.getClass().getSimpleName().equals("NullnessAnnotatedTypeFactory");
-    this.ignoreNullAssignments = !isNullness;
+    this.ignoreNullAssignments = atypeFactory.wpiShouldIgnoreNullAssignments();
     this.showWpiFailedInferences = showWpiFailedInferences;
     DETERMINISTIC =
         AnnotationBuilder.fromClass(atypeFactory.getElementUtils(), Deterministic.class);

@@ -5774,6 +5774,26 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
+   * Returns true if whole-program inference should ignore assignments whose right-hand side is the
+   * {@code null} literal.
+   *
+   * <p>If all assignments to a variable are null (because inference is being done with respect to a
+   * limited set of uses) then the variable is inferred to have bottom type. That inference is
+   * unlikely to be correct. To avoid that inference, this method returns true. When it returns
+   * true, if all assignments are null, then none are recorded, no inference is done, and the
+   * variable remains at its default type.
+   *
+   * <p>A type system in which a null right-hand side is meaningful information rather than an
+   * artifact of a limited set of uses, such as the nullness type system, should override this
+   * method to return false.
+   *
+   * @return true if WPI should ignore assignments whose right-hand side is null
+   */
+  public boolean wpiShouldIgnoreNullAssignments() {
+    return true;
+  }
+
+  /**
    * Side-effects the method or constructor annotations to make any desired changes before writing
    * to an annotation file.
    *

@@ -9,6 +9,12 @@
 
 ### Implementation details
 
+New method `AnnotatedTypeFactory.wpiShouldIgnoreNullAssignments()` determines
+whether whole-program inference ignores assignments whose right-hand side is
+`null`.  Whole-program inference formerly made that determination by comparing
+the simple name of the type factory's class to `"NullnessAnnotatedTypeFactory"`,
+which gave the wrong answer for a subclass of `NullnessAnnotatedTypeFactory`.
+
 `AnnotatedTypeMirror.hashCode()` now hashes only the top-level type rather than
 recursively hashing component types.  Removed class `HashcodeAtmVisitor`, field
 `AnnotatedTypeMirror.HASHCODE_VISITOR`, and method
