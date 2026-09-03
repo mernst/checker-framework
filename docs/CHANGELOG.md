@@ -9,6 +9,13 @@
 
 ### Implementation details
 
+New method `AnnotatedTypeFactory.wpiShouldInferFromNullAssignments()` indicates
+whether whole-program inference should infer a type from an assignment whose
+right-hand side has the null type.  Whole-program inference now calls it rather
+than comparing the simple name of the type factory's class to
+`"NullnessAnnotatedTypeFactory"`, so the behavior is also correct for a checker
+that is built on top of the Nullness Checker.
+
 `AnnotatedTypeMirror.hashCode()` now hashes only the top-level type rather than
 recursively hashing component types.  Removed class `HashcodeAtmVisitor`, field
 `AnnotatedTypeMirror.HASHCODE_VISITOR`, and method
