@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -686,18 +687,32 @@ public final class SceneToStubWriter {
     printWriter.print(methodName);
     printWriter.print("(");
 
+    printWriter.print(formatParameters(aMethod, simplename));
+    printWriter.println(");");
+    printWriter.println();
+  }
+
+  /**
+   * Formats the formal parameter declarations of a method, comma-separated: first the receiver
+   * parameter if it is annotated, then the formal parameters in index order.
+   *
+   * @param aMethod the method whose formal parameters to format
+   * @param simplename the simple name of the enclosing class, for the receiver parameter
+   * @return the formatted formal parameters, as if they were written in Java source code
+   */
+  // Package-private rather than private so that SceneToStubWriterTest can call it.
+  static String formatParameters(AMethod aMethod, String simplename) {
     StringJoiner parameters = new StringJoiner(", ");
     if (!aMethod.receiver.type.tlAnnotationsHere.isEmpty()) {
       // Only output the receiver if it has an annotation.
       parameters.add(formatParameter(aMethod.receiver, "this", simplename));
     }
-    for (Integer index : aMethod.getParameters().keySet()) {
-      AField param = aMethod.getParameters().get(index);
+    // Iterate in index order.  A TreeMap is necessary because the iteration order of
+    // AMethod.getParameters() is insertion order, which is not necessarily index order.
+    for (AField param : new TreeMap<>(aMethod.getParameters()).values()) {
       parameters.add(formatParameter(param, param.getName(), simplename));
     }
-    printWriter.print(parameters.toString());
-    printWriter.println(");");
-    printWriter.println();
+    return parameters.toString();
   }
 
   /**

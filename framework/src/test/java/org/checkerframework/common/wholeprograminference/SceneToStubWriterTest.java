@@ -8,6 +8,8 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.afu.scenelib.Annotation;
 import org.checkerframework.afu.scenelib.el.AField;
+import org.checkerframework.afu.scenelib.el.AMethod;
+import org.checkerframework.afu.scenelib.el.AScene;
 import org.checkerframework.afu.scenelib.el.AnnotationDef;
 import org.junit.Assert;
 import org.junit.Test;
@@ -73,5 +75,42 @@ public class SceneToStubWriterTest {
         intParameter("org.checkerframework.checker.mustcall.qual.Owning", "java.lang.Deprecated");
     Assert.assertEquals(
         "@Owning @Deprecated int x", SceneToStubWriter.formatParameter(param, "x", "MyClass"));
+  }
+
+  /**
+   * Returns a method with three formal parameters of type {@code int}, named "x0", "x1", and "x2".
+   * The parameters are vivified in the given order, which need not be index order.
+   *
+   * @param vivificationOrder the indices of the formal parameters, in the order in which to vivify
+   *     them
+   * @return a method with three formal parameters
+   */
+  private AMethod methodWithThreeIntParameters(int... vivificationOrder) {
+    AMethod aMethod = new AScene().classes.getVivify("MyClass").methods.getVivify("myMethod(III)V");
+    TypeMirror intType = env.getTypeUtils().getPrimitiveType(TypeKind.INT);
+    for (int index : vivificationOrder) {
+      aMethod.vivifyAndAddTypeMirrorToParameter(
+          index, intType, env.getElementUtils().getName("x" + index));
+    }
+    return aMethod;
+  }
+
+  @Test
+  public void formatParametersVivifiedInIndexOrder() {
+    Assert.assertEquals(
+        "int x0, int x1, int x2",
+        SceneToStubWriter.formatParameters(methodWithThreeIntParameters(0, 1, 2), "MyClass"));
+  }
+
+  /**
+   * Formal parameters must be printed in index order. The iteration order of {@code
+   * AMethod.getParameters()} is insertion order, which is not necessarily index order: reading a
+   * pre-existing annotation file can vivify the formal parameters in any order.
+   */
+  @Test
+  public void formatParametersVivifiedOutOfIndexOrder() {
+    Assert.assertEquals(
+        "int x0, int x1, int x2",
+        SceneToStubWriter.formatParameters(methodWithThreeIntParameters(2, 0, 1), "MyClass"));
   }
 }
