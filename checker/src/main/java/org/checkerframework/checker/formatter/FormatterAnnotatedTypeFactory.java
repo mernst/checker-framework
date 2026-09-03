@@ -121,6 +121,7 @@ public class FormatterAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       Collection<WholeProgramInferenceJavaParserStorage.CallableDeclarationAnnos> inSubtypes) {
     super.wpiPrepareMethodForWriting(methodAnnos, inSupertypes, inSubtypes);
     if (hasFormatMethodAnno(methodAnnos)) {
+      // The index is 0-based, so 0 is the first formal parameter.
       AnnotatedTypeMirror atm = methodAnnos.getParameterType(0);
       atm.removePrimaryAnnotationByClass(Format.class);
     }
