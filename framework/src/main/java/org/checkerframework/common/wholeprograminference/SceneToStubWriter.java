@@ -7,13 +7,17 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.regex.Pattern;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
@@ -556,6 +560,10 @@ public final class SceneToStubWriter {
       }
       printWriter.print(nameToPrint);
       printTypeParameters(typeElements[i], printWriter);
+      if (aClass.isRecord(nameToPrint)) {
+        printRecordComponents(
+            typeElements[i], i == classNames.length - 1 ? aClass : null, printWriter);
+      }
       printWriter.println(" {");
       if (aClass.isEnum(nameToPrint) && i != classNames.length - 1) {
         // Print a blank set of enum constants if this is an outer enum.
@@ -588,22 +596,28 @@ public final class SceneToStubWriter {
   }
 
   /**
-   * Prints all the fields of a given class.
+   * Prints all the fields of a given class, except those in {@code omit}.
    *
    * @param aClass the class whose fields should be printed
+   * @param omit the names of fields that should not be printed
    * @param printWriter the writer on which to print the fields
    * @param indentLevel the indent string
    */
-  private static void printFields(AClass aClass, PrintWriter printWriter, String indentLevel) {
+  private static void printFields(
+      AClass aClass, Set<String> omit, PrintWriter printWriter, String indentLevel) {
 
-    if (aClass.getFields().isEmpty()) {
+    Map<String, AField> fields = aClass.getFields();
+    if (omit.containsAll(fields.keySet())) {
       return;
     }
 
     printWriter.println(indentLevel + "// fields:");
     printWriter.println();
-    for (Map.Entry<String, AField> fieldEntry : aClass.getFields().entrySet()) {
+    for (Map.Entry<String, AField> fieldEntry : fields.entrySet()) {
       String fieldName = fieldEntry.getKey();
+      if (omit.contains(fieldName)) {
+        continue;
+      }
       AField aField = fieldEntry.getValue();
       printField(aField, fieldName, printWriter, indentLevel);
     }
@@ -855,7 +869,7 @@ public final class SceneToStubWriter {
       printWriter.println();
     }
 
-    printFields(aClass, printWriter, indentLevel);
+    printFields(aClass, recordComponentNames(aClass, innermostClassname), printWriter, indentLevel);
 
     if (!aClass.getMethods().isEmpty()) {
       // print method signatures
@@ -884,6 +898,58 @@ public final class SceneToStubWriter {
    */
   private static String indents(int n) {
     return INDENT.repeat(Math.max(0, n));
+  }
+
+  /**
+   * Prints the components of the given record, enclosed in parentheses. A record declaration is
+   * syntactically invalid without its component list, and the stub parser transfers annotations
+   * from a component to the corresponding field, accessor method, and compact canonical constructor
+   * parameter.
+   *
+   * @param type the TypeElement representing the record whose components should be printed
+   * @param aClass the scene-lib representation of {@code type}, which supplies the inferred
+   *     annotations for the components; or null if the scene contains no information about {@code
+   *     type}, in which case the components are printed without annotations
+   * @param printWriter where to print the components
+   */
+  private static void printRecordComponents(
+      TypeElement type, @Nullable AClass aClass, PrintWriter printWriter) {
+    Map<String, AField> fields = aClass == null ? Collections.emptyMap() : aClass.getFields();
+    StringJoiner components = new StringJoiner(", ");
+    for (RecordComponentElement component : type.getRecordComponents()) {
+      String componentName = component.getSimpleName().toString();
+      AField aField = fields.get(componentName);
+      if (aField != null && aField.getTypeMirror() != null) {
+        components.add(formatParameter(aField, componentName, type.getSimpleName().toString()));
+      } else {
+        components.add(formatType(null, component.asType()) + componentName);
+      }
+    }
+    printWriter.print("(" + components + ")");
+  }
+
+  /**
+   * Returns the names of the components of the given record, or the empty set if the given class is
+   * not a record. A record component is also a field, but it must be printed in the record header
+   * rather than in the record body, because a record may not declare an instance field.
+   *
+   * @param aClass the representation of the class
+   * @param simplename the simple name of the class
+   * @return the names of the record components of the class
+   */
+  private static Set<String> recordComponentNames(AClass aClass, String simplename) {
+    if (!aClass.isRecord(simplename)) {
+      return Collections.emptySet();
+    }
+    TypeElement typeElt = aClass.getTypeElement();
+    if (typeElt == null) {
+      throw new BugInCF("typeElement was unexpectedly null in this aClass: " + aClass);
+    }
+    Set<String> result = new HashSet<>();
+    for (RecordComponentElement component : typeElt.getRecordComponents()) {
+      result.add(component.getSimpleName().toString());
+    }
+    return result;
   }
 
   /**

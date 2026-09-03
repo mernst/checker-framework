@@ -380,9 +380,6 @@ tasks.register("ainferTestCheckerGenerateStubs", Test) {
     delete("tests/ainfer-testchecker/annotated/UsesAnonymous.java")
     delete("tests/ainfer-testchecker/annotated/AnonymousClassWithField.java")
 
-    // This test outputs a warning about records.
-    delete("tests/ainfer-testchecker/annotated/all-systems/java17/Issue6069.java")
-
     // This test causes an error when its corresponding stub file is read, because the test
     // contains an annotation definition. The stub file parser does not support reading
     // files that define annotations; this test can be reinstated if the stub parser
@@ -459,6 +456,10 @@ tasks.register("ainferTestCheckerGenerateAjava", Test) {
     // inner classes, which stubs cannot annotate.
     // TODO: investigate the cause of this error in the Purity checker, fix it, and then reinstate this test.
     delete("tests/ainfer-testchecker/annotated/all-systems/java8/memberref/MemberReferences.java")
+
+    // Ajava-based WPI stores inferences per source declaration, so it infers nothing for a
+    // record's fields and canonical constructor, which have no declaration in the source code.
+    delete("tests/ainfer-testchecker/annotated/RecordTest.java")
   }
 }
 
@@ -573,6 +574,9 @@ tasks.register("ainferTestCheckerGenerateJaifs", Test) {
     // JAIF-based WPI fails this test, too, because the insertion of a declaration annotation
     // onto a field with a multi-part type (e.g. Outer.Inner) doesn't appear to be supported by the AFU.
     delete("tests/ainfer-testchecker/annotated/InnerClassFieldDeclAnno.java")
+
+    // The AFU's JAIF reading/writing libraries don't support records.
+    delete("tests/ainfer-testchecker/annotated/RecordTest.java")
   }
   finalizedBy("ainferTestCheckerGenerateJaifsInsertAnnotations")
 }

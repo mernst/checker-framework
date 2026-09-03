@@ -1062,9 +1062,9 @@ public final class AnnotationFileParser {
         }
         case CONSTRUCTOR, METHOD ->
             processCallableDeclaration((CallableDeclaration<?>) decl, (ExecutableElement) elt);
-        case CLASS, INTERFACE ->
+        case CLASS, INTERFACE, RECORD ->
             // Not processing an ajava file, so ignore the return value.
-            processTypeDecl((ClassOrInterfaceDeclaration) decl, innerName, null);
+            processTypeDecl((TypeDeclaration<?>) decl, innerName, null);
         case ENUM ->
             // Not processing an ajava file, so ignore the return value.
             processTypeDecl((EnumDeclaration) decl, innerName, null);
@@ -1995,6 +1995,11 @@ public final class AnnotationFileParser {
       if (elt != null) {
         putIfAbsent(elementsToDecl, elt, member);
       }
+    } else if (member instanceof RecordDeclaration rd) {
+      Element elt = findElement(typeElt, rd);
+      if (elt != null) {
+        putIfAbsent(elementsToDecl, elt, member);
+      }
     } else {
       stubDebug("Ignoring element of type %s in %s", member.getClass(), typeDeclName);
     }
@@ -2199,22 +2204,21 @@ public final class AnnotationFileParser {
    *     element is not found
    */
   private @Nullable Element findElement(TypeElement typeElt, ClassOrInterfaceDeclaration ciDecl) {
-    String wantedClassOrInterfaceName = ciDecl.getNameAsString();
-    for (TypeElement typeElement : ElementUtils.getAllTypeElementsIn(typeElt)) {
-      if (wantedClassOrInterfaceName.equals(typeElement.getSimpleName().toString())) {
-        return typeElement;
-      }
-    }
+    return findNestedTypeElement(typeElt, ciDecl, "Class/interface");
+  }
 
-    stubWarnNotFound(
-        ciDecl, "Class/interface " + wantedClassOrInterfaceName + " not found in type " + typeElt);
-    if (debugAnnotationFileParser) {
-      stubDebug("  Here are the type declarations of %s:", typeElt);
-      for (TypeElement method : ElementFilter.typesIn(typeElt.getEnclosedElements())) {
-        stubDebug("    %s", method);
-      }
-    }
-    return null;
+  /**
+   * Looks for the nested record element in the typeElt and returns it if the element has the same
+   * name as provided record declaration. In case nested element is not found it returns null.
+   *
+   * @param typeElt an element where nested record element should be looked for
+   * @param recordDecl record declaration which name should be found among nested elements of the
+   *     typeElt
+   * @return nested in typeElt record element with the name of the provided record, or null if
+   *     nested element is not found
+   */
+  private @Nullable Element findElement(TypeElement typeElt, RecordDeclaration recordDecl) {
+    return findNestedTypeElement(typeElt, recordDecl, "Record");
   }
 
   /**
@@ -2228,14 +2232,31 @@ public final class AnnotationFileParser {
    *     element is not found
    */
   private @Nullable Element findElement(TypeElement typeElt, EnumDeclaration enumDecl) {
-    String wantedEnumName = enumDecl.getNameAsString();
+    return findNestedTypeElement(typeElt, enumDecl, "Enum");
+  }
+
+  /**
+   * Looks for a type element nested in {@code typeElt} whose simple name is that of {@code
+   * typeDecl}. In case the nested element is not found, it returns null.
+   *
+   * @param typeElt an element in which the nested type element should be looked for
+   * @param typeDecl the declaration whose name should be found among the nested elements of {@code
+   *     typeElt}
+   * @param kindForDiagnostic how to describe {@code typeDecl} in a warning message, such as "Enum"
+   * @return the element nested in {@code typeElt} with the name of {@code typeDecl}, or null if no
+   *     such nested element exists
+   */
+  private @Nullable Element findNestedTypeElement(
+      TypeElement typeElt, TypeDeclaration<?> typeDecl, String kindForDiagnostic) {
+    String wantedName = typeDecl.getNameAsString();
     for (TypeElement typeElement : ElementUtils.getAllTypeElementsIn(typeElt)) {
-      if (wantedEnumName.equals(typeElement.getSimpleName().toString())) {
+      if (wantedName.equals(typeElement.getSimpleName().toString())) {
         return typeElement;
       }
     }
 
-    stubWarnNotFound(enumDecl, "Enum " + wantedEnumName + " not found in type " + typeElt);
+    stubWarnNotFound(
+        typeDecl, kindForDiagnostic + " " + wantedName + " not found in type " + typeElt);
     if (debugAnnotationFileParser) {
       stubDebug("  Here are the type declarations of %s:", typeElt);
       for (TypeElement method : ElementFilter.typesIn(typeElt.getEnclosedElements())) {

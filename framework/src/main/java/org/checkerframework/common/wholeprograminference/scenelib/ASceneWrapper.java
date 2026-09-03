@@ -224,8 +224,8 @@ public class ASceneWrapper {
         aClass.markAsEnum(outerClass.getSimpleName().toString());
       } else if (outerClass.isInterface()) {
         aClass.markAsInterface(outerClass.getSimpleName().toString());
-        // } else if (outerClass.isRecord()) {
-        //   aClass.markAsRecord(outerClass.getSimpleName().toString());
+      } else if (outerClass.getKind() == ElementKind.RECORD) {
+        aClass.markAsRecord(outerClass.getSimpleName().toString());
       }
       Element element = outerClass.getEnclosingElement();
       if (element == null || element.getKind() == ElementKind.PACKAGE) {

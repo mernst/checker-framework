@@ -7,6 +7,11 @@
 
 ### User-visible changes
 
+Stub-based whole-program inference (`-Ainfer=stubs`) now writes a record as a
+record declaration, including its component list, rather than as a class
+declaration.  Relatedly, an annotation file (stub file) may now annotate a
+nested record declaration; such a declaration was previously ignored.
+
 ### Implementation details
 
 `AnnotatedTypeMirror.hashCode()` now hashes only the top-level type rather than
