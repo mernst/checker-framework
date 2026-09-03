@@ -220,7 +220,14 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
       return;
     }
 
+    // Don't infer types for code that can't be annotated anyway.
     if (!storage.hasStorageLocationForMethod(methodElt)) {
+      if (showWpiFailedInferences) {
+        printFailedInferenceDebugMessage(
+            "WPI could not store information"
+                + " about this method: "
+                + JVMNames.getJVMMethodSignature(methodElt));
+      }
       return;
     }
 
