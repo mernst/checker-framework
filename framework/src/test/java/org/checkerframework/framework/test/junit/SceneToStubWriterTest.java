@@ -3,7 +3,10 @@ package org.checkerframework.framework.test.junit;
 import com.sun.source.util.JavacTask;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Collections;
+import java.util.regex.Pattern;
 import javax.lang.model.element.TypeElement;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
@@ -18,7 +21,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 
-/** Tests that {@link SceneToStubWriter} reports I/O problems rather than hiding them. */
+/** Tests for {@link SceneToStubWriter}. */
 public class SceneToStubWriterTest {
 
   /** A concrete checker; {@link SceneToStubWriter} uses only its name. */
@@ -33,15 +36,24 @@ public class SceneToStubWriterTest {
    * @return a scene containing a single printable class
    */
   private ASceneWrapper sceneWithOnePrintableClass() {
+    AScene scene = new AScene();
+    AClass aClass = scene.classes.getVivify("Foo");
+    aClass.setTypeElement(objectTypeElement());
+    return new ASceneWrapper(scene);
+  }
+
+  /**
+   * Returns the TypeElement for {@code java.lang.Object}, for use as the type element of a class in
+   * a scene.
+   *
+   * @return the TypeElement for {@code java.lang.Object}
+   */
+  private static TypeElement objectTypeElement() {
     JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     JavacTask task =
         (JavacTask)
             compiler.getTask(null, null, null, null, null, Collections.<JavaFileObject>emptyList());
-    TypeElement typeElement = task.getElements().getTypeElement("java.lang.Object");
-    AScene scene = new AScene();
-    AClass aClass = scene.classes.getVivify("Foo");
-    aClass.setTypeElement(typeElement);
-    return new ASceneWrapper(scene);
+    return task.getElements().getTypeElement("java.lang.Object");
   }
 
   /** When the output file cannot be opened, the {@code IOException} is the cause of the error. */
@@ -77,5 +89,31 @@ public class SceneToStubWriterTest {
           "Unexpected message: " + e.getMessage(),
           e.getMessage().contains("error writing file during WPI"));
     }
+  }
+
+  /**
+   * An enum with no enum constants needs no enum constant declaration, so the stub file should
+   * contain neither the {@code // enum constants:} header nor the semicolon that terminates the
+   * list of enum constants.
+   */
+  @Test
+  public void emptyEnumHasNoEnumConstantDeclaration() throws IOException {
+    AScene scene = new AScene();
+    AClass aClass = scene.classes.getVivify("Foo");
+    aClass.setTypeElement(objectTypeElement());
+    aClass.markAsEnum("Foo");
+    aClass.setEnumConstants(Collections.emptyList());
+
+    File astub = File.createTempFile("SceneToStubWriterTest", ".astub");
+    astub.deleteOnExit();
+    SceneToStubWriter.write(new ASceneWrapper(scene), astub.getPath(), new TestChecker());
+    String contents = new String(Files.readAllBytes(astub.toPath()), StandardCharsets.UTF_8);
+
+    Assert.assertFalse(
+        "The stub file should not mention enum constants, but is:\n" + contents,
+        contents.contains("enum constants"));
+    Assert.assertFalse(
+        "The stub file should not contain an empty enum constant declaration, but is:\n" + contents,
+        Pattern.compile("^\\s*;\\s*$", Pattern.MULTILINE).matcher(contents).find());
   }
 }

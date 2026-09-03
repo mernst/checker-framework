@@ -31,6 +31,7 @@ import org.checkerframework.afu.scenelib.el.DefCollector;
 import org.checkerframework.afu.scenelib.el.DefException;
 import org.checkerframework.afu.scenelib.el.TypePathEntry;
 import org.checkerframework.afu.scenelib.field.AnnotationFieldType;
+import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.SameLen;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signature.qual.BinaryName;
@@ -582,6 +583,9 @@ public final class SceneToStubWriter {
     Element elt = innermostTypeElt;
     for (int i = classNames.length - 2; i >= 0; i--) {
       elt = elt.getEnclosingElement();
+      // The cast is safe because the enclosing element of a class is only something other
+      // than a TypeElement (namely, an ExecutableElement) for a local or anonymous class,
+      // and isPrintable() rejects those classes and their nested classes.
       result[i] = (TypeElement) elt;
     }
     return result;
@@ -639,7 +643,6 @@ public final class SceneToStubWriter {
   /**
    * Prints a method declaration in stub file format (i.e., without a method body).
    *
-   * @param className the class that contains the method, for diagnostics only
    * @param aMethod the method to print
    * @param simplename the simple name of the enclosing class, for receiver parameters and
    *     constructor names
@@ -647,9 +650,7 @@ public final class SceneToStubWriter {
    * @param atf the type factory, for computing preconditions and postconditions
    * @param indentLevel the indent string
    */
-  @SuppressWarnings("UnusedVariable")
   private static void printMethodDeclaration(
-      String className,
       AMethod aMethod,
       String simplename,
       PrintWriter printWriter,
@@ -792,6 +793,8 @@ public final class SceneToStubWriter {
    * @param classname the class name
    * @param aClass the representation of the class
    * @return true if the class is printable, by the definition above
+   * @throws BugInCF if the class passes the tests above but has no {@code TypeElement}, which
+   *     printing it would require
    */
   private static boolean isPrintable(@BinaryName String classname, AClass aClass) {
     String basename = basenamePart(classname);
@@ -843,7 +846,7 @@ public final class SceneToStubWriter {
     String indentLevel = indents(curlyCount);
 
     List<VariableElement> enumConstants = aClass.getEnumConstants();
-    if (enumConstants != null) {
+    if (enumConstants != null && !enumConstants.isEmpty()) {
       StringJoiner sj = new StringJoiner(", ");
       for (VariableElement enumConstant : enumConstants) {
         sj.add(enumConstant.getSimpleName());
@@ -863,7 +866,6 @@ public final class SceneToStubWriter {
       printWriter.println();
       for (Map.Entry<String, AMethod> methodEntry : aClass.getMethods().entrySet()) {
         printMethodDeclaration(
-            aClass.className,
             methodEntry.getValue(),
             innermostClassname,
             printWriter,
@@ -882,8 +884,8 @@ public final class SceneToStubWriter {
    * @param n the number of indents
    * @return a string containing that many indents
    */
-  private static String indents(int n) {
-    return INDENT.repeat(Math.max(0, n));
+  private static String indents(@NonNegative int n) {
+    return INDENT.repeat(n);
   }
 
   /**
