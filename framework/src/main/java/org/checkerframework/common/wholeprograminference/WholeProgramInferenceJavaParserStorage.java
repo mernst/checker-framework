@@ -121,32 +121,39 @@ public class WholeProgramInferenceJavaParserStorage
    * Maps from binary class name to the wrapper containing the class. Contains all classes in Java
    * source files containing an Element for which an annotation has been inferred.
    */
-  private Map<@BinaryName String, ClassOrInterfaceAnnos> classToAnnos = new HashMap<>();
+  private final Map<@BinaryName String, ClassOrInterfaceAnnos> classToAnnos = new HashMap<>();
 
   /** Maps from binary class name to binary names of all supertypes. */
-  private Map<@BinaryName String, Set<@BinaryName String>> supertypesMap = new HashMap<>();
+  private final Map<@BinaryName String, Set<@BinaryName String>> supertypesMap = new HashMap<>();
 
   /** Maps from binary class name to binary names of all known subtypes. */
-  private Map<@BinaryName String, Set<@BinaryName String>> subtypesMap = new HashMap<>();
+  private final Map<@BinaryName String, Set<@BinaryName String>> subtypesMap = new HashMap<>();
 
   /**
    * Files containing classes for which an annotation has been inferred since the last time files
    * were written to disk. Every element of this set is a key in {@link #sourceToAnnos}; {@link
    * #setFileModified} maintains that invariant.
    */
-  private Set<String> modifiedFiles = new HashSet<>();
+  private final Set<String> modifiedFiles = new HashSet<>();
 
   /** Mapping from source file to the wrapper for the compilation unit parsed from that file. */
-  private Map<String, CompilationUnitAnnos> sourceToAnnos = new HashMap<>();
+  private final Map<String, CompilationUnitAnnos> sourceToAnnos = new HashMap<>();
 
   /** Maps from binary class name to the source file that contains it. */
-  private Map<String, String> classToSource = new HashMap<>();
+  private final Map<String, String> classToSource = new HashMap<>();
 
   /** The directory for writing inference output ({@code .ajava} files). */
   private final Path inferOutputDirectory;
 
   /** True if the {@code -AinferOutputOriginal} option was supplied to the checker. */
   private final boolean inferOutputOriginal;
+
+  /**
+   * The names of the invisible qualifiers supported by {@link #atypeFactory}. Computed on first
+   * use, because {@link AnnotatedTypeFactory#getSupportedTypeQualifiers} must not be called while
+   * the type factory is still being constructed.
+   */
+  private @MonotonicNonNull Set<String> invisibleQualifierNames = null;
 
   /**
    * Returns the names of all qualifiers that are marked with {@link InvisibleQualifier}, and that
@@ -172,6 +179,19 @@ public class WholeProgramInferenceJavaParserStorage
   public static boolean isInvisible(Class<? extends Annotation> qual) {
     return Arrays.stream(qual.getAnnotations())
         .anyMatch(anno -> anno.annotationType() == InvisibleQualifier.class);
+  }
+
+  /**
+   * Returns the names of the invisible qualifiers supported by {@link #atypeFactory}. The result is
+   * cached, so it is computed only once.
+   *
+   * @return the names of every invisible qualifier supported by {@link #atypeFactory}
+   */
+  private Set<String> getInvisibleQualifierNames() {
+    if (invisibleQualifierNames == null) {
+      invisibleQualifierNames = getInvisibleQualifierNames(this.atypeFactory);
+    }
+    return invisibleQualifierNames;
   }
 
   /**
@@ -1120,7 +1140,7 @@ public class WholeProgramInferenceJavaParserStorage
       // LexicalPreservingPrinter.print(root.declaration, writer);
 
       // Do not print invisible qualifiers, to avoid cluttering the output.
-      Set<String> invisibleQualifierNames = getInvisibleQualifierNames(this.atypeFactory);
+      Set<String> invisibleQualifierNames = getInvisibleQualifierNames();
       DefaultPrettyPrinter prettyPrinter =
           new DefaultPrettyPrinter() {
             @Override
@@ -1153,24 +1173,34 @@ public class WholeProgramInferenceJavaParserStorage
 
                     // visit(CharLiteralExpr) and visit(StringLiteralExpr) work around bugs in
                     // JavaParser, with respect to handling lonely surrogate characters.
+                    // Each one temporarily sets the escaped value, because the only way to
+                    // influence how the superclass prints the literal is through the node.  Each
+                    // one restores the original value afterward, so that printing does not
+                    // permanently modify the AST.
 
                     @Override
                     public void visit(final CharLiteralExpr n, final Void arg) {
                       String value = n.getValue();
-                      if (value.length() == 1) {
-                        char c = value.charAt(0);
-                        if (Character.isSurrogate(c)) {
-                          n.setValue(String.format("\\u%04X", (int) c));
-                        }
+                      if (value.length() == 1 && Character.isSurrogate(value.charAt(0))) {
+                        n.setValue(String.format("\\u%04X", (int) value.charAt(0)));
+                        super.visit(n, arg);
+                        n.setValue(value);
+                      } else {
+                        super.visit(n, arg);
                       }
-                      super.visit(n, arg);
                     }
 
                     @Override
                     public void visit(final StringLiteralExpr n, final Void arg) {
-                      n.setValue(escapeLonelySurrogates(n.getValue()));
-
-                      super.visit(n, arg);
+                      String value = n.getValue();
+                      String escaped = escapeLonelySurrogates(value);
+                      if (escaped.equals(value)) {
+                        super.visit(n, arg);
+                      } else {
+                        n.setValue(escaped);
+                        super.visit(n, arg);
+                        n.setValue(value);
+                      }
                     }
                   };
               node.accept(visitor, null);
@@ -1193,7 +1223,7 @@ public class WholeProgramInferenceJavaParserStorage
    * @param s a string
    * @return the index of a lonely surrogate character in its argument, or -1 if there is none
    */
-  private int indexOfLonelySurrogateCharacter(String s) {
+  /*package-private*/ static int indexOfLonelySurrogateCharacter(String s) {
     int limit = s.length();
     for (int i = 0; i < limit; i++) {
       if (Character.isSurrogate(s.charAt(i))) {
@@ -1215,7 +1245,7 @@ public class WholeProgramInferenceJavaParserStorage
    * @param s a string
    * @return the string, with lonely surrogate characters replaced by their unicode escape
    */
-  private String escapeLonelySurrogates(String s) {
+  /*package-private*/ static String escapeLonelySurrogates(String s) {
     int idx = indexOfLonelySurrogateCharacter(s);
     if (idx != -1) {
       // This recursion is less efficient than a loop with StringBuilder would be,
@@ -1338,21 +1368,6 @@ public class WholeProgramInferenceJavaParserStorage
     public TypeDeclaration<?> getClassOrInterfaceDeclarationByName(String name) {
       return JavaParserUtil.getTypeDeclarationByName(compilationUnit, name);
     }
-
-    /**
-     * Returns a verbose printed representation of this.
-     *
-     * @return a verbose printed representation of this
-     */
-    @SuppressWarnings("UnusedMethod")
-    public String toStringVerbose() {
-      StringJoiner sb = new StringJoiner(System.lineSeparator());
-      sb.add("CompilationUnitAnnos:");
-      for (ClassOrInterfaceAnnos type : types) {
-        sb.add(type.toStringVerbose());
-      }
-      return sb.toString();
-    }
   }
 
   /**
@@ -1362,13 +1377,13 @@ public class WholeProgramInferenceJavaParserStorage
     /**
      * Mapping from JVM method signatures to the wrapper containing the corresponding executable.
      */
-    public Map<String, CallableDeclarationAnnos> callableDeclarations = new HashMap<>();
+    private final Map<String, CallableDeclarationAnnos> callableDeclarations;
 
     /** Mapping from field names to wrappers for those fields. */
-    public Map<String, FieldAnnos> fields = new HashMap<>(4);
+    private final Map<String, FieldAnnos> fields;
 
     /** Collection of declared enum constants (empty if not an enum). */
-    public Set<String> enumConstants = new HashSet<>(2);
+    private final Set<String> enumConstants;
 
     /**
      * Annotations on the declaration of the class (note that despite the name, these can also be
@@ -1380,10 +1395,10 @@ public class WholeProgramInferenceJavaParserStorage
      * The JavaParser TypeDeclaration representing the class's declaration. Used for placing
      * annotations inferred on the class declaration itself.
      */
-    private @MonotonicNonNull TypeDeclaration<?> classDeclaration;
+    private final @Nullable TypeDeclaration<?> classDeclaration;
 
     /** The binary name of the class. */
-    private @BinaryName String className;
+    private final @BinaryName String className;
 
     /**
      * Create a new ClassOrInterfaceAnnos.
@@ -1394,20 +1409,47 @@ public class WholeProgramInferenceJavaParserStorage
      */
     public ClassOrInterfaceAnnos(
         @BinaryName String className, @Nullable TypeDeclaration<?> javaParserNode) {
-      this.classDeclaration = javaParserNode;
+      this(className, javaParserNode, new HashMap<>(), new HashMap<>(4), new HashSet<>(2));
+    }
+
+    /**
+     * Create a new ClassOrInterfaceAnnos with the given contents. The collections are used
+     * directly, not copied.
+     *
+     * @param className the binary name of the class
+     * @param javaParserNode the JavaParser node corresponding to the class declaration, which is
+     *     used for placing annotations on the class declaration
+     * @param callableDeclarations mapping from JVM method signatures to wrappers for the
+     *     corresponding executables
+     * @param fields mapping from field names to wrappers for those fields
+     * @param enumConstants the declared enum constants (empty if not an enum)
+     */
+    private ClassOrInterfaceAnnos(
+        @BinaryName String className,
+        @Nullable TypeDeclaration<?> javaParserNode,
+        Map<String, CallableDeclarationAnnos> callableDeclarations,
+        Map<String, FieldAnnos> fields,
+        Set<String> enumConstants) {
       this.className = className;
+      this.classDeclaration = javaParserNode;
+      this.callableDeclarations = callableDeclarations;
+      this.fields = fields;
+      this.enumConstants = enumConstants;
     }
 
     @Override
     public ClassOrInterfaceAnnos deepCopy() {
-      ClassOrInterfaceAnnos result = new ClassOrInterfaceAnnos(className, classDeclaration);
-      result.callableDeclarations = MapsP.deepCopyValues(callableDeclarations);
-      result.fields = MapsP.deepCopyValues(fields);
-      result.enumConstants = UtilP.clone(enumConstants); // no deep copy: elements are strings
+      // No need to copy classDeclaration.
+      ClassOrInterfaceAnnos result =
+          new ClassOrInterfaceAnnos(
+              className,
+              classDeclaration,
+              MapsP.deepCopyValues(callableDeclarations),
+              MapsP.deepCopyValues(fields),
+              UtilP.clone(enumConstants)); // no deep copy: elements are strings
       if (classAnnotations != null) {
         result.classAnnotations = classAnnotations.deepCopy();
       }
-      // no need to change classDeclaration
       return result;
     }
 
@@ -1465,15 +1507,6 @@ public class WholeProgramInferenceJavaParserStorage
           + ", fields="
           + fieldsString
           + "]";
-    }
-
-    /**
-     * Returns a verbose printed representation of this.
-     *
-     * @return a verbose printed representation of this
-     */
-    public String toStringVerbose() {
-      return toString();
     }
   }
 
@@ -1937,7 +1970,7 @@ public class WholeProgramInferenceJavaParserStorage
   /** Stores the JavaParser node for a field and the annotations that have been inferred for it. */
   public static class FieldAnnos implements DeepCopyable<FieldAnnos> {
     /** Wrapped field declaration. */
-    public final VariableDeclarator declaration;
+    private final VariableDeclarator declaration;
 
     /** Inferred type for field, initialized the first time it's accessed. */
     private @MonotonicNonNull AnnotatedTypeMirror type = null;
@@ -1979,21 +2012,6 @@ public class WholeProgramInferenceJavaParserStorage
       }
 
       return this.type;
-    }
-
-    /**
-     * Returns the inferred declaration annotations on this field, or an empty set if there are no
-     * annotations.
-     *
-     * @return the declaration annotations for this field declaration
-     */
-    @SuppressWarnings("UnusedMethod")
-    public AnnotationMirrorSet getDeclarationAnnotations() {
-      if (declarationAnnotations == null) {
-        return AnnotationMirrorSet.emptySet();
-      }
-
-      return AnnotationMirrorSet.unmodifiableSet(declarationAnnotations);
     }
 
     /**

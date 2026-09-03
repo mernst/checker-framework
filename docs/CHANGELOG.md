@@ -15,6 +15,13 @@ recursively hashing component types.  Removed class `HashcodeAtmVisitor`, field
 `AnnotatedTypeMirror.getUnderlyingTypeHashCode()`, which existed only to compute
 the old hash code.
 
+In `WholeProgramInferenceJavaParserStorage`, made the fields
+`ClassOrInterfaceAnnos.callableDeclarations`, `ClassOrInterfaceAnnos.fields`,
+`ClassOrInterfaceAnnos.enumConstants`, and `FieldAnnos.declaration` private.
+Removed the unused methods `CompilationUnitAnnos.toStringVerbose()`,
+`ClassOrInterfaceAnnos.toStringVerbose()`, and
+`FieldAnnos.getDeclarationAnnotations()`.
+
 ### Closed issues
 
 ## Version 4.2.3 (2026-09-01)
