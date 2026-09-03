@@ -1,5 +1,8 @@
 package org.checkerframework.common.wholeprograminference;
 
+import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.type.PrimitiveType;
+import org.checkerframework.common.wholeprograminference.WholeProgramInferenceJavaParserStorage.FieldAnnos;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -22,5 +25,16 @@ public class WholeProgramInferenceJavaParserStorageTest {
             "org.checkerframework", '\\'));
     Assert.assertEquals(
         "org", WholeProgramInferenceJavaParserStorage.packageNameToDirectory("org", '\\'));
+  }
+
+  /**
+   * Tests that {@link FieldAnnos#transferAnnotations} does not throw when the wrapped variable
+   * declarator has no parent node.
+   */
+  @Test
+  public void testTransferAnnotationsWithoutParent() {
+    VariableDeclarator declaration = new VariableDeclarator(PrimitiveType.intType(), "f");
+    Assert.assertFalse(declaration.getParentNode().isPresent());
+    new FieldAnnos(declaration).transferAnnotations();
   }
 }

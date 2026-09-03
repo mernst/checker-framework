@@ -1239,7 +1239,7 @@ public class WholeProgramInferenceJavaParserStorage
       return;
     }
 
-    com.github.javaparser.ast.Node parent = methodDeclaration.getParentNode().get();
+    com.github.javaparser.ast.Node parent = methodDeclaration.getParentNode().orElse(null);
     if (!(parent instanceof TypeDeclaration<?> parentDecl)) {
       return;
     }
@@ -2016,11 +2016,11 @@ public class WholeProgramInferenceJavaParserStorage
      * nodes for that field.
      */
     public void transferAnnotations() {
+      Node declParent = declaration.getParentNode().orElse(null);
       if (declarationAnnotations != null) {
         // Don't add directly to the type of the variable declarator,
         // because declaration annotations need to be attached to the FieldDeclaration
         // node instead.
-        Node declParent = declaration.getParentNode().orElse(null);
         if (declParent instanceof FieldDeclaration decl) {
           for (AnnotationMirror annotation : declarationAnnotations) {
             decl.addAnnotation(
@@ -2041,14 +2041,16 @@ public class WholeProgramInferenceJavaParserStorage
       // siblings, and there's no other information about the declaration for
       // WholeProgramInferenceImplementation to use: to determine that there are siblings,
       // a parse tree is needed.
-      boolean foundVariableDeclarator = false;
-      for (Node child : this.declaration.getParentNode().get().getChildNodes()) {
-        if (child instanceof VariableDeclarator) {
-          if (foundVariableDeclarator) {
-            // This is the second VariableDeclarator that was found.
-            return;
+      if (declParent != null) {
+        boolean foundVariableDeclarator = false;
+        for (Node child : declParent.getChildNodes()) {
+          if (child instanceof VariableDeclarator) {
+            if (foundVariableDeclarator) {
+              // This is the second VariableDeclarator that was found.
+              return;
+            }
+            foundVariableDeclarator = true;
           }
-          foundVariableDeclarator = true;
         }
       }
       Type newType = (Type) declaration.getType().accept(new CloneVisitor(), null);
