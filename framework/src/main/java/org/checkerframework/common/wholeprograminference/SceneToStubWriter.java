@@ -148,25 +148,24 @@ public final class SceneToStubWriter {
     sb.append(simpleAnnoName);
     if (a.fieldValues.isEmpty()) {
       return;
-    } else {
-      sb.append('(');
-      if (a.fieldValues.size() == 1 && a.fieldValues.containsKey("value")) {
-        AnnotationFieldType aft = a.def().fieldTypes.get("value");
-        aft.format(sb, a.fieldValues.get("value"));
-      } else {
-        StringJoiner sj = new StringJoiner(", ");
-        for (Map.Entry<String, Object> f : a.fieldValues.entrySet()) {
-          AnnotationFieldType aft = a.def().fieldTypes.get(f.getKey());
-          StringBuilder fsb = new StringBuilder();
-          fsb.append(f.getKey());
-          fsb.append('=');
-          aft.format(fsb, f.getValue());
-          sj.add(fsb);
-        }
-        sb.append(sj);
-      }
-      sb.append(')');
     }
+    sb.append('(');
+    if (a.fieldValues.size() == 1 && a.fieldValues.containsKey("value")) {
+      AnnotationFieldType aft = a.def().fieldTypes.get("value");
+      aft.format(sb, a.fieldValues.get("value"));
+    } else {
+      StringJoiner sj = new StringJoiner(", ");
+      for (Map.Entry<String, Object> f : a.fieldValues.entrySet()) {
+        AnnotationFieldType aft = a.def().fieldTypes.get(f.getKey());
+        StringBuilder fsb = new StringBuilder();
+        fsb.append(f.getKey());
+        fsb.append('=');
+        aft.format(fsb, f.getValue());
+        sj.add(fsb);
+      }
+      sb.append(sj);
+    }
+    sb.append(')');
   }
 
   /**
