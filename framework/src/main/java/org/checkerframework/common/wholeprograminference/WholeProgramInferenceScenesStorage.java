@@ -947,7 +947,13 @@ public class WholeProgramInferenceScenesStorage
       }
     }
 
-    // Recursively update compound type and type variable type if they exist.
+    // Recursively update the component type of an array, if the type is an array.
+    // Type variables are deliberately not treated analogously: WPI does not infer
+    // type-variable bounds, and the bounds of an AnnotatedTypeVariable for a *use* of a type
+    // variable are copied from its *declaration*.  Writing them out would record the
+    // declaration's bounds at the use site.  (The read path, updateAtmFromATypeElement, does
+    // recur into a type variable's upper bound, so that bounds written by some other tool into
+    // the .jaif file are preserved rather than discarded.)
     if (newATM.getKind() == TypeKind.ARRAY && curATM.getKind() == TypeKind.ARRAY) {
       AnnotatedArrayType newAAT = (AnnotatedArrayType) newATM;
       AnnotatedArrayType oldAAT = (AnnotatedArrayType) curATM;
