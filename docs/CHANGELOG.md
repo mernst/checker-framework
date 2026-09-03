@@ -7,6 +7,10 @@
 
 ### User-visible changes
 
+Whole-program inference is more precise for a method that overrides more than
+one method.  Previously, the type inferred for one overridden method could
+affect the type inferred for another overridden method.
+
 ### Implementation details
 
 `AnnotatedTypeMirror.hashCode()` now hashes only the top-level type rather than
