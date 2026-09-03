@@ -7,6 +7,12 @@
 
 ### User-visible changes
 
+Whole-program inference no longer ignores an already-inferred annotation when the
+type kind of the right-hand side of an assignment differs from the type kind of
+the annotated element -- for example, when an array is assigned to a variable
+whose declared type is `Object`.  Previously, whole-program inference could infer
+a type that is too specific in such a case.
+
 ### Implementation details
 
 `AnnotatedTypeMirror.hashCode()` now hashes only the top-level type rather than
