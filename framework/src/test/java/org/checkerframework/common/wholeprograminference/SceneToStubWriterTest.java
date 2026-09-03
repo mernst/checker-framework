@@ -9,6 +9,7 @@ import javax.lang.model.type.TypeMirror;
 import org.checkerframework.afu.scenelib.Annotation;
 import org.checkerframework.afu.scenelib.el.AField;
 import org.checkerframework.afu.scenelib.el.AnnotationDef;
+import org.checkerframework.javacutil.BugInCF;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -73,5 +74,36 @@ public class SceneToStubWriterTest {
         intParameter("org.checkerframework.checker.mustcall.qual.Owning", "java.lang.Deprecated");
     Assert.assertEquals(
         "@Owning @Deprecated int x", SceneToStubWriter.formatParameter(param, "x", "MyClass"));
+  }
+
+  @Test
+  public void stripGenericsRemovesTypeArguments() {
+    Assert.assertEquals("int", SceneToStubWriter.stripGenerics("int"));
+    Assert.assertEquals("List", SceneToStubWriter.stripGenerics("List<String>"));
+    Assert.assertEquals("Map", SceneToStubWriter.stripGenerics("Map<String, List<Integer>>"));
+    Assert.assertEquals("Map.Entry", SceneToStubWriter.stripGenerics("Map<K, V>.Entry<K, V>"));
+    Assert.assertEquals("List[]", SceneToStubWriter.stripGenerics("List<String>[]"));
+  }
+
+  /**
+   * A type whose string representation has an unmatched {@code <} indicates a bug elsewhere in the
+   * Checker Framework, which must be reported as such rather than as an index out of bounds.
+   */
+  @Test
+  public void stripGenericsOnUnbalancedTypeIsDiagnosable() {
+    BugInCF e =
+        Assert.assertThrows(BugInCF.class, () -> SceneToStubWriter.stripGenerics("Foo<Bar"));
+    Assert.assertTrue(e.getMessage(), e.getMessage().contains("Foo<Bar"));
+  }
+
+  /**
+   * The type of a receiver parameter is passed to the formatting routines as a string, so a
+   * malformed one reaches {@link SceneToStubWriter#stripGenerics}.
+   */
+  @Test
+  public void formatReceiverParameterWithUnbalancedType() {
+    AField param = intParameter();
+    Assert.assertThrows(
+        BugInCF.class, () -> SceneToStubWriter.formatParameter(param, "this", "Foo<Bar"));
   }
 }

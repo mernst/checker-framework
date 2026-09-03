@@ -432,24 +432,7 @@ public final class SceneToStubWriter {
           basetypeToPrint.substring("<anonymous ".length(), basetypeToPrint.length() - 1);
     }
 
-    // fields don't need their generic types, and sometimes they are wrong. Just don't print
-    // them.
-    while (basetypeToPrint.contains("<")) {
-      int openCount = 1;
-      int pos = basetypeToPrint.indexOf('<');
-      while (openCount > 0) {
-        pos++;
-        if (basetypeToPrint.charAt(pos) == '<') {
-          openCount++;
-        }
-        if (basetypeToPrint.charAt(pos) == '>') {
-          openCount--;
-        }
-      }
-      basetypeToPrint =
-          basetypeToPrint.substring(0, basetypeToPrint.indexOf('<'))
-              + basetypeToPrint.substring(pos + 1);
-    }
+    basetypeToPrint = stripGenerics(basetypeToPrint);
 
     // An array is not a receiver, so using the javacType to check for arrays is safe.
     if (javacType != null && javacType.getKind() == TypeKind.ARRAY) {
@@ -462,6 +445,39 @@ public final class SceneToStubWriter {
     }
     sb.append(basetypeToPrint);
     sb.append(' ');
+  }
+
+  /**
+   * Returns the given type, with all generic type arguments removed. For example, given {@code
+   * Map<String, List<Integer>>}, this returns {@code Map}.
+   *
+   * <p>Fields do not need their generic types, and sometimes those types are wrong, so the generic
+   * type arguments are not printed.
+   *
+   * @param type the string representation of a type
+   * @return the type, with all generic type arguments removed
+   * @throws BugInCF if {@code type} contains a {@code <} with no matching {@code >}
+   */
+  static String stripGenerics(String type) {
+    int start = type.indexOf('<');
+    while (start != -1) {
+      int openCount = 1;
+      int pos = start;
+      while (openCount > 0) {
+        pos++;
+        if (pos == type.length()) {
+          throw new BugInCF("Unbalanced angle brackets in type: " + type);
+        }
+        if (type.charAt(pos) == '<') {
+          openCount++;
+        } else if (type.charAt(pos) == '>') {
+          openCount--;
+        }
+      }
+      type = type.substring(0, start) + type.substring(pos + 1);
+      start = type.indexOf('<');
+    }
+    return type;
   }
 
   /** Writes an import statement for each annotation used in an {@link AScene}. */
