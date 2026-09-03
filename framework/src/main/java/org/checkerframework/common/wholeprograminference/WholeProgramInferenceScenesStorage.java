@@ -112,22 +112,24 @@ public class WholeProgramInferenceScenesStorage
    * precondition applies. It is necessary to keep this map here because the AFU does not have a
    * dependency on the CF itself, where AnnotatedTypeMirror exists.
    *
-   * <p>The keys are the concatenation of the string representation of the method signature as
-   * stored by {@link AMethod} to which the precondition applies and the expression to which the
-   * precondition applies.
+   * <p>Each key is a pair of the string representation of the method signature as stored by {@link
+   * AMethod} to which the precondition applies and the expression to which the precondition
+   * applies.
    */
-  private final Map<String, AnnotatedTypeMirror> preconditionsToDeclaredTypes = new HashMap<>();
+  private final Map<IPair<String, String>, AnnotatedTypeMirror> preconditionsToDeclaredTypes =
+      new HashMap<>();
 
   /**
    * This map relates inferred postconditions to the declared types of the expressions to which the
    * postcondition applies. It is necessary to keep this map here because the AFU does not have a
    * dependency on the CF itself, where AnnotatedTypeMirror exists.
    *
-   * <p>The keys are the concatenation of the string representation of the method signature as
-   * stored by {@link AMethod} to which the postcondition applies and the expression to which the
-   * postcondition applies.
+   * <p>Each key is a pair of the string representation of the method signature as stored by {@link
+   * AMethod} to which the postcondition applies and the expression to which the postcondition
+   * applies.
    */
-  private final Map<String, AnnotatedTypeMirror> postconditionsToDeclaredTypes = new HashMap<>();
+  private final Map<IPair<String, String>, AnnotatedTypeMirror> postconditionsToDeclaredTypes =
+      new HashMap<>();
 
   /** The directory for reading and writing .jaif files. */
   private final Path inferOutputDirectory;
@@ -338,7 +340,8 @@ public class WholeProgramInferenceScenesStorage
       String expression,
       AnnotatedTypeMirror declaredType) {
     AMethod methodAnnos = getMethodAnnos(methodElement);
-    preconditionsToDeclaredTypes.put(methodAnnos.methodSignature + expression, declaredType);
+    preconditionsToDeclaredTypes.put(
+        IPair.of(methodAnnos.methodSignature, expression), declaredType);
     return methodAnnos.vivifyAndAddTypeMirrorToPrecondition(
             expression, declaredType.getUnderlyingType())
         .type;
@@ -360,7 +363,8 @@ public class WholeProgramInferenceScenesStorage
       String expression,
       AnnotatedTypeMirror declaredType) {
     AMethod methodAnnos = getMethodAnnos(methodElement);
-    postconditionsToDeclaredTypes.put(methodAnnos.methodSignature + expression, declaredType);
+    postconditionsToDeclaredTypes.put(
+        IPair.of(methodAnnos.methodSignature, expression), declaredType);
     return methodAnnos.vivifyAndAddTypeMirrorToPostcondition(
             expression, declaredType.getUnderlyingType())
         .type;
@@ -375,14 +379,15 @@ public class WholeProgramInferenceScenesStorage
    * @return the declared type
    */
   public AnnotatedTypeMirror getPreconditionDeclaredType(AMethod m, String expression) {
-    String key = m.methodSignature + expression;
-    if (!preconditionsToDeclaredTypes.containsKey(key)) {
+    IPair<String, String> key = IPair.of(m.methodSignature, expression);
+    AnnotatedTypeMirror result = preconditionsToDeclaredTypes.get(key);
+    if (result == null) {
       throw new BugInCF(
           "attempted to retrieve the declared type of a precondition expression for which"
               + " nothing was inferred: "
               + key);
     }
-    return preconditionsToDeclaredTypes.get(key);
+    return result;
   }
 
   /**
@@ -394,14 +399,15 @@ public class WholeProgramInferenceScenesStorage
    * @return the declared type
    */
   public AnnotatedTypeMirror getPostconditionDeclaredType(AMethod m, String expression) {
-    String key = m.methodSignature + expression;
-    if (!postconditionsToDeclaredTypes.containsKey(key)) {
+    IPair<String, String> key = IPair.of(m.methodSignature, expression);
+    AnnotatedTypeMirror result = postconditionsToDeclaredTypes.get(key);
+    if (result == null) {
       throw new BugInCF(
           "attempted to retrieve the declared type of a postcondition expression for which"
               + " nothing was inferred: "
               + key);
     }
-    return postconditionsToDeclaredTypes.get(key);
+    return result;
   }
 
   @Override
