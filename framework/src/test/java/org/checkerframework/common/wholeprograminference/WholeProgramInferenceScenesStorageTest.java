@@ -8,17 +8,28 @@ import com.sun.source.util.JavacTask;
 import com.sun.source.util.TreePath;
 import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.Trees;
+import com.sun.tools.javac.processing.JavacProcessingEnvironment;
+import com.sun.tools.javac.util.Context;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.TypeElement;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.ToolProvider;
+import org.checkerframework.common.value.ValueChecker;
+import org.checkerframework.common.wholeprograminference.WholeProgramInference.OutputFormat;
+import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,6 +41,7 @@ public class WholeProgramInferenceScenesStorageTest {
       String.join(
           System.lineSeparator(),
           "package testpkg;",
+          "@Deprecated",
           "public class Outer {",
           "  int aField;",
           "  Outer(int ctorParam) {",
@@ -50,6 +62,28 @@ public class WholeProgramInferenceScenesStorageTest {
 
   /** Maps the name of each declaration in {@link #SOURCE} to its element. */
   private static final Map<String, Element> elements = elementsOf(SOURCE);
+
+  /**
+   * A checker, needed to construct a {@link WholeProgramInferenceScenesStorage}. Any concrete
+   * checker would do; {@code ValueChecker} is one that the framework tests already depend on.
+   */
+  private static final ValueChecker checker = new ValueChecker();
+
+  /** A type factory, needed to construct a {@link WholeProgramInferenceScenesStorage}. */
+  private static final AnnotatedTypeFactory typeFactory;
+
+  static {
+    Context context = new Context();
+    ProcessingEnvironment env = JavacProcessingEnvironment.instance(context);
+    com.sun.tools.javac.main.JavaCompiler javac =
+        com.sun.tools.javac.main.JavaCompiler.instance(context);
+    // The list of modules must be initialized before entering symbols.
+    javac.initModules(com.sun.tools.javac.util.List.nil());
+    javac.enterDone();
+
+    checker.init(env);
+    typeFactory = new AnnotatedTypeFactory(checker);
+  }
 
   @Test
   public void classes() {
@@ -78,6 +112,66 @@ public class WholeProgramInferenceScenesStorageTest {
     assertEnclosingClassName("testpkg.Outer", "ctorLocal", ElementKind.LOCAL_VARIABLE);
     assertEnclosingClassName("testpkg.Outer", "methodLocal", ElementKind.LOCAL_VARIABLE);
     assertEnclosingClassName("testpkg.Outer$Inner", "innerLocal", ElementKind.LOCAL_VARIABLE);
+  }
+
+  /**
+   * A file is written out only if a Scene was created for it. {@code setFileModified} enforces that
+   * invariant, on which {@code writeResultsToFile} depends.
+   */
+  @Test
+  public void setFileModifiedForFileWithoutScene() throws IOException {
+    Path outputDirectory = Files.createTempDirectory("wpi-no-scene");
+    try {
+      WholeProgramInferenceScenesStorage storage =
+          new WholeProgramInferenceScenesStorage(typeFactory, outputDirectory.toString());
+      storage.setFileModified(outputDirectory.resolve("testpkg.Unknown.jaif").toString());
+      storage.writeResultsToFile(OutputFormat.JAIF, checker);
+      Assert.assertArrayEquals(
+          "wrote a file for a class with no Scene", new String[0], outputDirectory.toFile().list());
+    } finally {
+      deleteRecursively(outputDirectory.toFile());
+    }
+  }
+
+  /** A file is written out if a Scene was created for it and it was marked as modified. */
+  @Test
+  public void setFileModifiedForFileWithScene() throws IOException {
+    Path outputDirectory = Files.createTempDirectory("wpi-scene");
+    try {
+      WholeProgramInferenceScenesStorage storage =
+          new WholeProgramInferenceScenesStorage(typeFactory, outputDirectory.toString());
+      TypeElement outer = (TypeElement) elements.get("Outer");
+      Assert.assertNotNull("no element named Outer", outer);
+      AnnotationMirror deprecated = outer.getAnnotationMirrors().get(0);
+      Assert.assertTrue(
+          "Outer is not annotated with @Deprecated",
+          storage.addClassDeclarationAnnotation(outer, deprecated));
+      storage.setFileModified(storage.getFileForElement(outer));
+      storage.writeResultsToFile(OutputFormat.JAIF, checker);
+      Assert.assertArrayEquals(
+          "did not write the .jaif file for testpkg.Outer",
+          new String[] {"testpkg.Outer.jaif"},
+          outputDirectory.toFile().list());
+    } finally {
+      deleteRecursively(outputDirectory.toFile());
+    }
+  }
+
+  /**
+   * Deletes {@code file}, and everything within it if it is a directory.
+   *
+   * @param file the file or directory to delete
+   */
+  private static void deleteRecursively(File file) {
+    File[] contents = file.listFiles();
+    if (contents != null) {
+      for (File child : contents) {
+        deleteRecursively(child);
+      }
+    }
+    if (!file.delete()) {
+      throw new Error("Cannot delete " + file);
+    }
   }
 
   /**
@@ -111,7 +205,9 @@ public class WholeProgramInferenceScenesStorageTest {
   private static Map<String, Element> elementsOf(String source) {
     JavaFileObject fileObject =
         new SimpleJavaFileObject(
-            URI.create("string:///testpkg/Outer.java"), JavaFileObject.Kind.SOURCE) {
+            // The URI scheme must be "file:", so that ElementUtils.isElementFromSourceCode
+            // returns true for the elements of the compilation unit.
+            URI.create("file:///testpkg/Outer.java"), JavaFileObject.Kind.SOURCE) {
           @Override
           public CharSequence getCharContent(boolean ignoreEncodingErrors) {
             return source;

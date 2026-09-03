@@ -104,6 +104,9 @@ public class WholeProgramInferenceScenesStorage
    * <p>Modifying a Scene means adding (or changing) a type annotation for a field, method return
    * type, or method parameter type in the Scene. (Scenes are modified by the method {@link
    * #updateAnnotationSetInScene}.)
+   *
+   * <p>Every element of this set is a key in {@link #scenes}; {@link #setFileModified} maintains
+   * that invariant.
    */
   public final Set<String> modifiedScenes = new HashSet<>();
 
@@ -884,6 +887,10 @@ public class WholeProgramInferenceScenesStorage
 
   @Override
   public void setFileModified(String path) {
+    if (!scenes.containsKey(path)) {
+      // No Scene was created for this file, so there is nothing to write out for it.
+      return;
+    }
     modifiedScenes.add(path);
   }
 
