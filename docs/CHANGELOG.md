@@ -15,6 +15,9 @@ recursively hashing component types.  Removed class `HashcodeAtmVisitor`, field
 `AnnotatedTypeMirror.getUnderlyingTypeHashCode()`, which existed only to compute
 the old hash code.
 
+Removed the unused method
+`WholeProgramInferenceScenesStorage.updateAnnotationSetInScene()`.
+
 ### Closed issues
 
 ## Version 4.2.3 (2026-09-01)
