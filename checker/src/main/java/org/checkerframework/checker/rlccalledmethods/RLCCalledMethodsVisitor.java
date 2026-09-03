@@ -86,7 +86,7 @@ public class RLCCalledMethodsVisitor extends CalledMethodsVisitor {
   }
 
   @Override
-  public void processMethodTree(String className, MethodTree tree) {
+  public void processMethodTree(MethodTree tree) {
     ExecutableElement elt = TreeUtils.elementFromDeclaration(tree);
     MustCallAnnotatedTypeFactory mcAtf =
         rlTypeFactory.getTypeFactoryOfSubchecker(MustCallChecker.class);
@@ -101,7 +101,7 @@ public class RLCCalledMethodsVisitor extends CalledMethodsVisitor {
     } else {
       checkMustCallAliasAnnotationForMethod(tree, mcAtf);
     }
-    super.processMethodTree(className, tree);
+    super.processMethodTree(tree);
   }
 
   /**

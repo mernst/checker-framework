@@ -15,6 +15,18 @@ recursively hashing component types.  Removed class `HashcodeAtmVisitor`, field
 `AnnotatedTypeMirror.getUnderlyingTypeHashCode()`, which existed only to compute
 the old hash code.
 
+Removed the `className` and `methodName` parameters, which no implementation
+used, from the following methods:
+`AnnotatedTypeFactory.makeConditionConsistentWithOtherMethod()`,
+`AnnotatedTypeFactory.wpiPrepareMethodForWriting(AMethod)`,
+`BaseTypeVisitor.processMethodTree()`,
+`WholeProgramInference.updateContracts()`,
+`WholeProgramInference.updateFromObjectCreation()`,
+`WholeProgramInferenceJavaParserStorage.CallableDeclarationAnnos.getPreconditionsForExpression()`,
+`WholeProgramInferenceJavaParserStorage.CallableDeclarationAnnos.getPostconditionsForExpression()`,
+`WholeProgramInferenceScenesStorage.wpiPrepareMethodForWriting()`, and
+`WholeProgramInferenceStorage.getPreOrPostconditions()`.
+
 ### Closed issues
 
 ## Version 4.2.3 (2026-09-01)

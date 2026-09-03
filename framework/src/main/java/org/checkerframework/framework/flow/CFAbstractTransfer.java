@@ -1076,8 +1076,7 @@ public abstract class CFAbstractTransfer<
         analysis
             .atypeFactory
             .getWholeProgramInference()
-            .updateFromObjectCreation(
-                "<unknown from visitObjectCreation>", n, constructorElt, p.getRegularStore());
+            .updateFromObjectCreation(n, constructorElt, p.getRegularStore());
       }
     }
     ExecutableElement constructorElt = TreeUtils.getSuperConstructor(newClassTree);

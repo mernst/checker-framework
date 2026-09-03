@@ -514,7 +514,7 @@ public class NullnessVisitor
   }
 
   @Override
-  public void processMethodTree(String className, MethodTree tree) {
+  public void processMethodTree(MethodTree tree) {
     if (TreeUtils.isConstructor(tree)) {
       List<? extends AnnotationTree> annoTrees = tree.getModifiers().getAnnotations();
       if (atypeFactory.containsNullnessAnnotation(annoTrees)) {
@@ -531,7 +531,7 @@ public class NullnessVisitor
       }
     }
 
-    super.processMethodTree(className, tree);
+    super.processMethodTree(tree);
   }
 
   @Override

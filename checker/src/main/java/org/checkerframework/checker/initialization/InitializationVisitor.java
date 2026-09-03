@@ -271,7 +271,7 @@ public class InitializationVisitor<
   }
 
   @Override
-  public void processMethodTree(String className, MethodTree tree) {
+  public void processMethodTree(MethodTree tree) {
     if (TreeUtils.isConstructor(tree)) {
       Collection<? extends AnnotationMirror> returnTypeAnnotations =
           AnnotationUtils.getExplicitAnnotationsOnConstructorResult(tree);
@@ -292,7 +292,7 @@ public class InitializationVisitor<
       List<? extends AnnotationMirror> receiverAnnotations = getAllReceiverAnnotations(tree);
       checkFieldsInitialized(tree, isStatic, store, receiverAnnotations);
     }
-    super.processMethodTree(className, tree);
+    super.processMethodTree(tree);
   }
 
   /**

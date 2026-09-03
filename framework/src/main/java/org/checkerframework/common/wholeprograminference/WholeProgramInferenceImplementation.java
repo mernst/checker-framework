@@ -184,7 +184,6 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
 
   @Override
   public void updateFromObjectCreation(
-      String className,
       ObjectCreationNode objectCreationNode,
       ExecutableElement constructorElt,
       CFAbstractStore<?, ?> store) {
@@ -207,7 +206,7 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
     List<Node> arguments = objectCreationNode.getArguments();
     updateInferredExecutableParameterTypes(
         constructorElt, arguments, null, objectCreationNode.getTree());
-    updateContracts(className, Analysis.BeforeOrAfter.BEFORE, constructorElt, store);
+    updateContracts(Analysis.BeforeOrAfter.BEFORE, constructorElt, store);
   }
 
   @Override
@@ -249,11 +248,7 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
       receiver = null;
     }
     updateInferredExecutableParameterTypes(methodElt, arguments, receiver, methodInvNode.getTree());
-    updateContracts(
-        "<unknown from updateFromMethodInvocation>",
-        Analysis.BeforeOrAfter.BEFORE,
-        methodElt,
-        store);
+    updateContracts(Analysis.BeforeOrAfter.BEFORE, methodElt, store);
   }
 
   /**
@@ -399,10 +394,7 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
 
   @Override
   public void updateContracts(
-      String className,
-      Analysis.BeforeOrAfter preOrPost,
-      ExecutableElement methodElt,
-      CFAbstractStore<?, ?> store) {
+      Analysis.BeforeOrAfter preOrPost, ExecutableElement methodElt, CFAbstractStore<?, ?> store) {
     // Don't infer types for code that isn't presented as source.
     if (!ElementUtils.isElementFromSourceCode(methodElt)) {
       return;
@@ -456,7 +448,7 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
       }
       T preOrPostConditionAnnos =
           storage.getPreOrPostconditions(
-              className, preOrPost, methodElt, fa.toString(), fieldDeclType, atypeFactory);
+              preOrPost, methodElt, fa.toString(), fieldDeclType, atypeFactory);
       if (preOrPostConditionAnnos == null) {
         continue;
       }
@@ -489,8 +481,7 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
         continue;
       }
       T preOrPostConditionAnnos =
-          storage.getPreOrPostconditions(
-              className, preOrPost, methodElt, "#" + index, declType, atypeFactory);
+          storage.getPreOrPostconditions(preOrPost, methodElt, "#" + index, declType, atypeFactory);
       if (preOrPostConditionAnnos != null) {
         String file = storage.getFileForElement(methodElt);
         updateAnnotationSet(
@@ -520,7 +511,7 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
         atypeFactory.wpiAdjustForUpdateNonField(inferredType);
         T preOrPostConditionAnnos =
             storage.getPreOrPostconditions(
-                className, preOrPost, methodElt, "this", declaredType, atypeFactory);
+                preOrPost, methodElt, "this", declaredType, atypeFactory);
         if (preOrPostConditionAnnos != null) {
           String file = storage.getFileForElement(methodElt);
           updateAnnotationSet(

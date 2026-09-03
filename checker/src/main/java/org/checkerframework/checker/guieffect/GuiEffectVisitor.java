@@ -369,7 +369,7 @@ public class GuiEffectVisitor extends BaseTypeVisitor<GuiEffectTypeFactory> {
   }
 
   @Override
-  public void processMethodTree(String className, MethodTree tree) {
+  public void processMethodTree(MethodTree tree) {
     AnnotatedExecutableType methodType = atypeFactory.getAnnotatedType(tree).deepCopy();
     AnnotatedDeclaredType previousReceiverType = receiverType;
     receiverType = methodType.getReceiverType();
@@ -446,7 +446,7 @@ public class GuiEffectVisitor extends BaseTypeVisitor<GuiEffectTypeFactory> {
       System.err.println("Pushing " + effStack.peek() + " onto the stack when checking " + methElt);
     }
 
-    super.processMethodTree(className, tree);
+    super.processMethodTree(tree);
     currentMethods.removeFirst();
     effStack.removeFirst();
     receiverType = previousReceiverType;

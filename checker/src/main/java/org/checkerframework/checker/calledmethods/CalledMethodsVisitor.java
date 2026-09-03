@@ -61,7 +61,7 @@ public class CalledMethodsVisitor extends AccumulationVisitor {
 
   @Override
   @SuppressWarnings("deprecation") // EnsuresCalledMethodsVarArgs
-  public void processMethodTree(String className, MethodTree tree) {
+  public void processMethodTree(MethodTree tree) {
     ExecutableElement elt = TreeUtils.elementFromDeclaration(tree);
     AnnotationMirror ecmv = atypeFactory.getDeclAnnotation(elt, EnsuresCalledMethodsVarargs.class);
     if (ecmv != null) {
@@ -73,7 +73,7 @@ public class CalledMethodsVisitor extends AccumulationVisitor {
         ((CalledMethodsAnnotatedTypeFactory) atypeFactory).getExceptionalPostconditions(elt)) {
       checkExceptionalPostcondition(postcond, tree);
     }
-    super.processMethodTree(className, tree);
+    super.processMethodTree(tree);
   }
 
   /**

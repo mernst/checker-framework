@@ -134,7 +134,7 @@ public class ReportVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFactory> {
   }
 
   @Override
-  public void processMethodTree(String className, MethodTree tree) {
+  public void processMethodTree(MethodTree tree) {
     ExecutableElement method = TreeUtils.elementFromDeclaration(tree);
     boolean report = false;
 
@@ -155,7 +155,7 @@ public class ReportVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFactory> {
     if (report) {
       checker.reportError(tree, "override", tree, ElementUtils.getQualifiedName(method));
     }
-    super.processMethodTree(className, tree);
+    super.processMethodTree(tree);
   }
 
   @Override

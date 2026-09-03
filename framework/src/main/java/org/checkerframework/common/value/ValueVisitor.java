@@ -502,8 +502,8 @@ public class ValueVisitor extends BaseTypeVisitor<ValueAnnotatedTypeFactory> {
   }
 
   @Override
-  public void processMethodTree(String className, MethodTree tree) {
-    super.processMethodTree(className, tree);
+  public void processMethodTree(MethodTree tree) {
+    super.processMethodTree(tree);
 
     ExecutableElement method = TreeUtils.elementFromDeclaration(tree);
     if (atypeFactory.getDeclAnnotation(method, StaticallyExecutable.class) != null) {
