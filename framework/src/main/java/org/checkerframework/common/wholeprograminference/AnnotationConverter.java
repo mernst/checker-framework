@@ -203,6 +203,11 @@ public class AnnotationConverter {
       builder.setValue(fieldKey, enumArr);
     } else if (obj instanceof AnnotationMirror am) {
       builder.setValue(fieldKey, am);
+    } else if (obj instanceof VariableElement[] veArr) {
+      // Every array type is a subtype of Object[], so each array test must appear before the
+      // Object[] test below; otherwise the Object[] test matches first and the more specific
+      // overload of setValue is never called.
+      builder.setValue(fieldKey, veArr);
     } else if (obj instanceof Object[] objArr) {
       builder.setValue(fieldKey, objArr);
     } else if (obj instanceof TypeMirror tm) {
@@ -211,8 +216,6 @@ public class AnnotationConverter {
       builder.setValue(fieldKey, sh);
     } else if (obj instanceof VariableElement ve) {
       builder.setValue(fieldKey, ve);
-    } else if (obj instanceof VariableElement[] veArr) {
-      builder.setValue(fieldKey, veArr);
     } else {
       throw new BugInCF("Unrecognized type: " + obj.getClass());
     }
