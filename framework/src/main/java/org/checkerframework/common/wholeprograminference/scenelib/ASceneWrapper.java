@@ -63,12 +63,14 @@ public class ASceneWrapper {
   }
 
   /**
-   * Removes the specified annotations from an AScene.
+   * Removes the specified annotations from an AScene. The scene is a parameter rather than being
+   * the scene that this object wraps, because callers pass a clone of the wrapped scene, so that
+   * the wrapped scene is not side-effected.
    *
    * @param scene the scene from which to remove annotations
    * @param annosToRemove annotations that should not be added to .jaif or stub files
    */
-  private void removeAnnosFromScene(AScene scene, AnnotationsInContexts annosToRemove) {
+  private static void removeAnnosFromScene(AScene scene, AnnotationsInContexts annosToRemove) {
     for (AClass aclass : scene.classes.values()) {
       for (AField field : aclass.fields.values()) {
         removeAnnosFromATypeElement(field.type, TypeUseLocation.FIELD, annosToRemove);
@@ -90,7 +92,7 @@ public class ASceneWrapper {
    * @param loc the location where typeElt is used
    * @param annosToRemove annotations that should not be added to .jaif or stub files
    */
-  private void removeAnnosFromATypeElement(
+  private static void removeAnnosFromATypeElement(
       ATypeElement typeElt, TypeUseLocation loc, AnnotationsInContexts annosToRemove) {
     String annosToRemoveKey = WholeProgramInferenceScenesStorage.aTypeElementToString(typeElt);
     Set<String> annosToRemoveForLocation = annosToRemove.get(IPair.of(annosToRemoveKey, loc));
