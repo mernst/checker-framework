@@ -65,6 +65,21 @@ public class ASceneWrapper {
   /**
    * Removes the specified annotations from an AScene.
    *
+   * <p>This method visits only type annotations, not declaration annotations. That is sufficient,
+   * because {@code annosToRemove} never contains a declaration annotation: its only writer is
+   * {@code WholeProgramInferenceScenesStorage.addAnnotationsToATypeElement}, which is reached only
+   * while writing an inferred <em>type</em> annotation into an {@link ATypeElement}. A declaration
+   * annotation on a class, method, field, or formal parameter reaches the scene only through the
+   * {@code add*DeclarationAnnotation} methods of {@link WholeProgramInferenceScenesStorage}, which
+   * add it unconditionally, without consulting {@code
+   * WholeProgramInferenceScenesStorage.shouldIgnore}. So, for example, an annotation in {@code
+   * aclass.tlAnnotationsHere} is never ignorable and must never be removed here.
+   *
+   * <p>TODO: The type annotations on a method's inferred preconditions and postconditions are also
+   * not visited, even though they can be ignorable (they are recorded under {@link
+   * TypeUseLocation#FIELD}). An ignorable annotation on a precondition or postcondition is
+   * therefore written out.
+   *
    * @param scene the scene from which to remove annotations
    * @param annosToRemove annotations that should not be added to .jaif or stub files
    */
