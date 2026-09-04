@@ -33,9 +33,10 @@ import java.lang.annotation.Target;
  *    String[] value();
  *    {@literal @}QualifierArgument("value")
  *    int targetValue() default 0;
+ *  }
  * </code></pre>
  *
- * The {@code value} element holds the expressions to which the qualifier applies and {@code
+ * The {@code value} element holds the expressions to which the qualifier applies, and {@code
  * targetValue} holds the value for the {@code value} argument of {@link
  * org.checkerframework.common.value.qual.MinLen}.
  *
@@ -43,7 +44,7 @@ import java.lang.annotation.Target;
  * {@code @MinLen(2)} upon entry.
  *
  * <pre><code>
- *  {@literal @}RequiresMinLen(value = "field", targetValue = 2")
+ *  {@literal @}RequiresMinLen(value = "field", targetValue = 2)
  *  public char getThirdCharacter() {
  *    return field.charAt(2);
  *  }
