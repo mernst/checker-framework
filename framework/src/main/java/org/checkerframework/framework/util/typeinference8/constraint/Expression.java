@@ -95,13 +95,7 @@ public class Expression extends TypeConstraint {
     if (getT().isProper()) {
       return reduceProperType();
     } else if (TreeUtils.isStandaloneExpression(expression)) {
-      AbstractType s;
-      if (!context.isLambdaParam(expression)) {
-        s = new ProperType(expression, context);
-      } else {
-        AnnotatedTypeMirror atm = context.typeFactory.getAnnotatedType(expression);
-        s = getT().create(atm, atm.getUnderlyingType(), false);
-      }
+      AbstractType s = new ProperType(expression, context);
       return new Typing(this, s, T, TypeConstraint.Kind.TYPE_COMPATIBILITY);
     }
     switch (expression.getKind()) {
@@ -231,18 +225,13 @@ public class Expression extends TypeConstraint {
         AbstractType targetReference = ps.remove(0);
         ExpressionTree preColonTree = memRef.getQualifierExpression();
         AbstractType referenceType;
-        if (context.isLambdaParam(preColonTree)) {
-          AnnotatedTypeMirror atm = context.typeFactory.getAnnotatedType(preColonTree);
-          referenceType = T.create(atm, atm.getUnderlyingType(), false);
+        if (MemberReferenceKind.getMemberReferenceKind(memRef).isUnbound()) {
+          AnnotatedTypeMirror atm = context.typeFactory.getAnnotatedTypeFromTypeTree(preColonTree);
+          referenceType = new ProperType(atm, context);
         } else {
-          if (MemberReferenceKind.getMemberReferenceKind(memRef).isUnbound()) {
-            AnnotatedTypeMirror atm =
-                context.typeFactory.getAnnotatedTypeFromTypeTree(preColonTree);
-            referenceType = new ProperType(atm, context);
-          } else {
-            referenceType = new ProperType(preColonTree, context);
-          }
+          referenceType = new ProperType(preColonTree, context);
         }
+
         constraintSet.add(
             new Typing(this, targetReference, referenceType, TypeConstraint.Kind.SUBTYPE));
       }
@@ -250,7 +239,7 @@ public class Expression extends TypeConstraint {
         constraintSet.add(new Typing(this, ps.get(i), fs.get(i), TypeConstraint.Kind.SUBTYPE));
       }
       AbstractType r = T.getFunctionTypeReturnType();
-      if (r != null && r.getTypeKind() != TypeKind.VOID) {
+      if (r != null) {
         AbstractType rPrime = typeOfPoAppMethod.getReturnType(null).capture(context);
         constraintSet.add(new Typing(this, rPrime, r, TypeConstraint.Kind.TYPE_COMPATIBILITY));
       }
@@ -269,7 +258,7 @@ public class Expression extends TypeConstraint {
       return ConstraintSet.FALSE;
     }
     AbstractType r = T.getFunctionTypeReturnType();
-    if (r == null || r.getTypeKind() == TypeKind.VOID) {
+    if (r == null) {
       // Because T is a functional interface, getFunctionTypeReturnType() returns null only if the
       // function type's return type is void.
       return ConstraintSet.TRUE;
@@ -283,14 +272,18 @@ public class Expression extends TypeConstraint {
     // determine the method reference's invocation type when targeting the return type of the
     // function type, as defined in 18.5.2. B3 may contain new inference variables, as well as
     // dependencies between these new variables and the inference variables in T.
+    List<AbstractType> functionTypeParams = T.getFunctionTypeParameterTypes();
+    assert functionTypeParams != null : "@AssumeAssertion(nullness): T is a functional interface";
+
+    // The first parameter of the function type, `p1`, acts as the target reference of the
+    // invocation for an unbound method reference.
+    AbstractType p1 = functionTypeParams.isEmpty() ? null : functionTypeParams.get(0);
     Theta map =
         context.inferenceTypeFactory.createThetaForMethodReference(
-            memRef, compileTimeDecl, context);
+            memRef, compileTimeDecl, p1, context);
     AbstractType compileTimeReturn = compileTimeDecl.getReturnType(map);
     BoundSet b2;
     if (TreeUtils.needsTypeArgInference(memRef)) {
-      List<AbstractType> functionTypeParams = T.getFunctionTypeParameterTypes();
-      assert functionTypeParams != null : "@AssumeAssertion(nullness): T is a functional interface";
       b2 = context.inference.createB2MethodRef(compileTimeDecl, functionTypeParams, map);
       if (!compileTimeReturn.isProper()) {
         return context.inference.createB3(b2, memRef, compileTimeDecl, r, map);
@@ -343,15 +336,15 @@ public class Expression extends TypeConstraint {
       // Explicitly typed lambda
       List<? extends VariableTree> parameters = lambda.getParameters();
       List<AbstractType> gs = tPrime.getFunctionTypeParameterTypes();
-      if (parameters.size() != gs.size()) {
-        // If the number of lambda parameters differs from the number of parameter types of the
-        // function type, the constraint reduces to false.
-        boundSet.addFalse();
-        return ReductionResultPair.of(constraintSet, boundSet);
-      }
       if (gs == null) {
         // T is not a functional interface type, so it has no function type. JLS 18.2.1 says that
         // the constraint reduces to false in that case.
+        boundSet.addFalse();
+        return ReductionResultPair.of(constraintSet, boundSet);
+      }
+      if (parameters.size() != gs.size()) {
+        // If the number of lambda parameters differs from the number of parameter types of the
+        // function type, the constraint reduces to false.
         boundSet.addFalse();
         return ReductionResultPair.of(constraintSet, boundSet);
       }
@@ -367,12 +360,10 @@ public class Expression extends TypeConstraint {
       if (tPrimeNotSameAsT) {
         constraintSet.add(new Typing(this, tPrime, T, TypeConstraint.Kind.SUBTYPE));
       }
-    } else {
-      context.addLambdaParms(lambda.getParameters());
     }
 
     AbstractType R = tPrime.getFunctionTypeReturnType();
-    if (R != null && R.getTypeKind() != TypeKind.VOID) {
+    if (R != null) {
       for (ExpressionTree e : TreeUtils.getReturnedExpressions(lambda)) {
         if (R.isProper()) {
           // Only the Java types are checked, for the reason given in reduceProperType().
@@ -420,12 +411,18 @@ public class Expression extends TypeConstraint {
   }
 
   /**
-   * Returns the non-wildcard parameterization of {@code t} as defined in JLS 9.9.
+   * Returns the non-wildcard parameterization of {@code t} as defined in <a
+   * href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-9.html#jls-9.9">JLS section
+   * 9.9</a>.
+   *
+   * <p>{@code AbstractType.makeGround} implements the same JLS rule for an {@code
+   * AnnotatedDeclaredType}.
    *
    * @param t a wildcard parameterized type
    * @param context the context
    * @return the non-wildcard parameterization of {@code t}
    */
+  // TODO: Unify this method with AbstractType.makeGround.
   private AbstractType nonWildcardParameterization(AbstractType t, Java8InferenceContext context) {
     // The caller only calls this method when t.isWildcardParameterizedType() is true, so t is a
     // declared type and both of the following are non-null.
@@ -485,16 +482,15 @@ public class Expression extends TypeConstraint {
     // parameters, so `map` would substitute nothing and tPrime would be t itself.
     TypeElement fElement = (TypeElement) ((DeclaredType) t.getJavaType()).asElement();
     AbstractType tPrime =
-        InferenceType.create(
-            context.typeFactory.getAnnotatedType(fElement), fElement.asType(), map, context);
+        InferenceType.create(context.typeFactory.getAnnotatedType(fElement), map, context);
 
     List<AbstractType> qs = tPrime.getFunctionTypeParameterTypes();
+    // tPrime is a parameterization of t, which is a wildcard-parameterized functional interface.
+    assert qs != null : "@AssumeAssertion(nullness): tPrime is a functional interface";
     if (qs.size() != ps.size()) {
       // 18.5.3: If n != k, no valid parameterization exists.
       return IPair.of(t, falseBoundSet(context));
     }
-    // tPrime is a parameterization of t, which is a wildcard-parameterized functional interface.
-    assert qs != null : "@AssumeAssertion(nullness): tPrime is a functional interface";
 
     // A set of constraint formulas is formed with, for all i (1 <= i <= n), <Pi = Qi>.
     ConstraintSet constraintSet = new ConstraintSet();

@@ -166,7 +166,7 @@ public final class Resolution {
    * in the set depends.
    *
    * @param resolvedVars variables that have been resolved
-   * @param unresolvedVars variables that have not been resolved
+   * @param unresolvedVars variables that have not been resolved; must be non-empty
    * @return the smallest set of unresolved variable
    */
   private Set<Variable> getSmallestDependencySet(
@@ -189,6 +189,9 @@ public final class Resolution {
         break;
       }
     }
+    if (smallestDependencySet == null) {
+      throw new BugInCF("getSmallestDependencySet: no unresolved variables");
+    }
     return smallestDependencySet;
   }
 
@@ -204,10 +207,22 @@ public final class Resolution {
     checkNoFalse(boundSet, "on entry to resolveSmallestSet for", as);
 
     if (boundSet.containsCapture(as)) {
-      BoundSet resolvedBounds = resolveWithoutCapture(as, boundSet);
-      boundSet.getInstantiatedVariables().forEach(as::remove);
-      // Then resolve the capture variables
-      return resolveWithCapture(as, resolvedBounds, context);
+      // Wait to resolve variables that have an equal bound to a capture variable that has not been
+      // resloved.
+      Set<Variable> deferred = new LinkedHashSet<>();
+      for (Variable v : as) {
+        if (!v.isCaptureVariable() && hasUnresolvedEqualBoundToCaptureWithin(v, as)) {
+          deferred.add(v);
+        }
+      }
+      Set<Variable> toResolveNow = new LinkedHashSet<>(as);
+      toResolveNow.removeAll(deferred);
+
+      BoundSet resolvedBounds = resolveWithoutCapture(toResolveNow, boundSet);
+      toResolveNow.removeAll(boundSet.getInstantiatedVariables());
+      // Then resolve the capture variables (and any non-captures that depend on them directly).
+      deferred.addAll(toResolveNow);
+      return resolveWithCapture(deferred, resolvedBounds, context);
     } else {
       BoundSet copy = new BoundSet(boundSet);
       // Save the current bounds in case the first attempt at resolution fails.
@@ -225,6 +240,28 @@ public final class Resolution {
       boundSet.restore();
       return resolveWithCapture(as, boundSet, context);
     }
+  }
+
+  /**
+   * Returns true if {@code v} has an {@code EQUAL} bound that mentions a capture variable in {@code
+   * as} that does not yet have an instantiation.
+   *
+   * @param v a variable
+   * @param as a set of variables being resolved together
+   * @return true if {@code v} has an unresolved {@code EQUAL} bound to a capture variable in {@code
+   *     as}
+   */
+  private static boolean hasUnresolvedEqualBoundToCaptureWithin(Variable v, Set<Variable> as) {
+    for (AbstractType t : v.getBounds().bounds.get(VariableBounds.BoundKind.EQUAL)) {
+      for (Variable mentioned : t.getInferenceVariables()) {
+        if (mentioned.isCaptureVariable()
+            && as.contains(mentioned)
+            && !mentioned.getBounds().hasInstantiation()) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /**
@@ -385,7 +422,6 @@ public final class Resolution {
       Set<Variable> as, BoundSet boundSet, Java8InferenceContext context) {
     checkNoFalse(boundSet, "on entry to resolveWithCapture for", as);
     boundSet.removeCaptures(as);
-    BoundSet resolvedBoundSet = new BoundSet(context);
     List<Variable> asList = new ArrayList<>();
     List<AbstractType> typeArg = new ArrayList<>();
 
@@ -426,7 +462,7 @@ public final class Resolution {
         lowerBoundAnnos = Collections.emptySet();
       }
 
-      Set<AbstractType> upperBounds = ai.getBounds().nonVariableUpperBounds();
+      Set<AbstractType> upperBounds = ai.getBounds().upperBounds();
       AbstractType upperBound = context.inferenceTypeFactory.glb(upperBounds);
       Set<? extends AnnotationMirror> upperBoundAnnos;
       Set<AbstractQualifier> qualifierUpperBounds =
@@ -460,7 +496,7 @@ public final class Resolution {
       ai.getBounds().addBound(null, VariableBounds.BoundKind.EQUAL, subsTypeArg.get(i));
     }
 
-    boundSet.incorporateToFixedPoint(resolvedBoundSet);
+    boundSet.reachFixedPoint();
     return boundSet;
   }
 }

@@ -268,10 +268,26 @@ public class BoundSet implements ReductionResult {
     }
     Dependencies dependencies = new Dependencies();
 
+    // The two rules below apply only to a capture variable for a wildcard, though JLS 18.4 states
+    // them for every variable on the left-hand side of a capture bound.  This follows javac:
+    // Infer#generateReturnConstraints captures the return type and then adds an inference variable
+    // only for a type argument that capture conversion replaced, that is, only for a wildcard,
+    // whereas JLS 18.5.2.1 creates one for each of the n type arguments.
+    //
+    // The difference matters because these rules reverse the usual direction of a dependency.  For
+    // a non-wildcard type argument Ai, the bound alphai = Ai holds, so applying them makes every
+    // variable mentioned in Ai's bounds depend on alphai, and that can create a cycle where javac
+    // has none.  See tests/all-systems/Issue7694.java: applying them to the variable that captures
+    // `E` in `Collector<E, ?, List<E>>` puts the variable for `Optional.empty()` in the same
+    // resolution set as the variable it is a lower bound of, and resolution then discards that
+    // lower bound for not being proper.
     for (CaptureBound capture : captures) {
       List<? extends CaptureVariable> lhsVars = capture.getAllVariablesOnLHS();
       Set<Variable> rhsVars = capture.getAllVariablesOnRHS();
       for (Variable var : lhsVars) {
+        if (!var.isCapturedWildcard()) {
+          continue;
+        }
         // An inference variable alpha appearing on the left-hand side of a bound of the
         // form G<..., alpha, ...> = capture(G<...>) depends on the resolution of every
         // other inference variable mentioned in this bound (on both sides of the = sign).
@@ -285,7 +301,7 @@ public class BoundSet implements ReductionResult {
       LinkedHashSet<Variable> alphaDependencies =
           new LinkedHashSet<>(alpha.getBounds().getVariablesMentionedInBounds());
 
-      if (alpha.isCaptureVariable()) {
+      if (alpha.isCapturedWildcard()) {
         // If alpha appears on the left-hand side of another bound of the form
         // G<..., alpha, ...> = capture(G<...>), then beta depends on the resolution of
         // alpha.
@@ -333,7 +349,11 @@ public class BoundSet implements ReductionResult {
     do {
       count++;
       boolean boundsChangeInst = captures.addAll(newBounds.captures);
-      for (Variable alpha : variables) {
+      // Iterate over a copy of `variables`, because the call to `merge` below may add to
+      // `variables`.  Any variable added this way is processed by the next iteration of the
+      // enclosing do-while loop, which runs because `boundsChangeInst` is set to true whenever
+      // `merge` is called.
+      for (Variable alpha : new ArrayList<>(variables)) {
         boundsChangeInst |= alpha.getBounds().applyInstantiationsToBounds();
 
         while (!alpha.getBounds().constraints.isEmpty()) {
@@ -357,9 +377,18 @@ public class BoundSet implements ReductionResult {
         // AssertionError that aborts the entire compilation.
         throw new BugInCF(
             "Max incorporation steps (%d) reached without reaching a fixed point: %s",
-            MAX_INCORPORATION_STEPS, context.pathToExpression.getLeaf());
+            MAX_INCORPORATION_STEPS, context.getPathToExpression().getLeaf());
       }
     } while (!containsFalse);
+  }
+
+  /**
+   * Incorporates this bound set into itself until it reaches a fixed point. Use this method after
+   * adding bounds directly to the variables of this bound set, rather than via a {@link BoundSet}
+   * that can be passed to {@link #incorporateToFixedPoint}.
+   */
+  public void reachFixedPoint() {
+    incorporateToFixedPoint(new BoundSet(context));
   }
 
   /**

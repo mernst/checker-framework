@@ -1,6 +1,7 @@
 package org.checkerframework.framework.util.typeinference8.util;
 
 import com.sun.source.tree.CatchTree;
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
@@ -50,13 +51,18 @@ public final class CheckedExceptionsUtil {
    */
   public static List<ThrownCheckedException> thrownCheckedExceptions(
       LambdaExpressionTree lambda, Java8InferenceContext context) {
-    return nullToEmptyList(new CheckedExceptionVisitor(context).scan(lambda, null));
+    // Scan the body rather than the lambda itself, because the visitor stops at a nested lambda.
+    return nullToEmptyList(new CheckedExceptionVisitor(context).scan(lambda.getBody(), null));
   }
 
   /**
-   * Helper class for gathering the types of checked exceptions in a lambda. See <a
+   * Helper class for gathering the types of checked exceptions that a lambda body can throw. See <a
    * href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-11.html#jls-11.2.2">JLS section
    * 11.2.2</a>.
+   *
+   * <p>Apply this visitor to the body of the lambda, not to the lambda itself. The visitor does not
+   * descend into a nested lambda or class body, because an exception thrown there is attributed to
+   * that construct rather than to the lambda being scanned.
    */
   private static final class CheckedExceptionVisitor
       extends TreeScanner<@Nullable List<ThrownCheckedException>, Void> {
@@ -86,12 +92,44 @@ public final class CheckedExceptionsUtil {
       return r1;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>An exception thrown by the body of a nested lambda is attributed to the nested lambda, so
+     * this method returns null without scanning the nested lambda.
+     */
+    @Override
+    public @Nullable List<ThrownCheckedException> visitLambdaExpression(
+        LambdaExpressionTree node, Void aVoid) {
+      return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>An exception thrown within a class body is attributed to the method, constructor, or
+     * initializer that throws it, so this method returns null without scanning the class body.
+     *
+     * <p>JLS 11.2.1 does attribute to a class instance creation expression the exceptions that the
+     * instance initializers of its anonymous class body throw. That does not matter here, because
+     * javac's inference does not do so either: javac rejects a lambda whose only checked exception
+     * comes from the instance initializer of an anonymous class, unless the type argument is given
+     * explicitly.
+     */
+    @Override
+    public @Nullable List<ThrownCheckedException> visitClass(ClassTree node, Void aVoid) {
+      return null;
+    }
+
     @Override
     public List<ThrownCheckedException> visitTry(TryTree node, Void aVoid) {
       List<ThrownCheckedException> results = scan(node.getBlock(), aVoid);
       if (results == null) {
         results = new ArrayList<>();
       }
+      // The catch clauses catch exceptions thrown by the resource expressions, so collect those
+      // before removing the caught exceptions.
+      results.addAll(nullToEmptyList(scan(node.getResources(), aVoid)));
 
       if (!results.isEmpty()) {
         for (CatchTree catchTree : node.getCatches()) {
@@ -99,7 +137,7 @@ public final class CheckedExceptionsUtil {
           removeAssignable(TreeUtils.typeOf(catchTree.getParameter()), results);
         }
       }
-      results.addAll(nullToEmptyList(scan(node.getResources(), aVoid)));
+      // The catch clauses do not catch exceptions thrown by the catch blocks or the finally block.
       results.addAll(nullToEmptyList(scan(node.getCatches(), aVoid)));
       results.addAll(nullToEmptyList(scan(node.getFinallyBlock(), aVoid)));
 
