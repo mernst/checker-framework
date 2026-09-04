@@ -9,6 +9,12 @@
 
 ### Implementation details
 
+New constructors `UserError(String, Throwable)` and `UserError(Throwable,
+String, Object...)` record the cause of a `UserError`.  Calls of the form `new
+UserError(message, throwable)` previously resolved to the varargs constructor
+`UserError(String, Object...)`, which discarded the throwable and treated the
+message as a format string.
+
 `AnnotatedTypeMirror.hashCode()` now hashes only the top-level type rather than
 recursively hashing component types.  Removed class `HashcodeAtmVisitor`, field
 `AnnotatedTypeMirror.HASHCODE_VISITOR`, and method

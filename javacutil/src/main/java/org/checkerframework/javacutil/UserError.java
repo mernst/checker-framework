@@ -35,4 +35,33 @@ public class UserError extends RuntimeException {
   public UserError(String fmt, @Nullable Object... args) {
     this(String.format(fmt, args));
   }
+
+  /**
+   * Constructs a new CheckerError with the specified detail message and cause.
+   *
+   * @param message the detail message
+   * @param cause the cause
+   */
+  public UserError(String message, Throwable cause) {
+    super(message, cause);
+    if (message == null) {
+      throw new BugInCF("Must have a detail message.");
+    }
+    if (cause == null) {
+      throw new BugInCF("Must have a cause throwable.");
+    }
+  }
+
+  /**
+   * Constructs a new CheckerError with the specified cause and with a detail message composed from
+   * the given arguments.
+   *
+   * @param cause the cause
+   * @param fmt the format string
+   * @param args the arguments for the format string
+   */
+  @FormatMethod
+  public UserError(Throwable cause, String fmt, @Nullable Object... args) {
+    this(String.format(fmt, args), cause);
+  }
 }
