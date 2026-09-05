@@ -484,8 +484,9 @@ public class WholeProgramInferenceJavaParserStorage
   }
 
   @Override
-  public boolean removeMethodDeclarationAnnotation(ExecutableElement elt, AnnotationMirror anno) {
-    CallableDeclarationAnnos methodAnnos = getMethodAnnos(elt);
+  public boolean removeMethodDeclarationAnnotation(
+      ExecutableElement methodElt, AnnotationMirror anno) {
+    CallableDeclarationAnnos methodAnnos = getMethodAnnos(methodElt);
     if (methodAnnos == null) {
       // See the comment on the similar exception in #getParameterAnnotations, above.
       return false;
@@ -494,15 +495,15 @@ public class WholeProgramInferenceJavaParserStorage
   }
 
   @Override
-  public boolean addFieldDeclarationAnnotation(VariableElement field, AnnotationMirror anno) {
-    FieldAnnos fieldAnnos = getFieldAnnos(field);
+  public boolean addFieldDeclarationAnnotation(VariableElement fieldElt, AnnotationMirror anno) {
+    FieldAnnos fieldAnnos = getFieldAnnos(fieldElt);
     if (fieldAnnos == null) {
       // See the comment on the similar exception in #getParameterAnnotations, above.
       return false;
     }
     boolean isNewAnnotation = fieldAnnos.addDeclarationAnnotation(anno);
     if (isNewAnnotation) {
-      setFileModified(getFileForElement(field));
+      setFileModified(getFileForElement(fieldElt));
     }
     return isNewAnnotation;
   }
@@ -563,13 +564,13 @@ public class WholeProgramInferenceJavaParserStorage
   public void updateStorageLocationFromAtm(
       AnnotatedTypeMirror newATM,
       AnnotatedTypeMirror curATM,
-      AnnotatedTypeMirror typeToUpdate,
+      AnnotatedTypeMirror storageLocationToUpdate,
       TypeUseLocation defLoc,
       boolean ignoreIfAnnotated) {
     // Only update the AnnotatedTypeMirror if there are no explicit annotations
     if (curATM.getExplicitAnnotations().isEmpty() || !ignoreIfAnnotated) {
       for (AnnotationMirror am : newATM.getPrimaryAnnotations()) {
-        typeToUpdate.replaceAnnotation(am);
+        storageLocationToUpdate.replaceAnnotation(am);
       }
     } else if (curATM.getKind() == TypeKind.TYPEVAR) {
       // getExplicitAnnotations will be non-empty for type vars whose bounds are explicitly
@@ -581,7 +582,7 @@ public class WholeProgramInferenceJavaParserStorage
           // in the same hierarchy.
           break;
         }
-        typeToUpdate.replaceAnnotation(am);
+        storageLocationToUpdate.replaceAnnotation(am);
       }
     }
 
@@ -591,7 +592,7 @@ public class WholeProgramInferenceJavaParserStorage
     if (newATM.getKind() == TypeKind.ARRAY && curATM.getKind() == TypeKind.ARRAY) {
       AnnotatedArrayType newAAT = (AnnotatedArrayType) newATM;
       AnnotatedArrayType oldAAT = (AnnotatedArrayType) curATM;
-      AnnotatedArrayType aatToUpdate = (AnnotatedArrayType) typeToUpdate;
+      AnnotatedArrayType aatToUpdate = (AnnotatedArrayType) storageLocationToUpdate;
       updateStorageLocationFromAtm(
           newAAT.getComponentType(),
           oldAAT.getComponentType(),

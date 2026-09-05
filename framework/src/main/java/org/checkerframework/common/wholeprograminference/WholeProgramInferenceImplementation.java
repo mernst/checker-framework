@@ -636,27 +636,27 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
   }
 
   @Override
-  public void updateFromFieldAssignment(Node lhs, Node rhs) {
+  public void updateFromFieldAssignment(Node field, Node rhs) {
 
     Element element;
     String fieldName;
-    if (lhs instanceof FieldAccessNode fan) {
+    if (field instanceof FieldAccessNode fan) {
       element = fan.getElement();
       fieldName = fan.getFieldName();
-    } else if (lhs instanceof LocalVariableNode lvn) {
+    } else if (field instanceof LocalVariableNode lvn) {
       element = lvn.getElement();
       fieldName = lvn.getName();
     } else {
       throw new BugInCF(
-          "updateFromFieldAssignment received an unexpected node type: " + lhs.getClass());
+          "updateFromFieldAssignment received an unexpected node type: " + field.getClass());
     }
 
     // TODO: For a primitive such as long, this is yielding just @GuardedBy rather than
     // @GuardedBy({}).
     AnnotatedTypeMirror rhsATM = atypeFactory.getAnnotatedType(rhs.getTree());
-    atypeFactory.wpiAdjustForUpdateField(lhs.getTree(), element, fieldName, rhsATM);
+    atypeFactory.wpiAdjustForUpdateField(field.getTree(), element, fieldName, rhsATM);
 
-    updateFieldFromType(lhs.getTree(), element, fieldName, rhsATM);
+    updateFieldFromType(field.getTree(), element, fieldName, rhsATM);
   }
 
   @Override
@@ -904,13 +904,13 @@ public class WholeProgramInferenceImplementation<T> implements WholeProgramInfer
   }
 
   @Override
-  public void addFieldDeclarationAnnotation(VariableElement field, AnnotationMirror anno) {
-    if (!ElementUtils.isElementFromSourceCode(field)) {
+  public void addFieldDeclarationAnnotation(VariableElement fieldElt, AnnotationMirror anno) {
+    if (!ElementUtils.isElementFromSourceCode(fieldElt)) {
       return;
     }
 
-    String file = storage.getFileForElement(field);
-    boolean isNewAnnotation = storage.addFieldDeclarationAnnotation(field, anno);
+    String file = storage.getFileForElement(fieldElt);
+    boolean isNewAnnotation = storage.addFieldDeclarationAnnotation(fieldElt, anno);
     if (isNewAnnotation) {
       storage.setFileModified(file);
     }

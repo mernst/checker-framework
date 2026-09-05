@@ -179,10 +179,10 @@ public interface WholeProgramInferenceStorage<T> {
    * Returns the list of declaration annotations inferred on the given method so far in this round
    * of WPI.
    *
-   * @param elt a method
-   * @return the declaration annotations inferred on elt so far (may be empty)
+   * @param methodElt a method
+   * @return the declaration annotations inferred on methodElt so far (may be empty)
    */
-  AnnotationMirrorSet getMethodDeclarationAnnotations(ExecutableElement elt);
+  AnnotationMirrorSet getMethodDeclarationAnnotations(ExecutableElement methodElt);
 
   /**
    * Removes the given annotation from the given method element's inferred declaration annotation.

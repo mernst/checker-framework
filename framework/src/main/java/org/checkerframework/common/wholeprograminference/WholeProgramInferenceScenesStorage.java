@@ -263,8 +263,8 @@ public class WholeProgramInferenceScenesStorage
   }
 
   @Override
-  public AnnotationMirrorSet getMethodDeclarationAnnotations(ExecutableElement elt) {
-    AMethod methodAnnos = getMethodAnnos(elt);
+  public AnnotationMirrorSet getMethodDeclarationAnnotations(ExecutableElement methodElt) {
+    AMethod methodAnnos = getMethodAnnos(methodElt);
     Set<Annotation> annos = methodAnnos.tlAnnotationsHere;
     AnnotationMirrorSet result = new AnnotationMirrorSet();
     for (Annotation anno : annos) {
@@ -421,12 +421,12 @@ public class WholeProgramInferenceScenesStorage
   }
 
   @Override
-  public boolean addFieldDeclarationAnnotation(VariableElement field, AnnotationMirror anno) {
-    if (!ElementUtils.isElementFromSourceCode(field)) {
+  public boolean addFieldDeclarationAnnotation(VariableElement fieldElt, AnnotationMirror anno) {
+    if (!ElementUtils.isElementFromSourceCode(fieldElt)) {
       return false;
     }
 
-    AField fieldAnnos = getFieldAnnos(field);
+    AField fieldAnnos = getFieldAnnos(fieldElt);
 
     Annotation sceneAnno = AnnotationConverter.annotationMirrorToAnnotation(anno);
 
@@ -819,10 +819,10 @@ public class WholeProgramInferenceScenesStorage
   public void updateStorageLocationFromAtm(
       AnnotatedTypeMirror newATM,
       AnnotatedTypeMirror curATM,
-      ATypeElement typeToUpdate,
+      ATypeElement storageLocationToUpdate,
       TypeUseLocation defLoc,
       boolean ignoreIfAnnotated) {
-    updateTypeElementFromATM(typeToUpdate, defLoc, newATM, curATM, ignoreIfAnnotated);
+    updateTypeElementFromATM(storageLocationToUpdate, defLoc, newATM, curATM, ignoreIfAnnotated);
   }
 
   //

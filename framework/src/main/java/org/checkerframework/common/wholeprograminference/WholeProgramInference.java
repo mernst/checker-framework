@@ -150,32 +150,32 @@ public interface WholeProgramInference {
       Tree lhsTree, Element element, String fieldName, AnnotatedTypeMirror rhsATM);
 
   /**
-   * Updates the return type of the method {@code methodTree} based on the expression returned by
-   * {@code retNode}. Also updates the return types of any methods that this method overrides that
-   * are available as source code.
+   * Updates the return type of the method {@code methodDeclTree} based on the expression returned
+   * by {@code retNode}. Also updates the return types of any methods that this method overrides
+   * that are available as source code.
    *
-   * <p>If there is no stored annotated return type for the method methodTree, then the type of the
-   * return expression will be added to the return type of that method. If there is a stored
-   * annotated return type for the method methodTree, its new type will be the LUB between the
+   * <p>If there is no stored annotated return type for the method methodDeclTree, then the type of
+   * the return expression will be added to the return type of that method. If there is a stored
+   * annotated return type for the method methodDeclTree, its new type will be the LUB between the
    * previous type and the type of the return expression.
    *
    * @param retNode the node that contains the expression returned
    * @param classSymbol the symbol of the class that contains the method
-   * @param methodTree the tree of the method whose return type may be updated
+   * @param methodDeclTree the tree of the method whose return type may be updated
    * @param overriddenMethods the methods that the given method return overrides, indexed by the
    *     annotated type of the superclass in which each method is defined
    */
   void updateFromReturn(
       ReturnNode retNode,
       ClassSymbol classSymbol,
-      MethodTree methodTree,
+      MethodTree methodDeclTree,
       Map<AnnotatedDeclaredType, ExecutableElement> overriddenMethods);
 
   /**
    * Updates the preconditions or postconditions of the current method, from a store.
    *
    * @param className the name of the class, for debugging only
-   * @param methodElement the method or constructor whose preconditions or postconditions to update
+   * @param methodElt the method or constructor whose preconditions or postconditions to update
    * @param preOrPost what to update: preconditions ({@code BEFORE}) or postconditions ({@code
    *     AFTER})
    * @param store the store at the method's entry or normal exit, for reading types of expressions
@@ -183,7 +183,7 @@ public interface WholeProgramInference {
   void updateContracts(
       String className,
       Analysis.BeforeOrAfter preOrPost,
-      ExecutableElement methodElement,
+      ExecutableElement methodElt,
       CFAbstractStore<?, ?> store);
 
   // TODO: This Javadoc should explain why this method is in WholeProgramInference and not in some
@@ -208,16 +208,16 @@ public interface WholeProgramInference {
 
   /**
    * Updates a method to add a declaration annotation. Optionally, may replace the current purity
-   * annotation on {@code elt} with the logical least upper bound between that purity annotation and
-   * {@code anno}, if {@code anno} is also a purity annotation.
+   * annotation on {@code methodElt} with the logical least upper bound between that purity
+   * annotation and {@code anno}, if {@code anno} is also a purity annotation.
    *
-   * @param elt the method to annotate
+   * @param methodElt the method to annotate
    * @param anno the declaration annotation to add to the method
    * @param lubPurity if true and {@code anno} is a purity annotation, replaces the current purity
    *     annotation with a least upper bound rather than just adding {@code anno}
    */
   void addMethodDeclarationAnnotation(
-      ExecutableElement elt, AnnotationMirror anno, boolean lubPurity);
+      ExecutableElement methodElt, AnnotationMirror anno, boolean lubPurity);
 
   /**
    * Updates a field to add a declaration annotation.
@@ -250,10 +250,10 @@ public interface WholeProgramInference {
    * type-checking process. In practice, it is called after each class, because we don't know which
    * class will be the last one in the type-checking process.
    *
-   * @param format the file format in which to write the results
+   * @param outputFormat the file format in which to write the results
    * @param checker the checker from which this method is called, for naming annotation files
    */
-  void writeResultsToFile(OutputFormat format, BaseTypeChecker checker);
+  void writeResultsToFile(OutputFormat outputFormat, BaseTypeChecker checker);
 
   /**
    * Performs any preparation required for inference on Elements of a class. Should be called on
