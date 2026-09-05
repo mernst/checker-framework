@@ -14,8 +14,8 @@ public class WholeProgramInferenceJavaParserStorageTest {
         WholeProgramInferenceJavaParserStorage.packageNameToDirectory("org.checkerframework", '/'));
     Assert.assertEquals(
         "org", WholeProgramInferenceJavaParserStorage.packageNameToDirectory("org", '/'));
-    // On Windows the file name separator is a backslash, which is a metacharacter in the
-    // replacement string of String.replaceAll.
+    // The separator character is used literally, even a Windows backslash, which is a
+    // metacharacter in some string-replacement routines.
     Assert.assertEquals(
         "org\\checkerframework",
         WholeProgramInferenceJavaParserStorage.packageNameToDirectory(
