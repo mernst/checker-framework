@@ -7,6 +7,7 @@ import java.util.Map;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
@@ -118,6 +119,8 @@ public class AnnotationConverter {
    * @param tm a type for an annotation element/field: primitive, String, class, enum constant, or
    *     array thereof
    * @return an AnnotationFieldType corresponding to the argument
+   * @throws BugInCF if the argument is an annotation type or is otherwise not a supported type for
+   *     an annotation element
    */
   protected static AnnotationFieldType typeMirrorToAnnotationFieldType(TypeMirror tm) {
     switch (tm.getKind()) {
@@ -152,15 +155,22 @@ public class AnnotationConverter {
         return new ArrayAFT((ScalarAFT) componentAFT);
       }
       case DECLARED -> {
-        String className = TypesUtils.getQualifiedName((DeclaredType) tm);
+        DeclaredType declaredType = (DeclaredType) tm;
+        String className = TypesUtils.getQualifiedName(declaredType);
         if (className.equals("java.lang.String")) {
           return BasicAFT.forType(String.class);
         } else if (className.equals("java.lang.Class")) {
           return ClassTokenAFT.ctaft;
-        } else {
-          // This must be an enum constant.
+        }
+        ElementKind kind = declaredType.asElement().getKind();
+        if (kind == ElementKind.ENUM) {
           return new EnumAFT(className);
         }
+        // JLS 9.6.1 also permits an annotation type as the type of an annotation element, but
+        // whole-program inference does not support converting such a nested annotation.
+        throw new BugInCF(
+            "typeMirrorToAnnotationFieldType: unsupported type %s [%s] for an annotation element",
+            className, kind);
       }
       default ->
           throw new BugInCF(
