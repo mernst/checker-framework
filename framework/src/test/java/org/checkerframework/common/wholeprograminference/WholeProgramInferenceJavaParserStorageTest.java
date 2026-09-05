@@ -1,5 +1,7 @@
 package org.checkerframework.common.wholeprograminference;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.framework.qual.PurityUnqualified;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -22,5 +24,13 @@ public class WholeProgramInferenceJavaParserStorageTest {
             "org.checkerframework", '\\'));
     Assert.assertEquals(
         "org", WholeProgramInferenceJavaParserStorage.packageNameToDirectory("org", '\\'));
+  }
+
+  /** Tests {@link WholeProgramInferenceJavaParserStorage#isInvisible}. */
+  @Test
+  public void testIsInvisible() {
+    // PurityUnqualified is meta-annotated with @InvisibleQualifier.
+    Assert.assertTrue(WholeProgramInferenceJavaParserStorage.isInvisible(PurityUnqualified.class));
+    Assert.assertFalse(WholeProgramInferenceJavaParserStorage.isInvisible(Nullable.class));
   }
 }
