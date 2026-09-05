@@ -7,20 +7,9 @@
 
 ### User-visible changes
 
-### Implementation details
+### Changes for type system implementers
 
-New method `AnnotatedTypeFactory.wpiShouldInferFromNullAssignments()` indicates
-whether whole-program inference should infer a type from an assignment whose
-right-hand side has the null type.  Whole-program inference now calls it rather
-than comparing the simple name of the type factory's class to
-`"NullnessAnnotatedTypeFactory"`, so the behavior is also correct for a checker
-that is built on top of the Nullness Checker.
-
-`AnnotatedTypeMirror.hashCode()` now hashes only the top-level type rather than
-recursively hashing component types.  Removed class `HashcodeAtmVisitor`, field
-`AnnotatedTypeMirror.HASHCODE_VISITOR`, and method
-`AnnotatedTypeMirror.getUnderlyingTypeHashCode()`, which existed only to compute
-the old hash code.
+Renamed `AnnotatedTypes.innerMostType()` to `innermostComponentType()`.
 
 ### Closed issues
 
@@ -31,7 +20,7 @@ the old hash code.
 The `-AsuggestPureMethods` command-line option and the `purity.effectively.pure`
 warning no longer require `-AcheckPurityAnnotations` to also be supplied.
 
-### Implementation details
+### Changes for type system implementers
 
 Made the field `Java8InferenceContext.pathToExpression` private; use
 `getPathToExpression()` and `setPathToExpression()` instead.
