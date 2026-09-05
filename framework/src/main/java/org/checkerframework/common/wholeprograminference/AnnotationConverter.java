@@ -1,7 +1,6 @@
 package org.checkerframework.common.wholeprograminference;
 
 import com.sun.tools.javac.code.Type.ArrayType;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -31,7 +30,7 @@ import org.plumelib.util.CollectionsP;
  * This class contains static methods that convert between {@link Annotation} and {@link
  * javax.lang.model.element.AnnotationMirror}.
  */
-public class AnnotationConverter {
+public final class AnnotationConverter {
 
   /** Do not instantiate. */
   private AnnotationConverter() {
@@ -45,26 +44,28 @@ public class AnnotationConverter {
    * @return the Annotation
    */
   public static Annotation annotationMirrorToAnnotation(AnnotationMirror am) {
+    Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues =
+        am.getElementValues();
     @SuppressWarnings("signature:argument") // TODO: bug for inner classes
     AnnotationDef def =
         new AnnotationDef(
             AnnotationUtils.annotationName(am),
             String.format(
                 "annotationMirrorToAnnotation %s [%s] keyset=%s",
-                am, am.getClass(), am.getElementValues().keySet()));
-    Map<String, AnnotationFieldType> fieldTypes = new ArrayMap<>(am.getElementValues().size());
+                am, am.getClass(), elementValues.keySet()));
+    Map<String, AnnotationFieldType> fieldTypes = new ArrayMap<>(elementValues.size());
     // Handling cases where there are fields in annotations.
-    for (ExecutableElement ee : am.getElementValues().keySet()) {
+    for (ExecutableElement ee : elementValues.keySet()) {
       AnnotationFieldType aft = getAnnotationFieldType(ee);
       fieldTypes.put(ee.getSimpleName().toString(), aft);
     }
     def.setFieldTypes(fieldTypes);
 
     // Now, we handle the values of those types below
-    Map<? extends ExecutableElement, ? extends AnnotationValue> values = am.getElementValues();
-    Map<String, Object> newValues = new HashMap<>(values.size());
-    for (ExecutableElement ee : values.keySet()) {
-      Object value = values.get(ee).getValue();
+    Map<String, Object> newValues = new ArrayMap<>(elementValues.size());
+    for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry :
+        elementValues.entrySet()) {
+      Object value = entry.getValue().getValue();
       if (value instanceof List) {
         // If we have a List here, then it is a List of AnnotationValue.
         // Convert each AnnotationValue to its respective Java type.
@@ -78,7 +79,7 @@ public class AnnotationConverter {
           throw new BugInCF(e, "value = %s [%s]", value, value.getClass());
         }
       }
-      newValues.put(ee.getSimpleName().toString(), value);
+      newValues.put(entry.getKey().getSimpleName().toString(), value);
     }
     Annotation out = new Annotation(def, newValues);
     return out;
@@ -91,7 +92,7 @@ public class AnnotationConverter {
    * @param processingEnv the ProcessingEnvironment
    * @return the AnnotationMirror
    */
-  protected static AnnotationMirror annotationToAnnotationMirror(
+  static AnnotationMirror annotationToAnnotationMirror(
       Annotation anno, ProcessingEnvironment processingEnv) {
     AnnotationBuilder builder =
         new AnnotationBuilder(
@@ -108,7 +109,7 @@ public class AnnotationConverter {
    * @param ee an element (that is, a field) of an annotation
    * @return the type of the given annotation field
    */
-  protected static AnnotationFieldType getAnnotationFieldType(ExecutableElement ee) {
+  static AnnotationFieldType getAnnotationFieldType(ExecutableElement ee) {
     return typeMirrorToAnnotationFieldType(ee.getReturnType());
   }
 
@@ -119,7 +120,7 @@ public class AnnotationConverter {
    *     array thereof
    * @return an AnnotationFieldType corresponding to the argument
    */
-  protected static AnnotationFieldType typeMirrorToAnnotationFieldType(TypeMirror tm) {
+  static AnnotationFieldType typeMirrorToAnnotationFieldType(TypeMirror tm) {
     switch (tm.getKind()) {
       case BOOLEAN -> {
         return BasicAFT.forType(boolean.class);
@@ -176,11 +177,9 @@ public class AnnotationConverter {
    * @param obj is the value of the field
    * @param builder is the AnnotationBuilder
    */
-  @SuppressWarnings("unchecked") // This is actually checked in the first instanceOf call below.
-  protected static void addFieldToAnnotationBuilder(
-      String fieldKey, Object obj, AnnotationBuilder builder) {
+  static void addFieldToAnnotationBuilder(String fieldKey, Object obj, AnnotationBuilder builder) {
     if (obj instanceof List<?> list) {
-      builder.setValue(fieldKey, (List<Object>) list);
+      builder.setValue(fieldKey, list);
     } else if (obj instanceof String s) {
       builder.setValue(fieldKey, s);
     } else if (obj instanceof Integer i) {
