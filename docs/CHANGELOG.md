@@ -7,13 +7,9 @@
 
 ### User-visible changes
 
-### Implementation details
+### Changes for type system implementers
 
-`AnnotatedTypeMirror.hashCode()` now hashes only the top-level type rather than
-recursively hashing component types.  Removed class `HashcodeAtmVisitor`, field
-`AnnotatedTypeMirror.HASHCODE_VISITOR`, and method
-`AnnotatedTypeMirror.getUnderlyingTypeHashCode()`, which existed only to compute
-the old hash code.
+Renamed `AnnotatedTypes.innerMostType()` to `innermostComponentType()`.
 
 Removed the unused method
 `WholeProgramInferenceScenesStorage.updateAnnotationSetInScene()`.
@@ -27,7 +23,7 @@ Removed the unused method
 The `-AsuggestPureMethods` command-line option and the `purity.effectively.pure`
 warning no longer require `-AcheckPurityAnnotations` to also be supplied.
 
-### Implementation details
+### Changes for type system implementers
 
 Made the field `Java8InferenceContext.pathToExpression` private; use
 `getPathToExpression()` and `setPathToExpression()` instead.
