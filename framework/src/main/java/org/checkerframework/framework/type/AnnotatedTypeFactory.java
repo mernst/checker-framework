@@ -95,6 +95,7 @@ import org.checkerframework.common.wholeprograminference.WholeProgramInferenceIm
 import org.checkerframework.common.wholeprograminference.WholeProgramInferenceJavaParserStorage;
 import org.checkerframework.common.wholeprograminference.WholeProgramInferenceJavaParserStorage.InferredDeclared;
 import org.checkerframework.common.wholeprograminference.WholeProgramInferenceScenesStorage;
+import org.checkerframework.dataflow.analysis.Analysis;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -4150,7 +4151,19 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     // Retrieving the annotations from the element.
     // This includes annotations inherited from superclasses, but not superinterfaces or
     // overridden methods.
-    List<? extends AnnotationMirror> fromEle = elements.getAllAnnotationMirrors(elt);
+    List<? extends AnnotationMirror> fromEle;
+    try {
+      fromEle = elements.getAllAnnotationMirrors(elt);
+    } catch (com.sun.tools.javac.code.Symbol.CompletionFailure cf) {
+      // The failed completion left the unreadable class's symbol erroneous, so the second walk
+      // stops where the first one threw and returns what every readable superclass contributed.
+      try {
+        fromEle = elements.getAllAnnotationMirrors(elt);
+      } catch (com.sun.tools.javac.code.Symbol.CompletionFailure cf2) {
+        fromEle = elt.getAnnotationMirrors();
+      }
+      reportCompletionFailure(elt, cf);
+    }
     for (AnnotationMirror annotation : fromEle) {
       try {
         results.add(annotation);
@@ -4188,6 +4201,31 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     // Add the element and its annotations to the cache.
     cacheDeclAnnos.put(elt, results);
     return results;
+  }
+
+  /**
+   * Issues a warning that a class file that was needed to compute {@code elt}'s declaration
+   * annotations could not be read.
+   *
+   * @param elt the element whose declaration annotations are incomplete
+   * @param completionFailure the failure to read a class file
+   */
+  private void reportCompletionFailure(
+      Element elt, com.sun.tools.javac.code.Symbol.CompletionFailure completionFailure) {
+    String eltName = ElementUtils.getQualifiedName(elt);
+    try {
+      checker.reportWarning(elt, "class.not.completed", eltName, completionFailure.getMessage());
+    } catch (com.sun.tools.javac.code.Symbol.CompletionFailure nested) {
+      // Deciding whether the warning is suppressed reads the annotations of `elt` and of its
+      // enclosing elements, which can fail to read a class file too.
+      checker.message(
+          Diagnostic.Kind.WARNING,
+          // Keep this in sync with the class.not.completed message in messages.properties.
+          "Cannot read a class file that is needed by %s: %s. "
+              + "Make sure your classpath is set correctly.",
+          eltName,
+          completionFailure.getMessage());
+    }
   }
 
   /**
@@ -4858,10 +4896,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         return getAnnotatedType(assignmentTree.getVariable());
       }
       case RETURN -> {
-        Tree enclosing =
-            TreePathUtil.enclosingOfKind(
-                getPath(parentTree),
-                new HashSet<>(Arrays.asList(Tree.Kind.METHOD, Tree.Kind.LAMBDA_EXPRESSION)));
+        Tree enclosing = TreePathUtil.enclosingMethodOrLambda(getPath(parentTree));
         if (enclosing instanceof MethodTree enclosingMethod) {
           return getAnnotatedType(enclosingMethod.getReturnType());
         } else {
@@ -5774,6 +5809,20 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
+   * Returns true if whole-program inference should infer a type from an assignment whose right-hand
+   * side has the null type, such as the {@code null} literal. For most type systems, the null type
+   * is annotated with the bottom qualifier and therefore an assignment of {@code null} says nothing
+   * about the type of the left-hand side. For the Nullness type system, by contrast, such an
+   * assignment is exactly what makes the left-hand side {@code @Nullable}.
+   *
+   * @return true if WPI should infer types from assignments whose right-hand side has the null
+   *     type, false otherwise
+   */
+  public boolean wpiShouldInferFromNullAssignments() {
+    return false;
+  }
+
+  /**
    * Side-effects the method or constructor annotations to make any desired changes before writing
    * to an annotation file.
    *
@@ -5904,11 +5953,13 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
           inferredType.replaceAnnotations(declaredType.getPrimaryAnnotations());
         } else {
           AnnotatedTypeMirror otherInferredType =
-              isPrecondition
-                  ? otherDeclAnnos.getPreconditionsForExpression(
-                      className, methodName, expr, declaredType, this)
-                  : otherDeclAnnos.getPostconditionsForExpression(
-                      className, methodName, expr, declaredType, this);
+              otherDeclAnnos.getPreOrPostconditionsForExpression(
+                  isPrecondition ? Analysis.BeforeOrAfter.BEFORE : Analysis.BeforeOrAfter.AFTER,
+                  className,
+                  methodName,
+                  expr,
+                  declaredType,
+                  this);
           this.getWholeProgramInference().updateAtmWithLub(inferredType, otherInferredType);
         }
       }
