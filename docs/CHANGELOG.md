@@ -7,6 +7,8 @@
 
 ### User-visible changes
 
+New `wpi2.sh` script does whole-program inference, but requires buildfile edits.
+
 The Purity Checker has been improved, so `-AcheckPurityAnnotations` may issue
 warnings that it did not previously.
 
@@ -80,8 +82,6 @@ In `TypeHierarchy`:
 ## Version 4.1.0 (2026-05-01)
 
 ### User-visible changes
-
-New `wpi2.sh` script does whole-program inference, but requires buildfile edits.
 
 Removed deprecated script `checker/bin-devel/build.sh`; use `./gradlew assemble`
 instead.
