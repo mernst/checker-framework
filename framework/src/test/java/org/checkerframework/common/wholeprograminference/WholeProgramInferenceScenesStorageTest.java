@@ -421,7 +421,8 @@ public class WholeProgramInferenceScenesStorageTest {
     AnnotationMirror minLen = minLenAnnotation();
     Assert.assertFalse(
         "@MinLen is not an alias for a qualifier of the Constant Value Checker",
-        AnnotationUtils.areSameByName(typeFactory.canonicalAnnotation(minLen), minLen));
+        AnnotationUtils.areSameByName(
+            typeFactory.canonicalAnnotation(minLen, aliasedMethod.getReturnType()), minLen));
     Assert.assertTrue(
         "did not add @MinLen to the Scene for aliasedMethod",
         storage.addMethodDeclarationAnnotation(aliasedMethod, minLen));

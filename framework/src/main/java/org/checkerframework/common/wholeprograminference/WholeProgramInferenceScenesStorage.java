@@ -399,7 +399,7 @@ public class WholeProgramInferenceScenesStorage
 
     Annotation sceneAnno = AnnotationConverter.annotationMirrorToAnnotation(anno);
     boolean isNewAnnotation = methodAnnos.tlAnnotationsHere.add(sceneAnno);
-    if (isAliasForTypeQualifier(anno)) {
+    if (isAliasForTypeQualifier(anno, methodElt.getReturnType())) {
       // A declaration annotation on a method that is an alias for a type qualifier applies to
       // the method's return type.
       neverIgnoreAnnotationsOn(methodAnnos.returnType);
@@ -418,7 +418,7 @@ public class WholeProgramInferenceScenesStorage
     Annotation sceneAnno = AnnotationConverter.annotationMirrorToAnnotation(anno);
 
     boolean isNewAnnotation = fieldAnnos.tlAnnotationsHere.add(sceneAnno);
-    if (isAliasForTypeQualifier(anno)) {
+    if (isAliasForTypeQualifier(anno, field.asType())) {
       neverIgnoreAnnotationsOn(fieldAnnos.type);
     }
     return isNewAnnotation;
@@ -442,7 +442,7 @@ public class WholeProgramInferenceScenesStorage
     Annotation sceneAnno = AnnotationConverter.annotationMirrorToAnnotation(anno);
 
     boolean isNewAnnotation = paramAnnos.tlAnnotationsHere.add(sceneAnno);
-    if (isAliasForTypeQualifier(anno)) {
+    if (isAliasForTypeQualifier(anno, paramElt.asType())) {
       neverIgnoreAnnotationsOn(paramAnnos);
     }
     return isNewAnnotation;
@@ -472,10 +472,12 @@ public class WholeProgramInferenceScenesStorage
    * the element it is written on.
    *
    * @param anno a declaration annotation that whole-program inference has inferred
+   * @param type the type that {@code anno} would apply to, if {@code anno} is an alias for a type
+   *     qualifier
    * @return true if {@code anno} is an alias for a type qualifier
    */
-  private boolean isAliasForTypeQualifier(AnnotationMirror anno) {
-    AnnotationMirror canonical = atypeFactory.canonicalAnnotation(anno);
+  private boolean isAliasForTypeQualifier(AnnotationMirror anno, TypeMirror type) {
+    AnnotationMirror canonical = atypeFactory.canonicalAnnotation(anno, type);
     return !AnnotationUtils.areSameByName(canonical, anno)
         && atypeFactory.isSupportedQualifier(canonical);
   }
