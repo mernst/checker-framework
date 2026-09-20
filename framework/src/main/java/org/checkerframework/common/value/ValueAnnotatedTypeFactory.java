@@ -305,8 +305,11 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   @Override
-  public AnnotationMirror canonicalAnnotation(AnnotationMirror anno, TypeMirror typeMirror) {
-    // System.out.printf("entering VATF.canonicalAnnotation(%s, %s)%n", anno, typeMirror);
+  public AnnotationMirror canonicalAnnotation(
+      AnnotationMirror anno, @Nullable TypeMirror typeMirror) {
+    if (typeMirror == null) {
+      return super.canonicalAnnotation(anno, typeMirror);
+    }
 
     TypeKind typeMirrorKind = typeMirror.getKind();
     TypeKind primitiveKind;
@@ -314,17 +317,13 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       primitiveKind = typeMirrorKind;
     } else if (TypesUtils.isBoxedPrimitive(typeMirror)) {
       primitiveKind = types.unboxedType(typeMirror).getKind();
-    } else if (typeMirror.getKind() == TypeKind.ARRAY || TypesUtils.isString(typeMirror)) {
+    } else if (typeMirrorKind == TypeKind.ARRAY || TypesUtils.isString(typeMirror)) {
       // For array and string lengths.
       primitiveKind = TypeKind.INT;
     } else {
-      // System.out.printf(
-      //     "VATF.canonicalAnnotation(%s, %s) does not match, calling super%n", anno, typeMirror);
       return super.canonicalAnnotation(anno, typeMirror);
     }
     if (!TypeKindUtils.isIntegral(primitiveKind)) {
-      // System.out.printf(
-      //     "VATF.canonicalAnnotation(%s, %s) does not match, calling super%n", anno, typeMirror);
       return super.canonicalAnnotation(anno, typeMirror);
     }
 
@@ -332,11 +331,7 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
     if (AnnotationUtils.areSameByName(anno, MINLEN_NAME)) {
       int from = getMinLenValue(anno);
-      AnnotationMirror result = createArrayLenRangeAnnotation(from, (int) max);
-      // String msg =
-      //     String.format("VATF.canonicalAnnotation(%s, %s) => %s", anno, typeMirror, result);
-      // System.out.println(msg);
-      return result;
+      return createArrayLenRangeAnnotation(from, (int) max);
     }
 
     if (AnnotationUtils.areSameByName(anno, INTRANGE_FROMPOS_NAME)) {
@@ -351,11 +346,7 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       return createIntRangeAnnotation(-1, max);
     }
 
-    AnnotationMirror result = super.canonicalAnnotation(anno, typeMirror);
-    // String msg = String.format("VATF.canonicalAnnotation(%s, %s) => %s", anno, typeMirror,
-    // result);
-    // System.out.println(msg);
-    return result;
+    return super.canonicalAnnotation(anno, typeMirror);
   }
 
   @Override
