@@ -556,6 +556,9 @@ public class QualifierDefaults {
       return null;
     }
 
+    // Pass null for the type, because a default applies to many types.
+    anno = atypeFactory.canonicalAnnotation(anno, null);
+
     if (atypeFactory.isSupportedQualifier(anno)) {
       TypeUseLocation[] locations =
           AnnotationUtils.getElementValueEnumArray(

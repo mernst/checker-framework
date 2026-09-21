@@ -230,6 +230,11 @@ final class ValueQualifierHierarchy extends ElementQualifierHierarchy {
       return null;
     }
 
+    // Pass null for the type, because this method has no TypeMirror.  A caller that has one
+    // should call leastUpperBoundShallow(), which canonicalizes using the type.
+    a1 = atypeFactory.canonicalAnnotationForComparison(a1, null);
+    a2 = atypeFactory.canonicalAnnotationForComparison(a2, null);
+
     if (isSubtypeQualifiers(a1, a2)) {
       return a2;
     } else if (isSubtypeQualifiers(a2, a1)) {
@@ -402,6 +407,11 @@ final class ValueQualifierHierarchy extends ElementQualifierHierarchy {
       "regex:argument") // AnnotationUtils.getElementValueArray returns @Regex strings from regex
   // annotations
   public boolean isSubtypeQualifiers(AnnotationMirror subAnno, AnnotationMirror superAnno) {
+    // Pass null for the type, because this method has no TypeMirror.  A caller that has one
+    // should call isSubtypeShallow(), which canonicalizes using the type.
+    subAnno = atypeFactory.canonicalAnnotationForComparison(subAnno, null);
+    superAnno = atypeFactory.canonicalAnnotationForComparison(superAnno, null);
+
     String subQualName = AnnotationUtils.annotationName(subAnno);
     if (subQualName.equals(ValueAnnotatedTypeFactory.UNKNOWN_NAME)) {
       superAnno = atypeFactory.convertToUnknown(superAnno);

@@ -3611,7 +3611,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   /**
    * Returns the canonical annotation for the passed annotation. May return its argument.
    *
-   * <p>This overload is for annotations that will not be added to an {@link AnnotatedTypeMirror}.
+   * <p>This overload exists only so that a subclass that overrides it continues to work: {@link
+   * #canonicalAnnotation(AnnotationMirror,TypeMirror)} calls it. New code should override or call
+   * that method instead. To merely resolve an alias, call {@link #resolveAlias}.
    *
    * <p>This implementation handles when the passed annotation is an alias of another annotation.
    * Subclasses can do additional work.
@@ -3620,7 +3622,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * @return the canonical annotation, which may be the given annotation
    * @deprecated use {@link #canonicalAnnotation(AnnotationMirror,TypeMirror)}
    */
-  @Deprecated(since = "2026-03-27")
+  @Deprecated(since = "4.2.4")
   public AnnotationMirror canonicalAnnotation(AnnotationMirror a) {
     return resolveAlias(a);
   }
@@ -3661,8 +3663,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * <p>This implementation handles when the passed annotation is an alias of another annotation.
    * Subclasses can do additional work.
    *
-   * <p>If the canonicalization does not depend on the {@code TypeMirror}, then you may override
-   * {@link #canonicalAnnotation(AnnotationMirror)} instead.
+   * <p>This is the method for a subclass to override. If the canonicalization does not depend on
+   * the type that the qualifier is applied to, then the override ignores {@code tm}.
    *
    * @param a the qualifier to canonicalize
    * @param tm the type that the qualifier is applied to, or null
@@ -3678,8 +3680,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    *
    * <p>This method is called by the {@link QualifierHierarchy} operations that take a {@code
    * TypeMirror}: {@link QualifierHierarchy#isSubtypeShallow}, {@link
-   * QualifierHierarchy#leastUpperBoundShallow}, {@link
-   * QualifierHierarchy#greatestLowerBoundShallow}, and the widening variants of those methods.
+   * QualifierHierarchy#leastUpperBoundShallow}, and {@link
+   * QualifierHierarchy#greatestLowerBoundShallow}. {@link QualifierHierarchy#widenedUpperBound}
+   * takes no {@code TypeMirror}, so its caller {@code CFAbstractValue.ValueLub} calls this method
+   * on the arguments instead.
    *
    * <p>A subclass overrides this method, rather than {@link
    * #canonicalAnnotation(AnnotationMirror,TypeMirror)}, for a conversion that is correct for
@@ -3711,11 +3715,14 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   /**
    * Returns true if the given annotation is an alias for some other annotation.
    *
+   * <p>This method does not load the annotation's class, which might not be on the processor's
+   * classpath.
+   *
    * @param anno an annotation
-   * @return true if the given annotation class is an alias for some other annotation
+   * @return true if the given annotation is an alias for some other annotation
    */
   public boolean isAliasedTypeAnnotation(AnnotationMirror anno) {
-    return isAliasedTypeAnnotation(AnnotationUtils.annotationMirrorToClass(anno));
+    return aliases.containsKey(AnnotationUtils.annotationName(anno));
   }
 
   /**
