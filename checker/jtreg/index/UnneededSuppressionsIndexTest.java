@@ -10,7 +10,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 public class UnneededSuppressionsIndexTest {
 
   void method(@NonNegative int i) {
-    @SuppressWarnings("assignment")
+    @SuppressWarnings("index")
     @NonNegative int x = i - 1;
   }
 
@@ -26,7 +26,7 @@ public class UnneededSuppressionsIndexTest {
   }
 
   void method4() {
-    @SuppressWarnings("assignment")
+    @SuppressWarnings("lowerbound:assignment")
     @NonNegative int x = -1;
   }
 
