@@ -3,11 +3,13 @@
 <!-- markdownlint-disable no-duplicate-heading -->
 <!-- pyml disable no-duplicate-heading -->
 
-## Version 4.2.4 (2026-10-01)
+## Version 4.3.0 (2026-10-01)
 
 ### User-visible changes
 
 The Checker Framework runs noticeably faster, due to performance tuning.
+
+New `wpi2.sh` script does whole-program inference, but requires buildfile edits.
 
 The Purity Checker has been improved, so `-AcheckPurityAnnotations` may issue
 warnings that it did not previously.
@@ -22,18 +24,11 @@ Renamed `AnnotatedTypes.innerMostType()` to `innermostComponentType()`.
 Removed the unused method
 `WholeProgramInferenceScenesStorage.updateAnnotationSetInScene()`.
 
-In `AnnotatedTypeFactory`:
+Methods that used to return (or accept) an `IPair` now use a record with
+meaningful component names.
 
-* New method `canonicalAnnotationForComparison(AnnotationMirror, TypeMirror)`,
-  which the `QualifierHierarchy` methods that take a `TypeMirror` call.
-  Override it, rather than `canonicalAnnotation`, for a conversion that is
-  correct when comparing two qualifiers but that discards a distinction that
-  the checker needs elsewhere.
-* New method `resolveAlias(AnnotationMirror)`, which resolves an alias and does
-  no other canonicalization.
-* New method `isAliasedTypeAnnotation(AnnotationMirror)`.
-* Deprecated `canonicalAnnotation(AnnotationMirror)`; use
-  `canonicalAnnotation(AnnotationMirror, TypeMirror)` or `resolveAlias()`.
+Deprecated `AnnotatedTypeFactory.canonicalAnnotation(AnnotationMirror)`; use
+`canonicalAnnotation(AnnotationMirror, TypeMirror)` or `resolveAlias()`.
 
 ### Closed issues
 
