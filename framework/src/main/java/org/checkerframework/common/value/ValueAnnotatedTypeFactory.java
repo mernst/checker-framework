@@ -337,14 +337,32 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   @Override
   public AnnotationMirror canonicalAnnotationForComparison(
       AnnotationMirror anno, @Nullable TypeMirror typeMirror) {
-    anno = canonicalAnnotation(anno, typeMirror);
+    return intRangeFromToIntRange(canonicalAnnotation(anno, typeMirror), maxValue(typeMirror));
+  }
 
-    if (!isIntRangeFromAnnotation(anno)) {
-      return anno;
-    }
+  /**
+   * {@inheritDoc}
+   *
+   * <p>A widened type is a different Java type than the type that the qualifier was written on, so
+   * this implementation converts the three {@code IntRangeFromX} qualifiers, using the maximum
+   * value of the type that the qualifier was written on.
+   */
+  @Override
+  public AnnotationMirrorSet getWidenedAnnotations(
+      AnnotationMirrorSet annos, TypeKind typeKind, TypeKind widenedTypeKind) {
+    return AnnotationMirrorSet.singleton(intRangeFromToIntRange(annos.first(), maxValue(typeKind)));
+  }
 
-    long max = maxValue(typeMirror);
-
+  /**
+   * If the annotation is {@link IntRangeFromPositive}, {@link IntRangeFromNonNegative}, or {@link
+   * IntRangeFromGTENegativeOne}, returns the equivalent {@link IntRange} annotation whose {@code
+   * to} element is {@code max}. Otherwise, returns its argument.
+   *
+   * @param anno an annotation
+   * @param max the maximum value of the type that {@code anno} is applied to
+   * @return the {@link IntRange} annotation that is equivalent to {@code anno}, or {@code anno}
+   */
+  private AnnotationMirror intRangeFromToIntRange(AnnotationMirror anno, long max) {
     if (AnnotationUtils.areSameByName(anno, INTRANGE_FROMPOS_NAME)) {
       return createIntRangeAnnotation(1, max);
     }
@@ -353,22 +371,11 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       return createIntRangeAnnotation(0, max);
     }
 
-    // The annotation is INTRANGE_FROMGTENEGONE_NAME.
-    return createIntRangeAnnotation(-1, max);
-  }
+    if (AnnotationUtils.areSameByName(anno, INTRANGE_FROMGTENEGONE_NAME)) {
+      return createIntRangeAnnotation(-1, max);
+    }
 
-  /**
-   * Returns true if the annotation is {@link IntRangeFromPositive}, {@link
-   * IntRangeFromNonNegative}, or {@link IntRangeFromGTENegativeOne}.
-   *
-   * @param anno an annotation
-   * @return true if the annotation is one of the three {@code IntRangeFromX} annotations
-   */
-  private boolean isIntRangeFromAnnotation(AnnotationMirror anno) {
-    String name = AnnotationUtils.annotationName(anno);
-    return name.equals(INTRANGE_FROMPOS_NAME)
-        || name.equals(INTRANGE_FROMNONNEG_NAME)
-        || name.equals(INTRANGE_FROMGTENEGONE_NAME);
+    return anno;
   }
 
   /**
@@ -384,19 +391,28 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
 
     TypeKind typeMirrorKind = typeMirror.getKind();
-    TypeKind primitiveKind;
     if (typeMirrorKind.isPrimitive()) {
-      primitiveKind = typeMirrorKind;
+      return maxValue(typeMirrorKind);
     } else if (TypesUtils.isBoxedPrimitive(typeMirror)) {
-      primitiveKind = types.unboxedType(typeMirror).getKind();
+      return maxValue(types.unboxedType(typeMirror).getKind());
     } else {
       return Long.MAX_VALUE;
     }
-    if (!TypeKindUtils.isIntegral(primitiveKind)) {
+  }
+
+  /**
+   * Returns the maximum value that the given primitive type can hold. Returns {@code
+   * Long.MAX_VALUE} if the type is not integral.
+   *
+   * @param typeKind a primitive type kind
+   * @return the maximum value of {@code typeKind}, or {@code Long.MAX_VALUE}
+   */
+  private long maxValue(TypeKind typeKind) {
+    if (!TypeKindUtils.isIntegral(typeKind)) {
       return Long.MAX_VALUE;
     }
 
-    return Range.create(primitiveKind).to;
+    return Range.create(typeKind).to;
   }
 
   @Override
