@@ -199,8 +199,8 @@ public abstract class QualifierHierarchy {
     }
 
     return isSubtypeQualifiers(
-        atypeFactory.canonicalAnnotation(subQualifier, subType),
-        atypeFactory.canonicalAnnotation(superQualifier, superType));
+        atypeFactory.canonicalAnnotationForComparison(subQualifier, subType),
+        atypeFactory.canonicalAnnotationForComparison(superQualifier, superType));
   }
 
   /**
@@ -252,14 +252,14 @@ public abstract class QualifierHierarchy {
       TypeMirror superType) {
     assertSameSize(subQualifiers, superQualifiers);
     for (AnnotationMirror subQual : subQualifiers) {
-      subQual = atypeFactory.canonicalAnnotation(subQual, subType);
+      subQual = atypeFactory.canonicalAnnotationForComparison(subQual, subType);
       AnnotationMirror superQual = findAnnotationInSameHierarchy(superQualifiers, subQual);
       if (superQual == null) {
         throw new BugInCF(
             "QualifierHierarchy: missing annotation in hierarchy %s. found: %s",
             subQual, StringsP.join(",", superQualifiers));
       }
-      superQual = atypeFactory.canonicalAnnotation(superQual, superType);
+      superQual = atypeFactory.canonicalAnnotationForComparison(superQual, superType);
       if (!isSubtypeShallow(subQual, subType, superQual, superType)) {
         return false;
       }
@@ -446,12 +446,12 @@ public abstract class QualifierHierarchy {
     boolean tm2IsRelevant = atypeFactory.isRelevant(tm2);
     if (tm1IsRelevant == tm2IsRelevant) {
       return leastUpperBoundQualifiers(
-          atypeFactory.canonicalAnnotation(qualifier1, tm1),
-          atypeFactory.canonicalAnnotation(qualifier2, tm2));
+          atypeFactory.canonicalAnnotationForComparison(qualifier1, tm1),
+          atypeFactory.canonicalAnnotationForComparison(qualifier2, tm2));
     } else if (tm1IsRelevant) {
-      return atypeFactory.canonicalAnnotation(qualifier1, tm1);
+      return atypeFactory.canonicalAnnotationForComparison(qualifier1, tm1);
     } else { // if (tm2IsRelevant) {
-      return atypeFactory.canonicalAnnotation(qualifier2, tm2);
+      return atypeFactory.canonicalAnnotationForComparison(qualifier2, tm2);
     }
   }
 
@@ -581,12 +581,12 @@ public abstract class QualifierHierarchy {
     boolean tm2IsRelevant = atypeFactory.isRelevant(tm2);
     if (tm1IsRelevant == tm2IsRelevant) {
       return greatestLowerBoundQualifiers(
-          atypeFactory.canonicalAnnotation(qualifier1, tm1),
-          atypeFactory.canonicalAnnotation(qualifier2, tm2));
+          atypeFactory.canonicalAnnotationForComparison(qualifier1, tm1),
+          atypeFactory.canonicalAnnotationForComparison(qualifier2, tm2));
     } else if (tm1IsRelevant) {
-      return atypeFactory.canonicalAnnotation(qualifier1, tm1);
+      return atypeFactory.canonicalAnnotationForComparison(qualifier1, tm1);
     } else { // if (tm2IsRelevant) {
-      return atypeFactory.canonicalAnnotation(qualifier2, tm2);
+      return atypeFactory.canonicalAnnotationForComparison(qualifier2, tm2);
     }
   }
 

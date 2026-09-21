@@ -3421,10 +3421,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
     commonAssignmentCheckStartDiagnostic(varType, valueType, errorLocation);
 
-    // TODO: Comment this out?
-    varType.canonicalizeAnnotations();
-    valueType.canonicalizeAnnotations();
-
     AnnotatedTypeMirror widenedValueType = atypeFactory.getWidenedType(valueType, varType);
     boolean result = typeHierarchy.isSubtype(widenedValueType, varType);
 

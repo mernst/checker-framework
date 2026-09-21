@@ -304,36 +304,46 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     applier.applyInferredType(type, inferredAnnos, inferred.getUnderlyingType());
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>This implementation converts a {@link MinLen} annotation to an {@link ArrayLenRange}
+   * annotation. The conversion does not depend on {@code typeMirror}, because the length of a
+   * sequence is always an {@code int}.
+   *
+   * <p>This implementation does not convert {@link IntRangeFromPositive}, {@link
+   * IntRangeFromNonNegative}, or {@link IntRangeFromGTENegativeOne}; {@link
+   * #canonicalAnnotationForComparison} does. Those three qualifiers record that the range was
+   * written by the Index Checker, and {@link ValueVisitor} tests for those three qualifiers in
+   * order to defer checking to the Index Checker.
+   */
   @Override
   public AnnotationMirror canonicalAnnotation(
       AnnotationMirror anno, @Nullable TypeMirror typeMirror) {
-    // A @MinLen annotation constrains the length of a sequence, which is always an int, so the
-    // canonical form does not depend on the type that the annotation is written on.
     if (AnnotationUtils.areSameByName(anno, MINLEN_NAME)) {
       return createArrayLenRangeAnnotation(getMinLenValue(anno), Integer.MAX_VALUE);
     }
 
-    if (typeMirror == null) {
-      return super.canonicalAnnotation(anno, typeMirror);
+    return super.canonicalAnnotation(anno, typeMirror);
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>This implementation converts {@link IntRangeFromPositive}, {@link IntRangeFromNonNegative},
+   * and {@link IntRangeFromGTENegativeOne} to {@link IntRange}, whose {@code to} element is the
+   * maximum value of {@code typeMirror}.
+   */
+  @Override
+  public AnnotationMirror canonicalAnnotationForComparison(
+      AnnotationMirror anno, @Nullable TypeMirror typeMirror) {
+    anno = canonicalAnnotation(anno, typeMirror);
+
+    if (!isIntRangeFromAnnotation(anno)) {
+      return anno;
     }
 
-    TypeKind typeMirrorKind = typeMirror.getKind();
-    TypeKind primitiveKind;
-    if (typeMirrorKind.isPrimitive()) {
-      primitiveKind = typeMirrorKind;
-    } else if (TypesUtils.isBoxedPrimitive(typeMirror)) {
-      primitiveKind = types.unboxedType(typeMirror).getKind();
-    } else if (typeMirrorKind == TypeKind.ARRAY || TypesUtils.isString(typeMirror)) {
-      // For array and string lengths.
-      primitiveKind = TypeKind.INT;
-    } else {
-      return super.canonicalAnnotation(anno, typeMirror);
-    }
-    if (!TypeKindUtils.isIntegral(primitiveKind)) {
-      return super.canonicalAnnotation(anno, typeMirror);
-    }
-
-    long max = Range.create(primitiveKind).to;
+    long max = maxValue(typeMirror);
 
     if (AnnotationUtils.areSameByName(anno, INTRANGE_FROMPOS_NAME)) {
       return createIntRangeAnnotation(1, max);
@@ -343,11 +353,50 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       return createIntRangeAnnotation(0, max);
     }
 
-    if (AnnotationUtils.areSameByName(anno, INTRANGE_FROMGTENEGONE_NAME)) {
-      return createIntRangeAnnotation(-1, max);
+    // The annotation is INTRANGE_FROMGTENEGONE_NAME.
+    return createIntRangeAnnotation(-1, max);
+  }
+
+  /**
+   * Returns true if the annotation is {@link IntRangeFromPositive}, {@link
+   * IntRangeFromNonNegative}, or {@link IntRangeFromGTENegativeOne}.
+   *
+   * @param anno an annotation
+   * @return true if the annotation is one of the three {@code IntRangeFromX} annotations
+   */
+  private boolean isIntRangeFromAnnotation(AnnotationMirror anno) {
+    String name = AnnotationUtils.annotationName(anno);
+    return name.equals(INTRANGE_FROMPOS_NAME)
+        || name.equals(INTRANGE_FROMNONNEG_NAME)
+        || name.equals(INTRANGE_FROMGTENEGONE_NAME);
+  }
+
+  /**
+   * Returns the maximum value that the given type can hold. Returns {@code Long.MAX_VALUE} if the
+   * type is null or is not an integral type.
+   *
+   * @param typeMirror a type, or null
+   * @return the maximum value of {@code typeMirror}, or {@code Long.MAX_VALUE}
+   */
+  private long maxValue(@Nullable TypeMirror typeMirror) {
+    if (typeMirror == null) {
+      return Long.MAX_VALUE;
     }
 
-    return super.canonicalAnnotation(anno, typeMirror);
+    TypeKind typeMirrorKind = typeMirror.getKind();
+    TypeKind primitiveKind;
+    if (typeMirrorKind.isPrimitive()) {
+      primitiveKind = typeMirrorKind;
+    } else if (TypesUtils.isBoxedPrimitive(typeMirror)) {
+      primitiveKind = types.unboxedType(typeMirror).getKind();
+    } else {
+      return Long.MAX_VALUE;
+    }
+    if (!TypeKindUtils.isIntegral(primitiveKind)) {
+      return Long.MAX_VALUE;
+    }
+
+    return Range.create(primitiveKind).to;
   }
 
   @Override

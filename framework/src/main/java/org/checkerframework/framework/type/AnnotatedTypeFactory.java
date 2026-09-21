@@ -3652,7 +3652,11 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * return its argument.
    *
    * <p>This method {@code canonicalAnnotation} is called by {@link
-   * AnnotatedTypeMirror#addAnnotation}, so it is called for every annotation added to a type.
+   * AnnotatedTypeMirror#addAnnotation}, so it is called for every annotation added to a type. A
+   * qualifier that this method returns may appear in an error message, and a checker may test for
+   * the qualifier; therefore, this method must not discard a distinction that a checker needs. A
+   * conversion that is needed only in order to compare two qualifiers belongs in {@link
+   * #canonicalAnnotationForComparison} instead.
    *
    * <p>This implementation handles when the passed annotation is an alias of another annotation.
    * Subclasses can do additional work.
@@ -3666,6 +3670,32 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    */
   public AnnotationMirror canonicalAnnotation(AnnotationMirror a, @Nullable TypeMirror tm) {
     return canonicalAnnotation(a);
+  }
+
+  /**
+   * Returns the canonical annotation to use when comparing the passed annotation to another
+   * qualifier, when the passed annotation is applied to the given type. May return its argument.
+   *
+   * <p>This method is called by the {@link QualifierHierarchy} operations that take a {@code
+   * TypeMirror}: {@link QualifierHierarchy#isSubtypeShallow}, {@link
+   * QualifierHierarchy#leastUpperBoundShallow}, {@link
+   * QualifierHierarchy#greatestLowerBoundShallow}, and the widening variants of those methods.
+   *
+   * <p>A subclass overrides this method, rather than {@link
+   * #canonicalAnnotation(AnnotationMirror,TypeMirror)}, for a conversion that is correct for
+   * comparing two qualifiers but that discards a distinction that the checker needs elsewhere. For
+   * example, the Value Checker converts {@code @IntRangeFromNonNegative} to
+   * {@code @IntRange(from=0, to=Integer.MAX_VALUE)} here, but not in {@code canonicalAnnotation},
+   * because {@code ValueVisitor} tests for {@code @IntRangeFromNonNegative} in order to defer
+   * checking to the Index Checker.
+   *
+   * @param a the qualifier to canonicalize
+   * @param tm the type that the qualifier is applied to, or null
+   * @return the canonical annotation for comparison, which may be the given annotation
+   */
+  public AnnotationMirror canonicalAnnotationForComparison(
+      AnnotationMirror a, @Nullable TypeMirror tm) {
+    return canonicalAnnotation(a, tm);
   }
 
   /**

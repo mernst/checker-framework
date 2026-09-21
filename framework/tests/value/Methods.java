@@ -1,9 +1,8 @@
-import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.common.value.qual.*;
 
 public class Methods {
 
-  static @NonNegative int i = 3;
+  static int i = 3;
   static final int k = 3;
 
   public static void Length() {
