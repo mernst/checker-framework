@@ -22,10 +22,12 @@ Renamed `AnnotatedTypes.innerMostType()` to `innermostComponentType()`.
 Removed the unused method
 `WholeProgramInferenceScenesStorage.updateAnnotationSetInScene()`.
 
-`AnnotatedTypeFactory`: new method `canonicalAnnotationForComparison(AnnotationMirror,
-TypeMirror)`, which the `QualifierHierarchy` methods that take a `TypeMirror` call.
-Override it, rather than `canonicalAnnotation`, for a conversion that is correct when
-comparing two qualifiers but that discards a distinction the checker needs elsewhere.
+`AnnotatedTypeFactory`: new method
+`canonicalAnnotationForComparison(AnnotationMirror, TypeMirror)`, which the
+`QualifierHierarchy` methods that take a `TypeMirror` call.  Override it,
+rather than `canonicalAnnotation`, for a conversion that is correct when
+comparing two qualifiers but that discards a distinction that the checker
+needs elsewhere.
 
 ### Closed issues
 
