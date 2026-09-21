@@ -15,11 +15,12 @@ import org.checkerframework.framework.qual.SubtypeOf;
  * <p>The Value Checker trusts this annotation. For soundness, the Index Checker must be run on any
  * code with @NonNegative annotations on the left-hand side of assignments.
  *
- * <p>It is an error to write this annotation directly. {@code @NonNegative} or {@code IntRange(from
- * = 0, to = Integer.MAX_VALUE)} should always be written instead. This annotation is not retained
- * in bytecode, but is replaced with {@code @UnknownVal}, so that it is not enforced on method
- * boundaries. The {@code @NonNegative} annotation it replaced is retained in bytecode by the Lower
- * Bound Checker instead.
+ * <p>It is an error to write this annotation directly. {@code @NonNegative}, or an
+ * {@code @IntRange} annotation whose {@code from} element is {@code 0} and whose {@code to} element
+ * is the maximum value of the annotated type, should always be written instead. This annotation is
+ * not retained in bytecode, but is replaced with {@code @UnknownVal}, so that it is not enforced on
+ * method boundaries. The {@code @NonNegative} annotation it replaced is retained in bytecode by the
+ * Lower Bound Checker instead.
  *
  * @checker_framework.manual #constant-value-checker Constant Value Checker
  */

@@ -22,12 +22,18 @@ Renamed `AnnotatedTypes.innerMostType()` to `innermostComponentType()`.
 Removed the unused method
 `WholeProgramInferenceScenesStorage.updateAnnotationSetInScene()`.
 
-`AnnotatedTypeFactory`: new method
-`canonicalAnnotationForComparison(AnnotationMirror, TypeMirror)`, which the
-`QualifierHierarchy` methods that take a `TypeMirror` call.  Override it,
-rather than `canonicalAnnotation`, for a conversion that is correct when
-comparing two qualifiers but that discards a distinction that the checker
-needs elsewhere.
+In `AnnotatedTypeFactory`:
+
+* New method `canonicalAnnotationForComparison(AnnotationMirror, TypeMirror)`,
+  which the `QualifierHierarchy` methods that take a `TypeMirror` call.
+  Override it, rather than `canonicalAnnotation`, for a conversion that is
+  correct when comparing two qualifiers but that discards a distinction that
+  the checker needs elsewhere.
+* New method `resolveAlias(AnnotationMirror)`, which resolves an alias and does
+  no other canonicalization.
+* New method `isAliasedTypeAnnotation(AnnotationMirror)`.
+* Deprecated `canonicalAnnotation(AnnotationMirror)`; use
+  `canonicalAnnotation(AnnotationMirror, TypeMirror)` or `resolveAlias()`.
 
 ### Closed issues
 
@@ -186,11 +192,6 @@ The Checker Framework runs under JDK 26 -- that is, it runs on a version 26 JVM.
 Removed deprecated command-line option `-AskipDirs`; use `-AskipFiles`.
 
 ### Implementation details
-
-In `AnnotatedTypeFactory`:
-
-* Renamed `canonicalAnnotation(AnnotationMirror)` to `resolveAlias(AnnotationMirror)`.
-* New method `canonicalAnnotation(AnnotationMirror, TypeMirror)`.
 
 In `AnnotatedTypeMirror`:
 
