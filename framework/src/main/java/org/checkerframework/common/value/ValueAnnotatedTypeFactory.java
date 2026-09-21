@@ -307,6 +307,12 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   @Override
   public AnnotationMirror canonicalAnnotation(
       AnnotationMirror anno, @Nullable TypeMirror typeMirror) {
+    // A @MinLen annotation constrains the length of a sequence, which is always an int, so the
+    // canonical form does not depend on the type that the annotation is written on.
+    if (AnnotationUtils.areSameByName(anno, MINLEN_NAME)) {
+      return createArrayLenRangeAnnotation(getMinLenValue(anno), Integer.MAX_VALUE);
+    }
+
     if (typeMirror == null) {
       return super.canonicalAnnotation(anno, typeMirror);
     }
@@ -328,11 +334,6 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
 
     long max = Range.create(primitiveKind).to;
-
-    if (AnnotationUtils.areSameByName(anno, MINLEN_NAME)) {
-      int from = getMinLenValue(anno);
-      return createArrayLenRangeAnnotation(from, (int) max);
-    }
 
     if (AnnotationUtils.areSameByName(anno, INTRANGE_FROMPOS_NAME)) {
       return createIntRangeAnnotation(1, max);
