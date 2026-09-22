@@ -119,7 +119,7 @@ public class UnitsAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   // Converts all metric-prefixed units' alias annotations (eg @kg) into base unit annotations
   // with prefix values (eg @g(Prefix.kilo))
   @Override
-  public AnnotationMirror canonicalAnnotation(AnnotationMirror anno, TypeMirror tm) {
+  public AnnotationMirror canonicalAnnotation(AnnotationMirror anno, @Nullable TypeMirror tm) {
     // Get the name of the aliased annotation
     String aname = AnnotationUtils.annotationName(anno);
 

@@ -224,7 +224,8 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   @SuppressWarnings({
     "StaticAssignmentInConstructor", // static Range.ignoreOverflow is gross
-    "this-escape"
+    "this-escape",
+    "nullness:method.invocation" // addAliasedTypeAnnotation() is called from a constructor
   })
   public ValueAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);

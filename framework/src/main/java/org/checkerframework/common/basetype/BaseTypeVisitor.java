@@ -1606,6 +1606,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     // qualifier.
     annotation = atypeFactory.canonicalAnnotation(annotation, expression.getType());
 
+    @SuppressWarnings("nullness:assignment") // capture conversion of a @Nullable type variable
     CFAbstractStore<?, ?> exitStore = atypeFactory.getRegularExitStore(methodTree);
     if (exitStore == null) {
       // If there is no regular exitStore, then the method cannot reach the regular exit and
@@ -1619,7 +1620,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       AnnotationMirrorSet annos = value.getAnnotations();
       inferredAnno = qualHierarchy.findAnnotationInSameHierarchy(annos, annotation);
     }
-
     if (!checkContract(expression, annotation, inferredAnno, exitStore)) {
       String expressionString = expression.toString();
       checker.reportError(
@@ -2221,6 +2221,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       // qualifier.
       anno = atypeFactory.canonicalAnnotation(anno, exprJe.getType());
 
+      @SuppressWarnings("nullness:assignment") // capture conversion of a @Nullable type variable
       CFAbstractStore<?, ?> store = atypeFactory.getStoreBefore(tree);
       CFAbstractValue<?> value = null;
       if (CFAbstractStore.canInsertJavaExpression(exprJe)) {
