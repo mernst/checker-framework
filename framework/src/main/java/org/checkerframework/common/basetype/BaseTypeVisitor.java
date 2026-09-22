@@ -1159,10 +1159,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
   }
 
   /**
-   * Check method purity if needed. Note that overriding rules are checked as part of {@link
-   * #checkOverride(MethodTree, AnnotatedTypeMirror.AnnotatedExecutableType,
-   * AnnotatedTypeMirror.AnnotatedDeclaredType, AnnotatedTypeMirror.AnnotatedExecutableType,
-   * AnnotatedTypeMirror.AnnotatedDeclaredType)}.
+   * Check method purity if needed. The purity annotations of an overridden method are inherited, so
+   * this checks an overriding method against the purity annotations of the methods it overrides,
+   * even if it has no purity annotation of its own.
    *
    * @param tree the method tree to check
    */
@@ -2449,7 +2448,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    * interface method from the lambda's body.
    *
    * <p>The analogous check for a method reference is {@link
-   * BaseTypeVisitor.OverrideChecker#checkPurity}.
+   * BaseTypeVisitor.OverrideChecker#checkMethodReferencePurity}.
    *
    * @param tree a lambda expression
    * @param functionType the type of the functional interface method that {@code tree} implements
@@ -3562,14 +3561,24 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
   /**
    * Class that creates string representations of {@link AnnotatedTypeMirror}s which are only
    * verbose if required to differentiate the two types.
+   *
+   * <p>It is protected so that a subclass that reports one of the message keys that take a
+   * found/required pair, such as {@code override.receiver}, renders the pair the same way that this
+   * class does.
    */
-  private static final class FoundRequired {
+  protected static final class FoundRequired {
     /** The found type. */
     public final String found;
 
     /** The required type. */
     public final String required;
 
+    /**
+     * Creates a FoundRequired for two types.
+     *
+     * @param found the found type
+     * @param required the required type
+     */
     private FoundRequired(AnnotatedTypeMirror found, AnnotatedTypeMirror required) {
       if (shouldPrintVerbose(found, required)) {
         this.found = found.toString(true);
@@ -3580,7 +3589,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       }
     }
 
-    /** Create a FoundRequired for a type and bounds. */
+    /**
+     * Creates a FoundRequired for a type and bounds.
+     *
+     * @param found the found type
+     * @param required the required bounds
+     */
     private FoundRequired(AnnotatedTypeMirror found, AnnotatedTypeParameterBounds required) {
       if (shouldPrintVerbose(found, required)) {
         this.found = found.toString(true);
@@ -3594,8 +3608,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     /**
      * Creates string representations of {@link AnnotatedTypeMirror}s which are only verbose if
      * required to differentiate the two types.
+     *
+     * @param found the found type
+     * @param required the required type
+     * @return a FoundRequired for the two types
      */
-    static FoundRequired of(AnnotatedTypeMirror found, AnnotatedTypeMirror required) {
+    public static FoundRequired of(AnnotatedTypeMirror found, AnnotatedTypeMirror required) {
       return new FoundRequired(found, required);
     }
 
@@ -3603,8 +3621,13 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      * Creates string representations of {@link AnnotatedTypeMirror} and {@link
      * AnnotatedTypeParameterBounds}s which are only verbose if required to differentiate the two
      * types.
+     *
+     * @param found the found type
+     * @param required the required bounds
+     * @return a FoundRequired for the type and the bounds
      */
-    static FoundRequired of(AnnotatedTypeMirror found, AnnotatedTypeParameterBounds required) {
+    public static FoundRequired of(
+        AnnotatedTypeMirror found, AnnotatedTypeParameterBounds required) {
       return new FoundRequired(found, required);
     }
   }
@@ -3996,6 +4019,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    * Returns true if both types are type variables and outer contains inner. Outer contains inner
    * implies: {@literal inner.upperBound <: outer.upperBound outer.lowerBound <: inner.lowerBound}.
    *
+   * @param inner the type that might be contained
+   * @param outer the type that might contain {@code inner}
    * @return true if both types are type variables and outer contains inner
    */
   protected boolean testTypevarContainment(AnnotatedTypeMirror inner, AnnotatedTypeMirror outer) {
@@ -4321,17 +4346,23 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       result &= checkParameters();
       if (isMethodReference) {
         result &= checkMemberReferenceReceivers();
+        checkMethodReferencePurity();
       } else {
         result &= checkReceiverOverride();
       }
       checkPreAndPostConditions();
-      checkPurity();
 
       return result;
     }
 
-    /** Check that an override respects purity. */
-    private void checkPurity() {
+    /**
+     * Check that the referenced method is at least as pure as the functional interface method that
+     * the method reference implements.
+     *
+     * <p>Only a method reference needs this check. A method that overrides another one inherits its
+     * purity annotations, and is checked by {@link BaseTypeVisitor#checkPurityAnnotations}.
+     */
+    private void checkMethodReferencePurity() {
       if (!checkPurityAnnotations) {
         return;
       }
@@ -4339,29 +4370,16 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
           PurityUtils.getPurityKinds(atypeFactory, overridden.getElement());
       EnumSet<PurityKind> subPurity =
           PurityUtils.getPurityKinds(atypeFactory, overrider.getElement());
-      boolean ok = subPurity.containsAll(superPurity);
-      if (!ok) {
-        if (isMethodReference) {
-          checker.reportError(
-              overriderTree,
-              "purity.methodref",
-              overriderType,
-              purityKindsToString(subPurity),
-              overrider,
-              overriddenType,
-              purityKindsToString(superPurity),
-              overridden);
-        } else {
-          checker.reportError(
-              overriderTree,
-              "purity.overriding",
-              overriderType,
-              purityKindsToString(subPurity),
-              overrider,
-              overriddenType,
-              purityKindsToString(superPurity),
-              overridden);
-        }
+      if (!subPurity.containsAll(superPurity)) {
+        checker.reportError(
+            overriderTree,
+            "purity.methodref",
+            overriderType,
+            purityKindsToString(subPurity),
+            overrider,
+            overriddenType,
+            purityKindsToString(superPurity),
+            overridden);
       }
     }
 
@@ -4580,6 +4598,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       return true;
     }
 
+    /**
+     * Returns true if each parameter type of the overridden method is a subtype of the
+     * corresponding parameter type of the overriding method.
+     *
+     * @return true if the parameter types are correct
+     */
     private boolean checkParameters() {
       List<AnnotatedTypeMirror> overriderParams = overrider.getParameterTypes();
       List<AnnotatedTypeMirror> overriddenParams = overridden.getParameterTypes();
