@@ -222,6 +222,11 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** Helper class that holds references to special methods. */
   private final ValueMethodIdentifier methods;
 
+  /**
+   * Creates a ValueAnnotatedTypeFactory.
+   *
+   * @param checker the type-checker associated with this type factory
+   */
   @SuppressWarnings({
     "StaticAssignmentInConstructor", // static Range.ignoreOverflow is gross
     "this-escape",
