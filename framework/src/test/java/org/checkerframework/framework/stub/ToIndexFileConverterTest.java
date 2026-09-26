@@ -7,6 +7,7 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,6 +60,110 @@ public class ToIndexFileConverterTest {
   /** The converter used by the {@code getJVML} tests. */
   private final ToIndexFileConverter converter =
       new ToIndexFileConverter(null, Collections.emptyList(), new AScene());
+
+  /**
+   * Converts a stub file to a JAIF.
+   *
+   * @param stubFileLines the lines of the stub file
+   * @return the JAIF that {@link ToIndexFileConverter} produces for the stub file
+   */
+  private static String convert(String... stubFileLines) throws Exception {
+    String stubFile = String.join(System.lineSeparator(), stubFileLines);
+    ByteArrayInputStream in = new ByteArrayInputStream(stubFile.getBytes(StandardCharsets.UTF_8));
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    ToIndexFileConverter.convert(new AScene(), in, out);
+    return out.toString(StandardCharsets.UTF_8.name());
+  }
+
+  /**
+   * Asserts that {@code jaif} declares {@code method} in {@code className}.
+   *
+   * @param jaif a JAIF
+   * @param className the name of a class, without its package; a {@code $} separates a nested class
+   *     from its enclosing class
+   * @param method the JVML representation of a method, such as {@code "myMethod(I)V"}
+   */
+  private static void assertMethod(String jaif, String className, String method) {
+    String currentClass = null;
+    for (String line : jaif.split("\\R")) {
+      if (line.startsWith("class ") && line.endsWith(":")) {
+        currentClass = line.substring("class ".length(), line.length() - 1);
+      } else if (line.strip().equals("method " + method + ":") && className.equals(currentClass)) {
+        return;
+      }
+    }
+    Assert.fail("no method " + method + " in class " + className + System.lineSeparator() + jaif);
+  }
+
+  /** A method's JVML descriptor uses the erasure of each type variable. */
+  @Test
+  public void testTypeVariableErasure() throws Exception {
+    String jaif =
+        convert(
+            "package p;",
+            "import java.util.List;",
+            "class MyClass<S extends CharSequence> {",
+            "  <T extends Number, U> void myMethod(T t, U u, S s, Object o) {}",
+            "  <V extends List<?>> void myOtherMethod(V v) {}",
+            "}");
+    assertMethod(
+        jaif,
+        "MyClass",
+        "myMethod(Ljava/lang/Number;Ljava/lang/Object;Ljava/lang/CharSequence;Ljava/lang/Object;)V");
+    assertMethod(jaif, "MyClass", "myOtherMethod(Ljava/util/List;)V");
+  }
+
+  /** A single-type import shadows a type of the same name in the current package. */
+  @Test
+  public void testSingleTypeImportShadowsCurrentPackage() throws Exception {
+    String jaif =
+        convert(
+            "package java.util;",
+            "import java.awt.List;",
+            "class MyClass {",
+            "  void myMethod(List l) {}",
+            "}");
+    assertMethod(jaif, "MyClass", "myMethod(Ljava/awt/List;)V");
+  }
+
+  /** A type in the current package shadows a type of the same name that is imported on demand. */
+  @Test
+  public void testCurrentPackageShadowsOnDemandImport() throws Exception {
+    String jaif =
+        convert(
+            "package java.util;",
+            "import java.awt.*;",
+            "class MyClass {",
+            "  void myMethod(List l) {}",
+            "}");
+    assertMethod(jaif, "MyClass", "myMethod(Ljava/util/List;)V");
+  }
+
+  /**
+   * The members of a nested class, enum, or record belong to the nested type, not to the class that
+   * encloses it.
+   */
+  @Test
+  public void testNestedTypeMembers() throws Exception {
+    String jaif =
+        convert(
+            "package mypackage;",
+            "class MyClass {",
+            "  class MyNestedClass {",
+            "    void myNestedMethod() {}",
+            "  }",
+            "  enum MyEnum {",
+            "    A;",
+            "    void myEnumMethod() {}",
+            "  }",
+            "  record MyRecord(int x) {",
+            "    void myRecordMethod() {}",
+            "  }",
+            "}");
+    assertMethod(jaif, "MyClass$MyNestedClass", "myNestedMethod()V");
+    assertMethod(jaif, "MyClass$MyEnum", "myEnumMethod()V");
+    assertMethod(jaif, "MyClass$MyRecord", "myRecordMethod()V");
+  }
 
   /**
    * Tests that an annotation on a nested type argument is recorded even when no annotation appears
