@@ -97,6 +97,105 @@ public class ToIndexFileConverterTest {
   }
 
   /**
+   * Converts a stub file that declares a class {@code p.C}, and returns the scene element for the
+   * first parameter of the given method.
+   *
+   * @param method the JVML representation of a method of {@code p.C}
+   * @param stubFileLines the lines of the stub file
+   * @return the scene element for the first parameter of {@code method}
+   */
+  private static AField firstParameter(String method, String... stubFileLines) throws Exception {
+    String stubFile = String.join(System.lineSeparator(), stubFileLines);
+    AScene scene = new AScene();
+    ToIndexFileConverter.convert(
+        scene,
+        new ByteArrayInputStream(stubFile.getBytes(StandardCharsets.UTF_8)),
+        new ByteArrayOutputStream());
+    AMethod m = scene.classes.get("p.C").methods.get(method);
+    Assert.assertNotNull("no scene element for method " + method, m);
+    AField param = m.parameters.get(0);
+    Assert.assertNotNull("no scene element for the first parameter of " + method, param);
+    return param;
+  }
+
+  /** A varargs parameter's JVML descriptor is an array type. */
+  @Test
+  public void testVarargsDescriptor() throws Exception {
+    String jaif =
+        convert(
+            "package p;",
+            "class MyClass {",
+            "  MyClass(int i, String... ss) {}",
+            "  void myMethod(Number... ns) {}",
+            "  void myOtherMethod(CharSequence[]... ss) {}",
+            "}");
+    assertMethod(jaif, "MyClass", "<init>(I[Ljava/lang/String;)V");
+    assertMethod(jaif, "MyClass", "myMethod([Ljava/lang/Number;)V");
+    assertMethod(jaif, "MyClass", "myOtherMethod([[Ljava/lang/CharSequence;)V");
+  }
+
+  /** An annotation that precedes a parameter's type is recorded as a declaration annotation. */
+  @Test
+  public void testParameterDeclarationAnnotation() throws Exception {
+    AField param =
+        firstParameter(
+            "m(Ljava/lang/String;)V", "package p;", "class C {", "  void m(@A String s) {}", "}");
+    Assert.assertNotNull("@A was not recorded on the parameter", param.lookup("A"));
+  }
+
+  /** A single-type import shadows a type of the same name in the current package. */
+  @Test
+  public void testSingleTypeImportShadowsCurrentPackage() throws Exception {
+    String jaif =
+        convert(
+            "package java.util;",
+            "import java.awt.List;",
+            "class MyClass {",
+            "  void myMethod(List l) {}",
+            "}");
+    assertMethod(jaif, "MyClass", "myMethod(Ljava/awt/List;)V");
+  }
+
+  /** A type in the current package shadows a type of the same name that is imported on demand. */
+  @Test
+  public void testCurrentPackageShadowsOnDemandImport() throws Exception {
+    String jaif =
+        convert(
+            "package java.util;",
+            "import java.awt.*;",
+            "class MyClass {",
+            "  void myMethod(List l) {}",
+            "}");
+    assertMethod(jaif, "MyClass", "myMethod(Ljava/util/List;)V");
+  }
+
+  /**
+   * The members of a nested class, enum, or record belong to the nested type, not to the class that
+   * encloses it.
+   */
+  @Test
+  public void testNestedTypeMembers() throws Exception {
+    String jaif =
+        convert(
+            "package mypackage;",
+            "class MyClass {",
+            "  class MyNestedClass {",
+            "    void myNestedMethod() {}",
+            "  }",
+            "  enum MyEnum {",
+            "    A;",
+            "    void myEnumMethod() {}",
+            "  }",
+            "  record MyRecord(int x) {",
+            "    void myRecordMethod() {}",
+            "  }",
+            "}");
+    assertMethod(jaif, "MyClass$MyNestedClass", "myNestedMethod()V");
+    assertMethod(jaif, "MyClass$MyEnum", "myEnumMethod()V");
+    assertMethod(jaif, "MyClass$MyRecord", "myRecordMethod()V");
+  }
+
+  /**
    * Returns the type path of the bound of the first type argument: {@code List<? extends HERE>}.
    *
    * @return the type path of the bound of the first type argument
@@ -400,20 +499,6 @@ public class ToIndexFileConverterTest {
     Assert.assertNotNull("no scene element for the component type", componentType);
     Assert.assertNotNull("@B was not recorded on the component type", componentType.lookup("B"));
     Assert.assertNull("@C was recorded on the component type", componentType.lookup("C"));
-  }
-
-  /** A record's members belong to the record, not to the class that encloses it. */
-  @Test
-  public void testNestedRecordMembers() throws Exception {
-    String jaif =
-        convert(
-            "package mypackage;",
-            "class MyClass {",
-            "  record MyRecord(int x) {",
-            "    void myMethod() {}",
-            "  }",
-            "}");
-    assertMethod(jaif, "MyClass$MyRecord", "myMethod()V");
   }
 
   /** A type variable whose bound is a fully qualified name erases to that name. */
