@@ -52,6 +52,7 @@ import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.JavaExpressionParseException;
 import org.checkerframework.dataflow.expression.ValueLiteral;
 import org.checkerframework.framework.flow.CFAbstractAnalysis;
+import org.checkerframework.framework.flow.CFAnalysis;
 import org.checkerframework.framework.flow.CFStore;
 import org.checkerframework.framework.flow.CFTransfer;
 import org.checkerframework.framework.flow.CFValue;
@@ -446,6 +447,11 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   @Override
+  protected CFAnalysis createFlowAnalysis() {
+    return new ValueAnalysis(checker, this);
+  }
+
+  @Override
   public CFTransfer createFlowTransferFunction(
       CFAbstractAnalysis<CFValue, CFStore, CFTransfer> analysis) {
     return new ValueTransfer(analysis);
@@ -687,6 +693,34 @@ public class ValueAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         new ValueTreeAnnotator(this),
         new LiteralTreeAnnotator(this).addStandardLiteralQualifiers(),
         arrayCreation);
+  }
+
+  /**
+   * Converts each {@link IntRangeFromPositive}, {@link IntRangeFromNonNegative}, and {@link
+   * IntRangeFromGTENegativeOne} in {@code annos} to {@link IntRange}, whose {@code to} element is
+   * the maximum value of {@code typeMirror}. Returns {@code annos} itself if it contains no such
+   * annotation.
+   *
+   * @param annos a set of annotation mirrors
+   * @param typeMirror the Java type on which {@code annos} are written
+   * @return {@code annos}, with every special int range replaced by the equivalent int range
+   */
+  @SuppressWarnings("interning:not.interned") // the method returns its argument if unchanged
+  /*package-private*/ AnnotationMirrorSet intRangeFromToIntRange(
+      AnnotationMirrorSet annos, TypeMirror typeMirror) {
+    long max = maxValue(typeMirror);
+    AnnotationMirrorSet result = null;
+    for (AnnotationMirror anno : annos) {
+      AnnotationMirror converted = intRangeFromToIntRange(anno, max);
+      if (converted != anno) {
+        if (result == null) {
+          result = new AnnotationMirrorSet(annos);
+        }
+        result.remove(anno);
+        result.add(converted);
+      }
+    }
+    return result == null ? annos : result;
   }
 
   /**
