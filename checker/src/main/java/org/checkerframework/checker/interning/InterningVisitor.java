@@ -150,8 +150,9 @@ public final class InterningVisitor extends BaseTypeVisitor<InterningAnnotatedTy
       return super.visitBinary(tree, p);
     }
 
-    // Check the comparison if either operand's value might be an instance of the class to check.
-    if (!shouldCheckExpression(leftOp) && !shouldCheckExpression(rightOp)) {
+    // Check the comparison only if each operand's value might be an instance of the class to check;
+    // otherwise, the comparison cannot compare two instances of that class.
+    if (!shouldCheckExpression(leftOp) || !shouldCheckExpression(rightOp)) {
       return super.visitBinary(tree, p);
     }
 
