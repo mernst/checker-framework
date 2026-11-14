@@ -11,8 +11,11 @@ public class ParenthesizedReceiverPrecondition {
   void m() {}
 
   static void satisfied(ParenthesizedReceiverPrecondition c) {
+    // m() is not side-effect-free, so each call needs its own test.
     if (c.f != null) {
       (c).m();
+    }
+    if (c.f != null) {
       ((c)).m();
     }
   }
