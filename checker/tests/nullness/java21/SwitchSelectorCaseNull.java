@@ -10,7 +10,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 // @infer-stubs-skip-test
 
 // A switch with a `case null` label does not throw NullPointerException if its selector is null, so
-// the selector might be null in the cases and after the switch.
+// the selector might be null in the `case null` case (including a `case null, default` case) and
+// after the switch.
 public class SwitchSelectorCaseNull {
 
   void boxed(@Nullable Integer i) {
@@ -49,6 +50,45 @@ public class SwitchSelectorCaseNull {
     }
     // :: error: [return]
     return i;
+  }
+
+  // In a statement group, `case null:` falls through into the following case.
+
+  void boxedFallthrough(@Nullable Integer i) {
+    switch (i) {
+      case null:
+      case 1:
+        // :: error: [dereference.of.nullable]
+        i.toString();
+        break;
+      default:
+        i.toString();
+    }
+  }
+
+  // In a case other than `case null`, the selector is non-null.
+
+  void boxedNonNullCases(@Nullable Integer i) {
+    switch (i) {
+      case 1 -> i.toString();
+      case null -> {}
+      default -> i.toString();
+    }
+  }
+
+  int boxedSwitchExpression(@Nullable Integer i) {
+    return switch (i) {
+      case null -> 0;
+      default -> i;
+    };
+  }
+
+  int boxedSwitchExpressionNullCase(@Nullable Integer i) {
+    return switch (i) {
+      // :: error: [unboxing.of.nullable]
+      case null -> i;
+      default -> 0;
+    };
   }
 
   // The selector's type is a type variable whose bound is a primitive wrapper.

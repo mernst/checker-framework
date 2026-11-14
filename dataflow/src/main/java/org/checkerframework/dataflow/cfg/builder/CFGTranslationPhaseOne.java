@@ -2366,9 +2366,12 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
      * #selectorExprAssignment}. It can later be used to refine the selector expression in case
      * bodies.
      *
-     * <p>If the switch has no {@code case null} label, a null selector throws NullPointerException.
-     * For a boxed selector, the unboxing throws it. For any other reference selector that might be
-     * null, the assigned expression is a {@link NullChkNode} of the selector expression.
+     * <p>If the switch has no {@code case null} label, a null selector throws {@code
+     * NullPointerException}. For a selector whose type is a primitive wrapper class, such as {@code
+     * Integer}, the unboxing throws it. For any other reference selector that might be null, the
+     * assigned expression is a {@link NullChkNode} of the selector expression. That includes a
+     * selector whose type is a type variable, which is never unboxed, even if the type variable's
+     * bound is a primitive wrapper class.
      */
     private void buildSelector() {
       // Create a synthetic variable to which the switch selector expression will be assigned
