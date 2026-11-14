@@ -77,8 +77,8 @@ public class AggregateCheckerMessagesTest {
   /**
    * Asserts that one of the given messages contains the given text.
    *
-   * @param messages diagnostic messages
-   * @param expected the text that one of {@code messages} should contain
+   * @param messages a list of diagnostic messages
+   * @param expected the text that one of the messages should contain
    */
   private static void assertSomeMessageContains(List<String> messages, String expected) {
     for (String message : messages) {

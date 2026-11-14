@@ -1741,12 +1741,11 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
   //
 
   /**
-   * Returns the localized long message corresponding to this key. If this checker's messages do not
-   * define the key, uses the text that a subchecker defines for it (see {@link
-   * #subcheckerMessageOf}), because a checker can report a diagnostic whose message key only a
-   * subchecker's {@code messages.properties} file defines. If still not found, tries suffixes of
-   * this key in this checker's messages, stripping off dot-separated prefixes. If still not found,
-   * returns {@code defaultValue}.
+   * Returns the localized long message corresponding to this key. If not found, tries suffixes of
+   * this key, stripping off dot-separated prefixes. If still not found, uses the text that a
+   * subchecker defines for the key (see {@link #subcheckerMessageOf}), because a checker can report
+   * a diagnostic whose message key only a subchecker's {@code messages.properties} file defines. If
+   * still not found, returns {@code defaultValue}.
    *
    * @param messageKey a message key
    * @param defaultValue a default value to use if {@code messageKey} is not a message key
@@ -1755,21 +1754,23 @@ public abstract class SourceChecker extends AbstractTypeProcessor implements Opt
    */
   protected String fullMessageOf(String messageKey, String defaultValue) {
     String key = messageKey;
-    String messageForKey = messagesProperties.getProperty(key);
-    if (messageForKey == null) {
-      messageForKey = subcheckerMessageOf(key);
-    }
-    // Suffixes are not looked up in subcheckers' messages.  A subchecker's short key, such as
-    // `return` in a BaseTypeChecker, would supply text for a key whose arguments differ.
-    while (messageForKey == null) {
+
+    do {
+      String messageForKey = messagesProperties.getProperty(key);
+      if (messageForKey != null) {
+        return messageForKey;
+      }
+
       int dot = key.indexOf('.');
       if (dot < 0) {
-        return defaultValue;
+        // Only the full key, not its suffixes, is looked up in subcheckers' messages.  A
+        // subchecker's short key, such as `return` in a BaseTypeChecker, would supply text for a
+        // key whose arguments differ.
+        String subcheckerMessage = subcheckerMessageOf(messageKey);
+        return subcheckerMessage != null ? subcheckerMessage : defaultValue;
       }
       key = key.substring(dot + 1);
-      messageForKey = messagesProperties.getProperty(key);
-    }
-    return messageForKey;
+    } while (true);
   }
 
   /**
