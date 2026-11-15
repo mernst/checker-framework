@@ -191,10 +191,7 @@ functional-interface parameter, and it applies even if the method's body never
 calls that parameter's functional method.  Only a parameter whose declared
 type is a functional interface is checked:  the method may assume nothing about an
 argument to a parameter whose type is a type variable, nor about the elements
-of a varargs array.  How the argument is checked depends on its form.
-Parentheses around the argument are ignored, and so is a cast of a lambda, a
-method reference, a conditional expression, or a switch expression, because
-such a cast does not change the code that the argument denotes.
+of a varargs array.  How the argument is checked depends on its form:
 
 \begin{itemize}
 \item
