@@ -37,6 +37,7 @@ public class RecordPatternChangesSelector {
   record Outer(Object inner) {}
 
   void clearing() {
+    // :: error: [switching.nullable]
     switch (selector) {
       case Clearing(int n) -> {
         // :: error: [dereference.of.nullable]
@@ -52,6 +53,7 @@ public class RecordPatternChangesSelector {
   }
 
   void clearingNested() {
+    // :: error: [switching.nullable]
     switch (selector) {
       case Outer(Clearing(int n)) -> {
         // :: error: [dereference.of.nullable]
@@ -65,6 +67,7 @@ public class RecordPatternChangesSelector {
   }
 
   void clearingLocal(@Nullable Object local) {
+    // :: error: [switching.nullable]
     switch (local) {
       case Clearing(int n) -> local.toString();
       default -> local.toString();
@@ -72,6 +75,7 @@ public class RecordPatternChangesSelector {
   }
 
   void implicit() {
+    // :: error: [switching.nullable]
     switch (selector) {
       case Implicit(int n) -> selector.toString();
       default -> selector.toString();
@@ -79,6 +83,7 @@ public class RecordPatternChangesSelector {
   }
 
   void annotated() {
+    // :: error: [switching.nullable]
     switch (selector) {
       case Annotated(int n) -> selector.toString();
       default -> selector.toString();
