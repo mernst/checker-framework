@@ -627,7 +627,11 @@ in a \<catch> block and rethrow the exception:
       initialize(c);    // might throw IOException
       return c;
     } catch (Throwable t) {
-      c.close();
+      try {
+        c.close();
+      } catch (Throwable closeException) {
+        t.addSuppressed(closeException);
+      }
       throw t;
     }
   }
@@ -636,7 +640,8 @@ in a \<catch> block and rethrow the exception:
 \noindent
 Java permits \<throw t> in a method that is declared to throw only
 \<IOException>, because the only checked exceptions that \<t> can hold are
-those that the \<try> block can throw.
+those that the \<try> block can throw.  The inner \<try> ensures that if
+\<close()> also fails, the caller still receives the original exception.
 
 \sectionAndLabel{Errors about field initialization}{resource-leak-field-initialization}
 
