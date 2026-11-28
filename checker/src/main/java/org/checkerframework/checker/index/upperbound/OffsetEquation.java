@@ -443,20 +443,33 @@ public class OffsetEquation {
    * Returns the first index of a or b in string, at or after index, or -1 if neither char occurs in
    * string at or after index. Ignores occurrences within parentheses or brackets that start at or
    * after index, so that an expression such as {@code offsets[i - 1]} or {@code f(x + 1)} is not
-   * split.
+   * split. Also ignores occurrences within string and character literals, and does not count
+   * parentheses or brackets within them, as in {@code s.indexOf('(') + n}.
    *
    * @param string the string to search in
    * @param a a character to search for
    * @param b another character to search for
    * @param index the index at which to start the search
-   * @return the first index of a or b in string at or after index and outside parentheses and
-   *     brackets, or -1 if neither char occurs there
+   * @return the first index of a or b in string at or after index and outside parentheses,
+   *     brackets, and literals, or -1 if neither char occurs there
    */
   private static int indexOfEither(String string, char a, char b, int index) {
     int depth = 0;
+    // The quote character of the string or character literal that contains the current
+    // character, or 0 if it is not in a literal.
+    char quote = 0;
     for (int i = index; i < string.length(); i++) {
       char c = string.charAt(i);
-      if (c == '(' || c == '[') {
+      if (quote != 0) {
+        if (c == '\\') {
+          // Skip the escaped character.
+          i++;
+        } else if (c == quote) {
+          quote = 0;
+        }
+      } else if (c == '"' || c == '\'') {
+        quote = c;
+      } else if (c == '(' || c == '[') {
         depth++;
       } else if ((c == ')' || c == ']') && depth > 0) {
         depth--;
