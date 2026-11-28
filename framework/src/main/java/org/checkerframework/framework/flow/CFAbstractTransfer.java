@@ -1075,8 +1075,8 @@ public abstract class CFAbstractTransfer<
    * element that the candidate reads. That code is the rest of the assignment; the code in the
    * enclosing expressions that is evaluated after {@code node} and before the comparison completes,
    * such as the right operand of the comparison if {@code node} is in its left operand; and, if
-   * {@code node} is a unary or binary operation, the code in {@code node} itself, such as the call
-   * to {@code f()} in {@code i + f()}. For example:
+   * {@code node} is not an assignment, the code in {@code node} itself, such as the call to {@code
+   * f()} in {@code i + f()} or {@code a[f()]}. For example:
    *
    * <ul>
    *   <li>The result for {@code n = n.next} is just {@code n}, because after the assignment {@code
@@ -1166,12 +1166,11 @@ public abstract class CFAbstractTransfer<
       if (isCheckedCandidate(expr)) {
         if (locationsWrittenUntilComparison == null) {
           locationsWrittenUntilComparison = locationsWrittenUntilComparison(node);
-          // If `node` is a unary or binary operation, it is the only candidate, and it might write
-          // a location after reading it, as in `i + f()` where `f()` writes `i`. Scanning all of
-          // `node` also includes writes that precede the reads, which is conservative.
+          // If `node` is not an assignment, it is the only candidate, and it might write a location
+          // after reading it, as in `i + f()` or `a[f()]` where `f()` writes `i` or `a`. Scanning
+          // all of `node` also includes writes that precede the reads, which is conservative.
           Tree tree = node.getTree();
-          if (!(node instanceof AssignmentNode)
-              && (tree instanceof BinaryTree || tree instanceof UnaryTree)) {
+          if (!(node instanceof AssignmentNode) && tree != null) {
             locationsWrittenUntilComparison.scan(tree, null);
           }
         }

@@ -437,7 +437,14 @@ public class UpperBoundTransfer extends IndexAbstractTransfer {
     }
   }
 
-  /** Implements case 11. */
+  /**
+   * Implements case 11.
+   *
+   * <p>The superclass inserts {@code firstValue} for {@code secondNode}. This method first omits
+   * from {@code firstValue} the bounds that might not hold when the comparison completes (see
+   * {@link #removeBoundsChangedAfter}), because the store keeps the more precise of an existing
+   * value and an inserted value, so a later insertion of a filtered value could not remove them.
+   */
   @Override
   protected TransferResult<CFValue, CFStore> strengthenAnnotationOfEqualTo(
       TransferResult<CFValue, CFStore> res,
@@ -448,7 +455,12 @@ public class UpperBoundTransfer extends IndexAbstractTransfer {
       boolean notEqualTo) {
     TransferResult<CFValue, CFStore> result =
         super.strengthenAnnotationOfEqualTo(
-            res, firstNode, secondNode, firstValue, secondValue, notEqualTo);
+            res,
+            firstNode,
+            secondNode,
+            valueWhenComparisonCompletes(firstValue, firstNode),
+            secondValue,
+            notEqualTo);
     IndexRefinementInfo rfi = new IndexRefinementInfo(result, analysis, firstNode, secondNode);
     if (rfi.leftAnno == null || rfi.rightAnno == null) {
       return result;
@@ -569,6 +581,34 @@ public class UpperBoundTransfer extends IndexAbstractTransfer {
     return removeBoundsChangedAfter(
         UBQualifier.createUBQualifier(anno, (UpperBoundChecker) atypeFactory.getChecker()),
         operand);
+  }
+
+  /**
+   * Returns the given abstract value of an operand of a comparison, without the upper bounds that
+   * might not hold when the comparison completes (see {@link #removeBoundsChangedAfter}).
+   *
+   * @param value the abstract value of {@code operand}, or null
+   * @param operand an operand of a comparison
+   * @return {@code value}, without the upper bounds that might not hold when the comparison
+   *     completes, or null if {@code value} is null
+   */
+  private @Nullable CFValue valueWhenComparisonCompletes(@Nullable CFValue value, Node operand) {
+    if (value == null) {
+      return null;
+    }
+    AnnotationMirror anno =
+        atypeFactory
+            .getQualifierHierarchy()
+            .findAnnotationInHierarchy(value.getAnnotations(), atypeFactory.UNKNOWN);
+    if (anno == null) {
+      return value;
+    }
+    UBQualifier filtered = qualifierWhenComparisonCompletes(anno, operand);
+    AnnotationMirror filteredAnno = atypeFactory.convertUBQualifierToAnnotation(filtered);
+    if (AnnotationUtils.areSame(anno, filteredAnno)) {
+      return value;
+    }
+    return analysis.createSingleAnnotationValue(filteredAnno, value.getUnderlyingType());
   }
 
   /**
