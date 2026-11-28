@@ -2680,16 +2680,12 @@ public class CFGTranslationPhaseOne extends TreeScanner<Node, Void> {
                     "no case matches: guard is false in last case of exhaustive switch #"
                         + TreeUtils.treeUids.get(switchTree),
                     env.getTypeUtils());
-            // If the exception type is not available, the node still terminates execution, which
-            // is modeled as an edge to the exceptional exit.
-            ExtendedNode noMatchNode;
-            if (matchExceptionType != null) {
-              noMatchNode = extendWithNodeWithException(noMatchMarker, matchExceptionType);
-            } else {
-              addToLookupMap(noMatchMarker);
-              noMatchNode = new NodeHolder(noMatchMarker);
-              extendWithExtendedNode(noMatchNode);
-            }
+            // If the exception type is not available, use Throwable, a supertype of both
+            // MatchException and IncompatibleClassChangeError.  Either way, the exception passes
+            // through the enclosing catch and finally blocks, as any thrown exception does.
+            NodeWithExceptionsHolder noMatchNode =
+                extendWithNodeWithException(
+                    noMatchMarker, matchExceptionType != null ? matchExceptionType : throwableType);
             noMatchNode.setTerminatesExecution(true);
           }
         }
